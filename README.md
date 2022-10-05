@@ -1,2 +1,1 @@
-# radiative-transfer-amr
-Implementation of hp-adaptivity for radiative transfer problems.
+# 2d_radiative_transport
