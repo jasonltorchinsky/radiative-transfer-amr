@@ -135,5 +135,3 @@ dmypy.json
 *.nc
 run/*
 
-# Notes subdirectory
-notes/
