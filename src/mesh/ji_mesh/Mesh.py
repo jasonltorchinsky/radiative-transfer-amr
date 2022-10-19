@@ -13,7 +13,9 @@ class Mesh:
         # We assume that the parameters here are valid
         self.Ls   = Ls # Lengths of spatial domain
         self.pbcs = pbcs # Periodicity of spatial domain
-        self.is_flat = is_flat
+        self.is_flat = is_flat # Include angular domain in mesh?
+
+        # Create first cell
         if is_flat:
             cell = Cell(pos = [0, 0],
                         idx = 0,
@@ -25,12 +27,14 @@ class Mesh:
                         idx = 0,
                         lv = 0,
                         is_lf = True,
-                        ndofs = [2, 2, 2])
+                        ndofs = [2])
 
+        # Create first column, put cell into it
         col = Column(pos = [0, 0, Ls[0], Ls[1]],
                      idx = [0, 0],
                      lv = 0,
                      is_lf = True,
+                     ndofs = [2, 2],
                      cells = {0 : cell})
         self.cols = {0 :  col} # Columns in mesh
 
@@ -75,6 +79,7 @@ class Mesh:
                                   idx = chld_idx,
                                   lv  = lv + 1,
                                   is_lf = True,
+                                  ndofs = col.ndofs,
                                   cells = col.cells.copy())
                 self.add_col(chld_col)
 
@@ -98,12 +103,13 @@ class Mesh:
 class Column:
     ''' Column of cells. '''
 
-    def __init__(self, pos, idx, lv, is_lf, cells):
+    def __init__(self, pos, idx, lv, is_lf, ndofs, cells):
         self.pos   = pos   # Spatial corners of columns
         self.idx   = idx   # Spatial index for column
         self.lv    = lv    # Level of spatial refinement for column
         self.key   = calc_col_key(idx, lv) # Unique key for column
         self.is_lf = is_lf # Whether column is a leaf or not
+        self.ndofs = ndofs # Degrees of freedom in x-, y-.
         self.cells = cells # List of cells in the column
         
 
@@ -169,7 +175,7 @@ class Cell:
         self.lv    = lv     # Level of angular refinement
         self.key   = calc_cell_key(idx, lv) # Unique key for cell
         self.is_lf = is_lf  # Whether cell is a leaf or not
-        self.ndofs = ndofs  # Degrees of freedom in x-, y-, theta-.
+        self.ndofs = ndofs  # Degrees of freedom in theta-.
         
     def __str__(self):
         msg = ( 'Cell  :  {}, {}\n'.format(self.idx, self.lv) +

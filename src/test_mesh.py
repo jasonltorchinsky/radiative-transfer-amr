@@ -7,33 +7,75 @@ import os
 
 def main(argv):
 
+    print('Performing mesh refinement tests...\n')
+
     dir_name = 'test_mesh'
     os.makedirs(dir_name, exist_ok = True)
 
     # Test 2D mesh
-    Lx = 1.5
+    Lx = 2.0
     Ly = 1.5
-    dir_name = 'test_mesh'
-    os.makedirs(dir_name, exist_ok = True)
 
-    mesh = ji_mesh.Mesh(Ls = [1.75, 2], pbcs = [True, False])
-    file_name = os.path.join(dir_name, 'mesh_0.png')
-    plot_mesh(mesh, file_name = file_name, label_cells = True)
+    
+    mesh = ji_mesh.Mesh(Ls = [Lx, Ly], pbcs = [True, False])
+    file_name = 'mesh_0.png'
+    file_path = os.path.join(dir_name, file_name)
+    plot_mesh(mesh, file_name = file_path, label_cells = True)
+    print('Wrote 0 mesh to {}\n'.format(file_name))
 
-    for ii in range(0, 1):
+    ref_num = 0
+    nunirefs = 1
+    ncolrefs = 1
+    
+    for ii in range(0, nunirefs):
         mesh.ref_mesh()
-        file_name = os.path.join(dir_name, 'mesh_' + str(ii + 1) + '.png')
-        plot_mesh(mesh, file_name = file_name, label_cells = True)
-
-    mesh.ref_col(mesh.cols[1])
-    file_name = os.path.join(dir_name, 'mesh_2.png')
-    plot_mesh(mesh, file_name = file_name, label_cells = True)
         
-    '''mesh.ref_col(mesh.cols[10])
-    print(mesh)
-    file_name = os.path.join(dir_name, 'mesh_3.png')
-    plot_mesh(mesh, file_name = file_name, label_cells = True)'''
+        ref_num += 1
+        file_name = 'mesh_' + str(ref_num) + '.png'
+        file_path = os.path.join(dir_name, file_name)
+        plot_mesh(mesh, file_name = file_path, label_cells = True)
+        print('Wrote (uniform refinement) {} mesh to {}\n'.format(ref_num, file_name))
 
+    # Test the find neighbors function
+    for col in list(mesh.cols.values()):
+        if col.is_lf:
+            [i, j] = col.idx
+            lv = col.lv
+            
+            file_name = 'nhbrs_{}_{}_{}.png'.format(i, j, lv)
+            file_path = os.path.join(dir_name, file_name)
+            plot_col_nhbrs(mesh, col = col,
+                           file_name = file_path,
+                           label_cells = False,
+                           plot_dim = 2)
+
+    # Something buggy here. refining column 4 should not refine any other column.
+    for ii in range(0, ncolrefs):
+        col_keys = list(mesh.cols.keys())
+        col = mesh.cols[col_keys[-1]]
+
+        axes = [0, 1]
+        nhbr_locs = ['+', '-']
+        for axis in axes:
+            for nhbr_loc in nhbr_locs:
+                print([axis, nhbr_loc])
+
+                col_nhbrs = ji_mesh.get_col_nhbr(mesh, col = col,
+                                                 axis = axis, nhbr_loc = nhbr_loc)
+                print(col_nhbrs[0])
+                print(col_nhbrs[1])
+                print(col_nhbrs[2])
+        
+        mesh.ref_col(col)
+        
+        ref_num += 1
+        file_name = 'mesh_' + str(ref_num) + '.png'
+        file_path = os.path.join(dir_name, file_name)
+        plot_mesh(mesh, file_name = file_path, label_cells = True)
+        print('Wrote (column refinement) {} mesh to {}\n'.format(ref_num, file_name))
+
+    sys.exit(2)
+        
     for col in list(mesh.cols.values()):
         for ii in range(0, 2):
             col.ref_col()
@@ -48,9 +90,9 @@ def main(argv):
     cell = col.cells[3]
     col.ref_cell(cell)
 
-    for col_key, col in sorted(mesh.cols.items()):
+    #for col_key, col in sorted(mesh.cols.items()):
         #print(col)
-        print('\n')
+        #print('\n')
 
     col = mesh.cols[3]
     cell = col.cells[3]
