@@ -1,1 +1,1 @@
-from .plot_projection import plot_projection
+from .plot_projection import plot_projection_2d

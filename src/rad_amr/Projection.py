@@ -1,20 +1,50 @@
 import numpy as np
 import sys
 
-sys.path.append('/quadrature')
-import quadrature as qd
+from dg import quadrature as qd
+
+class Projection_2D:
+    '''
+    Projection of a function independent of angle.
+    '''
+
+    def __init__(self, mesh, u = None):
+        self.cols = {}
+        
+        # Is no function is given, just use a zero
+        if not u:
+            def u(x, y):
+                return 0
+
+        # Calculate the projection in each column.
+        for col_key, col in sorted(mesh.cols.items()):
+            if col.is_lf:
+                [x0, y0, x1, y1] = col.pos
+                [dof_x, dof_y] = col.ndofs
+                
+                [nodes_x, _, nodes_y, _, _, _] = qd.quad_xya(dof_x, dof_y, 1)
+                
+                uh = np.zeros([dof_x, dof_y])
+                for ii in range(0, dof_x):
+                    x = x0 + (x1 - x0)/2 * (nodes_x[ii] + 1)
+                    for jj in range(0, dof_y):
+                        y = y0 + (y1 - y0)/2 * (nodes_y[jj] + 1)
+                        uh[ii, jj] = u(x, y)
+
+                self.cols[col_key] = uh
+                
 
 class Projection:
     '''
-    Holds information about the solution projected onto the nodes of the mesh.
+    Holds information about a function projected onto the nodes of the mesh.
+    Note: This is stored as a dense matrix, although it may actually be sparse!
     '''
 
     def __init__(self, mesh, u = None, has_a = False):
         self.ndof = 0 # Total number of DOFs
         self.has_a = has_a # Whether or not there's an angular component
-        self.st_idxs = {} # Starting index for each element in global state vector
-        self.coeffs = [] # Coefficients for reconstruction
 
+        # Put in a dummy zero fucntion i the function is not specified
         if not u:
             if has_a:
                 def u(x, y, a):
@@ -22,7 +52,8 @@ class Projection:
             elif not has_a:
                 def u(x, y):
                     return 0
-        
+
+        # If is has the angular component, we need it at each cell
         if has_a:
             for col_key, col in sorted(mesh.cols.items()):
                 if col.is_lf:

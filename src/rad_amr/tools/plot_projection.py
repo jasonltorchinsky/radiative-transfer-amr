@@ -3,8 +3,82 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 
 
-from mesh import tools as mesh_tools
-import quadrature as qd
+from dg.mesh import tools as mesh_tools
+import dg.quadrature as qd
+
+def plot_projection_2d(mesh, uh, file_name = None, **kwargs):
+    '''
+    Plot a Projection_2D object.
+    '''
+    
+    default_kwargs = {'show_mesh': False,
+                      'label_cells': False,
+                      'shading': 'auto',
+                      'colormap': 'Greys',
+                      'title': None}
+    kwargs = {**default_kwargs, **kwargs}
+    
+    fig, ax = plt.subplots()
+    
+    [Lx, Ly] = mesh.Ls[0:2]
+    
+    ax.set_xlim([0, Lx])
+    ax.set_ylim([0, Ly])
+
+    cmin = 10**10
+    cmax = -10**10
+    for col_key in sorted(mesh.cols.keys()):
+        cmin = min(cmin, np.amin(uh.cols[col_key]))
+        cmax = max(cmax, np.amax(uh.cols[col_key]))
+    cmap = plt.colormaps[kwargs['colormap']]
+
+    for col_key, col in sorted(mesh.cols.items()):
+        if col.is_lf:
+            [x0, y0, x1, y1] = col.pos
+            [dof_x, dof_y] = col.ndofs
+                
+            [nodes_x, _, nodes_y, _, _, _] = qd.quad_xya(dof_x, dof_y, 1)
+            
+            xx = x0 + (x1 - x0) / 2 * (nodes_x + 1)
+            yy = y0 + (y1 - y0) / 2 * (nodes_y + 1)
+            
+            uh_col = uh.cols[col_key]
+            
+            if np.size(xx) == 1:
+                xx = np.asarray([xx - (x1 - x0) / 2, xx + (x1 - x0) / 2])
+                yy = np.asarray([yy - (y1 - y0) / 2, yy + (y1 - y0) / 2])
+                #uh_col = uh_col[0] * np.ones([2, 2])
+                #if kwargs['shading'] == 'flat':
+                #    uh_elt = uh_elt[:-1,:-1]
+                im = ax.pcolormesh(xx, yy, uh_col,
+                                   cmap = cmap,
+                                   #shading = kwargs['shading'],
+                                   vmin = cmin, vmax = cmax)
+            else:
+                #if kwargs['shading'] == 'flat':
+                    #uh_col = uh_col[:-1,:-1]
+                    im = ax.pcolormesh(xx, yy, uh_col,
+                                       cmap = cmap,
+                                       #shading = kwargs['shading'],
+                                       vmin = cmin, vmax = cmax)
+                    
+    #if kwargs['show_mesh']:
+    #    [fig, ax] = mesh_tools.plot_mesh(mesh, ax = ax, 
+    #                                     label_cells = kwargs['label_cells'])
+        
+    fig.colorbar(mappable = im, ax = ax)
+    
+    #if kwargs['title']:
+    #    fig.suptitle(kwargs['title'])
+            
+    if file_name:
+        fig.set_size_inches(6.5, 6.5 * (Ly / Lx))
+        plt.savefig(file_name, dpi = 300)
+        plt.close(fig)
+        
+    return [fig, ax]
+
+
 
 def plot_projection(mesh, uh, file_name = None, **kwargs):
     '''

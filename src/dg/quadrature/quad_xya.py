@@ -5,7 +5,8 @@ import numpy as np
 
 def quad_xya(order_x, order_y, order_a):
     '''
-    Returns quadrature points, weights for x-, y-, and angular (a-) directions.
+    Returns quadrature points, weights for spatial (x-, y-)
+    and angular (a-) directions.
 
     We use Gauss-Lobatto for x-, y-.
     We use Legendre-Gauss for a-.

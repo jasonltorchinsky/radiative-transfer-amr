@@ -1,4 +1,4 @@
-import quadrature as qd
+import dg.quadrature as qd
 
 import numpy as np
 import matplotlib.pyplot as plt

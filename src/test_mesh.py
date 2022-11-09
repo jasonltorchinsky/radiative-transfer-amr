@@ -1,5 +1,5 @@
-from mesh import ji_mesh
-from mesh.tools import plot_mesh, plot_col_nhbrs, plot_cell_nhbrs
+from dg.mesh import ji_mesh
+from dg.mesh.tools import plot_mesh, plot_col_nhbrs, plot_cell_nhbrs
 
 import numpy as np
 import sys, getopt

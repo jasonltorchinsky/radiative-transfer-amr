@@ -577,6 +577,9 @@ def f_scat(x, y, scat_type):
     return 1. / (3. * np.pi) * (1 + np.cos(x - y)**2)
 
 def calc_mass_matrix(mesh, uh, kappa):
+    
+
+def calc_mass_matrix_orig(mesh, uh, kappa):
 
     ndof = uh.ndof
     kappah = Projection(mesh = mesh, has_a = False, u = kappa)

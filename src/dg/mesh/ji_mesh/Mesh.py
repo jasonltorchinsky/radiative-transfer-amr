@@ -2,39 +2,38 @@ import numpy as np
 import sys
 import os
 
-
 from .calc_key import calc_col_key, calc_cell_key
 from .get_nhbr import get_col_nhbr, get_cell_nhbr
 
 class Mesh:
     ''' Collection of columns.'''
 
-    def __init__(self, Ls, pbcs, is_flat = False):
+    def __init__(self, Ls, pbcs, ndofs = [2, 2, 2], has_a = False):
         # We assume that the parameters here are valid
         self.Ls   = Ls # Lengths of spatial domain
         self.pbcs = pbcs # Periodicity of spatial domain
-        self.is_flat = is_flat # Include angular domain in mesh?
+        self.has_a = has_a # Include angular domain in mesh?
 
         # Create first cell
-        if is_flat:
+        if has_a:
             cell = Cell(pos = [0, 0],
                         idx = 0,
                         lv = 0,
                         is_lf = True,
-                        ndofs = [2, 2, 0])
+                        ndofs = [0])
         else:
             cell = Cell(pos = [0, 2 * np.pi],
                         idx = 0,
                         lv = 0,
                         is_lf = True,
-                        ndofs = [2])
+                        ndofs = [ndofs[2]])
 
         # Create first column, put cell into it
         col = Column(pos = [0, 0, Ls[0], Ls[1]],
                      idx = [0, 0],
                      lv = 0,
                      is_lf = True,
-                     ndofs = [2, 2],
+                     ndofs = ndofs[0:2],
                      cells = {0 : cell})
         self.cols = {0 :  col} # Columns in mesh
 
@@ -48,12 +47,21 @@ class Mesh:
         return msg
 
     def add_col(self, col):
+        '''
+        Add a column.
+        '''
         self.cols[col.key] = col
 
     def del_col(self, col):
+        '''
+        Delete a column.
+        '''
         del self.cols[col.key]
 
     def ref_col(self, col):
+        '''
+        Refine a colmun, spatially.
+        '''
         if col.is_lf:
             [i, j]  = col.idx[:]
             lv = col.lv
@@ -95,6 +103,9 @@ class Mesh:
             self.del_col(col)
 
     def ref_mesh(self):
+        '''
+        Refine each column in the mesh, spatially.
+        '''
         keys = list(self.cols.keys())
         for key in keys:
             self.ref_col(self.cols[key])
@@ -124,12 +135,21 @@ class Column:
         return msg
 
     def add_cell(self, cell):
+        '''
+        Add cell.
+        '''
         self.cells[cell.key] = cell
 
     def del_cell(self, cell):
+        '''
+        Delete cell.
+        '''
         del self.cells[cell.key]
 
     def ref_cell(self, cell):
+        '''
+        Refine a cell, angularly.
+        '''
         if cell.is_lf:
             idx = cell.idx
             lv = cell.lv
@@ -161,6 +181,9 @@ class Column:
             self.del_cell(cell)
 
     def ref_col(self):
+        '''
+        Refine all cells in a column, angularly.
+        '''
         keys = list(self.cells.keys())
         for key in keys:
             self.ref_cell(self.cells[key])
