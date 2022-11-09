@@ -78,8 +78,8 @@ def plot_mesh_3d(mesh, ax = None, file_name = None, **kwargs):
         fig = plt.gcf()
     else:
         fig = plt.figure()
-        ax = fig.add_subplot(projection = '3d')
-
+        ax = fig.add_subplot(1, 1, 1, projection = '3d')
+    
     ax.set_xlim([0, Lx])
     ax.set_ylim([0, Ly])
     ax.set_zlim([0, Lz])
