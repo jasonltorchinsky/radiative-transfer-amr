@@ -1,5 +1,5 @@
 from dg.mesh import ji_mesh
-from dg.mesh.tools import plot_mesh, plot_col_nhbrs, plot_cell_nhbrs
+from dg.mesh.tools import plot_mesh, plot_col_nhbrs, plot_cell_nhbrs, plot_mesh_attr
 
 import numpy as np
 import sys, getopt
@@ -38,8 +38,6 @@ def main(argv):
         print('Wrote (uniform refinement) {} mesh to {}\n'.format(ref_num, file_name))
     
 
-    # Something buggy here. refining column 4 should not refine any other column.
-    # The error is in the key! [0, 0], 1 and [0, 1], 0 have the same key!
     for ii in range(0, ncolrefs):
         col_keys = sorted(list(mesh.cols.keys()))
         col = mesh.cols[col_keys[-1]]
@@ -81,6 +79,12 @@ def main(argv):
     file_path = os.path.join(dir_name, file_name)
     plot_mesh(mesh, file_name = file_path, plot_dim = 3)
     print('Wrote (column refinement) {} mesh to {}\n'.format(ref_num, file_name))
+
+    for attr in ['dof_x', 'dof_y', 'lv']:
+        file_name = 'mesh_' + str(ref_num) + '_' + attr + '.png'
+        file_path = os.path.join(dir_name, file_name)
+        plot_mesh_attr(mesh, file_name = file_path, show_attr = attr)
+        print('Wrote {} mesh to {}\n'.format(attr, file_name))
     
     quit()
     '''

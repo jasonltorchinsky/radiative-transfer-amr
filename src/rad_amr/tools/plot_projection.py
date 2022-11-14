@@ -27,9 +27,10 @@ def plot_projection_2d(mesh, uh, file_name = None, **kwargs):
 
     cmin = 10**10
     cmax = -10**10
-    for col_key in sorted(mesh.cols.keys()):
-        cmin = min(cmin, np.amin(uh.cols[col_key]))
-        cmax = max(cmax, np.amax(uh.cols[col_key]))
+    for col_key, col in mesh.cols.items():
+        if col.is_lf:
+            cmin = min(cmin, np.amin(uh.cols[col_key]))
+            cmax = max(cmax, np.amax(uh.cols[col_key]))
     cmap = plt.colormaps[kwargs['colormap']]
 
     for col_key, col in sorted(mesh.cols.items()):
@@ -45,114 +46,14 @@ def plot_projection_2d(mesh, uh, file_name = None, **kwargs):
             uh_col = uh.cols[col_key]
             
             if np.size(xx) == 1:
-                xx = np.asarray([xx - (x1 - x0) / 2, xx + (x1 - x0) / 2])
-                yy = np.asarray([yy - (y1 - y0) / 2, yy + (y1 - y0) / 2])
-                #uh_col = uh_col[0] * np.ones([2, 2])
-                #if kwargs['shading'] == 'flat':
-                #    uh_elt = uh_elt[:-1,:-1]
-                im = ax.pcolormesh(xx, yy, uh_col,
-                                   cmap = cmap,
-                                   #shading = kwargs['shading'],
-                                   vmin = cmin, vmax = cmax)
+                print('WARNING: Line 48 of plot_projection.py')
             else:
-                #if kwargs['shading'] == 'flat':
-                    #uh_col = uh_col[:-1,:-1]
-                    im = ax.pcolormesh(xx, yy, uh_col,
-                                       cmap = cmap,
-                                       #shading = kwargs['shading'],
-                                       vmin = cmin, vmax = cmax)
-                    
-    #if kwargs['show_mesh']:
-    #    [fig, ax] = mesh_tools.plot_mesh(mesh, ax = ax, 
-    #                                     label_cells = kwargs['label_cells'])
-        
-    fig.colorbar(mappable = im, ax = ax)
-    
-    #if kwargs['title']:
-    #    fig.suptitle(kwargs['title'])
-            
-    if file_name:
-        fig.set_size_inches(6.5, 6.5 * (Ly / Lx))
-        plt.savefig(file_name, dpi = 300)
-        plt.close(fig)
-        
-    return [fig, ax]
-
-
-
-def plot_projection(mesh, uh, file_name = None, **kwargs):
-    '''
-    Plot the projection uh(x, y) of the function u(x, y) onto the mesh.
-    '''
-    
-    default_kwargs = {'angles': [0, np.pi/2, np.pi, 3*np.pi/2],
-                      'show_mesh': False,
-                      'label_cells': False,
-                      'shading': 'auto',
-                      'colormap': 'Greys',
-                      'title': None}
-    kwargs = {**default_kwargs, **kwargs}
-
-    if uh.has_a:
-        plot_projection_xya(mesh, uh, file_name = file_name, **kwargs)
-    else:
-        plot_projection_xy(mesh, uh, file_name = file_name, **kwargs)
-
-def plot_projection_xy(mesh, uh, file_name = None, **kwargs):
-    '''
-    Plot the projection uh(x, y) of the function u(x, y) onto the mesh.
-    '''
-    
-    default_kwargs = {'show_mesh': False,
-                      'label_cells': False,
-                      'shading': 'auto',
-                      'colormap': 'Greys',
-                      'title': None}
-    kwargs = {**default_kwargs, **kwargs}
-    
-    fig, ax = plt.subplots()
-    
-    [Lx, Ly] = mesh.Ls[0:2]
-    
-    ax.set_xlim([0, Lx])
-    ax.set_ylim([0, Ly])
-
-    cmin = np.amin(uh.coeffs)
-    cmax = np.amax(uh.coeffs)
-    cmap = plt.colormaps[kwargs['colormap']]
-
-    for col_key, col in sorted(mesh.cols.items()):
-        if col.is_lf:
-            [x0, y0, x1, y1] = col.pos
-            cell0 = sorted(col.cells.keys())[0]
-            cell = col.cells[cell0]
-            [dof_x, dof_y] = cell.ndofs[0:2]
-            [nodes_x, _, nodes_y, _, _, _] = qd.quad_xya(dof_x, dof_y, 1)
-            
-            xx = x0 + (x1 - x0) / 2 * (nodes_x + 1)
-            yy = y0 + (y1 - y0) / 2 * (nodes_y + 1)
-            
-            st_idx = uh.st_idxs[col_key]
-            uh_elt = uh.coeffs[st_idx:st_idx + dof_x * dof_y]
-            uh_elt = np.asarray(uh_elt).reshape(dof_x, dof_y)
-            
-            if np.size(xx) == 1:
-                xx = np.asarray([xx - (x1 - x0) / 2, xx + (x1 - x0) / 2])
-                yy = np.asarray([yy - (y1 - y0) / 2, yy + (y1 - y0) / 2])
-                uh_elt = uh_elt[0] * np.ones([2, 2])
                 if kwargs['shading'] == 'flat':
-                    uh_elt = uh_elt[:-1,:-1]
-                im = ax.pcolormesh(xx, yy, uh_elt.transpose(),
+                    uh_col = uh_col[:-1,:-1]
+                im = ax.pcolormesh(xx, yy, uh_col,
                                    cmap = cmap,
                                    shading = kwargs['shading'],
                                    vmin = cmin, vmax = cmax)
-            else:
-                if kwargs['shading'] == 'flat':
-                    uh_elt = uh_elt[:-1,:-1]
-                    im = ax.pcolormesh(xx, yy, uh_elt.transpose(),
-                                       cmap = cmap,
-                                       shading = kwargs['shading'],
-                                       vmin = cmin, vmax = cmax)
                     
     if kwargs['show_mesh']:
         [fig, ax] = mesh_tools.plot_mesh(mesh, ax = ax, 
@@ -170,8 +71,7 @@ def plot_projection_xy(mesh, uh, file_name = None, **kwargs):
         
     return [fig, ax]
 
-
-def plot_projection_xya(mesh, uh, file_name = None, **kwargs):
+def plot_projection_3d(mesh, uh, file_name = None, **kwargs):
 
     default_kwargs = {'angles': [0, np.pi/2, np.pi, 3*np.pi/2],
                       'show_mesh': False,
@@ -193,8 +93,14 @@ def plot_projection_xya(mesh, uh, file_name = None, **kwargs):
         ax.set_xlim([0, Lx])
         ax.set_ylim([0, Ly])
 
-    cmin = np.amin(uh.coeffs)
-    cmax = np.amax(uh.coeffs)
+    cmin = 10**10
+    cmax = -10**10
+    for col_key, col in mesh.cols.items():
+        if col.is_lf:
+            for cell_key, cell in col.cells.items():
+                    if cell.is_lf:
+                        cmin = min(cmin, np.amin(uh.cols[col_key].cells[cell_key]))
+                        cmax = max(cmax, np.amax(uh.cols[col_key].cells[cell_key]))
     cmap = plt.colormaps[kwargs['colormap']]
     
     for a_idx in range(0, nangles):
@@ -211,41 +117,33 @@ def plot_projection_xya(mesh, uh, file_name = None, **kwargs):
         for col_key, col in sorted(mesh.cols.items()):
             if col.is_lf:
                 [x0, y0, x1, y1] = col.pos
+                [dof_x, dof_y] = col.ndofs
+                
+                [nodes_x, _, nodes_y, _, _, _] = qd.quad_xya(dof_x, dof_y, 1)
+                
+                xx = x0 + (x1 - x0) / 2 * (nodes_x + 1)
+                yy = y0 + (y1 - y0) / 2 * (nodes_y + 1)
+                
                 for cell_key, cell in sorted(col.cells.items()):
                     if cell.is_lf:
                         [a0, a1] = cell.pos
+                        [dof_a] = cell.ndofs
+                        
                         if (a0 <= a) and (a <= a1):
-                            [dof_x, dof_y, dof_a] = cell.ndofs[:]
-                            
-                            [nodes_x, _, nodes_y, _, nodes_a, _] \
-                                = qd.quad_xya(dof_x, dof_y, dof_a)
-                            
-                            xx = x0 + ((x1 - x0) / 2) * (nodes_x + 1)
-                            yy = y0 + ((y1 - y0) / 2) * (nodes_y + 1)
-                            
                             # Extract the projected value at the desired angle using the
-                            # basis functions
-                            st_idx = uh.st_idxs[str([col_key, cell_key])]
-                            uh_elt_xya = uh.coeffs[st_idx:st_idx + dof_x * dof_y * dof_a]
-                            uh_elt_xya = np.asarray(uh_elt_xya).reshape(dof_x, dof_y, dof_a)
-                            uh_elt = np.zeros([dof_x, dof_y])
-                            for ii in range(0, dof_a):
-                                uh_elt += uh_elt_xya[:,:,ii] * qd.gl_eval(nodes_a, ii, a)
+                            [_, _, _, _, nodes_a, _] = qd.quad_xya(1, 1, dof_a)
+                            uh_cell = uh.cols[col_key].cells[cell_key]
+
+                            uh_cell_xy = np.zeros([dof_x, dof_y])
+                            for aa in range(0, dof_a):
+                                uh_cell_xy += uh_cell[:,:,aa] * qd.gl_eval(nodes_a, aa, a)
                                 
                             if np.shape(xx)[0] == 1:
-                                xx = np.asarray([xx - (x1 - x0) / 2, xx + (x1 - x0) / 2])
-                                yy = np.asarray([yy - (y1 - y0) / 2, yy + (y1 - y0) / 2])
-                                uh_elt = uh_elt[0] * np.ones([2, 2])
-                                if kwargs['shading'] == 'flat':
-                                    uh_elt = uh_elt[:-1,:-1]
-                                im = ax.pcolormesh(xx, yy, uh_elt.transpose(),
-                                                   cmap = cmap,
-                                                   shading = kwargs['shading'],
-                                                   vmin = cmin, vmax = cmax)
+                                print('WARNING: Line 146 of plot_projection.py')
                             else:
                                 if kwargs['shading'] == 'flat':
-                                    uh_elt = uh_elt[:-1,:-1]
-                                im = ax.pcolormesh(xx, yy, uh_elt.transpose(),
+                                    uh_cell_xy = uh_cell_xy[:-1,:-1]
+                                im = ax.pcolormesh(xx, yy, uh_cell_xy,
                                                    cmap = cmap,
                                                    shading = kwargs['shading'],
                                                    vmin = cmin, vmax = cmax)

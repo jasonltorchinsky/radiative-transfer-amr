@@ -229,8 +229,7 @@ def plot_mesh_attr(mesh, ax = None, file_name = None, **kwargs):
                       'colormap': 'viridis'}
     kwargs = {**default_kwargs, **kwargs}
     
-    Lx = mesh.Ls[0]
-    Ly = mesh.Ls[1]
+    [Lx, Ly] = mesh.Ls[0:2]
 
     if ax:
         fig = plt.gcf()
@@ -241,33 +240,44 @@ def plot_mesh_attr(mesh, ax = None, file_name = None, **kwargs):
     ax.set_ylim([0, Ly])
 
     nrects = 0
-    for key, is_lf in mesh.is_lf.items():
-        if is_lf:
+    for col_key, col in sorted(mesh.cols.items()):
+        if col.is_lf:
             nrects += 1
 
     # If we are plotting an attribute, get the color scale necessary
     if kwargs['show_attr']:
         cmap = plt.colormaps[kwargs['colormap']]
+        cmin = 10**10
+        cmax = -10**10
         if kwargs['show_attr'] == 'dof_x':
-            cmin = np.amin(list(mesh.dof_x.values()))
-            cmax = np.amax(list(mesh.dof_x.values()))
+            for col_key, col in sorted(mesh.cols.items()):
+                if col.is_lf:
+                    cmin = np.amin([cmin, col.ndofs[0]])
+                    cmax = np.amax([cmax, col.ndofs[0]])
         elif kwargs['show_attr'] == 'dof_y':
-            cmin = np.amin(list(mesh.dof_y.values()))
-            cmax = np.amax(list(mesh.dof_y.values()))
-        elif kwargs['show_attr'] == 'dof_a':
-            cmin = np.amin(list(mesh.dof_a.values()))
-            cmax = np.amax(list(mesh.dof_a.values()))
+            for col_key, col in sorted(mesh.cols.items()):
+                if col.is_lf:
+                    cmin = np.amin([cmin, col.ndofs[0]])
+                    cmax = np.amax([cmax, col.ndofs[0]])
+        #elif kwargs['show_attr'] == 'dof_a':
+        #    for col_key, col in sorted(mesh.cols.items()):
+        #        if col.is_lf:
+        #            for cell_key, cell in sorted(col.cells.items()):
+        #                cmin = np.amin(cmin, cell.ndofs[0])
+        #                cmax = np.amax(cmax, cell.ndofs[0])
         elif kwargs['show_attr'] == 'lv':
-            cmin = np.amin(np.array(list(mesh.ijlv.values()))[:,2])
-            cmax = np.amax(np.array(list(mesh.ijlv.values()))[:,2])
+            for col_key, col in sorted(mesh.cols.items()):
+                if col.is_lf:
+                    cmin = np.amin([cmin, col.lv])
+                    cmax = np.amax([cmax, col.lv])
 
         cmin -= 0.1
         cmax += 0.1
     
-    for key, is_lf in sorted(mesh.is_lf.items()):
-        if is_lf:
+    for col_key, col in sorted(mesh.cols.items()):
+        if col.is_lf:
             # Plot cell
-            [x0, y0, x1, y1] = mesh.pos[key]
+            [x0, y0, x1, y1] = col.pos
             width = x1 - x0
             height = y1 - y0
             
@@ -278,13 +288,13 @@ def plot_mesh_attr(mesh, ax = None, file_name = None, **kwargs):
                 xx = np.asarray([x0, x1])
                 yy = np.asarray([y0, y1])
                 if kwargs['show_attr'] == 'dof_x':
-                    zz = np.asarray([[mesh.dof_x[key]]])
+                    zz = np.asarray([[col.ndofs[0]]])
                 elif kwargs['show_attr'] == 'dof_y':
-                    zz = np.asarray([[mesh.dof_y[key]]])
-                elif kwargs['show_attr'] == 'dof_a':
-                    zz = np.asarray([[mesh.dof_a[key]]])
+                    zz = np.asarray([[col.ndofs[1]]])
+                #elif kwargs['show_attr'] == 'dof_a':
+                #    zz = np.asarray([[mesh.dof_a[key]]])
                 elif kwargs['show_attr'] == 'lv':
-                    zz = np.asarray([[mesh.ijlv[key][2]]])
+                    zz = np.asarray([[col.lv]])
                 im = ax.pcolormesh(xx, yy, zz,
                                    cmap = cmap,
                                    shading = 'flat',
@@ -292,11 +302,11 @@ def plot_mesh_attr(mesh, ax = None, file_name = None, **kwargs):
                 
             # Label each cell with idxs, lvs
             if kwargs['label_cells']:
-                idxs = mesh.idxs[key]
-                lvs  = mesh.lvs[key]
+                idxs = col.idx
+                lvs  = col.lv
                 xmid = (x0 + x1) / 2.
                 ymid = (y0 + y1) / 2.
-                label = str(idxs) + ', ' + str(lvs)
+                label = str(idx) + ', ' + str(lv)
                 ax.text(xmid, ymid, label,
                         ha = 'center', va = 'center')
 
@@ -317,10 +327,10 @@ def plot_mesh_attr(mesh, ax = None, file_name = None, **kwargs):
             cbar.set_label('Degrees of Freedom [y]',
                            rotation = 270,
                            labelpad = 15)
-        elif kwargs['show_attr'] == 'dof_a':
-            cbar.set_label('Degrees of Freedom [a]',
-                           rotation = 270,
-                           labelpad = 15)
+        #elif kwargs['show_attr'] == 'dof_a':
+        #    cbar.set_label('Degrees of Freedom [a]',
+        #                   rotation = 270,
+        #                   labelpad = 15)
         elif kwargs['show_attr'] == 'lv':
             cbar.set_label('Refinement Level [lv]',
                            rotation = 270,

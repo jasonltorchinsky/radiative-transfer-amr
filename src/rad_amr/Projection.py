@@ -32,8 +32,65 @@ class Projection_2D:
                         uh[ii, jj] = u(x, y)
 
                 self.cols[col_key] = uh
-                
 
+
+class Projection_3D:
+    '''
+    Projection of a function dependent on angle.
+
+    Each column in the column dict needs to contains cells to match up with
+    the Mesh class.
+    '''
+
+    def __init__(self, mesh, u = None):
+        self.cols = {}
+        
+        # Is no function is given, just use a zero
+        if not u:
+            def u(x, y, a):
+                return 0
+
+        # Calculate the projection in each column.
+        for col_key, col in sorted(mesh.cols.items()):
+            if col.is_lf:
+                # Create dict of cells for the column
+                self.cols[col_key] = Projection_3D_Column()
+
+                # Get information about the column
+                [x0, y0, x1, y1] = col.pos
+                [dof_x, dof_y] = col.ndofs
+                
+                [nodes_x, _, nodes_y, _, _, _] = qd.quad_xya(dof_x, dof_y, 1)
+
+                x = x0 + (x1 - x0)/2 * (nodes_x + 1)
+                y = y0 + (y1 - y0)/2 * (nodes_y + 1)
+
+                for cell_key, cell in sorted(col.cells.items()):
+                    if cell.is_lf:
+                        [a0, a1] = cell.pos
+                        [dof_a] = cell.ndofs
+
+                        [_, _, _, _, nodes_a, _] = qd.quad_xya(1, 1, dof_a)
+                        
+                        uh = np.zeros([dof_x, dof_y, dof_a])
+                        a = a0 + (a1 - a0)/2 * (nodes_a + 1)
+
+                        for ii in range(0, dof_x):
+                            for jj in range(0, dof_y):
+                                for aa in range(0, dof_a):
+                                    uh[ii, jj, aa] = u(x[ii], y[jj], a[aa])
+
+                        self.cols[col_key].cells[cell_key] = uh
+
+class Projection_3D_Column:
+    '''
+    Collection of cells in each column.
+    '''
+
+    def __init__(self):
+        self.cells = {}
+    
+                        
 class Projection:
     '''
     Holds information about a function projected onto the nodes of the mesh.
