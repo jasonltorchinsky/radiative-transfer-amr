@@ -29,8 +29,9 @@ def plot_projection_2d(mesh, uh, file_name = None, **kwargs):
     cmax = -10**10
     for col_key, col in mesh.cols.items():
         if col.is_lf:
-            cmin = min(cmin, np.amin(uh.cols[col_key]))
-            cmax = max(cmax, np.amax(uh.cols[col_key]))
+            proj_col = uh.cols[col_key]
+            cmin = min(cmin, np.amin(proj_col.vals))
+            cmax = max(cmax, np.amax(proj_col.vals))
     cmap = plt.colormaps[kwargs['colormap']]
 
     for col_key, col in sorted(mesh.cols.items()):
@@ -42,15 +43,17 @@ def plot_projection_2d(mesh, uh, file_name = None, **kwargs):
             
             xx = x0 + (x1 - x0) / 2 * (nodes_x + 1)
             yy = y0 + (y1 - y0) / 2 * (nodes_y + 1)
-            
-            uh_col = uh.cols[col_key]
+
+            # Extract values from the column
+            proj_col = uh.cols[col_key]
+            proj_col_vals = np.copy(proj_col.vals)
             
             if np.size(xx) == 1:
                 print('WARNING: Line 48 of plot_projection.py')
             else:
                 if kwargs['shading'] == 'flat':
-                    uh_col = uh_col[:-1,:-1]
-                im = ax.pcolormesh(xx, yy, uh_col,
+                    uh_col_vals = uh_col_vals[:-1,:-1]
+                im = ax.pcolormesh(xx, yy, proj_col_vals,
                                    cmap = cmap,
                                    shading = kwargs['shading'],
                                    vmin = cmin, vmax = cmax)
@@ -97,10 +100,12 @@ def plot_projection_3d(mesh, uh, file_name = None, **kwargs):
     cmax = -10**10
     for col_key, col in mesh.cols.items():
         if col.is_lf:
+            proj_col = uh.cols[col_key]
             for cell_key, cell in col.cells.items():
                     if cell.is_lf:
-                        cmin = min(cmin, np.amin(uh.cols[col_key].cells[cell_key]))
-                        cmax = max(cmax, np.amax(uh.cols[col_key].cells[cell_key]))
+                        proj_cell = proj_col.cells[cell_key]
+                        cmin = min(cmin, np.amin(proj_cell.vals))
+                        cmax = max(cmax, np.amax(proj_cell.vals))
     cmap = plt.colormaps[kwargs['colormap']]
     
     for a_idx in range(0, nangles):
@@ -123,6 +128,8 @@ def plot_projection_3d(mesh, uh, file_name = None, **kwargs):
                 
                 xx = x0 + (x1 - x0) / 2 * (nodes_x + 1)
                 yy = y0 + (y1 - y0) / 2 * (nodes_y + 1)
+
+                proj_col = uh.cols[col_key]
                 
                 for cell_key, cell in sorted(col.cells.items()):
                     if cell.is_lf:
@@ -132,18 +139,20 @@ def plot_projection_3d(mesh, uh, file_name = None, **kwargs):
                         if (a0 <= a) and (a <= a1):
                             # Extract the projected value at the desired angle using the
                             [_, _, _, _, nodes_a, _] = qd.quad_xya(1, 1, dof_a)
-                            uh_cell = uh.cols[col_key].cells[cell_key]
+                            proj_cell = proj_col.cells[cell_key]
+                            proj_cell_vals = np.copy(proj_cell.vals)
 
-                            uh_cell_xy = np.zeros([dof_x, dof_y])
+                            proj_cell_vals_xy = np.zeros([dof_x, dof_y])
                             for aa in range(0, dof_a):
-                                uh_cell_xy += uh_cell[:,:,aa] * qd.gl_eval(nodes_a, aa, a)
+                                proj_cell_vals_xy += proj_cell_vals[:,:,aa] \
+                                    * qd.gl_eval(nodes_a, aa, a)
                                 
                             if np.shape(xx)[0] == 1:
                                 print('WARNING: Line 146 of plot_projection.py')
                             else:
                                 if kwargs['shading'] == 'flat':
-                                    uh_cell_xy = uh_cell_xy[:-1,:-1]
-                                im = ax.pcolormesh(xx, yy, uh_cell_xy,
+                                    proj_cell_vals_xy = proj_cell_vals_xy[:-1,:-1]
+                                im = ax.pcolormesh(xx, yy, proj_cell_vals_xy,
                                                    cmap = cmap,
                                                    shading = kwargs['shading'],
                                                    vmin = cmin, vmax = cmax)

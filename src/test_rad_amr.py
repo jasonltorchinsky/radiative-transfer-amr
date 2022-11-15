@@ -45,11 +45,20 @@ def main(argv):
         out = kappa(x, y) * np.sin(a)
 
         return out
+
+    def phi(theta_0, theta_1):
+        return 0
+
+    uh_init = Projection_3D(mesh, sigma)
+
+    rtdg_amr(mesh, uh_init, kappa, sigma, phi)
+
+    quit()
     
-    #kappah = Projection_2D(mesh, kappa)
-    #file_name = 'kappah_0.png'
-    #file_path = os.path.join(dir_name, file_name)
-    #plot_projection_2d(mesh, kappah, file_name = file_path)
+    kappah = Projection_2D(mesh, kappa)
+    file_name = 'kappah_0.png'
+    file_path = os.path.join(dir_name, file_name)
+    plot_projection_2d(mesh, kappah, file_name = file_path)
 
     sigmah = Projection_3D(mesh, sigma)
     angles = [0.0, 2.0 * np.pi / 3.0,

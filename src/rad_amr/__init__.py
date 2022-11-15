@@ -2,4 +2,4 @@
 #from .ref_by_ind import ref_by_ind
 #from .l2_norm import l2_norm_xya
 from .Projection import Projection_2D, Projection_3D
-#from .rtdg_amr import rtdg_amr
+from .rtdg_amr import rtdg_amr
