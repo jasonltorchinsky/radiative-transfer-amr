@@ -23,13 +23,13 @@ class Projection_2D:
                 [dof_x, dof_y] = col.ndofs
                 
                 [nodes_x, _, nodes_y, _, _, _] = qd.quad_xya(dof_x, dof_y, 1)
+                xx = x0 + (x1 - x0)/2 * (nodes_x + 1)
+                yy = y0 + (y1 - y0)/2 * (nodes_y + 1)
                 
                 uh = np.zeros([dof_x, dof_y])
                 for ii in range(0, dof_x):
-                    x = x0 + (x1 - x0)/2 * (nodes_x[ii] + 1)
                     for jj in range(0, dof_y):
-                        y = y0 + (y1 - y0)/2 * (nodes_y[jj] + 1)
-                        uh[ii, jj] = u(x, y)
+                        uh[ii, jj] = u(xx[ii], yy[ii])
 
                 self.cols[col_key] = Column_2D([dof_x, dof_y], uh)
 

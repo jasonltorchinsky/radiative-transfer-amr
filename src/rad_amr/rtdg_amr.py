@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.sparse import coo_matrix, csr_matrix, block_diag
+from scipy.sparse import coo_matrix, csr_matrix, block_diag, bmat
 from scipy.sparse.linalg import gmres
 from scipy.linalg import eig
 import sys
@@ -29,13 +29,19 @@ def rtdg_amr(mesh, uh_init, kappa, sigma, phi, **kwargs):
     #    t_start = perf_counter()
     
     M_mass = calc_mass_matrix(mesh, kappa)
-    fig = plt.figure(frameon = False)
-    im_mass = plt.imshow(np.asarray(M_mass))
-    plt.colobar()
-    plt.savefig('M_mass.png', dpi = 300)
+
+    fig = plt.figure()
+    im_mass = plt.spy(M_mass, marker = '.', markersize = 0.1)
+    plt.savefig('M_mass.png', dpi = 500)
     plt.close(fig)
-    
-    #M_scat = calc_scat_matrix(mesh, sigma, phi)
+
+            
+    M_scat = calc_scat_matrix(mesh, sigma, phi)
+
+    fig = plt.figure()
+    im_mass = plt.spy(M_scat, marker = '.', markersize = 0.1)
+    plt.savefig('M_scat.png', dpi = 500)
+    plt.close(fig)
 
     sys.exit(2)
 
@@ -111,10 +117,11 @@ def calc_mass_matrix(mesh, kappa):
                     cell_mtxs[cell_idx] = coo_matrix((vlist, (alphalist, betalist)))
                     cell_idx += 1
                     
-            col_mtxs[col_idx] = block_diag(cell_mtxs)
+            col_mtxs[col_idx] = block_diag(cell_mtxs, format = 'csr')
+            
             col_idx += 1
                 
-    M_mass = block_diag(col_mtxs).asformat('csr')
+    M_mass = block_diag(col_mtxs, format = 'csr')
 
     return M_mass
 
@@ -125,7 +132,7 @@ def calc_scat_matrix(mesh, sigma, phi):
     # Store local-colmun matrices in here
     ncols = len(mesh.cols.keys())
     col_mtxs = ncols * [0]
-    col_idx = 0
+    col_idx = 0 # I don't think I actually increment this, which is certainly a bug!
 
     for col_key, col in sorted(mesh.cols.items()):
         if col.is_lf:
@@ -140,10 +147,12 @@ def calc_scat_matrix(mesh, sigma, phi):
             sigmah_col = sigmah.cols[col_key].vals
             
             # Store local-element matrices in here
-            ncells = len(list(col.cells.keys()))**2
-            cell_mtxs = ncells * [0]
-            cell_idx = 0
+            ncells = len(list(col.cells.keys()))
+            cell_mtxs = ncells * [ncells * [0]]
 
+            # _0 refers to element K' in the equations
+            # _1 refers to element K in the equations
+            cell_idx_0 = 0
             for cell_key_0, cell_0 in sorted(col.cells.items()):
                 if cell_0.is_lf:
                     [dof_a_0] = cell_0.ndofs
@@ -164,6 +173,7 @@ def calc_scat_matrix(mesh, sigma, phi):
                     [_, _, _, _, nodes_a_0, weights_a_0] = qd.quad_xya(1, 1, dof_a_0)
                     th_0 = a0_0 + (a1_0 - a0_0) / 2 * (nodes_a_0 + 1)
 
+                    cell_idx_1 = 0
                     for cell_key_1, cell_1 in sorted(col.cells.items()):
                         if cell_1.is_lf:
                             [dof_a_1] = cell_1.ndofs
@@ -171,7 +181,7 @@ def calc_scat_matrix(mesh, sigma, phi):
                             # Indexing from i, j, a to beta
                             def beta(ii, jj, aa):
                                 val = dof_a_1 * dof_y * ii \
-                                    + dof_a * jj \
+                                    + dof_a_1 * jj \
                                     + aa
                                 return val
 
@@ -191,6 +201,8 @@ def calc_scat_matrix(mesh, sigma, phi):
                             betalist = np.zeros([cell_mtx_ndof],
                                                 dtype = np.int32) # beta index
                             vlist = np.zeros([cell_mtx_ndof]) # Matrix entry
+                            cnt = 0
+                            
                             for ii in range(0, dof_x):
                                 wx_i = weights_x[ii]
                                 for jj in range(0, dof_y):
@@ -210,71 +222,14 @@ def calc_scat_matrix(mesh, sigma, phi):
                                             vlist[cnt] = dcoeff * (da_1 / 2.0) * wx_i * wy_j * wth_a_0 * wth_a_1 * sigma_ij * phi_ar
                                             cnt += 1
                                         
-                            cell_mtxs[cell_idx] = coo_matrix((vlist, (alphalist, betalist)))
-                            cell_idx += 1
+                            cell_mtxs[cell_idx_0][cell_idx_1] = coo_matrix((vlist, (alphalist, betalist)))
+                            cell_idx_1 += 1
+                    cell_idx_0 += 1
                     
-            col_mtxs[col_idx] = block_diag(cell_mtxs)
+            col_mtxs[col_idx] = bmat(cell_mtxs, format = 'csr')
+            
             col_idx += 1
                 
-    M_scat = block_diag(col_mtxs).asformat('csr')
+    M_scat = block_diag(col_mtxs, format = 'csr')
 
     return M_scat
-
-def calc_scat_matrix_orig(mesh, uh, sigma):
-
-    '''ndof = uh.ndof
-    sigmah = Projection(mesh = mesh, has_a = False, u = sigma)
-
-    ilist = np.zeros([ndof], dtype = np.int32)
-    jlist = np.zeros([ndof], dtype = np.int32)
-    vlist = np.zeros([ndof])
-    cnt = 0
-    for col_key, col in sorted(mesh.cols.items()):
-        if col.is_lf:
-            [x0, y0, x1, y1] = col.pos
-            dx = x1 - x0
-            dy = y1 - y0
-            for cell_key, cell in sorted(col.cells.items()):
-                if cell.is_lf:
-                    [dof_x, dof_y, dof_a] = cell.ndofs
-                    [a0, a1] = cell.pos
-                    da = a1 - a0
-                    
-                    def local_elt_idx(ii, jj, aa):
-                        val = dof_x * dof_y * aa\
-                            + dof_x * jj \
-                            + ii
-                        return val
-
-                    def pqr_to_ija(pp, qq, rr):
-                        pp_pp = pp
-                        
-
-                    st_uh_idx = uh.st_idxs[str([col_key, cell_key])]
-                    st_sigmah_idx = sigmah.st_idxs[col_key]
-                    
-                    temp_sigmah = sigmah.coeffs[st_sigmah_idx:st_sigmah_idx + dof_x * dof_y]
-                    temp_sigmah = np.asarray(temp_sigmah).reshape(dof_x, dof_y, order = 'F')
-        
-                    [_, weights_x, _, weights_y, nodes_a, weights_a] = \
-                        qd.quad_xya(dof_x, dof_y, dof_a)
-
-                    for ii in range(0, dof_x):
-                        for jj in range(0, dof_y):
-                            for aa in range(0, dof_a):
-                                for rr in range(0, dof_a):
-                                    ilist[cnt] = st_uh_idx \
-                                        + local_elt_idx(ii, jj, aa)
-                                    jlist[cnt] = st_uh_idx \
-                                        + idx(ii, jj, rr)
-                                    vlist[cnt] = (da**2 / 4) \
-                                        * weights_a[ll] * weights_a[ll_ll] \
-                                        * f_scat( theta(kk_kk, nodes_a[ll_ll]),
-                                                  theta(kk, nodes_a[ll]),
-                                                  scat_type ) \
-                                        * (dx * dy / 4) \
-                                        * weights_x[ii] * weights_y[jj] \
-                                        * temp_sigmah[ii, jj]
-                                cnt += 1
-                                
-    M_scat = coo_matrix((vlist, (ilist, jlist))).asformat('csr')'''

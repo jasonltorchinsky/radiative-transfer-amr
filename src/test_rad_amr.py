@@ -28,46 +28,47 @@ def main(argv):
     col = mesh.cols[0]
     for ii in range(0, 2):
         col.ref_col()
-    for ii in range(0, 4): 
+    for ii in range(0, 2): 
         mesh.ref_mesh()
     
-    #file_name = 'mesh_0_3d.png'
-    #file_path = os.path.join(dir_name, file_name)
-    #mesh_tools.plot_mesh(mesh, file_name = file_path, plot_dim = 3)
-    #print('Wrote initial mesh to {}\n'.format(file_name))
-    
-    def kappa(x, y):
-        out = np.exp(-((x - Lx/2)**2 + (y - Ly/2)**2))
+    file_name = 'mesh_0_3d.png'
+    file_path = os.path.join(dir_name, file_name)
+    mesh_tools.plot_mesh(mesh, file_name = file_path, plot_dim = 3)
+    print('Wrote initial mesh to {}\n'.format(file_name))
 
+    def sigma(x, y):
+        rr = np.sqrt((x - Lx/2)**2 + (y - Ly/2)**2)
+        out = np.exp(-0.5 * (rr / (Ly/10.))**2)
+        
         return out
 
-    def sigma(x, y, a):
-        out = kappa(x, y) * np.sin(a)
+    def kappa(x, y):
+        out = 10**(-3) + 1.01 * sigma(x, y)
 
         return out
 
     def phi(theta_0, theta_1):
-        return 0
+        return 1
 
-    uh_init = Projection_3D(mesh, sigma)
+    uh_init = Projection_3D(mesh)
 
     rtdg_amr(mesh, uh_init, kappa, sigma, phi)
 
     quit()
     
-    kappah = Projection_2D(mesh, kappa)
-    file_name = 'kappah_0.png'
-    file_path = os.path.join(dir_name, file_name)
-    plot_projection_2d(mesh, kappah, file_name = file_path)
+    #kappah = Projection_2D(mesh, kappa)
+    #file_name = 'kappah_0.png'
+    #file_path = os.path.join(dir_name, file_name)
+    #plot_projection_2d(mesh, kappah, file_name = file_path)
 
-    sigmah = Projection_3D(mesh, sigma)
-    angles = [0.0, 2.0 * np.pi / 3.0,
-              4.0 * np.pi / 3.0, (15.0 / 8.0) * np.pi]
-    file_name = 'sigmah_0.png'
-    file_path = os.path.join(dir_name, file_name)
-    plot_projection_3d(mesh, sigmah, file_name = file_path,
-                       angles = angles,
-                       shading = 'flat')
+    #sigmah = Projection_3D(mesh, sigma)
+    #angles = [0.0, 2.0 * np.pi / 3.0,
+    #          4.0 * np.pi / 3.0, (15.0 / 8.0) * np.pi]
+    #file_name = 'sigmah_0.png'
+    #file_path = os.path.join(dir_name, file_name)
+    #plot_projection_3d(mesh, sigmah, file_name = file_path,
+    #                   angles = angles,
+    #                   shading = 'flat')
     
 
 if __name__ == '__main__':
