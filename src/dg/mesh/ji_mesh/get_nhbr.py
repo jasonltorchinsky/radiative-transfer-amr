@@ -156,46 +156,55 @@ def get_cell_ang_nhbr(col, cell, nhbr_loc = '+'):
 
 def get_cell_spt_nhbr(mesh, col, cell, axis = 0, nhbr_loc = '+'):
 
-    [_, nhbr_col_1, nhbr_col_2] = get_col_nhbr(mesh, col, axis, nhbr_loc)
+    [flag, nhbr_col_1, nhbr_col_2] = get_col_nhbr(mesh, col, axis, nhbr_loc)
 
+    nhbr_cells = [[nhbr_col_1, [None, None]], [nhbr_col_2, [None, None]]]
+    
+    if flag == 'nn':
+        # No neighboring columns
+        return nhbr_cells
+    
     idx = cell.idx
     lv = cell.lv
     key = cell.key
-    
-    nhbr_cells = []
-    
-   
-    for nhbr_col in [nhbr_col_1, nhbr_col_2]:
-        if nhbr_col:
-            # See if self in neighboring column
-            try:
-                nhbr_cells.append(nhbr_col.cells[key])
-                nhbr_cells.append(None)
-                continue
-            except:
-                None
 
-            # See if parent of self in neighboring column
-            prnt_idx = floor(idx / 2)
+    for nn in range(0, 2):
+        nhbr_col = [nhbr_col_1, nhbr_col_2][nn]
+        # Since the cells in each column are indexed the same, it comes down
+        # to checking if the parent, same-level, or child cells are in the
+        # neighboring column
+        try: # Same-level neighbor
+            nhbr_key = key
+            nhbr = nhbr_col.cells[nhbr_key]
+            if nhbr.is_lf:
+                nhbr_cells[nn][1][0] = nhbr
+        except:
+            None
+
+        try: # Parent-level neighbor
+            prnt_idx = int(idx/2)
             prnt_lv = lv - 1
-            prnt_key = calc_cell_key(prnt_idx, prnt_lv)
-            try:
-                nhbr_cells.append(nhbr_col.cells[prnt_key])
-                nhbr_cells.append(None)
-                continue
-            except:
-                None
+            nhbr_key = calc_cell_key(prnt_idx, prnt_lv)
+            nhbr = nhbr_col.cells[nhbr_key]
+            if nhbr.is_lf:
+                nhbr_cells[nn][1][0] = nhbr
+        except:
+            None
 
-            # See if children cells in neighboring column
-            chldn_idxs = [2 * idx, 2 * idx + 1]
-            chldn_lvs  = [lv + 1, lv + 1]
-            for ii in range(0, 2):
-                chld_key = calc_cell_key(chldn_idxs[ii], chldn_lvs[ii])
+        try: # Child-level neighbor
+            chld_0_idx = 2*idx
+            chld_1_idx = 2*idx + 1
+            chld_lv = lv + 1
+            nhbr_0_key = calc_cell_key(chld_0_idx, chld_lv)
+            nhbr_1_key = calc_cell_key(chld_1_idx, chld_lv)
 
-                try:
-                    nhbr_cells.append(nhbr_col.cells[chld_key])
-                except:
-                    None
+            nhbr_0 = nhbr_col.cells[nhbr_0_key]
+            if nhbr_0.is_lf:
+                nhbr_cells[nn][1][0] = nhbr_0
+
+            nhbr_1 = nhbr_col.cells[nhbr_1_key]
+            if nhbr_1.is_lf:
+                nhbr_cells[nn][1][1] = nhbr_1
 
     return nhbr_cells
 
