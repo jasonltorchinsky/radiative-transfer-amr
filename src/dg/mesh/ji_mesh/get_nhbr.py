@@ -211,3 +211,49 @@ def get_cell_spt_nhbr(mesh, col, cell, axis = 0, nhbr_loc = '+'):
 def get_cell_nhbr(col, cell, nhbr_loc = '+'):
     
     return get_cell_ang_nhbr(col, cell, nhbr_loc)
+
+def get_cell_nhbr_in_col(cell, nhbr_col):
+
+    nhbr_cells = [None, None]
+    
+    idx = cell.idx
+    lv = cell.lv
+    key = cell.key
+
+    # Since the cells in each column are indexed the same, it comes down
+    # to checking if the parent, same-level, or child cells are in the
+    # neighboring column
+    try: # Same-level neighbor
+        nhbr_key = key
+        nhbr = nhbr_col.cells[nhbr_key]
+        if nhbr.is_lf:
+            nhbr_cells[0] = nhbr
+    except:
+        None
+        
+        try: # Parent-level neighbor
+            prnt_idx = int(idx/2)
+            prnt_lv = lv - 1
+            nhbr_key = calc_cell_key(prnt_idx, prnt_lv)
+            nhbr = nhbr_col.cells[nhbr_key]
+            if nhbr.is_lf:
+                nhbr_cells[0] = nhbr
+        except:
+            None
+            
+        try: # Child-level neighbor
+            chld_0_idx = 2*idx
+            chld_1_idx = 2*idx + 1
+            chld_lv = lv + 1
+            nhbr_0_key = calc_cell_key(chld_0_idx, chld_lv)
+            nhbr_1_key = calc_cell_key(chld_1_idx, chld_lv)
+            
+            nhbr_0 = nhbr_col.cells[nhbr_0_key]
+            if nhbr_0.is_lf:
+                nhbr_cells[0] = nhbr_0
+                
+                nhbr_1 = nhbr_col.cells[nhbr_1_key]
+            if nhbr_1.is_lf:
+                nhbr_cells[1] = nhbr_1
+
+    return nhbr_cells
