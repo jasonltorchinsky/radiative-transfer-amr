@@ -2,7 +2,7 @@ import numpy as np
 from scipy.sparse import coo_matrix, csr_matrix, block_diag, bmat
 
 from .Projection import Projection_2D
-from .matrix_utils import norm_to_local, local_to_norm, get_col_info, get_cell_info
+from .matrix_utils import push_forward, pull_back, get_col_info, get_cell_info
 
 import dg.quadrature as qd
 from dg.mesh import ji_mesh, tools
@@ -92,7 +92,7 @@ def calc_bdry_conv_matrix(mesh):
                                             + rr
                                         return val
                                     
-                                    th = norm_to_local(a0, a1, nodes_a)
+                                    th = push_forward(a0, a1, nodes_a)
                                     
                                     # Delta_ coefficient depends on F
                                     dcoeffs = [dy * da / 4, -dx * da / 4, -dy * da / 4,
@@ -194,7 +194,7 @@ def calc_bdry_conv_matrix(mesh):
                     dcoeff = dx * dy * da_0 / 8
                     
                     [_, _, _, _, nodes_a_0, weights_a_0] = qd.quad_xya(1, 1, dof_a_0)
-                    th_0 = norm_to_local(a0_0, a1_0, nodes_a_0)
+                    th_0 = push_forward(a0_0, a1_0, nodes_a_0)
 
                     cell_idx_1 = 0
                     for cell_key_1, cell_1 in sorted(col.cells.items()):
@@ -214,7 +214,7 @@ def calc_bdry_conv_matrix(mesh):
                             da_1 = a1_1 - a0_1
 
                             [_, _, _, _, nodes_a_1, weights_a_1] = qd.quad_xya(1, 1, dof_a_1)
-                            th_1 = norm_to_local(a0_1, a1_1, nodes_a_1)
+                            th_1 = push_forward(a0_1, a1_1, nodes_a_1)
 
                             # Lists for constructing diagonal matrices
                             cell_mtx_ndof = dof_a_0 * dof_a_1 \
@@ -277,7 +277,7 @@ def calc_nn_col_mtx(col, F, cell_idxs):
             
             [a0, a1, da, dof_a, nodes_a, weights_a] = \
                 get_cell_info(cell)
-            th = norm_to_local(a0, a1, nodes_a)
+            th = push_forward(a0, a1, nodes_a)
             
             # Indexing from p, q, r to alpha
             # Is the same for i, j, a to beta
@@ -435,8 +435,10 @@ def calc_yn_col_mtxs(col_0, nhbrs, F, cell_idxs_0, nhbr_cell_idxs):
             # Get cell information
             S_quad_0 = get_S_quad(cell_0)
             cell_idx_0 = cell_idxs[cell_key_0]
-            
-            [a0_0, a1_0, da_0, dof_a_0, nodes_a_0, weights_a_0] = \
+
+            # thb is short for \overline{theta}, the pull-back nodal basis
+            # for cell_0
+            [a0_0, a1_0, da_0, dof_a_0, thb_0, weights_a_0] = \
                 get_cell_info(cell_0)
             
             # Indexing from p, q, r to alpha
@@ -453,7 +455,8 @@ def calc_yn_col_mtxs(col_0, nhbrs, F, cell_idxs_0, nhbr_cell_idxs):
                      or (S_quad_0 == 3 and (F == 3 or F == 0)))
             if is_Fp:
                 # Construct the sparse cell matrix
-                th_0 = norm_to_local(a0_0, a1_0, nodes_a_0)
+                # th is the push-forward of thb
+                th_0 = push_forward(a0_0, a1_0, thb_0)
                 if (F == 0):
                     Theta_F = np.cos(th_0)
                     dcoeff  = dy_0 * da_0 / 4
@@ -564,7 +567,7 @@ def calc_yn_col_mtxs(col_0, nhbrs, F, cell_idxs_0, nhbr_cell_idxs):
                                 cell_idx_1 = nhbr_cell_idxs[nn][cell_key_1]
                                 
                                 [a0_1, a1_1, da_1,
-                                 dof_a_1, nodes_a_1, weights_a_1] = \
+                                 dof_a_1, thb_1, weights_a_1] = \
                                      get_cell_info(nhbr_cell)
                                 
                                 # Indexing from i, j, a to beta
@@ -574,13 +577,13 @@ def calc_yn_col_mtxs(col_0, nhbrs, F, cell_idxs_0, nhbr_cell_idxs):
                                         + aa
                                     return val
 
-                                th_0 = norm_to_local(a0_0, a1_0, nodes_a_0)
-                                th_1 = norm_to_local(a0_1, a1_1, nodes_a_1)
+                                th_0 = push_forward(a0_0, a1_0, thb_0)
+                                th_1 = push_forward(a0_1, a1_1, thb_1)
                                 
                                 if (F == 0):
                                     def E_theta(dof_a_0, dof_a_1):
                                         if dof_a_0 >= dof_a_1:
-                                            nodes_a_0to1 = local_to_norm(a0_1, a1_1, th_0)
+                                            thb_0_1 = pull_back(a0_1, a1_1, th_0))
                                             Theta_F = np.cos(th_0)
 
                                             out = np.zeros([dof_a_1, dof_a_0])
@@ -588,10 +591,21 @@ def calc_yn_col_mtxs(col_0, nhbrs, F, cell_idxs_0, nhbr_cell_idxs):
                                                 wth_r = weights_th_0[rr]
                                                 Theta_F_r = Theta_F[rr]
                                                 for aa in range(0, dof_a_1):
-                                                    xi_a = gl_eval(nodes_a_1,
-                                                                   aa,
-                                                                   nodes_a_0to1[rr])
+                                                    xi_a = gl_eval(thb_1, aa,
+                                                                   thb_0_1[rr])
                                                     out[aa, rr] = w_th_r * Theta_F_r * xi_a
+                                        elif dof_a_0 < dof_a_1:
+                                            th_1_0 = push_forward(a0_0, a1_0, thb_1)
+                                            thb_1_0_1 = pull_back(a0_1, a1_1, th_1_0)
+                                            Theta_F = np.cos(th_1_0)
+
+                                            out = np.zeros([dof_a_1, dof_a_0])
+                                            for rr in range(0, dof_a_0):
+                                                xi_r = gl_eval(thb_0, rr, thb_1)
+                                                for aa in range(0, dof_a_1):
+                                                    xi_a = gl_eval(thb_1, aa,
+                                                                   thb_1_0_1)
+                                                    out[aa, rr] = np.sum(weights_th_0 * Theta_F * xi_a * xi_r)
                 
     col_mtx_00 = block_diag(cell_mtxs_00, format = 'csr')
 

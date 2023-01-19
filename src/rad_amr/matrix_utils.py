@@ -6,7 +6,7 @@ from .Projection import Projection_2D
 import dg.quadrature as qd
 from dg.mesh import ji_mesh, tools
 
-def norm_to_local(x0, xf, nodes):
+def push_forward(x0, xf, nodes):
     """
     Transforms nodes on [-1, 1] to a [x0, xf].
     """
@@ -15,7 +15,7 @@ def norm_to_local(x0, xf, nodes):
 
     return xx
 
-def local_to_norm(x0, xf, nodes):
+def pull_back(x0, xf, nodes):
     """
     Transforms nodes on [x0, xf] to a [-1, 1].
     """
