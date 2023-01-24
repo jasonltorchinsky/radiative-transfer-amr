@@ -483,103 +483,79 @@ def calc_yn_col_mtxs(col_0, nhbrs, F, cell_idxs_0, nhbr_cell_idxs):
             
             if is_Fp:
                 # In Fp, we only construct the intra-column cell matrix
-                
+
+                # Many quantities are actually dependent only on the parity of F
+                # so we can separate primarily into two cases.
                 # **f => Push forward coordinates (in [*0, *1])
                 thf_0 = push_forward(th0_0, th1_0, thb_0)
-                if (F == 0):
+
+                # Some parameters are dependent on the parity of F
+                # Which we handle here
+                if (F%2 == 0):
+                    # Although Theta_F and dcoeff are dependent on F,
+                    # their product is only dependent on the parity of F
+                    # The equations here don't match the documentation, but
+                    # their product will
                     Theta_F_0 = np.cos(thf_0)
                     dcoeff_0  = dy_0 * dth_0 / 4
-                    ndof_0    = dof_y_0 * dof_th_0
-                    idx       = 0
-                    
+
+                    ndof_0 = ndof_y_0 * ndof_th_0
+
+                    # The entry locations are mostly dependent on only the
+                    # parity of F, and their value is entirely dependent on F,
+                    # so we can handle those here, too
                     # We have alpha = beta so we skip making betalist
                     alphalist = np.zeros([ndof_0], dtype = np.int32) # alpha index
                     vlist = np.zeros([ndof_0]) # Entry value
+
+                    if (F == 0):
+                        x_idx = ndof_x_0 - 1
+                    elif (F == 2):
+                        x_idx = 0
+                    else:
+                        print('ERROR: BDRY CONV MTX F%2 == 0')
+                        quit()
                     
+                    idx = 0
                     for jj in range(0, ndof_y_0):
                         wy_0_j = wy_0[jj]
                         for aa in range(0, ndof_th_0):
                             wth_0_a = wth_0[aa]
                             Theta_F_0_a = Theta_F_0[aa]
-                            
-                            # Because dirac-deltas, we have
-                            # i = p = f, j = q, a = r, so alpha = beta
-                            alphalist[idx] = alpha(ndof_x_0 - 1, jj, aa)
-                            vlist[idx]     = dcoeff_0 * wy_0_j * wth_0_a * Theta_F_0_a
+
+                            alphalist[idx] = alpha(x_idx, jj, aa)
+                            vlist[idx]  = dcoeff_0 * wy_0_j * wth_0_a * Theta_F_0_a
 
                             idx += 1
-                            
-                elif (F == 1):
+                    
+                elif (F%2 == 1):
                     Theta_F_0 = np.sin(thf_0)
-                    dcoeff_0  = -dx_0 * dth_0 / 4
-                    ndof_0    = ndof_x_0 * ndof_th_0
-                    idx       = 0
-                    
-                    # We have alpha = beta so we skip making betalist
-                    alphalist = np.zeros([ndof_0], dtype = np.int32) # alpha index
-                    vlist = np.zeros([ndof_0]) # Entry value
-                    
-                    for ii in range(0, ndof_x_0):
-                        wx_0_i = wx_0[ii]
-                        for aa in range(0, ndof_th_0):
-                            wth_0_a = wth_0[aa]
-                            Theta_F_0_a = Theta_F_0[aa]
-                            
-                            # Because dirac-deltas, we have
-                            # i = p, j = q = f, a = r, so alpha = beta
-                            alphalist[idx] = alpha(ii, ndof_y_0 - 1, aa)
-                            vlist[idx]     = dcoeff_0 * wx_0_i * wth_0_a * Theta_F_0_a
-                            
-                            idx += 1
-                            
-                elif (F == 2):
-                    Theta_F_0 = -np.cos(thf_0)
-                    dcoeff_0  = -dy_0 * dth_0 / 4
-                    ndof_0    = ndof_y_0 * ndof_th_0
-                    idx       = 0
-                    
-                    # We have alpha = beta so we skip making betalist
-                    alphalist = np.zeros([ndof_0], dtype = np.int32) # alpha index
-                    vlist = np.zeros([ndof_0]) # Entry value
-                    
-                    for jj in range(0, ndof_y_0):
-                        wy_0_j = wy_0[jj]
-                        for aa in range(0, ndof_th_0):
-                            wth_0_a = wth_0[aa]
-                            Theta_F_0_a = Theta_F_0[aa]
-                            
-                            # Because dirac-deltas, we have
-                            # i = p = 0, j = q, a = r, so alpha = beta
-                            alphalist[idx] = alpha(0, jj, aa)
-                            vlist[idx]     = dcoeff_0 * wy_0_j * wth_0_a * Theta_F_0_a
-                            
-                            idx += 1
-                            
-                elif (F == 3):
-                    Theta_F_0 = -np.sin(th_0)
                     dcoeff_0  = dx_0 * dth_0 / 4
-                    ndof_0    = ndof_x_0 * ndof_th_0
-                    idx       = 0
-                    
-                    # We have alpha = beta so we skip making betalist
+
+                    ndof_0    = -ndof_x_0 * ndof_th_0
+
                     alphalist = np.zeros([ndof_0], dtype = np.int32) # alpha index
                     vlist = np.zeros([ndof_0]) # Entry value
-                    
+
+                    if (F == 1):
+                        y_idx = ndof_y_0 - 1
+                    elif (F == 3):
+                        y_idx = 0
+                    else:
+                        print('ERROR: BDRY CONV MTX F%2 == 1')
+                        quit()
+                        
+                    idx = 0
                     for ii in range(0, ndof_x_0):
                         wx_0_i = wx_0[ii]
                         for aa in range(0, ndof_th_0):
                             wth_0_a = wth_0[aa]
                             Theta_F_0_a = Theta_0_F[aa]
-                            
-                            # Because dirac-deltas, we have
-                            # i = p, j = q = 0, a = r, so alpha = beta
-                            alphalist[idx] = alpha(ii, 0, aa)
-                            vlist[idx]     = dcoeff_0 * wx_0_i * wth_0_a * Theta_F_0_a
+
+                            alphalist[idx] = alpha(ii, y_idx, aa)
+                            vlist[idx]  = dcoeff_0 * wx_0_i * wth_0_a * Theta_F_0_a
                             
                             cnt += 1
-                            
-                else:
-                    print('RTDG_AMR ERROR: F outside of valid range!')
                     
                 cell_mtxs_00[cell_idx_0] = coo_matrix((vlist, (alphalist, alphalist)))
 
@@ -620,28 +596,28 @@ def calc_yn_col_mtxs(col_0, nhbrs, F, cell_idxs_0, nhbr_cell_idxs):
                                 thf_0 = push_forward(th0_0, th1_0, thb_0)
                                 thf_1 = push_forward(th0_1, th1_1, thb_1)
 
-                                # Construct the inter-column cell matrices
-                                if (F == 0):
-                                    # Get matrix size and set up sparse matrix construction
-                                    ndof_0    = dof_y_0 * dof_th_0
-                                    ndof_1    = dof_y_1 * dof_th_1
-                                    
-                                    alphalist = np.zeros([ndof_0 * ndof_1], dtype = np.int32) # alpha index
-                                    betalist  = np.zeros([ndof_0 * ndof_1], dtype = np.int32) # beta index
-                                    vlist     = np.zeros([ndof_0 * ndof_1]) # Entry value
+                                # Many quantities are actually dependent only on
+                                # the parity of F not F itself, so we can 
+                                # separate primarily into two cases
 
-                                    # Construct E^(K^(n)K,theta) 
+                                if (F%2 == 0):
+                                    # Although E_theta and dcoeff are dependent
+                                    # on F, their product is only dependent on
+                                    # the parity of F.
+                                    # The equations here don't match the
+                                    # documentation, but their product will
+
+                                    # Construct E^(K^(n)K,theta)
+                                    E_th = np.zeros([ndof_th_0, ndof_th_1])
                                     if ndof_th_0 >= ndof_th_1:
                                         Theta_F_0 = np.cos(thf_0)
                                         thb_0_1 = pull_back(th0_1, th1_1, thf_0))
                                         
-                                        E_th = np.zeros([ndof_th_0, ndof_th_1])
                                         for aa in range(0, ndof_th_1):
                                             for rr in range(0, ndof_th_0):
                                                 wth_0_r = wth_0[rr]
                                                 Theta_F_0_r = Theta_F[rr]
-                                                xi_a = gl_eval(thb_1, aa,
-                                                               thb_0_1[rr])
+                                                xi_a = gl_eval(thb_1, aa, thb_0_1[rr])
                                                 E_th[aa, rr] = wth_0_r * Theta_F_0_r * xi_a
                                                 
                                     elif ndof_th_0 < ndof_th_1:
@@ -650,7 +626,6 @@ def calc_yn_col_mtxs(col_0, nhbrs, F, cell_idxs_0, nhbr_cell_idxs):
                                         
                                         thb_1_0_1 = pull_back(th0_1, th1_1, thf_1_0)
                                         
-                                        E_th = np.zeros([ndof_th_1, ndof_th_0])
                                         for aa in range(0, ndof_th_1):
                                             for rr in range(0, ndof_th_0):
                                                 for aap in range(0, ndof_th_1):
@@ -659,11 +634,11 @@ def calc_yn_col_mtxs(col_0, nhbrs, F, cell_idxs_0, nhbr_cell_idxs):
                                                     E_th[aa, rr] += wth_1[aap] * Theta_F[aap] * xi_a * xi_r
 
                                     # Construct E^(K^(n)K,y)
+                                    E_y = np.zeros([ndof_y_1, ndof_y_0])
                                     if ndof_y_0 >= ndof_y_1:
                                         yyf_0   = push_forward(y0_0, y1_0, yyb_0)
                                         yyb_0_1 = pull_back(y0_1, y1_1, yyf_0)
                                             
-                                        E_y = np.zeros([ndof_y_1, ndof_y_0])
                                         for jj in range(0, ndof_y_1):
                                             for qq in range(0, ndof_y_0):
                                                 wy_0_q = wy_0[qq]
@@ -674,15 +649,33 @@ def calc_yn_col_mtxs(col_0, nhbrs, F, cell_idxs_0, nhbr_cell_idxs):
                                         yyf_1_0   = push_forward(y0_0, y1_0, yyb_1)
                                         yyb_1_0_1 = pull_back(y0_1, y1_1, yyf_1_0)
 
-                                        E_y = np.zeros([ndof_y_1, ndof_y_0])
                                         for jj in range(0, ndof_y_1):
                                             for qq in range(0, ndof_y_0):
                                                 for jjp in range(0, ndof_y_1):
                                                     psi_j = gl_eval(yb_1, jj, yyb_1_0_1[jjp])
                                                     psi_q = gl_eval(yyb_0, qq, yyb_1[jjp])
                                                     E_y[jj, qq] += wy_1[jjp] * psi_j * psi_q
+
+                                    dcoeff_0  = dy_0 * da_0 / 4
                                     
-                                    dcoeff_0   = dy_0 * da_0 / 4
+                                    ndof_0    = dof_y_0 * dof_th_0
+                                    ndof_1    = dof_y_1 * dof_th_1
+
+                                    # The entry locations are mostly dependent
+                                    # on only the parity of F, and their value
+                                    # is entirely dependent on F, so we can
+                                    # handle those here, too
+                                    alphalist = np.zeros([ndof_0 * ndof_1], dtype = np.int32) # alpha index
+                                    betalist  = np.zeros([ndof_0 * ndof_1], dtype = np.int32) # beta index
+                                    vlist     = np.zeros([ndof_0 * ndof_1]) # Entry value
+
+                                    if (F == 0):
+                                        x_idx_0 = ndof_x_0 - 1
+                                        x_idx_1 = 1
+                                    elif (F == 2):
+                                        x_idx_0 = 0
+                                        x_idx_1 = ndof_x_1 - 1
+                                    
                                     for jj in range(0, ndof_y_1):
                                         for qq in range(0, ndof_y_0):
                                             E_y_jq = E_y[jj, qq]
@@ -690,27 +683,18 @@ def calc_yn_col_mtxs(col_0, nhbrs, F, cell_idxs_0, nhbr_cell_idxs):
                                                 for rr in range(0, ndof_th_0):
                                                     E_th_ar = E_th[aa, rr]
                                                     
-                                                    alphalist[idx] = alpha(ndof_x_0 - 1, qq, rr)
-                                                    betalist[idx]  = beta( 0,            jj, aa)
+                                                    alphalist[idx] = alpha(x_idx_0, qq, rr)
+                                                    betalist[idx]  = beta( x_idx_1, jj, aa)
                                                     vlist[idx] = dcoeff_0 * E_th_ar * E_y_jq
                                                     
                                                     idx += 1
-
-                                elif (F == 1):
-                                    # Get matrix size and set up sparse matrix construction
-                                    ndof_0    = dof_x_0 * dof_th_0
-                                    ndof_1    = dof_x_1 * dof_th_1
-                                    
-                                    alphalist = np.zeros([ndof_0 * ndof_1], dtype = np.int32) # alpha index
-                                    betalist  = np.zeros([ndof_0 * ndof_1], dtype = np.int32) # beta index
-                                    vlist     = np.zeros([ndof_0 * ndof_1]) # Entry value
-
-                                    # Construct E^(K^(n)K,theta) 
+                                elif (F%2 == 1):
+                                    # Construct E^(K^(n)K,theta)
+                                    E_th = np.zeros([ndof_th_1, ndof_th_0])
                                     if ndof_th_0 >= ndof_th_1:
                                         Theta_F = np.cos(thf_0)
                                         thb_0_1 = pull_back(th0_1, th1_1, thf_0))
                                         
-                                        E_th = np.zeros([ndof_th_0, ndof_th_1])
                                         for aa in range(0, ndof_th_1):
                                             for rr in range(0, ndof_th_0):
                                                 wth_0_r = wth_0[rr]
@@ -725,7 +709,6 @@ def calc_yn_col_mtxs(col_0, nhbrs, F, cell_idxs_0, nhbr_cell_idxs):
                                         
                                         thb_1_0_1 = pull_back(th0_1, th1_1, thf_1_0)
                                         
-                                        E_th = np.zeros([ndof_th_1, ndof_th_0])
                                         for aa in range(0, ndof_th_1):
                                             for rr in range(0, ndof_th_0):
                                                 for aap in range(0, ndof_th_1):
@@ -734,11 +717,11 @@ def calc_yn_col_mtxs(col_0, nhbrs, F, cell_idxs_0, nhbr_cell_idxs):
                                                     E_th[aa, rr] += wth_1[aap] * Theta_F[aap] * xi_a * xi_r
 
                                     # Construct E^(K^(n)K,x)
+                                    E_x = np.zeros([ndof_x_1, ndof_x_0])
                                     if ndof_x_0 >= ndof_x_1:
                                         xxf_0   = push_forward(x0_0, x1_0, xxb_0)
                                         xxb_0_1 = pull_back(x0_1, x1_1, xxf_0)
                                             
-                                        E_x = np.zeros([ndof_x_1, ndof_x_0])
                                         for ii in range(0, ndof_x_1):
                                             for pp in range(0, ndof_x_0):
                                                 wx_0_p = wx_0[pp]
@@ -749,105 +732,15 @@ def calc_yn_col_mtxs(col_0, nhbrs, F, cell_idxs_0, nhbr_cell_idxs):
                                         xxf_1_0   = push_forward(x0_0, x1_0, xb_1)
                                         xxb_1_0_1 = pull_back(x0_1, x1_1, xf_1_0)
 
-                                        E_x = np.zeros([ndof_x_1, ndof_x_0])
                                         for ii in range(0, ndof_x_1):
                                             for pp in range(0, ndof_x_0):
                                                 for iip in range(0, ndof_x_1):
                                                     phi_i = gl_eval(xb_1, jj, xxb_1_0_1[iip])
                                                     phi_j = gl_eval(xxb_0, qq, xxb_1[iip])
                                                     E_x[jj, qq] += wx_1[iip] * phi_i * phi_p
-                                    
-                                    dcoeff_0   = -dx_0 * da_0 / 4
-                                    for ii in range(0, ndof_x_1):
-                                        for pp in range(0, ndof_x_0):
-                                            E_x_ip = E_x[ii, pp]
-                                            for aa in range(0, ndof_th_1):
-                                                for rr in range(0, ndof_th_0):
-                                                    E_th_ar = E_th[aa, rr]
-                                                    
-                                                    alphalist[idx] = alpha(pp, ndof_y_0 - 1, rr)
-                                                    betalist[idx]  = beta( ii, 0,            aa)
-                                                    vlist[idx] = dcoeff_0 * E_th_ar * E_x_ip
-                                                    
-                                                    idx += 1
 
-                                elif (F == 2):
-                                    # Get matrix size and set up sparse matrix construction
-                                    ndof_0    = dof_y_0 * dof_th_0
-                                    ndof_1    = dof_y_1 * dof_th_1
-                                    
-                                    alphalist = np.zeros([ndof_0 * ndof_1], dtype = np.int32) # alpha index
-                                    betalist  = np.zeros([ndof_0 * ndof_1], dtype = np.int32) # beta index
-                                    vlist     = np.zeros([ndof_0 * ndof_1]) # Entry value
+                                    dcoeff_0  = -dx_0 * da_0 / 4
 
-                                    # Construct E^(K^(n)K,theta) 
-                                    if ndof_th_0 >= ndof_th_1:
-                                        Theta_F = -np.cos(thf_0)
-                                        thb_0_1 = pull_back(th0_1, th1_1, thf_0))
-                                        
-                                        E_th = np.zeros([ndof_th_0, ndof_th_1])
-                                        for aa in range(0, ndof_th_1):
-                                            for rr in range(0, ndof_th_0):
-                                                wth_0_r = wth_0[rr]
-                                                Theta_F_r = Theta_F[rr]
-                                                xi_a = gl_eval(thb_1, aa,
-                                                               thb_0_1[rr])
-                                                E_th[aa, rr] = wth_0_r * Theta_F_r * xi_a
-                                                
-                                    elif ndof_th_0 < ndof_th_1:
-                                        thf_1_0 = push_forward(th0_0, th1_0, thb_1)
-                                        Theta_F = -np.cos(thf_1_0)
-                                        
-                                        thb_1_0_1 = pull_back(th0_1, th1_1, thf_1_0)
-                                        
-                                        E_th = np.zeros([ndof_th_1, ndof_th_0])
-                                        for aa in range(0, ndof_th_1):
-                                            for rr in range(0, ndof_th_0):
-                                                for aap in range(0, ndof_th_1):
-                                                    xi_a = gl_eval(thb_1, aa, thb_1_0_1[aap])
-                                                    xi_r = gl_eval(thb_0, rr, thb_1[aap])
-                                                    E_th[aa, rr] += wth_1[aap] * Theta_F[aap] * xi_a * xi_r
-
-                                    # Construct E^(K^(n)K,y)
-                                    if ndof_y_0 >= ndof_y_1:
-                                        yyf_0   = push_forward(y0_0, y1_0, yyb_0)
-                                        yyb_0_1 = pull_back(y0_1, y1_1, yyf_0)
-                                            
-                                        E_y = np.zeros([ndof_y_1, ndof_y_0])
-                                        for jj in range(0, ndof_y_1):
-                                            for qq in range(0, ndof_y_0):
-                                                wy_0_q = wy_0[qq]
-                                                psi_j = gl_eval(yyb_0_1, jj, yyb_0[qq])
-                                                E_y[jj, qq] = wy_q * psi_j
-                                                
-                                    elif ndof_y_0 < ndof_y_1:
-                                        yyf_1_0   = push_forward(y0_0, y1_0, yyb_1)
-                                        yyb_1_0_1 = pull_back(y0_1, y1_1, yyf_1_0)
-
-                                        E_y = np.zeros([ndof_y_1, ndof_y_0])
-                                        for jj in range(0, ndof_y_1):
-                                            for qq in range(0, ndof_y_0):
-                                                for jjp in range(0, ndof_y_1):
-                                                    psi_j = gl_eval(yb_1, jj, yyb_1_0_1[jjp])
-                                                    psi_q = gl_eval(yyb_0, qq, yyb_1[jjp])
-                                                    E_y[jj, qq] += wy_1[jjp] * psi_j * psi_q
-                                    
-                                    dcoeff_0   = -dy_0 * da_0 / 4
-                                    for jj in range(0, ndof_y_1):
-                                        for qq in range(0, ndof_y_0):
-                                            E_y_jq = E_y[jj, qq]
-                                            for aa in range(0, ndof_th_1):
-                                                for rr in range(0, ndof_th_0):
-                                                    E_th_ar = E_th[aa, rr]
-                                                    
-                                                    alphalist[idx] = alpha(0,            qq, rr)
-                                                    betalist[idx]  = beta( ndof_x_1 - 1, jj, aa)
-                                                    vlist[idx] = dcoeff_0 * E_th_ar * E_y_jq
-                                                    
-                                                    idx += 1
-
-                                elif (F == 3):
-                                    # Get matrix size and set up sparse matrix construction
                                     ndof_0    = dof_x_0 * dof_th_0
                                     ndof_1    = dof_x_1 * dof_th_1
                                     
@@ -855,59 +748,13 @@ def calc_yn_col_mtxs(col_0, nhbrs, F, cell_idxs_0, nhbr_cell_idxs):
                                     betalist  = np.zeros([ndof_0 * ndof_1], dtype = np.int32) # beta index
                                     vlist     = np.zeros([ndof_0 * ndof_1]) # Entry value
 
-                                    # Construct E^(K^(n)K,theta) 
-                                    if ndof_th_0 >= ndof_th_1:
-                                        Theta_F = -np.sin(thf_0)
-                                        thb_0_1 = pull_back(th0_1, th1_1, thf_0))
-                                        
-                                        E_th = np.zeros([ndof_th_0, ndof_th_1])
-                                        for aa in range(0, ndof_th_1):
-                                            for rr in range(0, ndof_th_0):
-                                                wth_0_r = wth_0[rr]
-                                                Theta_F_r = Theta_F[rr]
-                                                xi_a = gl_eval(thb_1, aa,
-                                                               thb_0_1[rr])
-                                                E_th[aa, rr] = wth_0_r * Theta_F_r * xi_a
-                                                
-                                    elif ndof_th_0 < ndof_th_1:
-                                        thf_1_0 = push_forward(th0_0, th1_0, thb_1)
-                                        Theta_F = -np.sin(thf_1_0)
-                                        
-                                        thb_1_0_1 = pull_back(th0_1, th1_1, thf_1_0)
-                                        
-                                        E_th = np.zeros([ndof_th_1, ndof_th_0])
-                                        for aa in range(0, ndof_th_1):
-                                            for rr in range(0, ndof_th_0):
-                                                for aap in range(0, ndof_th_1):
-                                                    xi_a = gl_eval(thb_1, aa, thb_1_0_1[aap])
-                                                    xi_r = gl_eval(thb_0, rr, thb_1[aap])
-                                                    E_th[aa, rr] += wth_1[aap] * Theta_F[aap] * xi_a * xi_r
+                                    if (F == 1):
+                                        y_idx_0 = ndof_y_0 - 1
+                                        y_idx_1 = 0
+                                    elif (F == 3):
+                                        y_idx_0 = 0
+                                        y_idx_1 = ndof_y_1 - 1
 
-                                    # Construct E^(K^(n)K,x)
-                                    if ndof_x_0 >= ndof_x_1:
-                                        xxf_0   = push_forward(x0_0, x1_0, xxb_0)
-                                        xxb_0_1 = pull_back(x0_1, x1_1, xxf_0)
-                                            
-                                        E_x = np.zeros([ndof_x_1, ndof_x_0])
-                                        for ii in range(0, ndof_x_1):
-                                            for pp in range(0, ndof_x_0):
-                                                wx_0_p = wx_0[pp]
-                                                phi_i = gl_eval(xxb_0_1, ii, xxb_0[pp])
-                                                E_x[ii, pp] = wx_p * phi_i
-                                                
-                                    elif ndof_x_0 < ndof_x_1:
-                                        xxf_1_0   = push_forward(x0_0, x1_0, xb_1)
-                                        xxb_1_0_1 = pull_back(x0_1, x1_1, xf_1_0)
-
-                                        E_x = np.zeros([ndof_x_1, ndof_x_0])
-                                        for ii in range(0, ndof_x_1):
-                                            for pp in range(0, ndof_x_0):
-                                                for iip in range(0, ndof_x_1):
-                                                    phi_i = gl_eval(xb_1, jj, xxb_1_0_1[iip])
-                                                    phi_j = gl_eval(xxb_0, qq, xxb_1[iip])
-                                                    E_x[jj, qq] += wx_1[iip] * phi_i * phi_p
-                                    
-                                    dcoeff_0   = dx_0 * da_0 / 4
                                     for ii in range(0, ndof_x_1):
                                         for pp in range(0, ndof_x_0):
                                             E_x_ip = E_x[ii, pp]
@@ -915,8 +762,8 @@ def calc_yn_col_mtxs(col_0, nhbrs, F, cell_idxs_0, nhbr_cell_idxs):
                                                 for rr in range(0, ndof_th_0):
                                                     E_th_ar = E_th[aa, rr]
                                                     
-                                                    alphalist[idx] = alpha(pp, 0,            rr)
-                                                    betalist[idx]  = beta( ii, ndof_y_1 - 1, aa)
+                                                    alphalist[idx] = alpha(pp, y_idx_0, rr)
+                                                    betalist[idx]  = beta( ii, y_idx_1, aa)
                                                     vlist[idx] = dcoeff_0 * E_th_ar * E_x_ip
                                                     
                                                     idx += 1
@@ -924,7 +771,12 @@ def calc_yn_col_mtxs(col_0, nhbrs, F, cell_idxs_0, nhbr_cell_idxs):
                                 cell_mtxs_01[nn][cell_idx_0][cell_idx_1] =\
                                     coo_matrix((vlist, (alphalist, betalist)))
                 
+    yn_col_mtxs = [None] * (nnhbrs + 1)
     col_mtx_00 = block_diag(cell_mtxs_00, format = 'csr')
+    yn_col_mtxs[0] = col_mtx_00
     col_mtx_01 = [None] * nnhbrs
+    for nn in range(0, nnhbrs):
+        col_mtx_01[nn] = bmat(cell_mtxs[nn], format = 'csr')
+        yn_col_mtxs[nn + 1] = col_mtx_01[nn]
 
-    return nn_col_mtx
+    return yn_col_mtxs
