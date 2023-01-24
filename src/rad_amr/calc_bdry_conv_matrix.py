@@ -408,8 +408,9 @@ def calc_yn_col_mtxs(col_0, nhbrs, F, cell_idxs_0, nhbr_cell_idxs):
 
     # 2023/01/18 - First pass, making intra-column matrix
     # Get column, neighbor information
-    [~, ~, ~, ~, dx_0, dy_0, dof_x_0, dof_y_0,
+    [x0_0, y0_0, x1_0, y1_0, dx_0, dy_0, dof_x_0, dof_y_0,
      weights_x_0, weights_y_0] = get_col_info(col_0)
+    [xxb_0, ~, yyb_0, ~, ~, ~] = qd.quad_xya(dof_x_0, dof_y_0, 1)
     ncells_0 = len(col_0.cells.keys())
 
     # Set up cell matrices
@@ -453,6 +454,7 @@ def calc_yn_col_mtxs(col_0, nhbrs, F, cell_idxs_0, nhbr_cell_idxs):
                      or (S_quad_0 == 1 and (F == 1 or F == 2))
                      or (S_quad_0 == 2 and (F == 2 or F == 3))
                      or (S_quad_0 == 3 and (F == 3 or F == 0)))
+            
             if is_Fp:
                 # Construct the sparse cell matrix
                 # th is the push-forward of thb
@@ -559,8 +561,9 @@ def calc_yn_col_mtxs(col_0, nhbrs, F, cell_idxs_0, nhbr_cell_idxs):
                     nhbr = nhbrs[nn]
                     if nhbr:
                         if nhbr.is_lf:
-                            [~, ~, ~, ~, dx_1, dy_1, dof_x_1, dof_y_1,
+                            [x0_1, y0_1, x1_1, y1_1, dx_1, dy_1, dof_x_1, dof_y_1,
                              weights_x_1, weights_y_1] = nhbr_info[nn]
+                            [xxb_1, ~, yyb_1, ~, ~, ~] = qd.quad_xya(dof_x_1, dof_y_1, 1)
                             nhbr_cells = get_cell_nhbr_in_col(cell_0, nhbr)
                             for nhbr_cell in nhbr_cells:
                                 cell_key_1 = nhbr_cell.key
@@ -593,7 +596,7 @@ def calc_yn_col_mtxs(col_0, nhbrs, F, cell_idxs_0, nhbr_cell_idxs):
                                                 for aa in range(0, dof_a_1):
                                                     xi_a = gl_eval(thb_1, aa,
                                                                    thb_0_1[rr])
-                                                    out[aa, rr] = w_th_r * Theta_F_r * xi_a
+                                                    out[aa, rr] = wth_r * Theta_F_r * xi_a
                                         elif dof_a_0 < dof_a_1:
                                             th_1_0 = push_forward(a0_0, a1_0, thb_1)
                                             thb_1_0_1 = pull_back(a0_1, a1_1, th_1_0)
@@ -605,7 +608,57 @@ def calc_yn_col_mtxs(col_0, nhbrs, F, cell_idxs_0, nhbr_cell_idxs):
                                                 for aa in range(0, dof_a_1):
                                                     xi_a = gl_eval(thb_1, aa,
                                                                    thb_1_0_1)
-                                                    out[aa, rr] = np.sum(weights_th_0 * Theta_F * xi_a * xi_r)
+                                                    out[aa, rr] = np.sum(weights_th_1 * Theta_F * xi_a * xi_r)
+
+                                            return out
+
+                                    def E_y(dof_y_0, dof_y_1):
+                                        if dof_y_0 >= dof_y_1:
+                                            yy_0 = push_forward(y0_0, y1_0, yyb_0)
+                                            yyb_0_1 = pull_back(y0_1, y1_1, yy_0)
+                                            
+                                            out = np.zeros([dof_y_1, dof_y_0])
+                                            for qq in range(0, dof_y_0):
+                                                wy_q = weights_y_0[qq]
+                                                for jj in range(0, dof_y_1):
+                                                    psi_j = gl_eval(yyb_0_1, jj,
+                                                                    yyb_0[qq])
+                                                    out[jj, qq] = wy_q * psi_j
+                                        elif dof_y_0 < dof_y_1:
+                                            yy_1_0 = push_forward(y0_0, y1_0, yyb_1)
+                                            yyb_1_0_1 = pull_back(y0_1, y1_1, yy_1_0)
+
+                                            out = np.zeros([dof_a_1, dof_a_0])
+                                            for qq in range(0, dof_y_0):
+                                                psi_q = gl_eval(yyb_0, qq, yyb_1)
+                                                for jj in range(0, dof_y_1):
+                                                    psi_j = gl_eval(yb_1, jj,
+                                                                    yyb_1_0_1)
+                                                    out[jj, qq] = np.sum(weights_y_1 * psi_j * psi_q)
+
+                                        return out
+                                    
+                                    # We have alpha = beta so we skip making betalist
+                                    alphalist = np.zeros([ndof_0], dtype = np.int32) # alpha index
+                                    betalist  = np.zeros([ndof_1], dtype = np.int32) # beta index
+                                    vlist = np.zeros([ndof_0]) # Entry value
+
+                                    dcoeff   = dy_0 * da_0 / 4
+                                    E_th_mtx = E_th(dof_a_0, dof_a_1)
+                                    E_y_mtx  = E_y(dof_y_0, dof_y_1)
+                                    # SORT OUT BETA IS IJA OR ALPHA IS IJA DANGIT
+                                    for jj in range(0, dof_y_1):
+                                        for qq in range(0, dof_y_0):
+                                            E_jq = E_y_mtx[jj, qq]
+                                            for aa in range(0, dof_a_1):
+                                                for rr in range(0, dof_a_0):
+                                                    E_ar = E_th_mtx[aa, rr]
+                                                    
+                                                    alphalist[idx] = alpha(dof_x_0 - 1, jj, aa)
+                                                    betalist[idx]  = beta(dof_x_0 - 1, qq, rr)
+                                                    
+                                                    vlist[idx] = dcoeff * E_ar * E_jq
+                                                    idx += 1
                 
     col_mtx_00 = block_diag(cell_mtxs_00, format = 'csr')
 

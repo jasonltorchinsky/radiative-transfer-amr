@@ -11,7 +11,7 @@ def push_forward(x0, xf, nodes):
     Transforms nodes on [-1, 1] to a [x0, xf].
     """
 
-    xx = x0 + (xf - x0) / 2 * (nodes + 1)
+    xx = x0 + (xf - x0) / 2 * (nodes + 1.0)
 
     return xx
 
@@ -34,7 +34,7 @@ def get_col_info(col):
     dy = y1 - y0
     [dof_x, dof_y] = col.ndofs
     
-    [_, weights_x, _, weights_y, _, _] = qd.quad_xya(dof_x, dof_y, 1)
+    [~, weights_x, ~, weights_y, _, _] = qd.quad_xya(dof_x, dof_y, 1)
 
     return [x0, y0, x1, y1, dx, dy, dof_x, dof_y, weights_x, weights_y]
 
