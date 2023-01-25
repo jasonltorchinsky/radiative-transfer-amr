@@ -1,9 +1,8 @@
 import numpy as np
 
-def gl_eval(nodes, i, x):
+def lag_eval(nodes, i, x):
     '''
-    Evaluate the ith Gauss-Lobatto basis function (i.e., Legendre polynomial
-    for the nodes) at x.
+    Evaluate the ith Lagrange polynomial for a given set of nodes.
     '''
 
     # Only evaluate non-zero for pull-back coordinates
