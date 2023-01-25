@@ -1,9 +1,7 @@
-#import dg.quadrature as qd
-
 import argparse
-#import numpy as np
-#import matplotlib.pyplot as plt
 import os
+
+from tests import test_0, test_1
 
 def main():
 
@@ -11,15 +9,30 @@ def main():
     parser = argparse.ArgumentParser(description = parser_desc)
     parser.add_argument('--dir', nargs = 1, default = 'test_quad',
                         required = False, help = 'Subdirectory to store output')
+    parser.add_argument('--test_all', nargs = 1, default = [0],
+                        type = int, choices = [0, 1], required = False,
+                        help = 'Do not run (0) or run (1) all tests (overrides other flags)')
     parser.add_argument('--test_0', nargs = 1, default = [0],
                         type = int, choices = [0, 1], required = False,
-                        help = 'Do not run (0) or run (1) Test 0 - LGL Node Placement')
+                        help = 'Do not run (0) or run (1) Test 0 - LG Node Placement')
+    parser.add_argument('--test_1', nargs = 1, default = [0],
+                        type = int, choices = [0, 1], required = False,
+                        help = 'Do not run (0) or run (1) Test 1 - LGL Node Placement')
 
     args = parser.parse_args()
-    run_tests = [args.test_0[0]]
+    ntests = 2
+    if args.test_all[0]:
+        run_tests = [True] * ntests
+    else:
+        run_tests = [args.test_0[0], args.test_1[0]]
 
     dir_name = args.dir
     os.makedirs(dir_name, exist_ok = True)
+
+    if run_tests[0]:
+        test_0(order = 5, dir_name = dir_name)
+    if run_tests[1]:
+        test_1(order = 5, dir_name = dir_name)
 
     # Test LGL node placement, GL basis functions
     #test_1(order = 5, dir_name = dir_name)
@@ -47,8 +60,6 @@ def main():
 
     #[tab_f2f, tablist_upd] = qd.face_2_face([], 1, 2)
     #[tab_f2df, tab_df2f, tablist_upd] = qd.face_2_dface([], 1, 2)
-    
-    print('\n')
     
     
 def f(x):
