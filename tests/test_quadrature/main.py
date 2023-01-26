@@ -1,8 +1,11 @@
 import argparse
+from datetime import datetime
 import numpy as np
+from time import perf_counter
 import os
 
-from tests import test_0, test_1, test_2, test_3
+from tests import test_0, test_1, test_2, test_3, \
+    test_4, test_5, test_6, test_7
 
 def main():
 
@@ -21,36 +24,173 @@ def main():
                         help = 'Do not run (0) or run (1) Test 1 - LGL Node Placement')
     parser.add_argument('--test_2', nargs = 1, default = [0],
                         type = int, choices = [0, 1], required = False,
-                        help = 'Do not run (0) or run (1) Test 2 - LG 1D Function Projection')
+                        help = 'Do not run (0) or run (1) Test 2 - LG 1D Function Projection Between Bases')
     parser.add_argument('--test_3', nargs = 1, default = [0],
                         type = int, choices = [0, 1], required = False,
-                        help = 'Do not run (0) or run (1) Test 3 - LGL 1D Function Projection')
+                        help = 'Do not run (0) or run (1) Test 3 - LGL 1D Function Projection Between Bases')
+    parser.add_argument('--test_4', nargs = 1, default = [0],
+                        type = int, choices = [0, 1], required = False,
+                        help = 'Do not run (0) or run (1) Test 4 - LG 1D Function Projection Comparison')
+    parser.add_argument('--test_5', nargs = 1, default = [0],
+                        type = int, choices = [0, 1], required = False,
+                        help = 'Do not run (0) or run (1) Test 5 - LGL 1D Function Projection Comparison')
+    parser.add_argument('--test_6', nargs = 1, default = [0],
+                        type = int, choices = [0, 1], required = False,
+                        help = 'Do not run (0) or run (1) Test 6 - LG 1D Function Projection Accuracy')
+    parser.add_argument('--test_7', nargs = 1, default = [0],
+                        type = int, choices = [0, 1], required = False,
+                        help = 'Do not run (0) or run (1) Test 7 - LGL 1D Function Projection Accuracy')
 
     args = parser.parse_args()
-    ntests = 3
+    ntests = 8
     if args.test_all[0]:
         run_tests = [True] * ntests
     else:
         run_tests = [args.test_0[0], args.test_1[0],
-                     args.test_2[0], args.test_3[0]]
+                     args.test_2[0], args.test_3[0],
+                     args.test_4[0], args.test_5[0],
+                     args.test_6[0], args.test_7[0]]
 
     dir_name = args.dir
     os.makedirs(dir_name, exist_ok = True)
 
     if run_tests[0]:
+        perf_0 = perf_counter()
+        now = datetime.now()
+        current_time = now.strftime("%H:%M:%S")
+        msg = '[{}]: Starting Test 0...'.format(current_time)
+        print(msg)
+
         test_0(nnodes = 5, dir_name = dir_name)
+
+        perf_f = perf_counter()
+        perf_diff = perf_f - perf_0
+        now = datetime.now()
+        current_time = now.strftime("%H:%M:%S")
+        msg = ('[{}]: Completed Test 0! ' +
+               'Time Elapsed: {:06.3f} [s]').format(current_time, perf_diff)
+        print(msg)
+        
     if run_tests[1]:
+        perf_0 = perf_counter()
+        now = datetime.now()
+        current_time = now.strftime("%H:%M:%S")
+        msg = '[{}]: Starting Test 1...'.format(current_time)
+        print(msg)
+        
         test_1(nnodes = 5, dir_name = dir_name)
+
+        perf_f = perf_counter()
+        perf_diff = perf_f - perf_0
+        now = datetime.now()
+        current_time = now.strftime("%H:%M:%S")
+        msg = ('[{}]: Completed Test 1! ' +
+               'Time Elapsed: {:06.3f} [s]').format(current_time, perf_diff)
+        print(msg)
+        
     if run_tests[2]:
+        perf_0 = perf_counter()
+        now = datetime.now()
+        current_time = now.strftime("%H:%M:%S")
+        msg = '[{}]: Starting Test 2...'.format(current_time)
+        print(msg)
+        
         test_2(func = f, src_nnodes = 41, trgt_nnodes = 10, dir_name = dir_name)
         test_2(func = f, src_nnodes = 10, trgt_nnodes = 41, dir_name = dir_name)
+
+        perf_f = perf_counter()
+        perf_diff = perf_f - perf_0
+        now = datetime.now()
+        current_time = now.strftime("%H:%M:%S")
+        msg = ('[{}]: Completed Test 2! ' +
+               'Time Elapsed: {:06.3f} [s]').format(current_time, perf_diff)
+        print(msg)
+        
     if run_tests[3]:
+        perf_0 = perf_counter()
+        now = datetime.now()
+        current_time = now.strftime("%H:%M:%S")
+        msg = '[{}]: Starting Test 3...'.format(current_time)
+        print(msg)
+        
         test_3(func = f, src_nnodes = 41, trgt_nnodes = 10, dir_name = dir_name)
         test_3(func = f, src_nnodes = 10, trgt_nnodes = 41, dir_name = dir_name)
 
-    # Test function projection
-    #test_2(order = 5,  nx = 41, dir_name = dir_name)
-    #test_2(order = 11, nx = 41, dir_name = dir_name)
+        perf_f = perf_counter()
+        perf_diff = perf_f - perf_0
+        now = datetime.now()
+        current_time = now.strftime("%H:%M:%S")
+        msg = ('[{}]: Completed Test 3! ' +
+               'Time Elapsed: {:06.3f} [s]').format(current_time, perf_diff)
+        print(msg)
+
+    if run_tests[4]:
+        perf_0 = perf_counter()
+        now = datetime.now()
+        current_time = now.strftime("%H:%M:%S")
+        msg = '[{}]: Starting Test 4...'.format(current_time)
+        print(msg)
+        
+        test_4(func = f, dir_name = dir_name)
+
+        perf_f = perf_counter()
+        perf_diff = perf_f - perf_0
+        now = datetime.now()
+        current_time = now.strftime("%H:%M:%S")
+        msg = ('[{}]: Completed Test 4! ' +
+               'Time Elapsed: {:06.3f} [s]').format(current_time, perf_diff)
+        print(msg)
+        
+    if run_tests[5]:
+        perf_0 = perf_counter()
+        now = datetime.now()
+        current_time = now.strftime("%H:%M:%S")
+        msg = '[{}]: Starting Test 5...'.format(current_time)
+        print(msg)
+        
+        test_5(func = f, dir_name = dir_name)
+
+        perf_f = perf_counter()
+        perf_diff = perf_f - perf_0
+        now = datetime.now()
+        current_time = now.strftime("%H:%M:%S")
+        msg = ('[{}]: Completed Test 5! ' +
+               'Time Elapsed: {:06.3f} [s]').format(current_time, perf_diff)
+        print(msg)
+
+    if run_tests[6]:
+        perf_0 = perf_counter()
+        now = datetime.now()
+        current_time = now.strftime("%H:%M:%S")
+        msg = '[{}]: Starting Test 6...'.format(current_time)
+        print(msg)
+        
+        test_6(func = f, dir_name = dir_name)
+
+        perf_f = perf_counter()
+        perf_diff = perf_f - perf_0
+        now = datetime.now()
+        current_time = now.strftime("%H:%M:%S")
+        msg = ('[{}]: Completed Test 6! ' +
+               'Time Elapsed: {:06.3f} [s]').format(current_time, perf_diff)
+        print(msg)
+
+    if run_tests[7]:
+        perf_0 = perf_counter()
+        now = datetime.now()
+        current_time = now.strftime("%H:%M:%S")
+        msg = '[{}]: Starting Test 7...'.format(current_time)
+        print(msg)
+        
+        test_7(func = f, dir_name = dir_name)
+
+        perf_f = perf_counter()
+        perf_diff = perf_f - perf_0
+        now = datetime.now()
+        current_time = now.strftime("%H:%M:%S")
+        msg = ('[{}]: Completed Test 7! ' +
+               'Time Elapsed: {:06.3f} [s]').format(current_time, perf_diff)
+        print(msg)
 
     # Test rate of convergence w.r.t. order of approximation
     #test_3(norders = 5, nx = 1024, dir_name = dir_name)
@@ -74,11 +214,13 @@ def main():
     
     
 def f(x):
-    '''
+    """
     Test function for approximation.
-    '''
+    """
 
-    return (x + 0.25)**2 * np.sin(2 * np.pi * x)
+    #return (x + 0.25)**2 * np.sin(2 * np.pi * x)
+
+    return (x + 0.25)**6 * np.sin(18 * np.pi * x)
 
 def g(x):
     '''
@@ -197,7 +339,7 @@ def test_3(norders, nx, dir_name):
     fig.set_size_inches(6.5, 6.5)
     plt.savefig(os.path.join(dir_name, file_name), dpi = 300)
     plt.close(fig)
-"""
+
 def test_4(norders, nx, dir_name):
     '''
     Plot the order of convergence w.r.t. order for derivative
@@ -382,6 +524,7 @@ def test_6(order_x, nx, order_y, ny, dir_name):
     fig.set_size_inches(14, 6.5)
     plt.savefig(os.path.join(dir_name, file_name), dpi = 300)
     plt.close(fig)
+"""
     
 if __name__ == '__main__':
 
