@@ -9,6 +9,9 @@ def lg_quad(nnodes, intv = [-1, 1]):
     The order of the approximation is one greater than the number of nodes.
 
     Originally written by Greg von Winckel (2004/02/25)
+
+    Reference: C. Canuto, M. Y. Hussaini, A. Quarteroni, T. A. Tang,
+    "Spectral Methods in Fluid Dynamics," Section 2.3. Springer-Verlag 1987
     '''
 
     # Initial guess, we do the calculations on the interval [-1, 1] and

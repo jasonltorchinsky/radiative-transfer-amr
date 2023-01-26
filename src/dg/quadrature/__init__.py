@@ -2,7 +2,7 @@
 #from .face_2_dface import face_2_dface
 #from .gl_ddx import gl_ddx, gl_deriv
 from .lag_eval import lag_eval
-#from .gl_proj import gl_proj
+from .calc_proj_mtx_1d import calc_proj_mtx_1d
 #from .gl_proj_2D import gl_proj_2D 
 from .lgl_quad import lgl_quad
 from .lg_quad import lg_quad

@@ -5,14 +5,12 @@ import os, sys
 sys.path.append('../../src')
 import dg.quadrature as qd
 
-def test_0(order = 5, dir_name = 'test_quad'):
+def test_0(nnodes = 5, dir_name = 'test_quad'):
     """
-    Creates plots of the spatial basis functions.
+    Creates plots of the spatial basis functions (Legendre polynomials
+    interpolating the Legendre-Gauss nodes).
     """
-
-    # The number of nodes needed is one greater than the order of approximation
-    # desired for Legendre-Gauss quadrature
-    nnodes = order + 1
+    
     [nodes, weights] = qd.lg_quad(nnodes)
 
     nx = 500
@@ -30,7 +28,7 @@ def test_0(order = 5, dir_name = 'test_quad'):
     ax.legend()
     title_str = ('Legendre-Gauss Nodes\n' +
                  'Lagrange Polynomial Basis Functions\n' +
-                 'Order {}').format(order)
+                 'Order {}').format(nnodes)
     ax.set_title(title_str)
 
     file_name = 'lg_basis.png'

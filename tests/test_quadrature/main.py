@@ -1,7 +1,8 @@
 import argparse
+import numpy as np
 import os
 
-from tests import test_0, test_1
+from tests import test_0, test_1, test_2, test_3
 
 def main():
 
@@ -18,24 +19,34 @@ def main():
     parser.add_argument('--test_1', nargs = 1, default = [0],
                         type = int, choices = [0, 1], required = False,
                         help = 'Do not run (0) or run (1) Test 1 - LGL Node Placement')
+    parser.add_argument('--test_2', nargs = 1, default = [0],
+                        type = int, choices = [0, 1], required = False,
+                        help = 'Do not run (0) or run (1) Test 2 - LG 1D Function Projection')
+    parser.add_argument('--test_3', nargs = 1, default = [0],
+                        type = int, choices = [0, 1], required = False,
+                        help = 'Do not run (0) or run (1) Test 3 - LGL 1D Function Projection')
 
     args = parser.parse_args()
-    ntests = 2
+    ntests = 3
     if args.test_all[0]:
         run_tests = [True] * ntests
     else:
-        run_tests = [args.test_0[0], args.test_1[0]]
+        run_tests = [args.test_0[0], args.test_1[0],
+                     args.test_2[0], args.test_3[0]]
 
     dir_name = args.dir
     os.makedirs(dir_name, exist_ok = True)
 
     if run_tests[0]:
-        test_0(order = 5, dir_name = dir_name)
+        test_0(nnodes = 5, dir_name = dir_name)
     if run_tests[1]:
-        test_1(order = 5, dir_name = dir_name)
-
-    # Test LGL node placement, GL basis functions
-    #test_1(order = 5, dir_name = dir_name)
+        test_1(nnodes = 5, dir_name = dir_name)
+    if run_tests[2]:
+        test_2(func = f, src_nnodes = 41, trgt_nnodes = 10, dir_name = dir_name)
+        test_2(func = f, src_nnodes = 10, trgt_nnodes = 41, dir_name = dir_name)
+    if run_tests[3]:
+        test_3(func = f, src_nnodes = 41, trgt_nnodes = 10, dir_name = dir_name)
+        test_3(func = f, src_nnodes = 10, trgt_nnodes = 41, dir_name = dir_name)
 
     # Test function projection
     #test_2(order = 5,  nx = 41, dir_name = dir_name)
@@ -67,9 +78,7 @@ def f(x):
     Test function for approximation.
     '''
 
-    res = (x + 0.25)**2 * np.sin(2 * np.pi * x)
-    
-    return res
+    return (x + 0.25)**2 * np.sin(2 * np.pi * x)
 
 def g(x):
     '''
@@ -101,50 +110,7 @@ def f_2D(x, y):
     return res
 
 
-
-def test_2(order, nx, dir_name):
-    '''
-    Test the projection of an analytic function onto a basis.
-    '''
-
-    [nodes, weights, vand] = qd.lgl_quad(order)
-
-    # Calculate true function values
-    xx = np.linspace(-1, 1, nx)
-    f_true = f(xx)
-
-    # Reconstruct f in GL basis
-    f_aprx = np.zeros([nx])
-    d = f(xx)
-    [A, Adag] = qd.gl_proj(xx, nodes, True)
-    k = Adag @ d
-    for i in range(0, order + 1):
-        for x_idx in range(0, nx):
-            f_aprx[x_idx] += k[i] * qd.gl_eval(nodes, i, xx[x_idx])   
-        
-            
-    # Plot approximation and truth
-    fig, ax = plt.subplots()
-    ax.plot(xx, f_true, label = 'Truth',
-            linestyle = '-',
-            color = 'k',
-            marker = '.')
-    # When we plot the approximation, we only want markers at the LGL nodes
-    ax.plot(xx, f_aprx, label = 'Approx',
-            linestyle = '--',
-            color = 'r',
-            marker = 'None')
-    ax.plot(nodes, k, label = None,
-            linestyle = 'None',
-            color = 'r',
-            marker = '.')
-    ax.legend()
-
-    file_name = 'proj_test_{}.png'.format(order)
-    fig.set_size_inches(6.5, 6.5)
-    plt.savefig(os.path.join(dir_name, file_name), dpi = 300)
-    plt.close(fig)
-
+"""
 def test_3(norders, nx, dir_name):
     '''
     Plot the order of convergence w.r.t. order.
@@ -231,7 +197,7 @@ def test_3(norders, nx, dir_name):
     fig.set_size_inches(6.5, 6.5)
     plt.savefig(os.path.join(dir_name, file_name), dpi = 300)
     plt.close(fig)
-
+"""
 def test_4(norders, nx, dir_name):
     '''
     Plot the order of convergence w.r.t. order for derivative
