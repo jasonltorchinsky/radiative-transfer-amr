@@ -19,7 +19,6 @@ def test_2(func, src_nnodes = 41, trgt_nnodes = 10, dir_name = 'test_quad'):
     proj_mtx = qd.calc_proj_mtx_1d(src_nodes, trgt_nodes)
     f_proj = proj_mtx @ f_src
 
-
     # Calculate f on target nodes for comparison
     f_trgt = func(trgt_nodes)
 

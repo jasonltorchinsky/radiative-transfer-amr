@@ -5,7 +5,7 @@ from time import perf_counter
 import os
 
 from tests import test_0, test_1, test_2, test_3, \
-    test_4, test_5, test_6, test_7
+    test_4, test_5, test_6, test_7, test_8
 
 def main():
 
@@ -40,16 +40,20 @@ def main():
     parser.add_argument('--test_7', nargs = 1, default = [0],
                         type = int, choices = [0, 1], required = False,
                         help = 'Do not run (0) or run (1) Test 7 - LGL 1D Function Projection Accuracy')
+    parser.add_argument('--test_8', nargs = 1, default = [0],
+                        type = int, choices = [0, 1], required = False,
+                        help = 'Do not run (0) or run (1) Test 8 - LG 1D Derivative Function Projection Comparison')
 
     args = parser.parse_args()
-    ntests = 8
+    ntests = 9
     if args.test_all[0]:
         run_tests = [True] * ntests
     else:
         run_tests = [args.test_0[0], args.test_1[0],
                      args.test_2[0], args.test_3[0],
                      args.test_4[0], args.test_5[0],
-                     args.test_6[0], args.test_7[0]]
+                     args.test_6[0], args.test_7[0],
+                     args.test_8[0]]
 
     dir_name = args.dir
     os.makedirs(dir_name, exist_ok = True)
@@ -192,6 +196,24 @@ def main():
                'Time Elapsed: {:06.3f} [s]').format(current_time, perf_diff)
         print(msg)
 
+    if run_tests[8]:
+        perf_0 = perf_counter()
+        now = datetime.now()
+        current_time = now.strftime("%H:%M:%S")
+        msg = '[{}]: Starting Test 8...'.format(current_time)
+        print(msg)
+        
+        test_8(func = f, func_ddx = dfdx, dir_name = dir_name)
+
+        perf_f = perf_counter()
+        perf_diff = perf_f - perf_0
+        now = datetime.now()
+        current_time = now.strftime("%H:%M:%S")
+        msg = ('[{}]: Completed Test 8! ' +
+               'Time Elapsed: {:06.3f} [s]').format(current_time, perf_diff)
+        print(msg)
+
+
     # Test rate of convergence w.r.t. order of approximation
     #test_3(norders = 5, nx = 1024, dir_name = dir_name)
     
@@ -222,11 +244,16 @@ def f(x):
 
     return (x + 0.25)**6 * np.sin(18 * np.pi * x)
 
-def g(x):
+def dfdx(x):
     '''
     Test function for differentiation.
     '''
-    return np.sin(np.pi * x)
+
+    #return 2 * (x + 0.25) * (np.sin(2 * np.pi * x)
+    #                         + np.pi * (x + 0.25) * np.cos(2 * np.pi * x))
+
+    return 6 * (x + 0.25)**5 * (np.sin(18 * np.pi * x)
+                                + 3 * np.pi * (x + 0.25) * np.cos(18 * np.pi * x))
 
 def dg(x):
     '''

@@ -11,7 +11,7 @@ def lag_ddx(nodes):
 
     for j in range(0, nnodes):
         for i in range(0, nnodes):
-            dmat[j, i] = gl_deriv(nodes, i, nodes[j])
+            dmat[j, i] = lag_deriv(nodes, i, nodes[j])
 
     return dmat
 
