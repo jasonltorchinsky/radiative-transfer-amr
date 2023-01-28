@@ -5,56 +5,93 @@ import os, sys
 sys.path.append('../../src')
 import dg.quadrature as qd
 
-def test_5(func, dir_name = 'test_quad'):
+def test_5(func, func_ddx, quad_type = 'lg', dir_name = 'test_quad'):
     """
-    Plots the projection of an analytic function onto the Legendre-Gauss-Lobatto
-    nodal basis of varying orders.
+    Tests the order of convergence for projecting the derivative of an analytic
+    function onto a Legengre-Gauss/Legendre-Gauss-Lobatto basis.
     """
 
-    min_power = 2
-    max_power = 7
-    
-    # Plot the approximations as we go
-    nx = 250
-    xx = np.linspace(-1, 1, nx)
-    fig, ax = plt.subplots()
-    f_anl = func(xx)
-    ax.plot(xx, f_anl, label = 'Analytic',
-            color = 'k', linestyle = '-')
-    
-    
-    powers = np.arange(min_power, max_power + 1, dtype = np.int32)
-    npowers = np.size(powers)
-    nnodes_list = 2**powers
+    if quad_type == 'lg':
+        quad_type_str = 'Legendre-Gauss'
 
-    # Construct projection and plot approximations
-    colors = ['#E69F00', '#56B4E9', '#009E73',
-              '#F0E442', '#0072B2', '#D55E00',
-              '#CC79A7']
-    for nn in range(0, npowers):
+    elif quad_type == 'lgl':
+        quad_type_str = 'Legendre-Gauss-Lobatto'
+
+    else:
+        print('ERROR: Test 3 recieved invalid quad_type. Please use "lg" or "lgl".')
+        quit()
+
+    #nnodes_list = np.arange(2**2, 2**7, 16)
+    nnodes_list = np.array([2**2, 2**3, 2**4, 2**5, 2**6, 2**7])
+    ntrials = np.size(nnodes_list)
+    
+    # Calculate error using a high-order quadrature rule
+    max_nnodes = nnodes_list[-1]
+    quad_nnodes = 2 * max_nnodes
+    if quad_type == 'lg':
+        [quad_nodes, quad_weights] = qd.lg_quad(quad_nnodes)
+    elif quad_type == 'lgl':
+        [quad_nodes, quad_weights] = qd.lgl_quad(quad_nnodes)
+    else:
+        print('ERROR: Test 5 recieved invalid quad_type. Please use "lg" or "lgl".')
+        quit()
+    
+    f_ddx_anl = func(quad_nodes)
+    
+    error_L1 = np.zeros([ntrials])
+    error_L2 = np.zeros([ntrials])
+
+    # Construct projection, calculate error
+    for nn in range(0, ntrials):
         nnodes = nnodes_list[nn]
 
         # Calculate analytic reconstruction of low-order projection
-        [nodes, _] = qd.lgl_quad(nnodes)
+        if quad_type == 'lg':
+            [nodes, _] = qd.lg_quad(nnodes)
+        elif quad_type == 'lgl':
+            [nodes, _] = qd.lgl_quad(nnodes)
+        else:
+            print('ERROR: Test 5 recieved invalid quad_type. Please use "lg" or "lgl".')
+            quit()
+
+        ddx = qd.lag_ddx(nodes)
         f_proj = func(nodes)
-        f_proj_anl = np.zeros([nx])
-        for x_idx in range(0, nx):
+        f_ddx_proj = ddx @ f_proj
+        f_ddx_proj_anl = np.zeros_like(quad_nodes)
+        for x_idx in range(0, quad_nnodes):
             for ii in range(0, nnodes):
-                f_proj_anl[x_idx] += f_proj[ii] \
-                    * qd.lag_eval(nodes, ii, xx[x_idx])
+                f_ddx_proj_anl[x_idx] += f_ddx_proj[ii] \
+                    * qd.lag_eval(nodes, ii, quad_nodes[x_idx])
+                #f_ddx_proj_anl[x_idx] += f_proj[ii] \
+                #    * qd.lag_ddx_eval(nodes, ii, quad_nodes[x_idx])
 
-        # Plot analytic reconstruction
-        lbl = '{} Nodes'.format(nnodes)
-        ax.plot(xx, f_proj_anl, label = lbl,
-                color = colors[nn], linestyle = '-')
+        # Calculate error
+        for x_idx in range(0, quad_nnodes):
+            error_L1[nn] += quad_weights[x_idx] \
+                * np.abs(f_ddx_anl[x_idx] - f_ddx_proj_anl[x_idx])
+            error_L2[nn] += quad_weights[x_idx] \
+                * (f_ddx_anl[x_idx] - f_ddx_proj_anl[x_idx])**2
 
+        error_L2[nn] = np.sqrt(error_L2[nn])
+        
+    # Plot all errors
+    fig, ax = plt.subplots()
+    ax.plot(nnodes_list, error_L1,  label = '$L^1$ Error',
+                color = 'k', linestyle = '-')
+    ax.plot(nnodes_list, error_L2,  label = '$L^2$ Error',
+            color = 'b', linestyle = '-')
+
+    ax.set_xscale('log', base = 2)
+    ax.set_yscale('log', base = 10)
     
     ax.legend()
-    title_str = ('1-D Function Projection Comparison\n'
-                 + 'Legendre-Gauss-Lobatto Nodal Basis')
+    title_str = ('1-D Function Projection Derivative Accuracy\n'
+                 + '{} Nodal Basis').format(quad_type_str)
     ax.set_title(title_str)
+    ax.set_xlabel('Number of Nodes')
+    ax.set_ylabel('Error')
 
-    file_name = 'lgl_proj_comp.png'
+    file_name = '{}_ddx_proj_acc.png'.format(quad_type)
     fig.set_size_inches(6.5, 6.5)
     plt.savefig(os.path.join(dir_name, file_name), dpi = 300)
     plt.close(fig)

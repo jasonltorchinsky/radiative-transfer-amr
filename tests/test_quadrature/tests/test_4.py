@@ -5,21 +5,31 @@ import os, sys
 sys.path.append('../../src')
 import dg.quadrature as qd
 
-def test_4(func, dir_name = 'test_quad'):
+def test_4(func, func_ddx, quad_type = 'lg', dir_name = 'test_quad'):
     """
-    Plots the projection of an analytic function onto the Legendre-Gauss
-    nodal basis of varying orders.
+    Plots the projection of the derviative an analytic function onto
+    the Legendre-Gauss/Legendre-Gauss-Lobatto  nodal basis of varying orders.
     """
 
+    if quad_type == 'lg':
+        quad_type_str = 'Legendre-Gauss'
+
+    elif quad_type == 'lgl':
+        quad_type_str = 'Legendre-Gauss-Lobatto'
+
+    else:
+        print('ERROR: Test 4 recieved invalid quad_type. Please use "lg" or "lgl".')
+        quit()
+    
     min_power = 2
-    max_power = 7
+    max_power = 6
     
     # Plot the approximations as we go
     nx = 250
     xx = np.linspace(-1, 1, nx)
     fig, ax = plt.subplots()
-    f_anl = func(xx)
-    ax.plot(xx, f_anl, label = 'Analytic',
+    f_ddx_anl = func_ddx(xx)
+    ax.plot(xx, f_ddx_anl, label = 'Analytic',
             color = 'k', linestyle = '-')
     
     
@@ -35,26 +45,35 @@ def test_4(func, dir_name = 'test_quad'):
         nnodes = nnodes_list[nn]
 
         # Calculate analytic reconstruction of low-order projection
-        [nodes, _] = qd.lg_quad(nnodes)
+        if quad_type == 'lg':
+            [nodes, _] = qd.lg_quad(nnodes)
+        elif quad_type == 'lgl':
+            [nodes, _] = qd.lgl_quad(nnodes)
+        else:
+            print('ERROR: Test 4 recieved invalid quad_type. Please use "lg" or "lgl".')
+            quit()
+
+        ddx = qd.lag_ddx(nodes)
         f_proj = func(nodes)
-        f_proj_anl = np.zeros([nx])
+        f_ddx_proj = ddx @ f_proj
+        f_ddx_proj_anl = np.zeros([nx])
         for x_idx in range(0, nx):
             for ii in range(0, nnodes):
-                f_proj_anl[x_idx] += f_proj[ii] \
+                f_ddx_proj_anl[x_idx] += f_ddx_proj[ii] \
                     * qd.lag_eval(nodes, ii, xx[x_idx])
 
         # Plot analytic reconstruction
         lbl = '{} Nodes'.format(nnodes)
-        ax.plot(xx, f_proj_anl, label = lbl,
+        ax.plot(xx, f_ddx_proj_anl, label = lbl,
                 color = colors[nn], linestyle = '-')
 
     
     ax.legend()
-    title_str = ('1-D Function Projection Comparison\n'
-                 + 'Legendre-Gauss Nodal Basis')
+    title_str = ('1-D Function Derivative Projection Comparison\n'
+                 + '{} Nodal Basis').format(quad_type_str)
     ax.set_title(title_str)
 
-    file_name = 'lg_proj_comp.png'
+    file_name = '{}_ddx_proj_comp.png'.format(quad_type)
     fig.set_size_inches(6.5, 6.5)
     plt.savefig(os.path.join(dir_name, file_name), dpi = 300)
     plt.close(fig)
