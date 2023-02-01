@@ -2,26 +2,29 @@ import numpy as np
 from scipy.sparse import coo_matrix, csr_matrix, block_diag, bmat
 
 from .Projection import Projection_2D
-from .matrix_utils import push_forward, pull_back, get_col_info, get_cell_info
+from .matrix_utils import push_forward, pull_back
 
+from dg.mesh import ji_mesh
 import dg.quadrature as qd
-from dg.mesh import ji_mesh, tools
+
 
 def calc_bdry_conv_matrix(mesh):
 
     # Variables that are the same throughout the loops
     nhbr_locs = ['+', '-']
     
-    
-    # Store local-column matrices in here
-    # We have to assemble a lot on inter-column interaction matrices,
-    # so the construction is a bit more difficult.
-    col_keys = mesh.cols.keys()
-    ncols = len(col_keys)
+    # Create column indexing for constructing global mass matrix
+    col_idx  = 0
     col_idxs = dict()
-    for C in range(0, ncols):
-        col_idxs[col_keys[C]] = C
-    col_mtxs = [[None] * ncols for C in range(0, ncols)]
+    for col_key, col in sorted(mesh.cols.items()):
+        if col.is_lf:
+            col_idxs[col_key] = col_idx
+            col_idx += 1
+            
+    ncols = col_idx # col_idx counts the number of existing columns in mesh
+    col_mtxs = [[None] * ncols for C in range(0, ncols)] # We have to assemble a
+               # lot on inter-column interaction matrices,
+               # so the construction is a bit more difficult.
     
     # The local-column matrices come in two kinds: M^CC and M^CC'.
     # The M^CC have to be constructed in four parts: M^CC_F.
@@ -30,194 +33,228 @@ def calc_bdry_conv_matrix(mesh):
     # For each face, loop through each element K of C.
     # Depending on K, we contribute to M^CC_F or M^CC'.
     # Hold all four M^CC_F, add them together after all of the loops.
-    for col_key, col in sorted(mesh.cols.items()):
+    for col_key_0, col_0 in sorted(mesh.cols.items()):
         if col.is_lf:
-            # Get column information
-            [x0, y0, x1, y1, dx, dy, dof_x, dof_y, weights_x, weights_y] = \
-                get_col_info(col)
-            col_idx_0 = col_idxs[col_key]
-
-            # Set up cell indexing for column matrices
-            cell_keys_0 = sorted(col.cells.keys())
-            ncells_0 = len(cell_keys_0)
-            cell_idxs_0 = dict()
-            for K in range(0, ncells_0):
-                cell_idxs_0[cell_keys_0[K]] = K
-            cell_mtxs_00 = [None] * ncells_0 # Intra-column matrices are block-diagonal
-
+            # Use _0 to refer to column C
+            # Later, use _1 to refer to column C'
+            col_idx_0 = col_idxs[col_key_0]
             
+            # Create cell indexing for constructing intra-column
+            # boundary convection matrix
+            cell_idx_0 = 0
+            cell_idxs_0 = dict()
+            for cell_key_0, cell_0 in sorted(col_0.cells.items()):
+                if cell_0.is_lf:
+                    cell_idxs_0[cell_key_0] = cell_idx_0
+                    cell_idx_0 += 1
+
+            ncells_0 = cell_idx_0 # cell_idx counts the number of existing cells in column
+            cell_mtxs_00 = [None] * ncells_0 # Intra-column boundary convection
+                                        # matrix is block-diagonal, and so there
+                                        # are only ncell non-zero cell
+                                        # boundary convection matrices
 
             # Loop through the faces of C
-            for F in range(0, 4): # For each face of C, find the neighboring columns
+            for F in range(0, 4):
+                # Find the neighbors of C
                 axis = F%2
-                col_nhbr_loc = nhbr_locs[int(F/2)]
+                nhbr_loc = nhbr_locs[int(F/2)]
                 [flag, col_nhbr_1, col_nhbr_2] = \
                     ji_mesh.get_col_nhbr(mesh, col,
                                          axis = axis,
                                          nhbr_loc = nhbr_loc)
+                
+                # No neighbor, construct intra-column matrix
                 if flag == 'nn':
-                    col_mtx_00 = calc_nn_col_mtx(col, F, cell_idxs_0):
-                    # The intera-column matrix may already exist. If so, add to it.
+                    col_mtx_00 = calc_nn_col_mtx(col_0, F, cell_idxs_0)
+                    
+                    # The intra-column matrix may already exist. If so, add to it.
                     if col_mtxs[col_idx_0][col_idx_0]:
                         col_mtxs[col_idx_0][col_idx_0] += col_mtx_00
                     else:
                         col_mtxs[col_idx_0][col_idx_0] = col_mtx_00
+
+                """
                 else: # We also have to construct the inter-cloumn matrices M^CC'
-                    for nhbr_col in [col_nhbr_1, col_nhbr_2]:
-                        # Set up cell indexing for column matrices
-                        cell_keys_1 = sorted(nhbr_col.cells.keys())
-                        ncells_1 = len(cell_keys_1)
+                    for col_1 in [col_nhbr_1, col_nhbr_2]:
+                        
+                        col_idx_1 = col_idxs[col_key_1]
+                        
+                        # Create cell indexing for constructing inter-column
+                        # boundary convection matrix
+                        cell_idx_1 = 0
                         cell_idxs_1 = dict()
-                        for K in range(0, ncells_1):
-                            cell_idxs_1[cell_keys_1[K]] = K
+                        for cell_key_1, cell_1 in sorted(col_1.cells.items()):
+                            if cell_1.is_lf:
+                                cell_idxs_1[cell_key_0] = cell_idx_1
+                                cell_idx_1 += 1
+                        
+                        ncells_1 = cell_idx_1 # cell_idx counts the number of existing cells in column
                         cell_mtxs_01 = [[None] * ncells_1 for K in range(0, ncells_0)]
-                                            # Inter-column matrices are not block-
-                                            # diagonal
+                                        # Inter-column boundary convection
+                                        # matrix is notblock-diagonal, so we
+                                        # need room for all possible off-diagonal
+                                        # blocks
+                                        
 
                         [col_mtx_00, col_mtxs[col_idx_0][col_idx_1]] = \
-                            calc_yn_col_mtxs(col_0, nhbr_col, F, cell_idxs_0, cell_idxs_1)
+                            calc_yn_col_mtxs(col_0, col_1, F,
+                                             cell_idxs_0, cell_idxs_1)
+
+                        
                         if col_mtxs[col_idx_0][col_idx_0]:
                             col_mtxs[col_idx_0][col_idx_0] += col_mtx_00
                         else:
                             col_mtxs[col_idx_0][col_idx_0] = col_mtx_00
-                
-    M_bdry_conv = bmat(col_mtxs, format = 'csr')
+                """
+    # Global boundary convection matrix is not block-diagonal
+    # but we arranged the column matrices in the proper form
+    bdry_conv_mtx = bmat(col_mtxs, format = 'csr')
 
-    return M_bdry_conv
+    return bdry_conv_mtx
 
 def calc_nn_col_mtx(col, F, cell_idxs):
     """
     Create the intra-column matrix for the no-neighbor case.
     """
+
+    # Since we are only dealing with inter-column stuff, ignore the _0
+    # Get column information, quadrature weights
+    [x0, y0, x1, y1] = col.pos
+    dx = x1 - x0
+    dy = y1 - y0
+    [ndof_x, ndof_y] = col.ndofs
     
-    # Get column information
-    [~, ~, ~, ~, dx, dy, dof_x, dof_y, weights_x, weights_y] = get_col_info(col)
+    [_, w_x, _, w_y, _, _] = qd.quad_xyth(nnodes_x = ndof_x,
+                                          nnodes_y = ndof_y)
     
-    # Set up cell matrices
-    ncells = len(col.cells.keys())
-    cell_mtxs = [None] * ncells # Intra-column matrices are block-diagonal
+    # Create cell indexing for constructing column mass matrix
+    cell_idx = 0
+    cell_idxs = dict()
+    for cell_key, cell in sorted(col.cells.items()):
+        if cell.is_lf:
+            cell_idxs[cell_key] = cell_idx
+            cell_idx += 1
+            
+    ncells = cell_idx # cell_idx counts the number of existing cells in column
+    cell_mtxs = [None] * ncells # Intra-column matrices are
+                                # block-diagonal, and so there are only 
+                                # ncell non-zero cell boundary convection
+                                # matrices
 
     # Construct the cell matrices
     for cell_key, cell in sorted(col.cells.items()):
         if cell.is_lf:
-            # Get cell information
-            cell_idx = cell_idxs[cell_key]
+            # Get cell information, quadrature weights
+            cell_idx     = cell_idxs[cell_key]
+            [th0, th1]   = cell.pos
+            dth          = th1 - th0
+            [ndof_th]    = cell.ndofs
             
-            [a0, a1, da, dof_a, nodes_a, weights_a] = \
-                get_cell_info(cell)
-            th = push_forward(a0, a1, nodes_a)
+            [_, _, _, _, thb, w_th] = qd.quad_xyth(nnodes_th = ndof_th)
+            thf = push_forward(th0, th1, thb)
             
-            # Indexing from p, q, r to alpha
-            # Is the same for i, j, a to beta
-            def alpha(pp, qq, rr):
-                val = dof_a * dof_y * pp \
-                    + dof_a * qq \
-                    + rr
+            # Indexing from i, j, a to beta
+            # Is the same for p, q, r to alpha
+            def beta(ii, jj, aa):
+                val = ndof_th * ndof_y * ii \
+                    + ndof_th * jj \
+                    + aa
                 return val
 
-            # Construct the sparse cell matrix
-            if (F == 0):
-                Theta_F = np.cos(th)
-                dcoeff  = dy * da / 4
-                ndof    = dof_y * dof_a
-                idx     = 0
+            # Some parameters are only dependent on the parity of F
+            # Which we handle here
+            if (F%2 == 0):
+                # Although Theta_F and dcoeff are dependent on F,
+                # their product is only dependent on the parity of F
+                # The equations here don't match the documentation, but
+                # their product will
+                Theta_F = np.cos(thf)
+                dcoeff  = dy * dth / 4
 
-                # We have alpha = beta so we skip making betalist
-                alphalist = np.zeros([ndof], dtype = np.int32) # alpha index
+                ndof = ndof_y * ndof_th
+
+                # The entry locations are mostly dependent on only the
+                # parity of F, and their value is entirely dependent on F,
+                # so we can handle those here, too
+                # We have alpha = beta so we skip making alphalist
+                betalist = np.zeros([ndof], dtype = np.int32) # beta index
                 vlist = np.zeros([ndof]) # Entry value
                 
+                if (F == 0):
+                    x_idx = ndof_x - 1
+                elif (F == 2):
+                    x_idx = 0
+                else:
+                    print('ERROR: BDRY CONV MTX F%2 == 0')
+                    quit()
+                    
+                # Construct cell matrix
+                idx = 0
                 for jj in range(0, dof_y):
-                    wy_j = weights_y[jj]
+                    wy_j = w_y[jj]
                     for aa in range(0, dof_a):
-                        wth_a = weights_a[aa]
+                        wth_a = w_th[aa]
                         Theta_F_a = Theta_F[aa]
 
                         # Because dirac-deltas, we have
                         # i = p = f, j = q, a = r, so alpha = beta
-                        alphalist[idx] = alpha(dof_x - 1, jj, aa)
+                        betalist[idx] = beta(x_idx, jj, aa)
                         
                         vlist[idx] = dcoeff * wy_j * wth_a * Theta_F_a
-                        idx += 1
                         
-            elif (F == 1):
-                Theta_F = np.sin(th)
-                dcoeff  = -dx * da / 4
-                ndof    = dof_x * dof_a
-                idx     = 0
+                        idx += 1
+            
+            elif (F%2 == 1):
+                # Although Theta_F and dcoeff are dependent on F,
+                # their product is only dependent on the parity of F
+                # The equations here don't match the documentation, but
+                # their product will
+                Theta_F = np.sin(thf)
+                dcoeff  = -dx * dth / 4
 
-                # We have alpha = beta so we skip making betalist
-                alphalist = np.zeros([ndof], dtype = np.int32) # alpha index
+                ndof = ndof_x * ndof_th
+
+                # The entry locations are mostly dependent on only the
+                # parity of F, and their value is entirely dependent on F,
+                # so we can handle those here, too
+                # We have alpha = beta so we skip making alphalist
+                betalist = np.zeros([ndof], dtype = np.int32) # beta index
                 vlist = np.zeros([ndof]) # Entry value
                 
-                for ii in range(0, dof_x):
-                    wx_i = weights_x[ii]
-                    for aa in range(0, dof_a):
-                        wth_a = weights_a[aa]
+                if (F == 1):
+                    y_idx = ndof_y - 1
+                elif (F == 3):
+                    y_idx = 0
+                else:
+                    print('ERROR: BDRY CONV MTX F%2 == 0')
+                    quit()
+                    
+                # Construct cell matrix
+                idx = 0
+                for ii in range(0, ndof_x):
+                    wx_i = w_x[ii]
+                    for aa in range(0, ndof_th):
+                        wth_a = w_th[aa]
                         Theta_F_a = Theta_F[aa]
 
                         # Because dirac-deltas, we have
                         # i = p, j = q = f, a = r, so alpha = beta
-                        alphalist[idx] = alpha(ii, dof_y - 1, aa)
+                        betalist[idx] = beta(ii, y_idx, aa)
                         
                         vlist[idx] = dcoeff * wx_i * wth_a * Theta_F_a
                         idx += 1
-                        
-            elif (F == 2):
-                Theta_F = -np.cos(th)
-                dcoeff  = -dy * da / 4
-                ndof    = dof_y * dof_a
-                idx     = 0
-
-                # We have alpha = beta so we skip making betalist
-                alphalist = np.zeros([ndof], dtype = np.int32) # alpha index
-                vlist = np.zeros([ndof]) # Entry value
-                
-                for jj in range(0, dof_y):
-                    wy_j = weights_y[jj]
-                    for aa in range(0, dof_a):
-                        wth_a = weights_a[aa]
-                        Theta_F_a = Theta_F[aa]
-
-                        # Because dirac-deltas, we have
-                        # i = p = 0, j = q, a = r, so alpha = beta
-                        alphalist[idx] = alpha(0, jj, aa)
-                        
-                        vlist[idx] = dcoeff * wy_j * wth_a * Theta_F_a
-                        idx += 1
-                        
-            elif (F == 3):
-                Theta_F = -np.sin(th)
-                dcoeff  = dx * da / 4
-                ndof    = dof_x * dof_a
-                idx     = 0
-
-                # We have alpha = beta so we skip making betalist
-                alphalist = np.zeros([ndof], dtype = np.int32) # alpha index
-                vlist = np.zeros([ndof]) # Entry value
-                
-                for ii in range(0, dof_x):
-                    wx_i = weights_x[ii]
-                    for aa in range(0, dof_a):
-                        wth_a = weights_a[aa]
-                        Theta_F_a = Theta_F[aa]
-
-                        # Because dirac-deltas, we have
-                        # i = p, j = q = 0, a = r, so alpha = beta
-                        alphalist[idx] = alpha(ii, 0, aa)
-                        
-                        vlist[idx] = dcoeff * wx_i * wth_a * Theta_F_a
-                        cnt += 1
-                        
+            
             else:
                 print('RTDG_AMR ERROR: F outside of valid range!')
                 
-            cell_mtxs[cell_idx] = coo_matrix((vlist, (alphalist, alphalist)))
+            cell_mtxs[cell_idx] = coo_matrix((vlist, (betalist, betalist)))
 
     nn_col_mtx = block_diag(cell_mtxs, format = 'csr')
 
     return nn_col_mtx
 
-
+'''
 def calc_yn_col_mtxs(col_0, col_1, F, cell_idxs_0, cell_idxs_1):
     """
     Create the intra- and inter-column matrices for the yes-neighbor case.
@@ -349,9 +386,9 @@ def calc_yn_col_mtxs(col_0, col_1, F, cell_idxs_0, cell_idxs_1):
                     
                 elif (F%2 == 1):
                     Theta_F_0 = np.sin(thf_0)
-                    dcoeff_0  = dx_0 * dth_0 / 4
+                    dcoeff_0  = -dx_0 * dth_0 / 4
 
-                    ndof_0    = -ndof_x_0 * ndof_th_0
+                    ndof_0    = ndof_x_0 * ndof_th_0
 
                     alphalist = np.zeros([ndof_0], dtype = np.int32) # alpha index
                     vlist = np.zeros([ndof_0]) # Entry value
@@ -584,3 +621,4 @@ def calc_yn_col_mtxs(col_0, col_1, F, cell_idxs_0, cell_idxs_1):
     col_mtx_01 = bmat(cell_mtxs_01, format = 'csr')
 
     return [col_mtx_00, col_mtx_01]
+'''

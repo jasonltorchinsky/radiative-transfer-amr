@@ -8,25 +8,25 @@ from .get_nhbr import get_col_nhbr, get_cell_nhbr
 class Mesh:
     ''' Collection of columns.'''
 
-    def __init__(self, Ls, pbcs, ndofs = [2, 2, 2], has_a = False):
+    def __init__(self, Ls, pbcs, ndofs = [2, 2, 2], has_th = False):
         # We assume that the parameters here are valid
         self.Ls   = Ls # Lengths of spatial domain
         self.pbcs = pbcs # Periodicity of spatial domain
-        self.has_a = has_a # Include angular domain in mesh?
+        self.has_th = has_th # Include angular domain in mesh?
 
         # Create first cell
-        if has_a:
-            cell = Cell(pos = [0, 0],
-                        idx = 0,
-                        lv = 0,
-                        is_lf = True,
-                        ndofs = [0])
-        else:
+        if has_th:
             cell = Cell(pos = [0, 2 * np.pi],
                         idx = 0,
                         lv = 0,
                         is_lf = True,
                         ndofs = [ndofs[2]])
+        else:
+            cell = Cell(pos = [0, 0],
+                        idx = 0,
+                        lv = 0,
+                        is_lf = True,
+                        ndofs = [0])
 
         # Create first column, put cell into it
         col = Column(pos = [0, 0, Ls[0], Ls[1]],
@@ -40,7 +40,7 @@ class Mesh:
     def __str__(self):
         msg = ( 'Ls     :  {}\n'.format(self.Ls) +
                 'pbcs   :  {}\n'.format(self.pbcs) +
-                'is_flat:  {}\n'.format(self.is_flat) +
+                'has_th :  {}\n'.format(self.has_th) +
                 'cols   :  {}\n'.format(list(self.cols.keys()))
                )
 

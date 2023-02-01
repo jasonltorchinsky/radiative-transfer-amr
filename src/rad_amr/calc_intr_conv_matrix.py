@@ -4,105 +4,134 @@ from scipy.sparse import coo_matrix, csr_matrix, block_diag, bmat
 from .Projection import Projection_2D
 
 import dg.quadrature as qd
-from dg.mesh import ji_mesh, tools
+from .matrix_utils import push_forward, pull_back
 
-def calc_int_conv_matrix(mesh):
+def calc_intr_conv_matrix(mesh):
 
-    # Store local-colmun matrices in here
-    ncols = len(mesh.cols.keys())
-    col_mtxs = ncols * [0]
-    col_idx = 0
+    # Create column indexing for constructing global mass matrix
+    col_idx  = 0
+    col_idxs = dict()
+    for col_key, col in sorted(mesh.cols.items()):
+        if col.is_lf:
+            col_idxs[col_key] = col_idx
+            col_idx += 1
+
+    ncols = col_idx # col_idx counts the number of existing columns in mesh
+    col_mtxs = [None] * ncols # Global interior convection matrix is block-diagonal,
+                              # and so there are only ncol non-zero column mass matrices
 
     for col_key, col in sorted(mesh.cols.items()):
         if col.is_lf:
-            # Get column information
+            # Get column information, quadrature weights
+            col_idx = col_idxs[col_key]
             [x0, y0, x1, y1] = col.pos
             dx = x1 - x0
             dy = y1 - y0
-            [dof_x, dof_y] = col.ndofs
+            [ndof_x, ndof_y] = col.ndofs
             
-            [nodes_x, weights_x, nodes_y, weights_y, _, _] = qd.quad_xya(dof_x, dof_y, 1)
+            [xb, w_x, yb, w_y, _, _] = qd.quad_xyth(nnodes_x = ndof_x,
+                                                    nnodes_y = ndof_y)
             
-            # Store local-element matrices in here
-            ncells = len(list(col.cells.keys()))
-            cell_mtxs = ncells * [0]
+            # Create cell indexing for constructing column mass matrix
             cell_idx = 0
+            cell_idxs = dict()
+            for cell_key, cell in sorted(col.cells.items()):
+                if cell.is_lf:
+                    cell_idxs[cell_key] = cell_idx
+                    cell_idx += 1
+
+            ncells = cell_idx # cell_idx counts the number of existing cells in column
+            cell_mtxs = [None] * ncells # Column interior convection  matrix is
+                                        # block-diagonal, and so there are only 
+                                        # ncell non-zero cell interior convection
+                                        # matrices
 
             for cell_key, cell in sorted(col.cells.items()):
                 if cell.is_lf:
-                    [dof_a] = cell.ndofs
+                    # Get cell information, quadrature weights
+                    cell_idx     = cell_idxs[cell_key]
+                    [th0, th1]   = cell.pos
+                    dth          = th1 - th0
+                    [ndof_th]    = cell.ndofs
+                    
+                    [_, _, _, _, thb, w_th] = qd.quad_xyth(nnodes_th = ndof_th)
+                    thf = push_forward(th0, th1, thb)
 
                     # Indexing from i, j, a to beta
+                    # Same formula for p, q, r to alpha, so we reuse it
                     def beta(ii, jj, aa):
-                        val = dof_a * dof_y * ii \
-                            + dof_a * jj \
+                        val = ndof_th * ndof_y * ii \
+                            + ndof_th * jj \
                             + aa
                         return val
                     
-                    # Get cell information
-                    cell_ndof = dof_x * dof_y * dof_a
-                    [a0, a1] = cell.pos
-                    da = a1 - a0
-                    dcoeff = dx * dy * da / 8
-                    
-                    [_, _, _, _, nodes_a, weights_a] = qd.quad_xya(1, 1, dof_a)
-                    th = norm_to_local(a0, a1, nodes_a)
+                    # Values common to equation for each entry
+                    dcoeff = dx * dy * dth / 8
 
+                    # Set up arrays for delta_ip * delta_ar term
+                    cell_ndof_ipar = ndof_x * ndof_y**2 * ndof_th # Number of non-zero terms
+                    
+                    alphalist_ipar = np.zeros([cell_ndof_ipar], dtype = np.int32) # alpha index
+                    betalist_ipar  = np.zeros([cell_ndof_ipar], dtype = np.int32) # beta index
+                    vlist_ipar     = np.zeros([cell_ndof_ipar]) # Entry value
+                    
                     # Construct delta_ip * delta_ar term
-                    cell_mtx_ndof_ipar = dof_x * dof_y**2 * dof_a # Number of non-zero terms
+                    idx = 0
+                    for ii in range(0, ndof_x):
+                        wx_i = w_x[ii]
+                        for jj in range(0, ndof_y):
+                            wy_j = w_y[jj]
+                            for aa in range(0, ndof_th):
+                                wth_a  = w_th[aa]
+                                sin_a = np.sin(thf[aa])
+                                for qq in range(0, ndof_y):
+                                    ddy_psi_qj = qd.lag_ddx_eval(yb, qq, yb[jj])
+                                    
+                                    betalist_ipar[idx]  = beta(ii, qq, aa)
+                                    alphalist_ipar[idx] = beta(ii, jj, aa)
+                                    vlist_ipar[idx] = dcoeff * wx_i * wy_j * wth_a \
+                                        * ddy_psi_qj * sin_a
+                                    
+                                    idx += 1
+                                    
+                    delta_ipar = coo_matrix((vlist_ipar,
+                                             (alphalist_ipar, betalist_ipar)))
                     
-                    alphalist_ipar = np.zeros([cell_mtx_ndof_ipar],
-                                         dtype = np.int32) # alpha index
-                    betalist_ipar = np.zeros([cell_mtx_ndof_ipar],
-                                        dtype = np.int32) # beta index
-                    vlist_ipar = np.zeros([cell_mtx_ndof_ipar]) # Matrix entry
-                    cnt = 0
-
-                    for ii in range(0, dof_x):
-                        wx_i = weights_x[ii]
-                        for jj in range(0, dof_y):
-                            wy_j = weights_y[jj]
-                            for aa in range(0, dof_a):
-                                wth_a = weights_a[aa]
-                                for qq in range(0, dof_y):
-                                    betalist_ipar[cnt] = beta(ii, qq, aa)
-                                    alphalist_ipar[cnt] = beta(ii, jj, aa)
-                                    # NEED TO FIX THIS FORMULA
-                                    vlist_ipar[cnt] = dcoeff * wx_i * wy_j * wth_a \
-                                        * qd.gl_deriv(nodes_y, qq, nodes_y[jj]) * np.sin(th[aa])
-                                    cnt += 1
+                    # Set up arrays for  delta_jq * delta_ar term
+                    cell_ndof_jqar = ndof_x**2 * ndof_y * ndof_th # Number of non-zero terms
+                    
+                    alphalist_jqar = np.zeros([cell_ndof_jqar], dtype = np.int32) # alpha index
+                    betalist_jqar  = np.zeros([cell_ndof_jqar], dtype = np.int32) # beta index
+                    vlist_jqar     = np.zeros([cell_ndof_ipar]) # Entry value
 
                     # Construct delta_jq * delta_ar term
-                    cell_mtx_ndof_jqar = dof_x**2 * dof_y dof_a # Number of non-zero terms
+                    idx = 0
+                    for ii in range(0, ndof_x):
+                        wx_i = w_x[ii]
+                        for jj in range(0, ndof_y):
+                            wy_j = w_y[jj]
+                            for aa in range(0, ndof_th):
+                                wth_a = w_th[aa]
+                                cos_a = np.cos(thf[aa])
+                                for pp in range(0, ndof_x):
+                                    ddx_phi_pi = qd.lag_ddx_eval(xb, pp, xb[ii])
+                                    
+                                    betalist_jqar[idx]  = beta(pp, jj, aa)
+                                    alphalist_jqar[idx] = beta(ii, jj, aa)
+                                    vlist_jqar[idx] = dcoeff * wx_i * wy_j * wth_a \
+                                        * ddx_phi_pi * cos_a
+                                    
+                                    idx += 1
                     
-                    alphalist_jqar = np.zeros([cell_mtx_ndof_ipar],
-                                         dtype = np.int32) # alpha index
-                    betalist_jqar = np.zeros([cell_mtx_ndof_ipar],
-                                        dtype = np.int32) # beta index
-                    vlist_jqar = np.zeros([cell_mtx_ndof_ipar]) # Matrix entry
-                    cnt = 0
+                    delta_jqar = coo_matrix((vlist_jqar,
+                                             (alphalist_jqar, betalist_jqar)))
                     
-                    for ii in range(0, dof_x):
-                        wx_i = weights_x[ii]
-                        for jj in range(0, dof_y):
-                            wy_j = weights_y[jj]
-                            for aa in range(0, dof_a):
-                                wth_a = weights_a[aa]
-                                for pp in range(0, dof_x):
-                                    betalist_jqar[cnt] = beta(pp, jj, aa)
-                                    alphalist_jqar[cnt] = beta(ii, jj, aa)
-                                    # NEED TO FIX THIS FORMULA
-                                    vlist_jqar[cnt] = dcoeff * wx_i * wy_j * wth_a \
-                                        * qd.gl_deriv(nodes_x, pp, nodes_x[ii]) * np.cos(th[aa])
-                                    cnt += 1
-                                
-                    cell_mtxs[cell_idx] = coo_matrix((vlist_ipar, (alphalist_ipar, betalist_ipar))) + coo_matrix((vlist_jqar, (alphalist_jqar, betalist_jqar)))
-                    cell_idx += 1
+                    cell_mtxs[cell_idx] = delta_ipar + delta_jqar
                     
             col_mtxs[col_idx] = block_diag(cell_mtxs, format = 'csr')
             
-            col_idx += 1
-                
-    M_int_conv = block_diag(col_mtxs, format = 'csr')
+    # Global interior convection matrix is block-diagonal
+    # with the column matrices as the blocks
+    intr_conv_mtx = block_diag(col_mtxs, format = 'csr')
 
-    return M_int_conv
+    return intr_conv_mtx

@@ -7,4 +7,4 @@ from .proj_1d import proj_1d
 #from .gl_proj_2D import gl_proj_2D 
 from .lgl_quad import lgl_quad
 from .lg_quad import lg_quad
-#from .quad_xya import quad_xya
+from .quad_xyth import quad_xyth

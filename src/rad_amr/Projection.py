@@ -20,18 +20,19 @@ class Projection_2D:
         for col_key, col in sorted(mesh.cols.items()):
             if col.is_lf:
                 [x0, y0, x1, y1] = col.pos
-                [dof_x, dof_y] = col.ndofs
+                [ndof_x, ndof_y] = col.ndofs
                 
-                [nodes_x, _, nodes_y, _, _, _] = qd.quad_xya(dof_x, dof_y, 1)
+                [nodes_x, _, nodes_y, _, _, _] = qd.quad_xyth(nnodes_x = ndof_x,
+                                                              nnodes_y = ndof_y)
                 xx = x0 + (x1 - x0)/2 * (nodes_x + 1)
                 yy = y0 + (y1 - y0)/2 * (nodes_y + 1)
                 
-                uh = np.zeros([dof_x, dof_y])
-                for ii in range(0, dof_x):
-                    for jj in range(0, dof_y):
+                uh = np.zeros([ndof_x, ndof_y])
+                for ii in range(0, ndof_x):
+                    for jj in range(0, ndof_y):
                         uh[ii, jj] = u(xx[ii], yy[ii])
 
-                self.cols[col_key] = Column_2D([dof_x, dof_y], uh)
+                self.cols[col_key] = Column_2D([ndof_x, ndof_y], uh)
 
 class Column_2D:
 

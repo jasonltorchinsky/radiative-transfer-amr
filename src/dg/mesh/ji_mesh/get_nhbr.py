@@ -206,6 +206,9 @@ def get_cell_spt_nhbr(mesh, col, cell, axis = 0, nhbr_loc = '+'):
             if nhbr_1.is_lf:
                 nhbr_cells[nn][1][1] = nhbr_1
 
+        except:
+            None
+
     return nhbr_cells
 
 def get_cell_nhbr(col, cell, nhbr_loc = '+'):
@@ -255,5 +258,8 @@ def get_cell_nhbr_in_col(cell, nhbr_col):
                 nhbr_1 = nhbr_col.cells[nhbr_1_key]
             if nhbr_1.is_lf:
                 nhbr_cells[1] = nhbr_1
+
+        except:
+            None
 
     return nhbr_cells

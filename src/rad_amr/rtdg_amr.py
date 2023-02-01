@@ -1,30 +1,26 @@
-import numpy as np
-from scipy.sparse import coo_matrix, csr_matrix, block_diag, bmat
-from scipy.sparse.linalg import gmres
-from scipy.linalg import eig
-import sys
 from time import perf_counter
 
-from .Projection import Projection_2D
+from .calc_mass_matrix import calc_mass_matrix
+from .calc_scat_matrix import calc_scat_matrix
+from .calc_intr_conv_matrix import calc_intr_conv_matrix
+from .calc_bdry_conv_matrix import calc_bdry_conv_matrix
+
+from utils import print_msg
 
 import matplotlib.pyplot as plt
 
-import dg.quadrature as qd
-from dg.mesh import ji_mesh, tools
+def rtdg_amr(mesh, kappa, sigma, Phi):
+    """
+    Solve the RT problem.
+    mesh - Mesh to contruct the discretized equation.
+    uh_init - Initial guess at teh soluition.
+    kappa - Extinction coefficient.
+    sigma - Scattering coefficient.
+    Phi   - Phase function.
+    """
 
-import matplotlib.pyplot as plt
-
-def rtdg_amr(mesh, uh_init, kappa, sigma, phi, **kwargs):
-    '''
-    Solve the radiative transfer problem.
-    '''
-
-    uh = uh_init
-
-    # Construct the mass matrix
-    #if kwargs['verbose']:
-    #    print('Constructing the mass matrix...')
-    #    t_start = perf_counter()
+    """
+    print_msg('Constructing the mass matrix...')
     
     M_mass = calc_mass_matrix(mesh, kappa)
 
@@ -32,13 +28,37 @@ def rtdg_amr(mesh, uh_init, kappa, sigma, phi, **kwargs):
     im_mass = plt.spy(M_mass, marker = '.', markersize = 0.1)
     plt.savefig('M_mass.png', dpi = 500)
     plt.close(fig)
+    """
 
-            
-    M_scat = calc_scat_matrix(mesh, sigma, phi)
+    """
+    print_msg('Created the mass matrix! Constructing the scattering matrix...')
+
+    M_scat = calc_scat_matrix(mesh, sigma, Phi)
 
     fig = plt.figure()
-    im_mass = plt.spy(M_scat, marker = '.', markersize = 0.1)
+    im_scat = plt.spy(M_scat, marker = '.', markersize = 0.1)
     plt.savefig('M_scat.png', dpi = 500)
     plt.close(fig)
+    """
 
-    sys.exit(2)
+    """
+    print_msg(('Created the scattering matrix!' +
+               ' Constructing the interior convection matrix...'))
+    
+    M_intr_conv = calc_intr_conv_matrix(mesh)
+
+    fig = plt.figure()
+    im_intr_conv = plt.spy(M_intr_conv, marker = '.', markersize = 0.1)
+    plt.savefig('M_intr_conv.png', dpi = 500)
+    plt.close(fig)
+    """
+
+    print_msg(('Created the interior convection matrix!' +
+               ' Constructing the boundary convection matrix...'))
+    
+    M_bdry_conv = calc_bdry_conv_matrix(mesh)
+
+    fig = plt.figure()
+    im_mass = plt.spy(M_bdry_conv, marker = '.', markersize = 0.1)
+    plt.savefig('M_bdry_conv.png', dpi = 500)
+    plt.close(fig)

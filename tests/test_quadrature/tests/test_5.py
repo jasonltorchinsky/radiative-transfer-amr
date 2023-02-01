@@ -77,7 +77,7 @@ def test_5(func, func_ddx, quad_type = 'lg', dir_name = 'test_quad'):
     # Plot all errors
     fig, ax = plt.subplots()
     ax.plot(nnodes_list, error_L1,  label = '$L^1$ Error',
-                color = 'k', linestyle = '-')
+            color = 'k', linestyle = '-')
     ax.plot(nnodes_list, error_L2,  label = '$L^2$ Error',
             color = 'b', linestyle = '-')
 
