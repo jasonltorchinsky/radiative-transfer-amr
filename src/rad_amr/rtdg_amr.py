@@ -53,6 +53,7 @@ def rtdg_amr(mesh, kappa, sigma, Phi):
     plt.close(fig)
     """
 
+    """
     print_msg(('Created the interior convection matrix!' +
                ' Constructing the boundary convection matrix...'))
     
@@ -60,5 +61,6 @@ def rtdg_amr(mesh, kappa, sigma, Phi):
 
     fig = plt.figure()
     im_mass = plt.spy(M_bdry_conv, marker = '.', markersize = 0.1)
-    plt.savefig('M_bdry_conv.png', dpi = 500)
+    plt.savefig('M_bdry_conv.png', dpi = 1000.0)
     plt.close(fig)
+    """

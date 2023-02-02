@@ -25,7 +25,7 @@ def test_3(func, quad_type = 'lg', dir_name = 'test_quad'):
     ntrials = np.size(nnodes_list)
     
     # Calculate error using a high-order quadrature rule
-    max_nnodes = nnodes_list[-1]
+    max_nnodes = np.amax(nnodes_list)
     quad_nnodes = 2 * max_nnodes
     if quad_type == 'lg':
         [quad_nodes, quad_weights] = qd.lg_quad(quad_nnodes)

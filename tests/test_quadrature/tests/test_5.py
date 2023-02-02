@@ -21,12 +21,11 @@ def test_5(func, func_ddx, quad_type = 'lg', dir_name = 'test_quad'):
         print('ERROR: Test 3 recieved invalid quad_type. Please use "lg" or "lgl".')
         quit()
 
-    #nnodes_list = np.arange(2**2, 2**7, 16)
-    nnodes_list = np.array([2**2, 2**3, 2**4, 2**5, 2**6, 2**7])
+    nnodes_list = np.arange(2**2, 2**7 + 1, 8)
     ntrials = np.size(nnodes_list)
     
     # Calculate error using a high-order quadrature rule
-    max_nnodes = nnodes_list[-1]
+    max_nnodes = np.amax(nnodes_list)
     quad_nnodes = 2 * max_nnodes
     if quad_type == 'lg':
         [quad_nodes, quad_weights] = qd.lg_quad(quad_nnodes)
@@ -36,7 +35,7 @@ def test_5(func, func_ddx, quad_type = 'lg', dir_name = 'test_quad'):
         print('ERROR: Test 5 recieved invalid quad_type. Please use "lg" or "lgl".')
         quit()
     
-    f_ddx_anl = func(quad_nodes)
+    f_ddx_anl = func_ddx(quad_nodes)
     
     error_L1 = np.zeros([ntrials])
     error_L2 = np.zeros([ntrials])
@@ -54,16 +53,16 @@ def test_5(func, func_ddx, quad_type = 'lg', dir_name = 'test_quad'):
             print('ERROR: Test 5 recieved invalid quad_type. Please use "lg" or "lgl".')
             quit()
 
-        ddx = qd.lag_ddx(nodes)
         f_proj = func(nodes)
-        f_ddx_proj = ddx @ f_proj
+        #ddx = qd.lag_ddx(nodes)
+        #f_ddx_proj = ddx @ f_proj
         f_ddx_proj_anl = np.zeros_like(quad_nodes)
         for x_idx in range(0, quad_nnodes):
             for ii in range(0, nnodes):
-                f_ddx_proj_anl[x_idx] += f_ddx_proj[ii] \
-                    * qd.lag_eval(nodes, ii, quad_nodes[x_idx])
-                #f_ddx_proj_anl[x_idx] += f_proj[ii] \
-                #    * qd.lag_ddx_eval(nodes, ii, quad_nodes[x_idx])
+                #f_ddx_proj_anl[x_idx] += f_ddx_proj[ii] \
+                #    * qd.lag_eval(nodes, ii, quad_nodes[x_idx])
+                f_ddx_proj_anl[x_idx] += f_proj[ii] \
+                    * qd.lag_ddx_eval(nodes, ii, quad_nodes[x_idx])
 
         # Calculate error
         for x_idx in range(0, quad_nnodes):

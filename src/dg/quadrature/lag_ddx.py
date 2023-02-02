@@ -15,23 +15,22 @@ def lag_ddx(nodes):
 
     return dmat
 
-def lag_ddx_eval(nodes, i, x):
+def lag_ddx_eval(nodes, j, x):
     '''
-    Calculates the derivative of the ith Lagrange polynomial for a given set of
+    Calculates the derivative of the jth Lagrange polynomial for a given set of
     nodes.
     '''
 
     nnodes = np.shape(nodes)[0]
 
     res = 0
-    for mm in range(0, nnodes):
-        if mm != i:
+    for kk in range(0, nnodes):
+        if kk != j:
             prod = 1
-            for nn in range(0, nnodes):
-                if (nn != i) and (nn != mm):
-                    prod *= (x - nodes[nn]) / (nodes[i] - nodes[nn])
+            for ii in range(0, nnodes):
+                if (ii != j) and (ii != kk):
+                    prod *= (x - nodes[ii]) / (nodes[j] - nodes[ii])
 
-            prod /= (nodes[i] - nodes[mm])
-            res += prod
+            res += prod / (nodes[j] - nodes[kk])
 
     return res
