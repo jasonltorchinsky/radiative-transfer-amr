@@ -47,7 +47,8 @@ def test_0(mesh, kappa, dir_name = 'test_quad'):
             ax.axvline(x = mesh_ndof, color = 'gray', linestyle = '-',
                        linewidth = 0.75)
         
-    ax.plot(M_mass.diagonal(k = 0), color = 'k', linestyle = '-')
+    ax.plot(M_mass.diagonal(k = 0), color = 'k', linestyle = '-',
+            drawstyle = 'steps-post')
     ax.set_title('Global Mass Matrix - Main Diagonal')
     
     file_name = 'mass_matrix_diag.png'

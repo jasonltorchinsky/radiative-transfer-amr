@@ -45,17 +45,16 @@ def main():
                         pbcs = [True, False],
                         ndofs = [ndofs_x, ndofs_y, ndofs_th],
                         has_th = True)
-
-    col = mesh.cols[0]
-    col.ref_col()
-    col.ref_col()
+    
     mesh.ref_mesh()
     mesh.ref_mesh()
+    col_keys = list(mesh.cols.keys())
+    mesh.ref_col(mesh.cols[col_keys[0]])
 
     mesh_tools.plot_mesh(mesh, file_name = os.path.join(dir_name, 'mesh_3d.png'),
                          plot_dim = 3)
     mesh_tools.plot_mesh(mesh, file_name = os.path.join(dir_name, 'mesh_2d.png'),
-                         plot_dim = 2)
+                         plot_dim = 2, label_cells = True)
 
     # Define background test functions
     def kappa(x, y):
