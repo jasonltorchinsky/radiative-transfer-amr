@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.sparse import coo_matrix, csr_matrix, csc_matrix
+from scipy.sparse import coo_matrix, csr_matrix, csc_matrix, bmat
 
 from .Projection import Projection_2D
 
@@ -24,48 +24,112 @@ def pull_back(x0, xf, nodes):
 
     return xx
 
-def get_bdry_idxs(mesh):
-
-    mesh_ndof = 0
+def get_intr_mask(mesh):
+    """
+    We create the mask in a similar way to creating the matrices -
+    build the cell masks to assemble the column masks to assemble the global mask.
+    scipy.sparse doesn't work for vectors, so we use a dense representation here.
+    """
+    
+    # Create column indexing for constructing global mask
+    col_idx = 0
+    col_idxs = dict()
     for col_key, col in sorted(mesh.cols.items()):
         if col.is_lf:
+            col_idxs[col_key] = col_idx
+            col_idx += 1
+
+    ncols = col_idx # col_idx counts the number of existing columns in mesh
+    col_masks = [None] * ncols # Global mask is a 1-D vector
+    
+    for col_key, col in sorted(mesh.cols.items()):
+        if col.is_lf:
+            col_idx = col_idxs[col_key]
             [ndof_x, ndof_y] = col.ndofs
+            
+            # Create cell indexing for constructing column mask
+            cell_idx = 0
+            cell_idxs = dict()
             for cell_key, cell in sorted(col.cells.items()):
                 if cell.is_lf:
-                    [ndof_th] = cell.ndofs
+                    cell_idxs[cell_key] = cell_idx
+                    cell_idx += 1
 
-                    mesh_ndof += ndof_x * ndof_y * ndof_th
+            ncells = cell_idx # cell_idx counts the number of existing cells in column
+            cell_masks = [None] * ncells # Column mask is a 1-D vector
 
-    return mesh_ndof
-                    
+            for cell_key, cell in sorted(col.cells.items()):
+                if cell.is_lf:
+                    # Get cell information, quadrature weights
+                    cell_idx   = cell_idxs[cell_key]
+                    [ndof_th]  = cell.ndofs
 
-def delete_rows_csr(mat, indices):
+                    def beta(ii, jj, aa):
+                        val = ndof_th * ndof_y * ii \
+                            + ndof_th * jj \
+                            + aa
+                        return val
+
+                    # List of entries, values for constructing the cell mask
+                    cell_ndof = ndof_x * ndof_y * ndof_th
+                    cell_mask = np.ones([cell_ndof], dtype = bool) 
+
+                    # Construct the cell mask
+                    if col.bdry[0]: # 0 => Right
+                        for jj in range(0, ndof_y):
+                            for aa in range(0, ndof_th):
+                                beta_idx = beta(ndof_x - 1, jj, aa)
+                                cell_mask[beta_idx] = False
+
+
+                    if col.bdry[1]: # 1 => Top
+                        for ii in range(0, ndof_x):
+                            for aa in range(0, ndof_th):
+                                beta_idx = beta(ii, ndof_y - 1, aa)
+                                cell_mask[beta_idx] = False
+
+                    if col.bdry[2]: # 2 => Left
+                        for jj in range(0, ndof_y):
+                            for aa in range(0, ndof_th):
+                                beta_idx = beta(ndof_x - 1, jj, aa)
+                                cell_mask[beta_idx] = False
+
+                    if col.bdry[3]: # 3 => Bottom
+                        for ii in range(0, ndof_x):
+                            for aa in range(0, ndof_th):
+                                beta_idx = beta(ii, 0, aa)
+                                cell_mask[beta_idx] = False
+
+                    cell_masks[cell_idx] = cell_mask
+
+            col_masks[col_idx] = np.concatenate(cell_masks, axis = None)
+
+    global_mask = np.concatenate(col_masks, axis = None)
+
+    return global_mask
+
+def delete_rows_csr(mat, mask):
     """
     Remove the rows denoted by ``indices`` form the CSR sparse matrix ``mat``.
     """
     if not isinstance(mat, csr_matrix):
         raise ValueError("works only for CSR format -- use .tocsr() first")
-    indices = list(indices)
-    mask = np.ones(mat.shape[0], dtype = bool)
-    mask[indices] = False
     return mat[mask]
 
-def delete_cols_csc(mat, indices):
+def delete_cols_csc(mat, mask):
     """
     Remove the rows denoted by ``indices`` form the CSR sparse matrix ``mat``.
     """
     if not isinstance(mat, csc_matrix):
         raise ValueError("works only for CSC format -- use .tocsc() first")
-    indices = list(indices)
-    mask = np.ones(mat.shape[1], dtype = bool)
-    mask[indices] = False
     return mat[:, mask]
 
-def split_mtx(mat, intr_idxs, bdry_idxs):
+def split_matrix(mat, intr_mask):
 
     mtx = mat.tocsr()
-    mrows_mtx = delete_rows_csr(mtx, bdry_idxs)
-    intr_mtx  = delete_cols_csc(mrows_mtx.tocsc(), bdry_idxs)
-    bdry_mtx  = delete_cols_csc(mrows_mtx.tocsc(), intr_idxs)
+    bdry_mask = np.invert(intr_mask)
+    mrows_mtx = delete_rows_csr(mtx, bdry_mask)
+    intr_mtx  = delete_cols_csc(mrows_mtx.tocsc(), bdry_mask)
+    bdry_mtx  = delete_cols_csc(mrows_mtx.tocsc(), intr_mask)
 
     return [intr_mtx, bdry_mtx]

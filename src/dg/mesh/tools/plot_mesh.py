@@ -53,7 +53,8 @@ def plot_mesh_2d(mesh, ax = None, file_name = None, **kwargs):
                 lv  = col.lv
                 x_mid = (x0 + x1) / 2.
                 y_mid = (y0 + y1) / 2.
-                label = str(idx) + ', ' + str(lv)
+                label = '{}, {}'.format(idx, lv)
+                label = '{}'.format(col.key)
                 ax.text(x_mid, y_mid, label,
                         ha = 'center', va = 'center')
                 
@@ -101,7 +102,7 @@ def plot_mesh_3d(mesh, ax = None, file_name = None, **kwargs):
                     xmid = (x0 + x1) / 2.
                     ymid = (y0 + y1) / 2.
                     zmid = (z0 + z1) / 2.
-                    label = str(idx) + ', ' + str(lv)
+                    label = '{}, {}'.format(idx, lv)
                     ax.text(xmid, ymid, zmid, label, zdir = None)
         
     if file_name:

@@ -29,12 +29,24 @@ class Mesh:
                         ndofs = [0])
 
         # Create first column, put cell into it
+        # Determine boundary flags for column
+        col_bdry = [True, True, True, True] # Which face is on the boundary of
+                                            # the domain?
+        if pbcs[0]: # Periodic in x, no "boundary" in x
+            col_bdry[0] = False
+            col_bdry[2] = False
+
+        if pbcs[1]: # Periodic in y, no "boundary" in y
+            col_bdry[1] = False
+            col_bdry[3] = False
+            
         col = Column(pos = [0, 0, Ls[0], Ls[1]],
                      idx = [0, 0],
                      lv = 0,
                      is_lf = True,
                      ndofs = ndofs[0:2],
-                     cells = {0 : cell})
+                     cells = {0 : cell},
+                     bdry  = col_bdry)
         self.cols = {0 :  col} # Columns in mesh
 
     def __str__(self):
@@ -68,10 +80,16 @@ class Mesh:
             [x0, y0, x1, y1] = col.pos
 
             # Add four columns that are repeats of current column
-            chldn_idxs = [[2 * i,     2 * j    ],
+            chldn_idxs = [[2 * i    , 2 * j    ],
                           [2 * i + 1, 2 * j    ],
-                          [2 * i,     2 * j + 1],
+                          [2 * i    , 2 * j + 1],
                           [2 * i + 1, 2 * j + 1]]
+
+            chldn_bdrys = [[False      , False      , col.bdry[2], col.bdry[3]],
+                           [col.bdry[0], False      , False      , col.bdry[3]],
+                           [False      , col.bdry[1], col.bdry[2], False      ],
+                           [col.bdry[0], col.bdry[1], False      , False      ],
+                           ]
 
             x_mid = (x0 + x1) / 2.
             y_mid = (y0 + y1) / 2.
@@ -81,14 +99,16 @@ class Mesh:
                           [x_mid, y_mid, x1,    y1  ]]
 
             for ii in range(0, 4):
-                chld_idx = chldn_idxs[ii]
-                chld_pos = chldn_poss[ii]
+                chld_idx  = chldn_idxs[ii]
+                chld_pos  = chldn_poss[ii]
+                chld_bdry = chldn_bdrys[ii]
                 chld_col = Column(pos = chld_pos,
                                   idx = chld_idx,
                                   lv  = lv + 1,
                                   is_lf = True,
                                   ndofs = col.ndofs,
-                                  cells = col.cells.copy())
+                                  cells = col.cells.copy(),
+                                  bdry  = chld_bdry)
                 self.add_col(chld_col)
 
             # Make sure we maintain 2-neighbor condition
@@ -114,7 +134,7 @@ class Mesh:
 class Column:
     ''' Column of cells. '''
 
-    def __init__(self, pos, idx, lv, is_lf, ndofs, cells):
+    def __init__(self, pos, idx, lv, is_lf, ndofs, cells, bdry):
         self.pos   = pos   # Spatial corners of columns
         self.idx   = idx   # Spatial index for column
         self.lv    = lv    # Level of spatial refinement for column
@@ -122,6 +142,7 @@ class Column:
         self.is_lf = is_lf # Whether column is a leaf or not
         self.ndofs = ndofs # Degrees of freedom in x-, y-.
         self.cells = cells # List of cells in the column
+        self.bdry  = bdry  # List of faces that lie on the domain boundary
         
 
     def __str__(self):
@@ -129,7 +150,8 @@ class Column:
                 '   key:  {}\n'.format(self.key) +
                 '   pos:  {}\n'.format(self.pos) +
                 ' is_lf:  {}\n'.format(self.is_lf) +
-                ' cells:  {}\n'.format(list(self.cells.keys()))
+                ' cells:  {}\n'.format(list(self.cells.keys())) +
+                '  bdry:  {}\n'.format(self.bdry)
                )
 
         return msg

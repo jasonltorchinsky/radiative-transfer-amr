@@ -3,25 +3,20 @@ import matplotlib.pyplot as plt
 import os, sys
 
 sys.path.append('../../src')
-from rad_amr import calc_mass_matrix
+from rad_amr import get_intr_mask
 
-def test_0(mesh, kappa, dir_name = 'test_quad'):
+def test_0(mesh, dir_name = 'test_rtdg'):
     """
-    Creates a plots of the mass matrix for a given mesh and kappa.
+    Creates a plots of the boundary mask to extract the interior and boundary
+    entries of a matrix.
     """
 
-    M_mass = calc_mass_matrix(mesh, kappa)
+    test_0_dir = os.path.join(dir_name, 'test_0')
+    os.makedirs(test_0_dir, exist_ok = True)
 
-    # Plot of the entire martrix
-    fig, ax = plt.subplots()
-    ax.spy(M_mass, marker = '.', markersize = 0.1)
-    ax.set_title('Global Mass Matrix')
+    intr_mask = get_intr_mask(mesh)
+    intr_mask_dense = intr_mask.astype(dtype = np.int32)
     
-    file_name = 'mass_matrix.png'
-    fig.set_size_inches(6.5, 6.5)
-    plt.savefig(os.path.join(dir_name, file_name), dpi = 300)
-    plt.close(fig)
-
     # Plot of the main diagonal, with vertical gridlines denoting columns
     fig, ax = plt.subplots()
 
@@ -47,11 +42,11 @@ def test_0(mesh, kappa, dir_name = 'test_quad'):
             ax.axvline(x = mesh_ndof, color = 'gray', linestyle = '-',
                        linewidth = 0.75)
         
-    ax.plot(M_mass.diagonal(k = 0), color = 'k', linestyle = '-',
+    ax.plot(intr_mask_dense, color = 'k', linestyle = '-',
             drawstyle = 'steps-post')
-    ax.set_title('Global Mass Matrix - Main Diagonal')
+    ax.set_title('Interior Mask')
     
-    file_name = 'mass_matrix_diag.png'
+    file_name = 'intr_mask.png'
     fig.set_size_inches(6.5, 6.5)
-    plt.savefig(os.path.join(dir_name, file_name), dpi = 300)
+    plt.savefig(os.path.join(test_0_dir, file_name), dpi = 300)
     plt.close(fig)
