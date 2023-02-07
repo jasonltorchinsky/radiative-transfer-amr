@@ -2,12 +2,11 @@ import numpy as np
 from scipy.sparse import coo_matrix, csr_matrix, block_diag, bmat
 
 from .Projection import Projection_2D
+from .matrix_utils import push_forward
 
 import dg.quadrature as qd
 
 def calc_mass_matrix(mesh, kappa):
-
-    kappah = Projection_2D(mesh, kappa)
 
     # Create column indexing for constructing global mass matrix
     col_idx = 0
@@ -30,11 +29,11 @@ def calc_mass_matrix(mesh, kappa):
             dy = y1 - y0
             [ndof_x, ndof_y] = col.ndofs
             
-            [_, w_x, _, w_y, _, _] = qd.quad_xyth(nnodes_x = ndof_x,
-                                                  nnodes_y = ndof_y)
+            [xxb, w_x, yyb, w_y, _, _] = qd.quad_xyth(nnodes_x = ndof_x,
+                                                      nnodes_y = ndof_y)
 
-            # Gets values of kappa in column
-            kappah_col = kappah.cols[col_key].vals
+            xxf = push_forward(x0, x1, xxb)
+            yyf = push_forward(y0, y1, yyb)
             
             # Create cell indexing for constructing column mass matrix
             cell_idx = 0
@@ -85,7 +84,7 @@ def calc_mass_matrix(mesh, kappa):
                         wx_i = w_x[ii]
                         for jj in range(0, ndof_y):
                             wy_j = w_y[jj]
-                            kappa_ij = kappah_col[ii, jj]
+                            kappa_ij = kappa(xxf[ii], yyf[jj])
                             for aa in range(0, ndof_th):
                                 wth_a = w_th[aa]
 

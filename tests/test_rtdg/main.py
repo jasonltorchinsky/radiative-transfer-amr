@@ -10,7 +10,7 @@ from dg.mesh import tools as mesh_tools
 
 from utils import print_msg
 
-from tests import test_0, test_1
+from tests import test_0, test_1, test_2
 
 def main():
 
@@ -27,13 +27,17 @@ def main():
     parser.add_argument('--test_1', nargs = 1, default = [0],
                         type = int, choices = [0, 1], required = False,
                         help = 'Do not run (0) or run (1) Test 1 - Mass Matrix Construction')
+    parser.add_argument('--test_2', nargs = 1, default = [0],
+                        type = int, choices = [0, 1], required = False,
+                        help = 'Do not run (0) or run (1) Test 2 - Sacttering Matrix Construction')
 
     args = parser.parse_args()
-    ntests = 2
+    ntest = 3
     if args.test_all[0]:
-        run_tests = [True] * ntests
+        run_tests = [True] * ntest
     else:
-        run_tests = [args.test_0[0], args.test_1[0]]
+        run_tests = [args.test_0[0], args.test_1[0],
+                     args.test_2[0]]
 
     dir_name = args.dir
     os.makedirs(dir_name, exist_ok = True)
@@ -49,16 +53,12 @@ def main():
                         ndofs = [ndofs_x, ndofs_y, ndofs_th],
                         has_th = True)
 
+    for col_nrefs in range(0, 2):
+        mesh.cols[0].ref_col()
 
-    mesh.cols[0].ref_col()
-    mesh.cols[0].ref_col()
-
-    mesh.ref_mesh()
-    mesh.ref_mesh()
-
-    col_keys = list(mesh.cols.keys())
-    mesh.ref_col(mesh.cols[col_keys[0]])
-
+    nuni_refs = 1
+    for ref in range(0, nuni_refs):
+        mesh.ref_mesh()
 
     mesh_dir  = os.path.join(dir_name, 'mesh')
     os.makedirs(mesh_dir, exist_ok = True)
@@ -68,24 +68,12 @@ def main():
                          plot_dim = 2, label_cells = True)
 
     # Define background test functions
-    def kappa(x, y):
-
-        return np.exp((x - Lx/2)**2 - (y - Ly/2)**2)
-
-    def sigma(x, y):
-
-        return 0.1 * kappa(x, y)
-
-    def Phi(theta, theta_p):
-
-        return 1.0 / (2.0 * np.pi)
-
     if run_tests[0]:
         perf_0 = perf_counter()
         print_msg('Starting Test 0...')
-
+        
         test_0(mesh, dir_name = dir_name)
-
+        
         perf_f = perf_counter()
         perf_diff = perf_f - perf_0
         msg = ('Completed Test 0! ' +
@@ -94,16 +82,28 @@ def main():
 
     if run_tests[1]:
         perf_0 = perf_counter()
-        print_msg('Starting Test 0...')
+        print_msg('Starting Test 1...')
 
-        test_1(mesh, kappa, dir_name = dir_name)
+        test_1(mesh, dir_name = dir_name)
 
         perf_f = perf_counter()
         perf_diff = perf_f - perf_0
-        msg = ('Completed Test 0! ' +
+        msg = ('Completed Test 1! ' +
                'Time Elapsed: {:06.3f} [s]').format(perf_diff)
         print_msg(msg)
 
+    if run_tests[2]:
+        perf_0 = perf_counter()
+        print_msg('Starting Test 2...')
+
+        test_2(mesh, dir_name = dir_name)
+
+        perf_f = perf_counter()
+        perf_diff = perf_f - perf_0
+        msg = ('Completed Test 2! ' +
+               'Time Elapsed: {:06.3f} [s]').format(perf_diff)
+        print_msg(msg)
+        
     
 if __name__ == '__main__':
 

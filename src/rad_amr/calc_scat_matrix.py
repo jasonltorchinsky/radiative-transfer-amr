@@ -8,8 +8,6 @@ from .matrix_utils import push_forward, pull_back
 
 def calc_scat_matrix(mesh, sigma, Phi):
 
-    sigmah = Projection_2D(mesh, sigma)
-
     # Create column indexing for constructing global mass matrix
     col_idx = 0
     col_idxs = dict()
@@ -31,11 +29,11 @@ def calc_scat_matrix(mesh, sigma, Phi):
             dy = y1 - y0
             [ndof_x, ndof_y] = col.ndofs
             
-            [_, w_x, _, w_y, _, _] = qd.quad_xyth(nnodes_x = ndof_x,
-                                                  nnodes_y = ndof_y)
+            [xxb, w_x, yyb, w_y, _, _] = qd.quad_xyth(nnodes_x = ndof_x,
+                                                      nnodes_y = ndof_y)
             
-            # Get values of sigma in column
-            sigmah_col = sigmah.cols[col_key].vals
+            xxf = push_forward(x0, x1, xxb)
+            yyf = push_forward(y0, y1, yyb)
             
             # Create cell indexing for constructing column mass matrix
             cell_idx = 0
@@ -103,7 +101,7 @@ def calc_scat_matrix(mesh, sigma, Phi):
                                 wx_i = w_x[ii]
                                 for jj in range(0, ndof_y):
                                     wy_j = w_y[jj]
-                                    sigma_ij = sigmah_col[ii, jj]
+                                    sigma_ij = sigma(xxf[ii], yyf[jj])
                                     for rr in range(0, ndof_th_0):
                                         wth_r_0 = w_th_0[rr]
                                         for aa in range(0, ndof_th_1):
