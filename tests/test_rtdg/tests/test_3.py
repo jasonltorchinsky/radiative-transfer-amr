@@ -5,91 +5,59 @@ import os, sys
 
 sys.path.append('../../src')
 import dg.quadrature as qd
-from rad_amr import calc_mass_matrix, calc_scat_matrix, Projection_2D, \
-    push_forward
+from rad_amr import calc_intr_conv_matrix, calc_bdry_conv_matrix, \
+    push_forward, get_intr_mask, split_matrix
 
 # Utilize a manufactured solution
 def anl_sol(x, y, th):
+    # Also used to calculate BCs!
     return np.sin(th)**2 * np.exp(-(x**2 + y**2))
 
-def kappa(x, y):
-    return (x + 1)**6 * (np.sin(18 * np.pi * y) + 0.5)**2
-
-def sigma(x, y):
-    return 0.1 * kappa(x, y)
-
-def Phi(theta, phi):
-    return (1.0 / (3.0 * np.pi)) \
-        * (1 + (np.cos(theta) * np.cos(phi) + np.sin(theta) * np.sin(phi))**2)
-
 def f(x, y, th):
-    return (-1. / 480) * np.exp(-(x**2 + y**2)) * (x + 1.)**6 \
-        * (2 * np.sin(18. * np.pi * y) + 1.)**2 \
-        * (59. * np.cos(2. * th) - 54)
+    return -2. * np.sin(th)**2 * np.exp(-(x**2 + y**2)) \
+        * (x * np.cos(th) + y * np.sin(th))
 
-def test_2(mesh, dir_name = 'test_rtdg'):
+def test_3(mesh, dir_name = 'test_rtdg'):
     """
     Creates a plots of the scattering matrix for a given mesh, sigma, and Phi.    
     """
 
-    test_2_dir = os.path.join(dir_name, 'test_2')
-    os.makedirs(test_2_dir, exist_ok = True)
-    '''
-    M_mass = calc_mass_matrix(mesh, kappa)
-    M_scat = calc_scat_matrix(mesh, sigma, Phi)
+    test_3_dir = os.path.join(dir_name, 'test_3')
+    os.makedirs(test_3_dir, exist_ok = True)
+    
+    M_intr_conv = calc_intr_conv_matrix(mesh)
+    M_bdry_conv = calc_bdry_conv_matrix(mesh)
+
+    M_conv = M_bdry_conv - M_intr_conv
 
     ### VISUALIZE THE ENTIRE MATRIX
     fig, ax = plt.subplots()
-    ax.spy(M_scat, marker = '.', markersize = 0.1, color = 'k')
-    ax.set_title('Global Scattering Matrix')
+    ax.spy(M_conv, marker = '.', markersize = 0.1, color = 'k')
+    ax.set_title('Global Convection Matrix')
     
-    file_name = 'scat_matrix.png'
+    file_name = 'conv_matrix.png'
     fig.set_size_inches(6.5, 6.5)
-    plt.savefig(os.path.join(test_2_dir, file_name), dpi = 300)
+    plt.savefig(os.path.join(test_3_dir, file_name), dpi = 300)
     plt.close(fig)
 
     ### VISUALIZE EIGENVALUES OF THE MATRIX
     fig, ax = plt.subplots()
-    size = M_scat.get_shape()
+    size = M_conv.get_shape()
     mesh_ndof = int(np.amin(size))
     neval = mesh_ndof - 2
     xx = np.arange(1, neval + 1)
-    evals = sorted(eigs(M_scat, k = neval)[0], reverse = True)
+    evals = sorted(eigs(M_conv, k = neval)[0], reverse = True)
 
     ax.axhline(y = 0.0, color = 'gray', linestyle = '--')
     ax.scatter(xx, evals, color = 'k')
-    ax.set_title('Global Scattering Matrix - First {}/{} Eigenvalues'.format(neval, mesh_ndof))
+    ax.set_title('Global Convection Matrix - First {}/{} Eigenvalues'.format(neval, mesh_ndof))
     
-    file_name = 'scat_matrix_evals.png'
+    file_name = 'conv_matrix_evals.png'
     fig.set_size_inches(6.5, 6.5)
-    plt.savefig(os.path.join(test_2_dir, file_name), dpi = 300)
+    plt.savefig(os.path.join(test_3_dir, file_name), dpi = 300)
     plt.close(fig)
-    '''
-    ### SOLVE SIMPLIFIED PROBLEM
-    # Plot approximate solution
-    fig, ax = plt.subplots()
-    mesh_ndof = 0
-    # Plot a vertical line denoting where the column matrices are
-    ax.axvline(x = mesh_ndof, color = 'gray', linestyle = '-',
-               linewidth = 0.75)
-
-    for col_key, col in sorted(mesh.cols.items()):
-        col_ndof = 0
-        if col.is_lf:
-            [ndof_x, ndof_y] = col.ndofs
-            for cell_key, cell in sorted(col.cells.items()):
-                [ndof_th] = cell.ndofs
-
-                cell_ndof = ndof_x * ndof_y * ndof_th
-
-                col_ndof += cell_ndof
-
-            mesh_ndof += col_ndof
-
-            # Plot a vertical line denoting where the column matrices are
-            ax.axvline(x = mesh_ndof, color = 'gray', linestyle = '-',
-                       linewidth = 0.75)
-            
+    
+    ### SOLVE SIMPLIFIED PROBLEM  
     ntrial = 4
     mesh_dAs = np.zeros([ntrial])
     Linf_errors = np.zeros([ntrial])
@@ -105,36 +73,33 @@ def test_2(mesh, dir_name = 'test_rtdg'):
                 dA = dx * dy
 
                 mesh_dAs[trial] = dA
+
+        intr_mask = get_intr_mask(mesh)
         
         f_vec = get_forcing_vector(mesh, f)
-        M_mass = calc_mass_matrix(mesh, kappa)
-        M_scat = calc_scat_matrix(mesh, sigma, Phi)
-        apr_sol_vec = spsolve(M_mass - M_scat, f_vec)
+        f_vec_intr = f_vec[intr_mask]
+        
         anl_sol_vec = get_proj_vector(mesh, anl_sol)
-
-        #ax.plot(apr_sol_vec, label = 'Approximate',
-        #        color = 'r', linestyle = '-', drawstyle = 'steps-post')
-        #ax.plot(anl_sol_vec, label = 'Exact',
-        #       color = 'k', linestyle = '-', drawstyle = 'steps-post')
-        #ax.plot(anl_sol_vec - apr_sol_vec, label = 'Exact - Approximate',
-        #       color = 'k', linestyle = '-', drawstyle = 'steps-post')
+        bcs_vec = anl_sol_vec[np.invert(intr_mask)]
+        anl_sol_intr_vec = anl_sol_vec[intr_mask]
+        
+        M_intr_conv = calc_intr_conv_matrix(mesh)
+        M_bdry_conv = calc_bdry_conv_matrix(mesh)
+        
+        M_conv = M_bdry_conv - M_intr_conv
+        
+        [M_conv_intr, M_conv_bdry] = split_matrix(mesh, M_conv)
+        
+        apr_sol_intr_vec = spsolve(M_conv_intr, f_vec_intr - M_conv_bdry @ bcs_vec)
+        
         
         # Caluclate error
-        Linf_errors[trial] = np.amax(np.abs(anl_sol_vec - apr_sol_vec))
+        Linf_errors[trial] = np.amax(np.abs(anl_sol_intr_vec - apr_sol_intr_vec))
 
         for col_key, col in sorted(mesh.cols.items()):
             if col.is_lf:
                 col.ref_col()
         mesh.ref_mesh()
-
-    #ax.set_title('Uniform $h$-Refinement Solution')
-    #ax.legend()
-    #
-    #file_name = 'h-ref_solns.png'
-    #fig.set_size_inches(6.5, 6.5)
-    #plt.savefig(os.path.join(test_2_dir, file_name), dpi = 300)
-    #plt.close(fig)
-
         
     # Plot errors
     fig, ax = plt.subplots()
@@ -152,7 +117,7 @@ def test_2(mesh, dir_name = 'test_rtdg'):
     
     file_name = 'h-ref_acc.png'
     fig.set_size_inches(6.5, 6.5)
-    plt.savefig(os.path.join(test_2_dir, file_name), dpi = 300)
+    plt.savefig(os.path.join(test_3_dir, file_name), dpi = 300)
     plt.close(fig)
 
 def get_forcing_vector(mesh, f):

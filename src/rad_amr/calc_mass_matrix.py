@@ -2,21 +2,14 @@ import numpy as np
 from scipy.sparse import coo_matrix, csr_matrix, block_diag, bmat
 
 from .Projection import Projection_2D
-from .matrix_utils import push_forward
+from .matrix_utils import push_forward, get_col_idxs, get_cell_idxs, get_idx_map
 
 import dg.quadrature as qd
 
 def calc_mass_matrix(mesh, kappa):
 
     # Create column indexing for constructing global mass matrix
-    col_idx = 0
-    col_idxs = dict()
-    for col_key, col in sorted(mesh.cols.items()):
-        if col.is_lf:
-            col_idxs[col_key] = col_idx
-            col_idx += 1
-
-    ncols = col_idx # col_idx counts the number of existing columns in mesh
+    [ncols, col_idxs] = get_col_idxs(mesh)
     col_mtxs = [None] * ncols # Global mass matrix is block-diagonal, and so
                               # there are only ncol non-zero column mass matrices
 
@@ -36,14 +29,7 @@ def calc_mass_matrix(mesh, kappa):
             yyf = push_forward(y0, y1, yyb)
             
             # Create cell indexing for constructing column mass matrix
-            cell_idx = 0
-            cell_idxs = dict()
-            for cell_key, cell in sorted(col.cells.items()):
-                if cell.is_lf:
-                    cell_idxs[cell_key] = cell_idx
-                    cell_idx += 1
-
-            ncells = cell_idx # cell_idx counts the number of existing cells in column
+            [ncells, cell_idxs] = get_cell_idxs(col)
             cell_mtxs = [None] * ncells # Column mass matrix is block-diagonal, and
                                         # so there are only ncell non-zero cell
                                         # mass matrices
@@ -69,11 +55,7 @@ def calc_mass_matrix(mesh, kappa):
                     # Indexing from i, j, a to beta
                     # In this case, the alpha and beta indices are the same,
                     # so we don't have to do them separately
-                    def beta(ii, jj, aa):
-                        val = ndof_th * ndof_y * ii \
-                            + ndof_th * jj \
-                            + aa
-                        return val
+                    beta = get_idx_map(ndof_x, ndof_y, ndof_th)
 
                     # Values common to equation for each entry
                     dcoeff = dx * dy * dth / 8

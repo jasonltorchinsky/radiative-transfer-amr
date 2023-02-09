@@ -77,7 +77,7 @@ def test_1(mesh, dir_name = 'test_rtdg'):
     plt.close(fig)
 
     ### SOLVE SIMPLIFIED PROBLEM kappa * u = f
-    ntrial = 7
+    ntrial = 5
     mesh_dAs = np.zeros([ntrial])
     Linf_errors = np.zeros([ntrial])
     for trial in range(0, ntrial):

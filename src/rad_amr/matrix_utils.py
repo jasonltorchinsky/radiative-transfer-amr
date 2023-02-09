@@ -108,28 +108,82 @@ def get_intr_mask(mesh):
 
     return global_mask
 
-def delete_rows_csr(mat, mask):
+def extract_rows_csr(mat, mask):
     """
-    Remove the rows denoted by ``indices`` form the CSR sparse matrix ``mat``.
+    Remove the rows denoted by ``indices`` from the CSR sparse matrix ``mat``.
     """
     if not isinstance(mat, csr_matrix):
         raise ValueError("works only for CSR format -- use .tocsr() first")
     return mat[mask]
 
-def delete_cols_csc(mat, mask):
+def extract_cols_csc(mat, mask):
     """
-    Remove the rows denoted by ``indices`` form the CSR sparse matrix ``mat``.
+    Remove the columns denoted by ``indices`` from the CSC sparse matrix ``mat``.
     """
     if not isinstance(mat, csc_matrix):
         raise ValueError("works only for CSC format -- use .tocsc() first")
     return mat[:, mask]
 
-def split_matrix(mat, intr_mask):
+def split_matrix(mesh, mat):
 
+    intr_mask = get_intr_mask(mesh)
+    
     mtx = mat.tocsr()
     bdry_mask = np.invert(intr_mask)
-    mrows_mtx = delete_rows_csr(mtx, bdry_mask)
-    intr_mtx  = delete_cols_csc(mrows_mtx.tocsc(), bdry_mask)
-    bdry_mtx  = delete_cols_csc(mrows_mtx.tocsc(), intr_mask)
+    
+    mrows_mtx = extract_rows_csr(mtx, intr_mask)
+    mrows_mtx = mrows_mtx.tocsc()
+    
+    intr_mtx  = extract_cols_csc(mrows_mtx, intr_mask)
+    bdry_mtx  = extract_cols_csc(mrows_mtx, bdry_mask)
 
     return [intr_mtx, bdry_mtx]
+
+def get_col_idxs(mesh):
+    """
+    Get column-indexing for a mesh for constructing a global matrix from
+    column matrices.
+    """
+    
+    col_idx = 0
+    col_idxs = dict()
+    for col_key, col in sorted(mesh.cols.items()):
+        if col.is_lf:
+            col_idxs[col_key] = col_idx
+            col_idx += 1
+            
+    ncols = col_idx # col_idx counts the number of existing columns in mesh
+    
+    return [ncols, col_idxs]
+
+def get_cell_idxs(col):
+    """
+    Get cell-indexing for a column for constructing a column matrix from
+    cell matrices.
+    """
+    
+    cell_idx = 0
+    cell_idxs = dict()
+    for cell_key, cell in sorted(col.cells.items()):
+        if cell.is_lf:
+            cell_idxs[cell_key] = cell_idx
+            cell_idx += 1
+            
+    ncells = cell_idx # cell_idx counts the number of existing cells in column
+    
+    return [ncells, cell_idxs]
+
+def get_idx_map(ndof_x, ndof_y, ndof_th):
+    """
+    Get the map from p,q,r => alpha, i,j,a => beta.
+    NOTE: Keep ndof_x as an input in case the idx map changes in the future.
+    """
+
+    def idx_map(ii, jj, aa):
+        idx = ndof_th * ndof_y * ii \
+            + ndof_th * jj \
+            + aa
+
+        return idx
+
+    return idx_map

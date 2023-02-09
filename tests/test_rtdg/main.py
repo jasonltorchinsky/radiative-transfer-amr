@@ -10,7 +10,7 @@ from dg.mesh import tools as mesh_tools
 
 from utils import print_msg
 
-from tests import test_0, test_1, test_2
+from tests import test_0, test_1, test_2, test_3
 
 def main():
 
@@ -29,15 +29,18 @@ def main():
                         help = 'Do not run (0) or run (1) Test 1 - Mass Matrix Construction')
     parser.add_argument('--test_2', nargs = 1, default = [0],
                         type = int, choices = [0, 1], required = False,
-                        help = 'Do not run (0) or run (1) Test 2 - Sacttering Matrix Construction')
+                        help = 'Do not run (0) or run (1) Test 2 - Scattering Matrix Construction')
+    parser.add_argument('--test_3', nargs = 1, default = [0],
+                        type = int, choices = [0, 1], required = False,
+                        help = 'Do not run (0) or run (1) Test 2 - Convection Matrix Construction')
 
     args = parser.parse_args()
-    ntest = 3
+    ntest = 4
     if args.test_all[0]:
         run_tests = [True] * ntest
     else:
         run_tests = [args.test_0[0], args.test_1[0],
-                     args.test_2[0]]
+                     args.test_2[0], args.test_3[0]]
 
     dir_name = args.dir
     os.makedirs(dir_name, exist_ok = True)
@@ -101,6 +104,18 @@ def main():
         perf_f = perf_counter()
         perf_diff = perf_f - perf_0
         msg = ('Completed Test 2! ' +
+               'Time Elapsed: {:06.3f} [s]').format(perf_diff)
+        print_msg(msg)
+
+    if run_tests[3]:
+        perf_0 = perf_counter()
+        print_msg('Starting Test 3...')
+
+        test_3(mesh, dir_name = dir_name)
+
+        perf_f = perf_counter()
+        perf_diff = perf_f - perf_0
+        msg = ('Completed Test 3! ' +
                'Time Elapsed: {:06.3f} [s]').format(perf_diff)
         print_msg(msg)
         
