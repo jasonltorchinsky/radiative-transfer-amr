@@ -158,15 +158,12 @@ def calc_nn_col_mtx(col, F):
                 # so we can handle those here, too
                 # We have alpha = beta so we skip making alphalist
                 betalist = np.zeros([ndof], dtype = np.int32) # beta index
-                vlist = np.zeros([ndof]) # Entry value
+                vlist    = np.zeros([ndof]) # Entry value
                 
                 if (F == 0):
                     x_idx = ndof_x - 1
-                elif (F == 2):
+                else: # F == 2
                     x_idx = 0
-                else:
-                    print('ERROR: BDRY CONV MTX F%2 == 0')
-                    quit()
                     
                 # Construct cell matrix
                 idx = 0
@@ -182,7 +179,7 @@ def calc_nn_col_mtx(col, F):
                         vlist[idx] = dcoeff * wy_j * wth_a * Theta_F_a
                         idx += 1
             
-            elif (F%2 == 1):
+            else: # F%2 == 1
                 # Although Theta_F and dcoeff are dependent on F,
                 # their product is only dependent on the parity of F
                 # The equations here don't match the documentation, but
@@ -197,15 +194,12 @@ def calc_nn_col_mtx(col, F):
                 # so we can handle those here, too
                 # We have alpha = beta so we skip making alphalist
                 betalist = np.zeros([ndof], dtype = np.int32) # beta index
-                vlist = np.zeros([ndof]) # Entry value
+                vlist    = np.zeros([ndof]) # Entry value
                 
                 if (F == 1):
                     y_idx = ndof_y - 1
-                elif (F == 3):
+                else: # F == 3
                     y_idx = 0
-                else:
-                    print('ERROR: BDRY CONV MTX F%2 == 0')
-                    quit()
                     
                 # Construct cell matrix
                 idx = 0
@@ -220,9 +214,6 @@ def calc_nn_col_mtx(col, F):
                         
                         vlist[idx] = dcoeff * wx_i * wth_a * Theta_F_a
                         idx += 1
-            
-            else:
-                print('RTDG_AMR ERROR: F outside of valid range!')
 
             cell_ndof = ndof_x * ndof_y * ndof_th
             cell_mtxs[cell_idx] = coo_matrix((vlist, (betalist, betalist)),
@@ -237,8 +228,6 @@ def calc_yn_col_mtxs(col_0, col_1, F):
     """
     Create the intra- and inter-column matrices for the yes-neighbor case.
     """
-    col_ndof_0 = 0
-    col_ndof_1 = 0
 
     # Get information about column C
     # _0 => Cell K in equations (in column C)
@@ -275,6 +264,8 @@ def calc_yn_col_mtxs(col_0, col_1, F):
             cell_idx_0  = cell_idxs_0[cell_key_0]
             ndof_th_0   = cell_0.ndofs[0]
             cell_ndof_0 = ndof_x_0 * ndof_y_0 * ndof_th_0
+
+            cell_mtxs_00[cell_idx_0] = coo_matrix((cell_ndof_0, cell_ndof_0))
             
             for cell_key_1, cell_1 in sorted(col_1.cells.items()):
                 if cell_1.is_lf:
@@ -292,10 +283,10 @@ def calc_yn_col_mtxs(col_0, col_1, F):
             # Get information about cell K in column C
             S_quad_0 = cell_0.quad
             cell_idx_0 = cell_idxs_0[cell_key_0] # Matrix index of cell 0 in
-                                               # column matrices
+                                                 # column matrices
             [th0_0, th1_0]             = cell_0.pos
             dth_0                      = th1_0 - th0_0
-            ndof_th_0                  = cell_0.ndofs[0]
+            [ndof_th_0]                = cell_0.ndofs
             [_, _, _, _, thb_0, wth_0] = qd.quad_xyth(nnodes_th = ndof_th_0)
             
             # (p, q, r) => alpha
@@ -395,7 +386,6 @@ def calc_yn_col_mtxs(col_0, col_1, F):
                     if cell_1:
                         if cell_1.is_lf:
                             cell_key_1 = cell_1.key
-                            
                             cell_idx_1 = cell_idxs_1[cell_key_1]
                             
                             [th0_1, th1_1] = cell_1.pos
@@ -594,10 +584,6 @@ def calc_yn_col_mtxs(col_0, col_1, F):
                         cell_ndof_0 = ndof_x_0 * ndof_y_0 * ndof_th_0
                         cell_ndof_1 = ndof_x_1 * ndof_y_1 * ndof_th_1
 
-                        col_ndof_0 += cell_ndof_0
-                        col_ndof_1 += cell_ndof_1
-                        
-                        cell_mtxs_00[cell_idx_0] = coo_matrix((cell_ndof_0, cell_ndof_0))
                         cell_mtxs_01[cell_idx_0][cell_idx_1] =\
                             coo_matrix((vlist, (alphalist, betalist)),
                                        shape = (cell_ndof_0, cell_ndof_1))
