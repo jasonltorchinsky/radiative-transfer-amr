@@ -2,7 +2,8 @@ import numpy as np
 from scipy.sparse import coo_matrix, csr_matrix, block_diag, bmat
 
 from .Projection import Projection_2D
-from .matrix_utils import push_forward, pull_back
+from .matrix_utils import push_forward, pull_back, get_col_idxs, \
+    get_cell_idxs, get_idx_map
 
 from dg.mesh import ji_mesh
 import dg.quadrature as qd
@@ -14,16 +15,10 @@ def calc_bdry_conv_matrix(mesh):
 
     # Variables that are the same throughout the loops
     nhbr_locs = ['+', '-']
+    col_items = sorted(mesh.cols.items())
     
     # Create column indexing for constructing global mass matrix
-    col_idx  = 0
-    col_idxs = dict()
-    for col_key, col in sorted(mesh.cols.items()):
-        if col.is_lf:
-            col_idxs[col_key] = col_idx
-            col_idx += 1
-            
-    ncols = col_idx # col_idx counts the number of existing columns in mesh
+    [ncols, col_idxs] = get_col_idxs(mesh)
     col_mtxs = [[None] * ncols for C in range(0, ncols)] # We have to assemble a
                # lot on inter-column interaction matrices,
                # so the construction is a bit more difficult.
@@ -35,22 +30,15 @@ def calc_bdry_conv_matrix(mesh):
     # For each face, loop through each element K of C.
     # Depending on K, we contribute to M^CC_F or M^CC'.
     # Hold all four M^CC_F, add them together after all of the loops.
-    for col_key_0, col_0 in sorted(mesh.cols.items()):
-        if col.is_lf:
+    for col_key_0, col_0 in col_items:
+        if col_0.is_lf:
             # Use _0 to refer to column C
             # Later, use _1 to refer to column C'
             col_idx_0 = col_idxs[col_key_0]
             
             # Create cell indexing for constructing intra-column
             # boundary convection matrix
-            cell_idx_0 = 0
-            cell_idxs_0 = dict()
-            for cell_key_0, cell_0 in sorted(col_0.cells.items()):
-                if cell_0.is_lf:
-                    cell_idxs_0[cell_key_0] = cell_idx_0
-                    cell_idx_0 += 1
-
-            ncells_0 = cell_idx_0 # cell_idx counts the number of existing cells in column
+            [ncells_0, cell_idxs_0] = get_cell_idxs(col_0)
             cell_mtxs_00 = [None] * ncells_0 # Intra-column boundary convection
                                         # matrix is block-diagonal, and so there
                                         # are only ncell non-zero cell
@@ -62,13 +50,13 @@ def calc_bdry_conv_matrix(mesh):
                 axis = F%2
                 nhbr_loc = nhbr_locs[int(F/2)]
                 [flag, col_nhbr_1, col_nhbr_2] = \
-                    ji_mesh.get_col_nhbr(mesh, col,
+                    ji_mesh.get_col_nhbr(mesh, col_0,
                                          axis = axis,
                                          nhbr_loc = nhbr_loc)
                 
                 # No neighbor, construct intra-column matrix
                 if flag == 'nn':
-                    col_mtx_00 = calc_nn_col_mtx(col_0, F, cell_idxs_0)
+                    col_mtx_00 = calc_nn_col_mtx(col_0, F)
                     
                     # The intra-column matrix may already exist. If so, add to it.
                     if col_mtxs[col_idx_0][col_idx_0] == None:
@@ -86,7 +74,7 @@ def calc_bdry_conv_matrix(mesh):
                                 # If so, go to no-neighbor case
                                 col_key_1 = col_1.key
                                 if col_key_0 == col_key_1:
-                                    col_mtx_00 = calc_nn_col_mtx(col_0, F, cell_idxs_0)
+                                    col_mtx_00 = calc_nn_col_mtx(col_0, F)
                                     
                                     # The intra-column matrix may already exist. If so, add to it.
                                     if col_mtxs[col_idx_0][col_idx_0] == None:
@@ -95,16 +83,7 @@ def calc_bdry_conv_matrix(mesh):
                                         col_mtxs[col_idx_0][col_idx_0] += col_mtx_00
                                 else:
                                     col_idx_1 = col_idxs[col_key_1]
-                                    
-                                    # Create cell indexing for constructing inter-column
-                                    # boundary convection matrix
-                                    cell_idx_1 = 0
-                                    cell_idxs_1 = dict()
-                                    for cell_key_1, cell_1 in sorted(col_1.cells.items()):
-                                        if cell_1.is_lf:
-                                            cell_idxs_1[cell_key_1] = cell_idx_1
-                                            cell_idx_1 += 1
-                                            
+                                                                                
                                     # Inter-column boundary convection
                                     # matrix is notblock-diagonal, so we
                                     # need room for all possible off-diagonal
@@ -112,12 +91,7 @@ def calc_bdry_conv_matrix(mesh):
                                     
                                     
                                     [col_mtx_00, col_mtxs[col_idx_0][col_idx_1]] = \
-                                        calc_yn_col_mtxs(col_0, col_1, F,
-                                                         cell_idxs_0, cell_idxs_1)
-
-                                    str_0 = str([col_idx_0, col_mtx_00.shape])
-                                    str_1 = str([col_idx_0, col_idx_1,
-                                                 col_mtxs[col_idx_0][col_idx_1].shape])
+                                        calc_yn_col_mtxs(col_0, col_1, F)
                                     
                                     if col_mtxs[col_idx_0][col_idx_0] == None:
                                         col_mtxs[col_idx_0][col_idx_0] = col_mtx_00
@@ -130,7 +104,7 @@ def calc_bdry_conv_matrix(mesh):
 
     return bdry_conv_mtx
 
-def calc_nn_col_mtx(col, F, cell_idxs):
+def calc_nn_col_mtx(col, F):
     """
     Create the intra-column matrix for the no-neighbor case.
     """
@@ -138,15 +112,14 @@ def calc_nn_col_mtx(col, F, cell_idxs):
     # Since we are only dealing with inter-column stuff, ignore the _0
     # Get column information, quadrature weights
     [x0, y0, x1, y1] = col.pos
-    dx = x1 - x0
-    dy = y1 - y0
+    [dx, dy] = [x1 - x0, y1 - y0]
     [ndof_x, ndof_y] = col.ndofs
     
     [_, w_x, _, w_y, _, _] = qd.quad_xyth(nnodes_x = ndof_x,
                                           nnodes_y = ndof_y)
     
        
-    ncells = len(cell_idxs) # cell_idx counts the number of existing cells in column
+    [ncells, cell_idxs] = get_cell_idxs(col)
     cell_mtxs = [None] * ncells # Intra-column matrices are
                                 # block-diagonal, and so there are only 
                                 # ncell non-zero cell boundary convection
@@ -166,11 +139,7 @@ def calc_nn_col_mtx(col, F, cell_idxs):
             
             # Indexing from i, j, a to beta
             # Is the same for p, q, r to alpha
-            def beta(ii, jj, aa):
-                val = ndof_th * ndof_y * ii \
-                    + ndof_th * jj \
-                    + aa
-                return val
+            beta = get_idx_map(ndof_x, ndof_y, ndof_th)
 
             # Some parameters are only dependent on the parity of F
             # Which we handle here
@@ -207,12 +176,10 @@ def calc_nn_col_mtx(col, F, cell_idxs):
                         wth_a = w_th[aa]
                         Theta_F_a = Theta_F[aa]
 
-                        # Because dirac-deltas, we have
-                        # i = p = f, j = q, a = r, so alpha = beta
+                        # j = q, a = r, so alpha = beta
                         betalist[idx] = beta(x_idx, jj, aa)
                         
                         vlist[idx] = dcoeff * wy_j * wth_a * Theta_F_a
-                        
                         idx += 1
             
             elif (F%2 == 1):
@@ -248,8 +215,7 @@ def calc_nn_col_mtx(col, F, cell_idxs):
                         wth_a = w_th[aa]
                         Theta_F_a = Theta_F[aa]
 
-                        # Because dirac-deltas, we have
-                        # i = p, j = q = f, a = r, so alpha = beta
+                        # i = p,  a = r, so alpha = beta
                         betalist[idx] = beta(ii, y_idx, aa)
                         
                         vlist[idx] = dcoeff * wx_i * wth_a * Theta_F_a
@@ -267,25 +233,12 @@ def calc_nn_col_mtx(col, F, cell_idxs):
     return nn_col_mtx
 
 
-def calc_yn_col_mtxs(col_0, col_1, F, cell_idxs_0, cell_idxs_1):
+def calc_yn_col_mtxs(col_0, col_1, F):
     """
     Create the intra- and inter-column matrices for the yes-neighbor case.
     """
     col_ndof_0 = 0
     col_ndof_1 = 0
-
-    def get_S_quad(cell):
-        # Returns which angular quadrant a cell is in
-        [a0, a1] = cell.pos
-        S_quads = [[0, np.pi/2], [np.pi/2, np.pi],
-               [np.pi, 3*np.pi/2], [3*np.pi/2, 2*np.pi]]
-        for SS in range(0, 4):
-            S_quad = S_quads[SS]
-            if (a0 >= S_quad[0]) and (a1 <= S_quad[1]):
-                # Careful here with comparing floats
-                return SS
-
-        return None
 
     # Get information about column C
     # _0 => Cell K in equations (in column C)
@@ -298,7 +251,7 @@ def calc_yn_col_mtxs(col_0, col_1, F, cell_idxs_0, cell_idxs_1):
                                                     nnodes_y = ndof_y_0)
 
     # Create cell indexing for constructing column mass matrix
-    ncells_0 = len(cell_idxs_0) # cell_idx counts the number of existing cells in column
+    [ncells_0, cell_idxs_0] = get_cell_idxs(col_0)
     cell_mtxs_00 = [None] * ncells_0 # Intra-column matrices are
                                      # block-diagonal, and so there are only 
                                      # ncell non-zero cell boundary convection
@@ -312,7 +265,7 @@ def calc_yn_col_mtxs(col_0, col_1, F, cell_idxs_0, cell_idxs_1):
     [ndof_x_1, ndof_y_1]             = col_1.ndofs
     [xxb_1, wx_1, yyb_1, wy_1, _, _] = qd.quad_xyth(nnodes_x = ndof_x_1,
                                                     nnodes_y = ndof_y_1)
-    ncells_1 = len(cell_idxs_1)
+    [ncells_1, cell_idxs_1] = get_cell_idxs(col_1)
     cell_mtxs_01 = [[None] * ncells_1 for K in range(0, ncells_0)]
 
     # To ensure proper matrix construction, we initialize all cell #
@@ -337,7 +290,7 @@ def calc_yn_col_mtxs(col_0, col_1, F, cell_idxs_0, cell_idxs_1):
     for cell_key_0, cell_0 in sorted(col_0.cells.items()):
         if cell_0.is_lf:
             # Get information about cell K in column C
-            S_quad_0 = get_S_quad(cell_0)
+            S_quad_0 = cell_0.quad
             cell_idx_0 = cell_idxs_0[cell_key_0] # Matrix index of cell 0 in
                                                # column matrices
             [th0_0, th1_0]             = cell_0.pos
@@ -347,11 +300,7 @@ def calc_yn_col_mtxs(col_0, col_1, F, cell_idxs_0, cell_idxs_1):
             
             # (p, q, r) => alpha
             # alpha is number of rows, always corresponds to K
-            def alpha(pp, qq, rr):
-                out = ndof_th_0 * ndof_y_0 * pp \
-                    + ndof_th_0 * qq \
-                    + rr
-                return out
+            alpha = get_idx_map(ndof_x_0, ndof_y_0, ndof_th_0)
 
             # Det. if in F+ (Fp) or F- (Fm)
             is_Fp = ((S_quad_0 == 0 and (F == 0 or F == 1))
@@ -457,11 +406,7 @@ def calc_yn_col_mtxs(col_0, col_1, F, cell_idxs_0, cell_idxs_1):
                             # (i, j, a) => beta
                             # beta is number of columns
                             # in Fm, beta always corresponds to K^(n)
-                            def beta(ii, jj, aa):
-                                out = ndof_th_1 * ndof_y_1 * ii \
-                                    + ndof_th_1 * jj \
-                                    + aa
-                                return out
+                            beta = get_idx_map(ndof_x_1, ndof_y_1, ndof_th_1)
                             
                             # REMINDER: **f => Push forward coordinates
                             # (in [*0, *1])

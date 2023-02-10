@@ -31,11 +31,80 @@ def test_3(mesh, dir_name = 'test_rtdg'):
     M_conv = M_bdry_conv - M_intr_conv
 
     ### VISUALIZE THE ENTIRE MATRIX
+    # Convetion Matrix
     fig, ax = plt.subplots()
-    ax.spy(M_conv, marker = '.', markersize = 0.1, color = 'k')
+
+    # Put gridlines where column matrices are
+    mesh_ndof = 0
+    for col_key, col in sorted(mesh.cols.items()):
+        col_ndof = 0
+        [ndof_x, ndof_y] = col.ndofs
+
+        for cell_key, cell in sorted(col.cells.items()):
+            [ndof_th] = cell.ndofs
+
+            col_ndof += ndof_x * ndof_y * ndof_th
+
+        mesh_ndof += col_ndof
+        ax.axhline(y = mesh_ndof, color = 'gray', linestyle = '--')
+        ax.axvline(x = mesh_ndof, color = 'gray', linestyle = '--')
+    
+    ax.spy(M_conv, marker = 'o', markersize = 0.1, color = 'k')
     ax.set_title('Global Convection Matrix')
     
     file_name = 'conv_matrix.png'
+    fig.set_size_inches(6.5, 6.5)
+    plt.savefig(os.path.join(test_3_dir, file_name), dpi = 300)
+    plt.close(fig)
+
+    # Boundary Convetion Matrix
+    fig, ax = plt.subplots()
+
+    # Put gridlines where column matrices are
+    mesh_ndof = 0
+    for col_key, col in sorted(mesh.cols.items()):
+        col_ndof = 0
+        [ndof_x, ndof_y] = col.ndofs
+
+        for cell_key, cell in sorted(col.cells.items()):
+            [ndof_th] = cell.ndofs
+
+            col_ndof += ndof_x * ndof_y * ndof_th
+
+        mesh_ndof += col_ndof
+        ax.axhline(y = mesh_ndof, color = 'gray', linestyle = '--')
+        ax.axvline(x = mesh_ndof, color = 'gray', linestyle = '--')
+    
+    ax.spy(M_bdry_conv, marker = 'o', markersize = 0.1, color = 'k')
+    ax.set_title('Global Boundary Convection Matrix')
+    
+    file_name = 'bdry_conv_matrix.png'
+    fig.set_size_inches(6.5, 6.5)
+    plt.savefig(os.path.join(test_3_dir, file_name), dpi = 300)
+    plt.close(fig)
+
+    # Interior Convetion Matrix
+    fig, ax = plt.subplots()
+
+    # Put gridlines where column matrices are
+    mesh_ndof = 0
+    for col_key, col in sorted(mesh.cols.items()):
+        col_ndof = 0
+        [ndof_x, ndof_y] = col.ndofs
+
+        for cell_key, cell in sorted(col.cells.items()):
+            [ndof_th] = cell.ndofs
+
+            col_ndof += ndof_x * ndof_y * ndof_th
+
+        mesh_ndof += col_ndof
+        ax.axhline(y = mesh_ndof, color = 'gray', linestyle = '--')
+        ax.axvline(x = mesh_ndof, color = 'gray', linestyle = '--')
+    
+    ax.spy(M_intr_conv, marker = 'o', markersize = 0.1, color = 'k')
+    ax.set_title('Global Interior Convection Matrix')
+    
+    file_name = 'intr_conv_matrix.png'
     fig.set_size_inches(6.5, 6.5)
     plt.savefig(os.path.join(test_3_dir, file_name), dpi = 300)
     plt.close(fig)
@@ -58,7 +127,7 @@ def test_3(mesh, dir_name = 'test_rtdg'):
     plt.close(fig)
     
     ### SOLVE SIMPLIFIED PROBLEM  
-    ntrial = 4
+    ntrial = 3
     mesh_dAs = np.zeros([ntrial])
     Linf_errors = np.zeros([ntrial])
     for trial in range(0, ntrial):

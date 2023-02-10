@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt # Only for LaTeX strings
 import sys
 import os
 
@@ -20,13 +21,15 @@ class Mesh:
                         idx = 0,
                         lv = 0,
                         is_lf = True,
-                        ndofs = [ndofs[2]])
+                        ndofs = [ndofs[2]],
+                        quad = None)
         else:
             cell = Cell(pos = [0, 0],
                         idx = 0,
                         lv = 0,
                         is_lf = True,
-                        ndofs = [0])
+                        ndofs = [0],
+                        quad = None)
 
         # Create first column, put cell into it
         # Determine boundary flags for column
@@ -176,6 +179,7 @@ class Column:
             idx = cell.idx
             lv = cell.lv
             [z0, z1] = cell.pos
+            quad = cell.quad
 
             # Add two columns that are repeats of current column
             chldn_idxs = [2 * idx    ,
@@ -185,14 +189,31 @@ class Column:
             chldn_poss = [[z0,    z_mid],
                           [z_mid, z1   ]]
 
+            chldn_quads = [None, None]
+            if quad != None:
+                # If the parent cell is in an angular quadrant,
+                # the child cells both will be
+                chldn_quads = [quad, quad]
+            else:
+                # Check if each cell is in a quadrant
+                S_quads = [[0, np.pi/2], [np.pi/2, np.pi],
+                           [np.pi, 3*np.pi/2], [3*np.pi/2, 2*np.pi]]
+                for ii, chld_pos in enumerate(chldn_poss):
+                    for SS, S_quad in enumerate(S_quads):
+                        if (chld_pos[0] >= S_quad[0]) and (chld_pos[1] <= S_quad[1]):
+                            chldn_quads[ii] = SS
+                    
+
             for ii in range(0, 2):
-                chld_idx = chldn_idxs[ii]
-                chld_pos = chldn_poss[ii]
+                chld_idx  = chldn_idxs[ii]
+                chld_pos  = chldn_poss[ii]
+                chld_quad = chldn_quads[ii]
                 chld_cell = Cell(pos = chld_pos,
                                  idx = chld_idx,
                                  lv  = lv + 1,
                                  is_lf = True,
-                                 ndofs = cell.ndofs[:])
+                                 ndofs = cell.ndofs[:],
+                                 quad = chld_quad)
                 self.add_cell(chld_cell)
 
             for nhbr_loc in ['+', '-']:
@@ -214,20 +235,25 @@ class Column:
 class Cell:
     ''' Each individual cell. '''
 
-    def __init__(self, pos, idx, lv, is_lf, ndofs):
+    def __init__(self, pos, idx, lv, is_lf, ndofs, quad):
         self.pos   = pos    # Position in angular dimension
         self.idx   = idx    # Angular index of cell
         self.lv    = lv     # Level of angular refinement
         self.key   = calc_cell_key(idx, lv) # Unique key for cell
         self.is_lf = is_lf  # Whether cell is a leaf or not
         self.ndofs = ndofs  # Degrees of freedom in theta-.
+        self.quad  = quad   # Which angular quadrant the cell is in
         
     def __str__(self):
+        pos_str = ( '[{:3.2f} pi'.format(self.pos[0] / np.pi) +
+                    ', {:3.2f} pi]'.format(self.pos[1] / np.pi)
+                   )
         msg = ( 'Cell  :  {}, {}\n'.format(self.idx, self.lv) +
                 ' key  :  {}\n'.format(self.key) +
-                ' pos  :  {}\n'.format(self.pos) +
+                ' pos  :  {}\n'.format(pos_str) +
                 ' is_lf:  {}\n'.format(self.is_lf) +
-                ' ndofs:  {}\n'.format(self.ndofs)
+                ' ndofs:  {}\n'.format(self.ndofs) +
+                '  quad:  {}\n'.format(self.quad)
                )
 
         return msg
