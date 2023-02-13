@@ -5,7 +5,8 @@ import os, sys
 
 sys.path.append('../../src')
 import dg.quadrature as qd
-from rad_amr import calc_mass_matrix, Projection_2D, push_forward
+from rad_amr import calc_mass_matrix, Projection_2D, push_forward, \
+    get_intr_mask, split_matrix
 
 # Utilize a manufactured solution
 def anl_sol(x, y, th):
@@ -93,13 +94,23 @@ def test_1(mesh, dir_name = 'test_rtdg'):
 
                 mesh_dAs[trial] = dA
         
+        ### SOLVE SIMPLIFIED PROBLEM
+        intr_mask = get_intr_mask(mesh)
+        
         f_vec = get_forcing_vector(mesh, f)
-        M_mass = calc_mass_matrix(mesh, kappa)
-        apr_sol_vec = spsolve(M_mass, f_vec)
+        f_vec_intr = f_vec[intr_mask]
+        
         anl_sol_vec = get_proj_vector(mesh, anl_sol)
+        bcs_vec = anl_sol_vec[np.invert(intr_mask)]
+        anl_sol_intr_vec = anl_sol_vec[intr_mask]
+        
+        M_mass = calc_mass_matrix(mesh, kappa)
+        [M_mass_intr, M_mass_bdry] = split_matrix(mesh, M_mass)
+        
+        apr_sol_intr_vec = spsolve(M_mass_intr, f_vec_intr - M_mass_bdry @ bcs_vec)
 
         # Caluclate error
-        Linf_errors[trial] = np.amax(np.abs(anl_sol_vec - apr_sol_vec))
+        Linf_errors[trial] = np.amax(np.abs(anl_sol_intr_vec - apr_sol_intr_vec))
 
         mesh.ref_mesh()
 

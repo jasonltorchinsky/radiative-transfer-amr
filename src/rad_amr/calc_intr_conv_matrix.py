@@ -45,13 +45,16 @@ def calc_intr_conv_matrix(mesh):
                     thf = push_forward(th0, th1, thb)
 
                     # Indexing from i, j, a to beta
-                    # Same formula for p, q, r to alpha, so we reuse it
-                    beta = get_idx_map(ndof_x, ndof_y, ndof_th)
+                    # Same formula for p, q, r to alpha, but we define alpha
+                    # anyway for clarity
+                    alpha = get_idx_map(ndof_x, ndof_y, ndof_th)
+                    beta  = get_idx_map(ndof_x, ndof_y, ndof_th)
                     
                     # Values common to equation for each entry
                     dcoeff = dx * dy * dth / 8
 
                     # Set up arrays for delta_ip * delta_ar term
+                    cell_ndof      = ndof_x * ndof_y * ndof_th
                     cell_ndof_ipar = ndof_x * ndof_y**2 * ndof_th                     
                     alphalist_ipar = np.zeros([cell_ndof_ipar], dtype = np.int32)
                     betalist_ipar  = np.zeros([cell_ndof_ipar], dtype = np.int32)
@@ -70,8 +73,8 @@ def calc_intr_conv_matrix(mesh):
                                 for qq in range(0, ndof_y):
                                     ddy_psi_qj = qd.lag_ddx_eval(yyb, qq, yyb[jj])
 
-                                    alphalist_ipar[idx] = beta(ii, qq, aa)
-                                    betalist_ipar[idx]  = beta(ii, jj, aa)
+                                    alphalist_ipar[idx] = alpha(ii, qq, aa)
+                                    betalist_ipar[idx]  = beta( ii, jj, aa)
                                     
                                     vlist_ipar[idx] = dcoeff * wx_i * wy_j * wth_a \
                                         * ddy_psi_qj * sin_a
@@ -79,7 +82,8 @@ def calc_intr_conv_matrix(mesh):
                                     idx += 1
                                     
                     delta_ipar = coo_matrix((vlist_ipar,
-                                             (alphalist_ipar, betalist_ipar)))
+                                             (alphalist_ipar, betalist_ipar)),
+                                            shape = (cell_ndof, cell_ndof))
                     
                     # Set up arrays for  delta_jq * delta_ar term
                     cell_ndof_jqar = ndof_x**2 * ndof_y * ndof_th                    
@@ -99,10 +103,9 @@ def calc_intr_conv_matrix(mesh):
                                 cos_a = np.cos(thf[aa])
                                 for pp in range(0, ndof_x):
                                     ddx_phi_pi = qd.lag_ddx_eval(xxb, pp, xxb[ii])
-
                                     
-                                    alphalist_jqar[idx] = beta(pp, jj, aa)
-                                    betalist_jqar[idx]  = beta(ii, jj, aa)
+                                    alphalist_jqar[idx] = alpha(pp, jj, aa)
+                                    betalist_jqar[idx]  = beta( ii, jj, aa)
                                     
                                     vlist_jqar[idx] = dcoeff * wx_i * wy_j * wth_a \
                                         * ddx_phi_pi * cos_a
@@ -110,7 +113,8 @@ def calc_intr_conv_matrix(mesh):
                                     idx += 1
                     
                     delta_jqar = coo_matrix((vlist_jqar,
-                                             (alphalist_jqar, betalist_jqar)))
+                                             (alphalist_jqar, betalist_jqar)),
+                                            shape = (cell_ndof, cell_ndof))
                     
                     cell_mtxs[cell_idx] = delta_ipar + delta_jqar
                     

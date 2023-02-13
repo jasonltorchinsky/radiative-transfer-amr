@@ -7,7 +7,7 @@ import os, sys
 sys.path.append('../../src')
 from utils import print_msg
 
-from tests import test_0, test_1, test_2, test_3
+from tests import test_0, test_1, test_2, test_3, test_4
 
 def main():
 
@@ -32,66 +32,38 @@ def main():
     parser.add_argument('--test_3', nargs = 1, default = [0],
                         type = int, choices = [0, 1], required = False,
                         help = 'Do not run (0) or run (1) Test 3 - Find Cell Spatial Neighbors')
+    parser.add_argument('--test_4', nargs = 1, default = [0],
+                        type = int, choices = [0, 1], required = False,
+                        help = 'Do not run (0) or run (1) Test 4 - Find Cell Spatial Neighbors in Each Direction')
     
     args = parser.parse_args()
-    ntests = 4
+    ntests = 5
     if args.test_all[0]:
         run_tests = [True] * ntests
     else:
         run_tests = [args.test_0[0], args.test_1[0],
-                     args.test_2[0], args.test_3[0]
+                     args.test_2[0], args.test_3[0],
+                     args.test_4[0]
                      ]
 
     dir_name = args.dir
     os.makedirs(dir_name, exist_ok = True)
 
-    if run_tests[0]:
-        perf_0 = perf_counter()
-        print_msg('Starting Test 0...')
 
-        test_0(dir_name = dir_name)
+    test_funcs = [test_0, test_1, test_2, test_3, test_4]
 
-        perf_f = perf_counter()
-        perf_diff = perf_f - perf_0
-        msg = ('Completed Test 0! ' +
-               'Time Elapsed: {:06.3f} [s]').format(perf_diff)
-        print_msg(msg)
-        
-    if run_tests[1]:
-        perf_0 = perf_counter()
-        print_msg('Starting Test 1...')
-
-        test_1(dir_name = dir_name)
-
-        perf_f = perf_counter()
-        perf_diff = perf_f - perf_0
-        msg = ('Completed Test 1! ' +
-               'Time Elapsed: {:06.3f} [s]').format(perf_diff)
-        print_msg(msg)
-
-    if run_tests[2]:
-        perf_0 = perf_counter()
-        print_msg('Starting Test 2...')
-
-        test_2(dir_name = dir_name)
-
-        perf_f = perf_counter()
-        perf_diff = perf_f - perf_0
-        msg = ('Completed Test 2! ' +
-               'Time Elapsed: {:06.3f} [s]').format(perf_diff)
-        print_msg(msg)
-
-    if run_tests[3]:
-        perf_0 = perf_counter()
-        print_msg('Starting Test 3...')
-
-        test_3(dir_name = dir_name)
-
-        perf_f = perf_counter()
-        perf_diff = perf_f - perf_0
-        msg = ('Completed Test 3! ' +
-               'Time Elapsed: {:06.3f} [s]').format(perf_diff)
-        print_msg(msg)
+    for ntest, test_func in enumerate(test_funcs):
+        if run_tests[ntest]:
+            perf_0 = perf_counter()
+            print_msg('Starting Test {}...'.format(ntest))
+            
+            test_func(dir_name = dir_name)
+            
+            perf_f = perf_counter()
+            perf_diff = perf_f - perf_0
+            msg = ('Completed Test {}! ' +
+                   'Time Elapsed: {:06.3f} [s]').format(ntest, perf_diff)
+            print_msg(msg)
         
 
 if __name__ == '__main__':

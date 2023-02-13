@@ -32,7 +32,7 @@ def main():
                         help = 'Do not run (0) or run (1) Test 2 - Scattering Matrix Construction')
     parser.add_argument('--test_3', nargs = 1, default = [0],
                         type = int, choices = [0, 1], required = False,
-                        help = 'Do not run (0) or run (1) Test 2 - Convection Matrix Construction')
+                        help = 'Do not run (0) or run (1) Test 3 - Convection Matrix Construction')
 
     args = parser.parse_args()
     ntest = 4

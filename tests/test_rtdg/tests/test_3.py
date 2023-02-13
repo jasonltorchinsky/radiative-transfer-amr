@@ -127,42 +127,6 @@ def test_3(mesh, dir_name = 'test_rtdg'):
     plt.close(fig)
     
     ### SOLVE SIMPLIFIED PROBLEM
-    intr_mask = get_intr_mask(mesh)
-    
-    f_vec = get_forcing_vector(mesh, f)
-    f_vec_intr = f_vec[intr_mask]
-    
-    anl_sol_vec = get_proj_vector(mesh, anl_sol)
-    bcs_vec = anl_sol_vec[np.invert(intr_mask)]
-    anl_sol_intr_vec = anl_sol_vec[intr_mask]
-    
-    M_intr_conv = calc_intr_conv_matrix(mesh)
-    M_bdry_conv = calc_bdry_conv_matrix(mesh)
-    
-    M_conv = M_bdry_conv - M_intr_conv
-    
-    [M_conv_intr, M_conv_bdry] = split_matrix(mesh, M_conv)
-    
-    apr_sol_intr_vec = spsolve(M_conv_intr, f_vec_intr - M_conv_bdry @ bcs_vec)
-
-    # Plot errors
-    fig, ax = plt.subplots()
-    
-    ax.plot(apr_sol_intr_vec, label = 'Approximate Solution',
-            color = 'k', linestyle = '-')
-    ax.plot(anl_sol_intr_vec, label = 'Analytic Solution',
-            color = 'r', linestyle = '-')
-
-    ax.legend()
-    
-    ax.set_title('Solution Comparison')
-    
-    file_name = 'soln.png'
-    fig.set_size_inches(6.5, 6.5)
-    plt.savefig(os.path.join(test_3_dir, file_name), dpi = 300)
-    plt.close(fig)
-    
-    '''
     ntrial = 3
     mesh_dAs = np.zeros([ntrial])
     Linf_errors = np.zeros([ntrial])
@@ -196,7 +160,23 @@ def test_3(mesh, dir_name = 'test_rtdg'):
         [M_conv_intr, M_conv_bdry] = split_matrix(mesh, M_conv)
         
         apr_sol_intr_vec = spsolve(M_conv_intr, f_vec_intr - M_conv_bdry @ bcs_vec)
+
+        # Plot solutions
+        fig, ax = plt.subplots()
         
+        ax.plot(apr_sol_intr_vec, label = 'Approximate Solution',
+                color = 'k', linestyle = '-')
+        ax.plot(anl_sol_intr_vec, label = 'Analytic Solution',
+                color = 'r', linestyle = '-')
+        
+        ax.legend()
+        
+        ax.set_title('Solution Comparison')
+        
+        file_name = 'soln_{}.png'.format(trial)
+        fig.set_size_inches(6.5, 6.5)
+        plt.savefig(os.path.join(test_3_dir, file_name), dpi = 300)
+        plt.close(fig)
         
         # Caluclate error
         Linf_errors[trial] = np.amax(np.abs(anl_sol_intr_vec - apr_sol_intr_vec))
@@ -224,7 +204,7 @@ def test_3(mesh, dir_name = 'test_rtdg'):
     fig.set_size_inches(6.5, 6.5)
     plt.savefig(os.path.join(test_3_dir, file_name), dpi = 300)
     plt.close(fig)
-    '''
+    
 
 def get_forcing_vector(mesh, f):
     """
