@@ -59,7 +59,7 @@ def main():
     for col_nrefs in range(0, 2):
         mesh.cols[0].ref_col()
 
-    nuni_refs = 2
+    nuni_refs = 1
     for ref in range(0, nuni_refs):
         mesh.ref_mesh()
 

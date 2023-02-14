@@ -128,7 +128,7 @@ def test_3(mesh, dir_name = 'test_rtdg'):
     plt.close(fig)
     
     ### SOLVE SIMPLIFIED PROBLEM
-    ntrial = 1
+    ntrial = 3
     mesh_dAs = np.zeros([ntrial])
     Linf_errors = np.zeros([ntrial])
     for trial in range(0, ntrial):
@@ -152,6 +152,7 @@ def test_3(mesh, dir_name = 'test_rtdg'):
         anl_sol_vec = get_proj_vector(mesh, anl_sol)
         bcs_vec = anl_sol_vec[np.invert(intr_mask)]
         anl_sol_intr_vec = anl_sol_vec[intr_mask]
+        print(np.amax(anl_sol_intr_vec))
         
         M_intr_conv = calc_intr_conv_matrix(mesh)
         M_bdry_conv = calc_bdry_conv_matrix(mesh)

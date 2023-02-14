@@ -75,8 +75,9 @@ def calc_intr_conv_matrix(mesh):
 
                                     alphalist_ipar[idx] = alpha(ii, qq, aa)
                                     betalist_ipar[idx]  = beta( ii, jj, aa)
-                                    
-                                    vlist_ipar[idx] = dcoeff * wx_i * wy_j * wth_a \
+
+                                    # Something weird with dcoeff? Should be dx*dth/4?
+                                    vlist_ipar[idx] = (dx * dth / 4.) * wx_i * wy_j * wth_a \
                                         * ddy_psi_qj * sin_a
                                     
                                     idx += 1
@@ -107,8 +108,9 @@ def calc_intr_conv_matrix(mesh):
                                     
                                     alphalist_jqar[idx] = alpha(pp, jj, aa)
                                     betalist_jqar[idx]  = beta( ii, jj, aa)
-                                    
-                                    vlist_jqar[idx] = dcoeff * wx_i * wy_j * wth_a \
+
+                                    # Something weird with dcoeff? Should be dy*dth/4?
+                                    vlist_jqar[idx] = (dy * dth / 4.) * wx_i * wy_j * wth_a \
                                         * ddx_phi_pi * cos_a
                                     
                                     idx += 1
