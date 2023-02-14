@@ -35,10 +35,10 @@ def calc_intr_conv_matrix(mesh):
             for cell_key, cell in sorted(col.cells.items()):
                 if cell.is_lf:
                     # Get cell information, quadrature weights
-                    cell_idx     = cell_idxs[cell_key]
-                    [th0, th1]   = cell.pos
-                    dth          = th1 - th0
-                    [ndof_th]    = cell.ndofs
+                    cell_idx   = cell_idxs[cell_key]
+                    [th0, th1] = cell.pos
+                    dth        = th1 - th0
+                    [ndof_th]  = cell.ndofs
                     
                     [_, _, _, _, thb, w_th] = qd.quad_xyth(nnodes_th = ndof_th)
                     
@@ -55,7 +55,7 @@ def calc_intr_conv_matrix(mesh):
 
                     # Set up arrays for delta_ip * delta_ar term
                     cell_ndof      = ndof_x * ndof_y * ndof_th
-                    cell_ndof_ipar = ndof_x * ndof_y**2 * ndof_th                     
+                    cell_ndof_ipar = ndof_x * ndof_y**2 * ndof_th
                     alphalist_ipar = np.zeros([cell_ndof_ipar], dtype = np.int32)
                     betalist_ipar  = np.zeros([cell_ndof_ipar], dtype = np.int32)
                     vlist_ipar     = np.zeros([cell_ndof_ipar])
@@ -68,7 +68,7 @@ def calc_intr_conv_matrix(mesh):
                         for jj in range(0, ndof_y):
                             wy_j = w_y[jj]
                             for aa in range(0, ndof_th):
-                                wth_a  = w_th[aa]
+                                wth_a = w_th[aa]
                                 sin_a = np.sin(thf[aa])
                                 for qq in range(0, ndof_y):
                                     ddy_psi_qj = qd.lag_ddx_eval(yyb, qq, yyb[jj])
@@ -84,6 +84,7 @@ def calc_intr_conv_matrix(mesh):
                     delta_ipar = coo_matrix((vlist_ipar,
                                              (alphalist_ipar, betalist_ipar)),
                                             shape = (cell_ndof, cell_ndof))
+                    
                     
                     # Set up arrays for  delta_jq * delta_ar term
                     cell_ndof_jqar = ndof_x**2 * ndof_y * ndof_th                    

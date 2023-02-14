@@ -11,6 +11,9 @@ def test_5(func, func_ddx, quad_type = 'lg', dir_name = 'test_quad'):
     function onto a Legengre-Gauss/Legendre-Gauss-Lobatto basis.
     """
 
+    dir_name = os.path.join(dir_name, 'test_5')
+    os.makedirs(dir_name, exist_ok = True)
+
     if quad_type == 'lg':
         quad_type_str = 'Legendre-Gauss'
 

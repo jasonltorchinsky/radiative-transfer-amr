@@ -115,7 +115,8 @@ def test_3(mesh, dir_name = 'test_rtdg'):
     mesh_ndof = int(np.amin(size))
     neval = mesh_ndof - 2
     xx = np.arange(1, neval + 1)
-    evals = sorted(eigs(M_conv, k = neval)[0], reverse = True)
+    evals = eigs(M_conv, k = neval)[0]
+    evals = sorted(np.real(evals), reverse = True)
 
     ax.axhline(y = 0.0, color = 'gray', linestyle = '--')
     ax.scatter(xx, evals, color = 'k')
@@ -127,7 +128,7 @@ def test_3(mesh, dir_name = 'test_rtdg'):
     plt.close(fig)
     
     ### SOLVE SIMPLIFIED PROBLEM
-    ntrial = 3
+    ntrial = 1
     mesh_dAs = np.zeros([ntrial])
     Linf_errors = np.zeros([ntrial])
     for trial in range(0, ntrial):

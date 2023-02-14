@@ -4,7 +4,7 @@ import numpy as np
 from time import perf_counter
 import os
 
-from tests import test_0, test_1, test_2, test_3, test_4, test_5
+from tests import test_0, test_1, test_2, test_3, test_4, test_5, test_6, test_7
 
 def main():
 
@@ -33,15 +33,22 @@ def main():
     parser.add_argument('--test_5', nargs = 1, default = [0],
                         type = int, choices = [0, 1], required = False,
                         help = 'Do not run (0) or run (1) Test 5 - LG/LGL 1D Function Derivative Projection Accuracy')
+    parser.add_argument('--test_6', nargs = 1, default = [0],
+                        type = int, choices = [0, 1], required = False,
+                        help = 'Do not run (0) or run (1) Test 6 - LG/LGL 1D Function Antidifferentiation')
+    parser.add_argument('--test_7', nargs = 1, default = [0],
+                        type = int, choices = [0, 1], required = False,
+                        help = 'Do not run (0) or run (1) Test 7 - LG/LGL 1D Function Integration')
 
     args = parser.parse_args()
-    ntests = 6
+    ntests = 8
     if args.test_all[0]:
         run_tests = [True] * ntests
     else:
         run_tests = [args.test_0[0], args.test_1[0],
                      args.test_2[0], args.test_3[0],
-                     args.test_4[0], args.test_5[0]]
+                     args.test_4[0], args.test_5[0],
+                     args.test_6[0], args.test_7[0]]
 
     dir_name = args.dir
     os.makedirs(dir_name, exist_ok = True)
@@ -160,6 +167,42 @@ def main():
         msg = ('[{}]: Completed Test 5! ' +
                'Time Elapsed: {:06.3f} [s]').format(current_time, perf_diff)
         print(msg)
+
+    if run_tests[6]:
+        perf_0 = perf_counter()
+        now = datetime.now()
+        current_time = now.strftime("%H:%M:%S")
+        msg = '[{}]: Starting Test 6...'.format(current_time)
+        print(msg)
+        
+        test_6(func = f, Func = F, quad_type = 'lg', dir_name = dir_name)
+        test_6(func = f, Func = F, quad_type = 'lgl', dir_name = dir_name)
+
+        perf_f = perf_counter()
+        perf_diff = perf_f - perf_0
+        now = datetime.now()
+        current_time = now.strftime("%H:%M:%S")
+        msg = ('[{}]: Completed Test 6! ' +
+               'Time Elapsed: {:06.3f} [s]').format(current_time, perf_diff)
+        print(msg)
+
+    if run_tests[7]:
+        perf_0 = perf_counter()
+        now = datetime.now()
+        current_time = now.strftime("%H:%M:%S")
+        msg = '[{}]: Starting Test 7...'.format(current_time)
+        print(msg)
+        
+        test_7(func = f, Func = F, quad_type = 'lg', dir_name = dir_name)
+        test_7(func = f, Func = F, quad_type = 'lgl', dir_name = dir_name)
+
+        perf_f = perf_counter()
+        perf_diff = perf_f - perf_0
+        now = datetime.now()
+        current_time = now.strftime("%H:%M:%S")
+        msg = ('[{}]: Completed Test 7! ' +
+               'Time Elapsed: {:06.3f} [s]').format(current_time, perf_diff)
+        print(msg)
     
 def f(x):
     """
@@ -181,6 +224,23 @@ def dfdx(x):
     return 6 * (x + 0.25)**5 * (np.sin(18 * np.pi * x)
                                 + 3 * np.pi * (x + 0.25) * np.cos(18 * np.pi * x))
 
+def F(x):
+    """
+    Test function for integration.
+    """
+
+    #return (x + 0.25)**2 * np.sin(2 * np.pi * x)
+
+    term_1 = (- 5120. + 51840. * (np.pi * (1. + 4. * x))**2 \
+                      - 87480. * (np.pi * (1. + 4. * x))**4 \
+                      + 59049. * (np.pi * (1. + 4. * x))**6) \
+            * -2. * np.cos(18. * np.pi * x)
+    term_2 = (640. - 2160. * (np.pi * (1. + 4. * x))**2 \
+                   + 2187. * (np.pi * (1. + 4. * x))**4) \
+            * 72. * np.pi * (1. + 4. * x) * np.sin(18. * np.pi * x)
+
+    return (1. / (8707129344. * np.pi**7)) * (term_1 + term_2)
+    
 def dg(x):
     '''
     Analytic derivative of test function g.

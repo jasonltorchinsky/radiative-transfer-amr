@@ -12,6 +12,9 @@ def test_1(func, src_nnodes = 41, trgt_nnodes = 10,
     Legendre-Gauss-Lobatto basis.
     """
 
+    dir_name = os.path.join(dir_name, 'test_1')
+    os.makedirs(dir_name, exist_ok = True)
+
     if quad_type == 'lg':
         [src_nodes, src_weights] = qd.lg_quad(src_nnodes)
         [trgt_nodes, trgt_weights] = qd.lg_quad(trgt_nnodes)

@@ -42,7 +42,7 @@ def calc_bdry_conv_matrix(mesh):
                     col_mtx = calc_col_matrix(col_0, col_0, F)
                     
                     # The intra-column matrix may already exist. If so, add to it.
-                    if col_mtxs[col_idx_0][col_idx_0] == None:
+                    if col_mtxs[col_idx_0][col_idx_0] is None:
                         col_mtxs[col_idx_0][col_idx_0] = col_mtx
                     else:                        
                         col_mtxs[col_idx_0][col_idx_0] += col_mtx
@@ -65,7 +65,7 @@ def calc_bdry_conv_matrix(mesh):
                                 
                                 col_mtx = calc_col_matrix(col_0, col_1, F)
                                 
-                                if col_mtxs[col_idx_0][col_idx_1] == None:
+                                if col_mtxs[col_idx_0][col_idx_1] is None:
                                     col_mtxs[col_idx_0][col_idx_1] = col_mtx
                                 else:
                                     col_mtxs[col_idx_0][col_idx_1] += col_mtx
@@ -108,10 +108,10 @@ def calc_col_matrix(col_0, col_1, F):
 
     # To ensure proper matrix construction, we initialize all cell
     # matrices to be empty sparse matrices
-    for cell_key_0, cell_0 in sorted(col_0.cells.items()):
+    for cell_key_0, cell_0 in cell_items_0:
         if cell_0.is_lf:
             cell_idx_0  = cell_idxs_0[cell_key_0]
-            ndof_th_0   = cell_0.ndofs[0]
+            [ndof_th_0]   = cell_0.ndofs
             cell_ndof_0 = ndof_x_0 * ndof_y_0 * ndof_th_0
             
             for cell_key_1, cell_1 in sorted(col_1.cells.items()):
@@ -120,7 +120,7 @@ def calc_col_matrix(col_0, col_1, F):
                     ndof_th_1   = cell_1.ndofs[0]
                     cell_ndof_1 = ndof_x_1 * ndof_y_1 * ndof_th_1
 
-                    cell_mtxs_01[cell_idx_0][cell_idx_1] = \
+                    cell_mtxs[cell_idx_0][cell_idx_1] = \
                         coo_matrix((cell_ndof_0, cell_ndof_1))
 
     # Construct information independent of cell parameters
@@ -134,7 +134,7 @@ def calc_col_matrix(col_0, col_1, F):
             for jj in range(0, ndof_y_1):
                 for qq in range(0, ndof_y_0):
                     wy_0_q = wy_0[qq]
-                    psi_j = qd.lag_eval(yyb_0_1, jj, yyb_0[qq])
+                    psi_j = qd.lag_eval(yyb_1, jj, yyb_0_1[qq])
                     E_y[jj, qq] = wy_0_q * psi_j
                     
         else: # ndof_y_0 < ndof_y_1
@@ -157,7 +157,7 @@ def calc_col_matrix(col_0, col_1, F):
             for ii in range(0, ndof_x_1):
                 for pp in range(0, ndof_x_0):
                     wx_0_p = wx_0[pp]
-                    phi_i = qd.lag_eval(xxb_0_1, ii, xxb_0[pp])
+                    phi_i = qd.lag_eval(xxb_1, ii, xxb_0_1[pp])
                     E_x[ii, pp] = wx_0_p * phi_i
                     
         else: # if ndof_x_0 < ndof_x_1
@@ -185,7 +185,7 @@ def calc_col_matrix(col_0, col_1, F):
     for cell_key_0, cell_0 in cell_items_0:
         if cell_0.is_lf:
             # Get information about cell K in column C
-            S_quad_0 = cell_0.quad
+            S_quad_0   = cell_0.quad
             cell_idx_0 = cell_idxs_0[cell_key_0] # Matrix index of cell 0 in
                                                  # column matrices
             [th0_0, th1_0]             = cell_0.pos
@@ -196,6 +196,9 @@ def calc_col_matrix(col_0, col_1, F):
             # (p, q, r) => alpha
             # alpha is number of rows, always corresponds to K
             alpha = get_idx_map(ndof_x_0, ndof_y_0, ndof_th_0)
+
+            # Dependence on F in dcoeff is handled already
+            dcoeff = (dth_0 / 4.) * (np.linalg.matrix_power(J, F) @ dxy)[0]
             
             nhbr_cells = ji_mesh.get_cell_nhbr_in_col(cell_0, col_1)
             for cell_1 in nhbr_cells:
@@ -245,9 +248,6 @@ def calc_col_matrix(col_0, col_1, F):
                                         xi_a = qd.lag_eval(thb_1, aa, thb_1_0_1[aap])
                                         xi_r = qd.lag_eval(thb_0, rr, thb_1[aap])
                                         E_th[aa, rr] += wth_1[aap] * Theta_F[aap] * xi_a * xi_r
-
-                        # Dependence on F in dcoeff is handled already
-                        dcoeff = (dth_0 / 4.) * (np.linalg.matrix_power(J, F) @ dxy)[0]
                         
                         # Many quantities are actually dependent only on
                         # the parity of F not F itself, so we can 

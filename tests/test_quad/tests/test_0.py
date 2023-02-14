@@ -11,6 +11,9 @@ def test_0(nnodes = 5, quad_type = 'lg', dir_name = 'test_quad'):
     interpolating the Legendre-Gauss/Legendre-Gauss-Lobatto nodes).
     """
 
+    dir_name = os.path.join(dir_name, 'test_0')
+    os.makedirs(dir_name, exist_ok = True)
+
     if quad_type == 'lg':
         [nodes, weights] = qd.lg_quad(nnodes)
         quad_type_str = 'Legendre-Gauss'

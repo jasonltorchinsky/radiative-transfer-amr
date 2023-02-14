@@ -19,11 +19,11 @@ def lgl_quad(nnodes = 5):
 
     # Vandermonde matrix
     vand = np.zeros([nnodes, nnodes])
-    vand[:, 0] = 1
     # Compute P_n using the recursion relation
     # Compute its first and second derivatives using Newton-Raphson
     nodes_prev = nodes + 1
     while np.amax(np.abs(nodes - nodes_prev)) > 2.3e-16:
+        vand[:, 0] = 1
         vand[:, 1] = nodes
         for kk in range(1, nnodes - 1):
             vand[:, kk + 1] = ( (2 * kk + 1) * nodes * vand[:, kk]
@@ -35,6 +35,6 @@ def lgl_quad(nnodes = 5):
                 / ((nnodes + 1) * vand[:, nnodes - 1]) )
 
 
-    weights = 2. / (nnodes * (nnodes + 1) * vand[:, nnodes - 1]**2)
+    weights = 2. / ((nnodes - 1) * nnodes * vand[:, nnodes - 1]**2)
     
     return [nodes, weights]

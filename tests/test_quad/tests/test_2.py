@@ -11,6 +11,9 @@ def test_2(func, quad_type = 'lg', dir_name = 'test_quad'):
     Legendre-Gauss-Lobatto nodal basis of varying orders.
     """
 
+    dir_name = os.path.join(dir_name, 'test_2')
+    os.makedirs(dir_name, exist_ok = True)
+    
     if quad_type == 'lg':
         quad_type_str = 'Legendre-Gauss'
 

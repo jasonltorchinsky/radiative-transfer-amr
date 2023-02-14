@@ -46,9 +46,9 @@ def main():
     os.makedirs(dir_name, exist_ok = True)
 
     # Create the mesh on which to perform tests.
-    Lx = 3
-    Ly = 2
-    ndofs_x, ndofs_y, ndofs_th = [2, 2, 2]
+    Lx = 750
+    Ly = 250
+    [ndofs_x, ndofs_y, ndofs_th] = [2, 2, 2]
 
     # Construct the mesh, with some refinements.
     mesh = ji_mesh.Mesh(Ls = [Lx, Ly],
@@ -59,7 +59,7 @@ def main():
     for col_nrefs in range(0, 2):
         mesh.cols[0].ref_col()
 
-    nuni_refs = 1
+    nuni_refs = 2
     for ref in range(0, nuni_refs):
         mesh.ref_mesh()
 
