@@ -39,6 +39,7 @@ def calc_bdry_conv_matrix(mesh):
             # Loop through the faces of C
             for F in range(0, 4):
                 if col_0.bdry[F]: # If column is on the spatial domain boundary,
+                    # no need to find a neightbor.
                     col_mtx = calc_col_matrix(col_0, col_0, F)
                     
                     # The intra-column matrix may already exist. If so, add to it.
@@ -62,14 +63,13 @@ def calc_bdry_conv_matrix(mesh):
                                 col_key_1 = col_1.key
                                 col_idx_1 = col_idxs[col_key_1]
                                 
-                                
                                 col_mtx = calc_col_matrix(col_0, col_1, F)
-                                
+
                                 if col_mtxs[col_idx_0][col_idx_1] is None:
                                     col_mtxs[col_idx_0][col_idx_1] = col_mtx
                                 else:
                                     col_mtxs[col_idx_0][col_idx_1] += col_mtx
-                
+                                
     # Global boundary convection matrix is not block-diagonal
     # but we arranged the column matrices in the proper form
     bdry_conv_mtx = bmat(col_mtxs, format = 'csr')
@@ -98,6 +98,7 @@ def calc_col_matrix(col_0, col_1, F):
     # Set array to store cell matrices for inter-column matrices
     # Certainly not block diagonal, but set sizes later once we get number of
     # cells in neighboring columns
+    cell_items_1                     = sorted(col_1.cells.items())
     [x0_1, y0_1, x1_1, y1_1]         = col_1.pos
     [dx_1, dy_1]                     = [x1_1 - x0_1, y1_1 - y0_1]
     [ndof_x_1, ndof_y_1]             = col_1.ndofs
@@ -111,13 +112,13 @@ def calc_col_matrix(col_0, col_1, F):
     for cell_key_0, cell_0 in cell_items_0:
         if cell_0.is_lf:
             cell_idx_0  = cell_idxs_0[cell_key_0]
-            [ndof_th_0]   = cell_0.ndofs
+            [ndof_th_0] = cell_0.ndofs
             cell_ndof_0 = ndof_x_0 * ndof_y_0 * ndof_th_0
             
-            for cell_key_1, cell_1 in sorted(col_1.cells.items()):
+            for cell_key_1, cell_1 in cell_items_1:
                 if cell_1.is_lf:
                     cell_idx_1  = cell_idxs_1[cell_key_1]
-                    ndof_th_1   = cell_1.ndofs[0]
+                    [ndof_th_1] = cell_1.ndofs
                     cell_ndof_1 = ndof_x_1 * ndof_y_1 * ndof_th_1
 
                     cell_mtxs[cell_idx_0][cell_idx_1] = \
@@ -129,46 +130,46 @@ def calc_col_matrix(col_0, col_1, F):
         E_y = np.zeros([ndof_y_1, ndof_y_0])
         if ndof_y_0 >= ndof_y_1:
             yyf_0   = push_forward(y0_0, y1_0, yyb_0)
-            yyb_0_1 = pull_back(y0_1, y1_1, yyf_0)
+            yyb_0_1 = pull_back(   y0_1, y1_1, yyf_0)
             
             for jj in range(0, ndof_y_1):
                 for qq in range(0, ndof_y_0):
                     wy_0_q = wy_0[qq]
-                    psi_j = qd.lag_eval(yyb_1, jj, yyb_0_1[qq])
+                    psi_j  = qd.lag_eval(yyb_1, jj, yyb_0_1[qq])
                     E_y[jj, qq] = wy_0_q * psi_j
                     
         else: # ndof_y_0 < ndof_y_1
-            yyf_1_0   = push_forward(y0_0, y1_0, yyb_1)
-            yyb_1_0_1 = pull_back(y0_1, y1_1, yyf_1_0)
+            yyf_1_0   = push_forward(y0_0, y1_0, yyb_1  )
+            yyb_1_0_1 = pull_back(   y0_1, y1_1, yyf_1_0)
             
             for jj in range(0, ndof_y_1):
                 for qq in range(0, ndof_y_0):
                     for jjp in range(0, ndof_y_1):
                         psi_j = qd.lag_eval(yyb_1, jj, yyb_1_0_1[jjp])
-                        psi_q = qd.lag_eval(yyb_0, qq, yyb_1[jjp])
+                        psi_q = qd.lag_eval(yyb_0, qq, yyb_1[jjp]    )
                         E_y[jj, qq] += wy_1[jjp] * psi_j * psi_q
                         
     else: # F%2 == 1, construct E^K'K,x_ip
         E_x = np.zeros([ndof_x_1, ndof_x_0])
         if ndof_x_0 >= ndof_x_1:
             xxf_0   = push_forward(x0_0, x1_0, xxb_0)
-            xxb_0_1 = pull_back(x0_1, x1_1, xxf_0)
+            xxb_0_1 = pull_back(   x0_1, x1_1, xxf_0)
             
             for ii in range(0, ndof_x_1):
                 for pp in range(0, ndof_x_0):
                     wx_0_p = wx_0[pp]
-                    phi_i = qd.lag_eval(xxb_1, ii, xxb_0_1[pp])
+                    phi_i  = qd.lag_eval(xxb_1, ii, xxb_0_1[pp])
                     E_x[ii, pp] = wx_0_p * phi_i
                     
         else: # if ndof_x_0 < ndof_x_1
-            xxf_1_0   = push_forward(x0_0, x1_0, xb_1)
-            xxb_1_0_1 = pull_back(x0_1, x1_1, xf_1_0)
+            xxf_1_0   = push_forward(x0_0, x1_0, xxb_1  )
+            xxb_1_0_1 = pull_back(   x0_1, x1_1, xxf_1_0)
             
             for ii in range(0, ndof_x_1):
                 for pp in range(0, ndof_x_0):
                     for iip in range(0, ndof_x_1):
-                        phi_i = qd.lag_eval(xb_1, ii, xxb_1_0_1[iip])
-                        phi_p = qd.lag_eval(xxb_0, pp, xxb_1[iip])
+                        phi_i = qd.lag_eval(xxb_1, ii, xxb_1_0_1[iip])
+                        phi_p = qd.lag_eval(xxb_0, pp, xxb_1[iip]    )
                         E_x[ii, pp] += wx_1[iip] * phi_i * phi_p
 
     # Theta^F function
@@ -210,23 +211,18 @@ def calc_col_matrix(col_0, col_1, F):
                         [th0_1, th1_1] = cell_1.pos
                         dth_1          = th1_1 - th0_1
                         ndof_th_1      = cell_1.ndofs[0]
-                        [_, _, _, _, thb_1, wth_1] = qd.quad_xyth(nnodes_th =  ndof_th_1)
+                        [_, _, _, _, thb_1, wth_1] = qd.quad_xyth(nnodes_th = ndof_th_1)
                         
                         # (i, j, a) => beta
-                        # beta is number of columns
-                        # in Fm, beta always corresponds to K^(n)
                         beta = get_idx_map(ndof_x_1, ndof_y_1, ndof_th_1)
-                        
-                        # REMINDER: **f => Push forward coordinates
-                        # (in [*0, *1])
-                        thf_0 = push_forward(th0_0, th1_0, thb_0)
-                        thf_1 = push_forward(th0_1, th1_1, thb_1)
                         
                         # Dependence on F in constructing E^K'K,theta_ar is
                         # handled already
-                        E_th = np.zeros([ndof_th_0, ndof_th_1])
+                        E_th = np.zeros([ndof_th_1, ndof_th_0])
                         if ndof_th_0 >= ndof_th_1:
+                            thf_0   = push_forward(th0_0, th1_0, thb_0)
                             Theta_F = Theta_F_func(thf_0)
+                            
                             thb_0_1 = pull_back(th0_1, th1_1, thf_0)
                             
                             for aa in range(0, ndof_th_1):
@@ -246,7 +242,7 @@ def calc_col_matrix(col_0, col_1, F):
                                 for rr in range(0, ndof_th_0):
                                     for aap in range(0, ndof_th_1):
                                         xi_a = qd.lag_eval(thb_1, aa, thb_1_0_1[aap])
-                                        xi_r = qd.lag_eval(thb_0, rr, thb_1[aap])
+                                        xi_r = qd.lag_eval(thb_0, rr, thb_1[aap]    )
                                         E_th[aa, rr] += wth_1[aap] * Theta_F[aap] * xi_a * xi_r
                         
                         # Many quantities are actually dependent only on
@@ -341,6 +337,5 @@ def calc_col_matrix(col_0, col_1, F):
                                    shape = (cell_ndof_0, cell_ndof_1))
                     
     col_mtx = bmat(cell_mtxs, format = 'csr')
-
 
     return col_mtx

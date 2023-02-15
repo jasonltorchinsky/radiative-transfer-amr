@@ -105,13 +105,13 @@ class Mesh:
                 chld_idx  = chldn_idxs[ii]
                 chld_pos  = chldn_poss[ii]
                 chld_bdry = chldn_bdrys[ii]
-                chld_col = Column(pos = chld_pos,
-                                  idx = chld_idx,
-                                  lv  = lv + 1,
-                                  is_lf = True,
-                                  ndofs = col.ndofs,
-                                  cells = col.cells.copy(),
-                                  bdry  = chld_bdry)
+                chld_col  = Column(pos = chld_pos,
+                                   idx = chld_idx,
+                                   lv  = lv + 1,
+                                   is_lf = True,
+                                   ndofs = col.ndofs,
+                                   cells = col.cells.copy(),
+                                   bdry  = chld_bdry)
                 self.add_col(chld_col)
 
             # Make sure we maintain 2-neighbor condition

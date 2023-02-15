@@ -49,9 +49,6 @@ def calc_intr_conv_matrix(mesh):
                     # anyway for clarity
                     alpha = get_idx_map(ndof_x, ndof_y, ndof_th)
                     beta  = get_idx_map(ndof_x, ndof_y, ndof_th)
-                    
-                    # Values common to equation for each entry
-                    dcoeff = dx * dy * dth / 8
 
                     # Set up arrays for delta_ip * delta_ar term
                     cell_ndof      = ndof_x * ndof_y * ndof_th
@@ -62,6 +59,9 @@ def calc_intr_conv_matrix(mesh):
                     
                     # Construct delta_ip * delta_ar term
                     # i = p, a = r
+                    # When we take the derivative of psi, we end up with
+                    # 2/dy * psi_bar in normalized coordinates, so dcoeff is
+                    dcoeff = dx * dth / 4.
                     idx = 0
                     for ii in range(0, ndof_x):
                         wx_i = w_x[ii]
@@ -75,9 +75,8 @@ def calc_intr_conv_matrix(mesh):
 
                                     alphalist_ipar[idx] = alpha(ii, qq, aa)
                                     betalist_ipar[idx]  = beta( ii, jj, aa)
-
-                                    # Something weird with dcoeff? Should be dx*dth/4?
-                                    vlist_ipar[idx] = (dx * dth / 4.) * wx_i * wy_j * wth_a \
+                                    
+                                    vlist_ipar[idx] = dcoeff * wx_i * wy_j * wth_a \
                                         * ddy_psi_qj * sin_a
                                     
                                     idx += 1
@@ -91,10 +90,13 @@ def calc_intr_conv_matrix(mesh):
                     cell_ndof_jqar = ndof_x**2 * ndof_y * ndof_th                    
                     alphalist_jqar = np.zeros([cell_ndof_jqar], dtype = np.int32)
                     betalist_jqar  = np.zeros([cell_ndof_jqar], dtype = np.int32)
-                    vlist_jqar     = np.zeros([cell_ndof_ipar])
+                    vlist_jqar     = np.zeros([cell_ndof_jqar])
 
                     # Construct delta_jq * delta_ar term
                     # j = q, a = r
+                    # When we take the derivative of phi, we end up with
+                    # 2/dx * phi_bar in normalized coordinates, so dcoeff is
+                    dcoeff = dy * dth / 4.
                     idx = 0
                     for ii in range(0, ndof_x):
                         wx_i = w_x[ii]
@@ -108,9 +110,8 @@ def calc_intr_conv_matrix(mesh):
                                     
                                     alphalist_jqar[idx] = alpha(pp, jj, aa)
                                     betalist_jqar[idx]  = beta( ii, jj, aa)
-
-                                    # Something weird with dcoeff? Should be dy*dth/4?
-                                    vlist_jqar[idx] = (dy * dth / 4.) * wx_i * wy_j * wth_a \
+                                    
+                                    vlist_jqar[idx] = dcoeff * wx_i * wy_j * wth_a \
                                         * ddx_phi_pi * cos_a
                                     
                                     idx += 1

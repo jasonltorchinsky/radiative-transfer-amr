@@ -109,20 +109,59 @@ def test_3(mesh, dir_name = 'test_rtdg'):
     plt.savefig(os.path.join(test_3_dir, file_name), dpi = 300)
     plt.close(fig)
 
-    ### VISUALIZE EIGENVALUES OF THE MATRIX
-    fig, ax = plt.subplots()
+    ### VISUALIZE EIGENVALUES OF THE MATRICES
     size = M_conv.get_shape()
     mesh_ndof = int(np.amin(size))
     neval = mesh_ndof - 2
     xx = np.arange(1, neval + 1)
-    evals = eigs(M_conv, k = neval)[0]
-    evals = sorted(np.real(evals), reverse = True)
-
-    ax.axhline(y = 0.0, color = 'gray', linestyle = '--')
-    ax.scatter(xx, evals, color = 'k')
-    ax.set_title('Global Convection Matrix - First {}/{} Eigenvalues'.format(neval, mesh_ndof))
     
+    evals_conv = eigs(M_conv, k = neval)[0]
+    evals_conv = sorted(np.real(evals_conv), reverse = True)
+
+    evals_intr_conv = eigs(M_intr_conv, k = neval)[0]
+    evals_intr_conv = sorted(np.real(evals_intr_conv), reverse = True)
+
+    evals_bdry_conv = eigs(M_bdry_conv, k = neval)[0]
+    evals_bdry_conv = sorted(np.real(evals_bdry_conv), reverse = True)
+
+    # Global convection matrix
+    fig, ax = plt.subplots()
+    ax.axhline(y = 0.0, color = 'gray', linestyle = '--')
+    ax.scatter(xx, evals_conv,
+               color = 'k', s = 0.15)
+
+    ax.set_title(('Global Convection Matrix - ' +
+                  'First {}/{} Eigenvalues'      ).format(neval, mesh_ndof))
+
     file_name = 'conv_matrix_evals.png'
+    fig.set_size_inches(6.5, 6.5)
+    plt.savefig(os.path.join(test_3_dir, file_name), dpi = 300)
+    plt.close(fig)
+
+    # Boundary convection matrix
+    fig, ax = plt.subplots()
+    ax.axhline(y = 0.0, color = 'gray', linestyle = '--')
+    ax.scatter(xx, evals_bdry_conv,
+               color = 'k', s = 0.15)
+
+    ax.set_title(('Global Boundary Convection Matrix - ' +
+                  'First {}/{} Eigenvalues'      ).format(neval, mesh_ndof))
+
+    file_name = 'conv_bdry_matrix_evals.png'
+    fig.set_size_inches(6.5, 6.5)
+    plt.savefig(os.path.join(test_3_dir, file_name), dpi = 300)
+    plt.close(fig)
+
+    # Interior convection matrix
+    fig, ax = plt.subplots()
+    ax.axhline(y = 0.0, color = 'gray', linestyle = '--')
+    ax.scatter(xx, evals_intr_conv,
+               color = 'k', s = 0.15)
+
+    ax.set_title(('Global Interior Convection Matrix - ' +
+                  'First {}/{} Eigenvalues'      ).format(neval, mesh_ndof))
+
+    file_name = 'conv_intr_matrix_evals.png'
     fig.set_size_inches(6.5, 6.5)
     plt.savefig(os.path.join(test_3_dir, file_name), dpi = 300)
     plt.close(fig)
@@ -149,10 +188,9 @@ def test_3(mesh, dir_name = 'test_rtdg'):
         f_vec = get_forcing_vector(mesh, f)
         f_vec_intr = f_vec[intr_mask]
         
-        anl_sol_vec = get_proj_vector(mesh, anl_sol)
-        bcs_vec = anl_sol_vec[np.invert(intr_mask)]
+        anl_sol_vec      = get_proj_vector(mesh, anl_sol)
+        bcs_vec          = anl_sol_vec[np.invert(intr_mask)]
         anl_sol_intr_vec = anl_sol_vec[intr_mask]
-        print(np.amax(anl_sol_intr_vec))
         
         M_intr_conv = calc_intr_conv_matrix(mesh)
         M_bdry_conv = calc_bdry_conv_matrix(mesh)
@@ -165,11 +203,15 @@ def test_3(mesh, dir_name = 'test_rtdg'):
 
         # Plot solutions
         fig, ax = plt.subplots()
-        
-        ax.plot(apr_sol_intr_vec, label = 'Approximate Solution',
-                color = 'k', linestyle = '-')
-        ax.plot(anl_sol_intr_vec, label = 'Analytic Solution',
-                color = 'r', linestyle = '-')
+
+        ax.plot(anl_sol_intr_vec,
+                label = 'Analytic Solution',
+                color = 'r',
+                drawstyle = 'steps-post')
+        ax.plot(apr_sol_intr_vec,
+                label = 'Approximate Solution',
+                color = 'k', linestyle = ':',
+                drawstyle = 'steps-post')
         
         ax.legend()
         
