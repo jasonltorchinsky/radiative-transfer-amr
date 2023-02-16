@@ -33,6 +33,7 @@ class Mesh:
 
         # Create first column, put cell into it
         # Determine boundary flags for column
+        # F = o => Right face, proceed counterclockwise
         col_bdry = [True, True, True, True] # Which face is on the boundary of
                                             # the domain?
         if pbcs[0]: # Periodic in x, no "boundary" in x

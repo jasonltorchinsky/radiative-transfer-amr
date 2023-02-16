@@ -67,6 +67,8 @@ def main():
     for ref in range(0, nuni_refs):
         mesh.ref_mesh()
 
+    #mesh.ref_col(mesh.cols[4])
+
     mesh_dir  = os.path.join(dir_name, 'mesh')
     os.makedirs(mesh_dir, exist_ok = True)
     mesh_tools.plot_mesh(mesh, file_name = os.path.join(mesh_dir, 'mesh_3d.png'),

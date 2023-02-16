@@ -199,7 +199,7 @@ def calc_col_matrix(col_0, col_1, F):
             alpha = get_idx_map(ndof_x_0, ndof_y_0, ndof_th_0)
 
             # Dependence on F in dcoeff is handled already
-            dcoeff = (dth_0 / 4.) * (np.linalg.matrix_power(J, F) @ dxy)[0]
+            dcoeff = (dth_0 / 4.) * (np.linalg.matrix_power(J, F) @ dxy)[0,0]
             
             nhbr_cells = ji_mesh.get_cell_nhbr_in_col(cell_0, col_1)
             for cell_1 in nhbr_cells:
