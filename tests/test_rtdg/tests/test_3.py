@@ -112,16 +112,15 @@ def test_3(mesh, dir_name = 'test_rtdg'):
     ### VISUALIZE EIGENVALUES OF THE MATRICES
     size = M_conv.get_shape()
     mesh_ndof = int(np.amin(size))
-    neval = mesh_ndof - 2
-    xx = np.arange(1, neval + 1)
+    xx = np.arange(1, mesh_ndof + 1)
     
-    evals_conv = eigs(M_conv, k = neval)[0]
+    evals_conv = np.linalg.eig(M_conv.toarray())[0]
     evals_conv = sorted(np.real(evals_conv), reverse = True)
 
-    evals_intr_conv = eigs(M_intr_conv, k = neval)[0]
+    evals_intr_conv = np.linalg.eig(M_intr_conv.toarray())[0]
     evals_intr_conv = sorted(np.real(evals_intr_conv), reverse = True)
 
-    evals_bdry_conv = eigs(M_bdry_conv, k = neval)[0]
+    evals_bdry_conv = np.linalg.eig(M_bdry_conv.toarray())[0]
     evals_bdry_conv = sorted(np.real(evals_bdry_conv), reverse = True)
 
     # Global convection matrix
@@ -130,8 +129,7 @@ def test_3(mesh, dir_name = 'test_rtdg'):
     ax.scatter(xx, evals_conv,
                color = 'k', s = 0.15)
 
-    ax.set_title(('Global Convection Matrix - ' +
-                  'First {}/{} Eigenvalues'      ).format(neval, mesh_ndof))
+    ax.set_title(('Global Convection Matrix').format(mesh_ndof))
 
     file_name = 'conv_matrix_evals.png'
     fig.set_size_inches(6.5, 6.5)
@@ -144,8 +142,7 @@ def test_3(mesh, dir_name = 'test_rtdg'):
     ax.scatter(xx, evals_bdry_conv,
                color = 'k', s = 0.15)
 
-    ax.set_title(('Global Boundary Convection Matrix - ' +
-                  'First {}/{} Eigenvalues'      ).format(neval, mesh_ndof))
+    ax.set_title(('Global Boundary Convection Matrix').format(mesh_ndof))
 
     file_name = 'conv_bdry_matrix_evals.png'
     fig.set_size_inches(6.5, 6.5)
@@ -158,8 +155,7 @@ def test_3(mesh, dir_name = 'test_rtdg'):
     ax.scatter(xx, evals_intr_conv,
                color = 'k', s = 0.15)
 
-    ax.set_title(('Global Interior Convection Matrix - ' +
-                  'First {}/{} Eigenvalues'      ).format(neval, mesh_ndof))
+    ax.set_title(('Global Interior Convection Matrix').format(mesh_ndof))
 
     file_name = 'conv_intr_matrix_evals.png'
     fig.set_size_inches(6.5, 6.5)

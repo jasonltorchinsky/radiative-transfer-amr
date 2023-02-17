@@ -91,7 +91,7 @@ def calc_intr_conv_matrix(mesh):
                     alphalist_jqar = np.zeros([cell_ndof_jqar], dtype = np.int32)
                     betalist_jqar  = np.zeros([cell_ndof_jqar], dtype = np.int32)
                     vlist_jqar     = np.zeros([cell_ndof_jqar])
-
+                    
                     # Construct delta_jq * delta_ar term
                     # j = q, a = r
                     # When we take the derivative of phi, we end up with
