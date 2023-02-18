@@ -129,7 +129,7 @@ def test_3(mesh, dir_name = 'test_rtdg'):
     ax.scatter(xx, evals_conv,
                color = 'k', s = 0.15)
 
-    ax.set_title(('Global Convection Matrix').format(mesh_ndof))
+    ax.set_title(('Global Convection Matrix - Eigenvalues').format(mesh_ndof))
 
     file_name = 'conv_matrix_evals.png'
     fig.set_size_inches(6.5, 6.5)
@@ -142,7 +142,7 @@ def test_3(mesh, dir_name = 'test_rtdg'):
     ax.scatter(xx, evals_bdry_conv,
                color = 'k', s = 0.15)
 
-    ax.set_title(('Global Boundary Convection Matrix').format(mesh_ndof))
+    ax.set_title(('Global Boundary Convection Matrix - Eigenvalues').format(mesh_ndof))
 
     file_name = 'conv_bdry_matrix_evals.png'
     fig.set_size_inches(6.5, 6.5)
@@ -155,7 +155,7 @@ def test_3(mesh, dir_name = 'test_rtdg'):
     ax.scatter(xx, evals_intr_conv,
                color = 'k', s = 0.15)
 
-    ax.set_title(('Global Interior Convection Matrix').format(mesh_ndof))
+    ax.set_title(('Global Interior Convection Matrix - Eigenvalues').format(mesh_ndof))
 
     file_name = 'conv_intr_matrix_evals.png'
     fig.set_size_inches(6.5, 6.5)
