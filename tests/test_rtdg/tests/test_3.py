@@ -30,6 +30,11 @@ def test_3(mesh, dir_name = 'test_rtdg'):
 
     M_conv = M_bdry_conv - M_intr_conv
 
+    #file_name = 'JT_M_conv.csv'
+    #np.savetxt(os.path.join(test_3_dir, file_name),
+    #              M_conv.toarray(), delimiter = ",")
+    #quit()
+
     ### VISUALIZE THE ENTIRE MATRIX
     # Convetion Matrix
     fig, ax = plt.subplots()
@@ -110,23 +115,26 @@ def test_3(mesh, dir_name = 'test_rtdg'):
     plt.close(fig)
 
     ### VISUALIZE EIGENVALUES OF THE MATRICES
-    size = M_conv.get_shape()
+    [M_intr_conv_intr, _] = split_matrix(mesh, M_intr_conv)
+    [M_bdry_conv_intr, _] = split_matrix(mesh, M_bdry_conv)
+    [M_conv_intr, _] = split_matrix(mesh, M_conv)
+    size = M_conv_intr.get_shape()
     mesh_ndof = int(np.amin(size))
     xx = np.arange(1, mesh_ndof + 1)
     
-    evals_conv = np.linalg.eig(M_conv.toarray())[0]
-    evals_conv = sorted(np.real(evals_conv), reverse = True)
+    evals_conv_intr = np.linalg.eig(M_conv_intr.toarray())[0]
+    evals_conv_intr = sorted(np.real(evals_conv_intr), reverse = True)
 
-    evals_intr_conv = np.linalg.eig(M_intr_conv.toarray())[0]
-    evals_intr_conv = sorted(np.real(evals_intr_conv), reverse = True)
+    evals_intr_conv_intr = np.linalg.eig(M_intr_conv_intr.toarray())[0]
+    evals_intr_conv_intr = sorted(np.real(evals_intr_conv_intr), reverse = True)
 
-    evals_bdry_conv = np.linalg.eig(M_bdry_conv.toarray())[0]
-    evals_bdry_conv = sorted(np.real(evals_bdry_conv), reverse = True)
+    evals_bdry_conv_intr = np.linalg.eig(M_bdry_conv_intr.toarray())[0]
+    evals_bdry_conv_intr = sorted(np.real(evals_bdry_conv_intr), reverse = True)
 
     # Global convection matrix
     fig, ax = plt.subplots()
     ax.axhline(y = 0.0, color = 'gray', linestyle = '--')
-    ax.scatter(xx, evals_conv,
+    ax.scatter(xx, evals_conv_intr,
                color = 'k', s = 0.15)
 
     ax.set_title(('Global Convection Matrix - Eigenvalues').format(mesh_ndof))
@@ -139,7 +147,7 @@ def test_3(mesh, dir_name = 'test_rtdg'):
     # Boundary convection matrix
     fig, ax = plt.subplots()
     ax.axhline(y = 0.0, color = 'gray', linestyle = '--')
-    ax.scatter(xx, evals_bdry_conv,
+    ax.scatter(xx, evals_bdry_conv_intr,
                color = 'k', s = 0.15)
 
     ax.set_title(('Global Boundary Convection Matrix - Eigenvalues').format(mesh_ndof))
@@ -152,7 +160,7 @@ def test_3(mesh, dir_name = 'test_rtdg'):
     # Interior convection matrix
     fig, ax = plt.subplots()
     ax.axhline(y = 0.0, color = 'gray', linestyle = '--')
-    ax.scatter(xx, evals_intr_conv,
+    ax.scatter(xx, evals_intr_conv_intr,
                color = 'k', s = 0.15)
 
     ax.set_title(('Global Interior Convection Matrix - Eigenvalues').format(mesh_ndof))

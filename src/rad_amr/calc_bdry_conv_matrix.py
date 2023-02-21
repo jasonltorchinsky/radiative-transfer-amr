@@ -49,10 +49,9 @@ def calc_bdry_conv_matrix(mesh):
                         col_mtxs[col_idx_0][col_idx_0] += col_mtx_00 + col_mtx_01
                         
                 else: #not col.bdry[F], column is not on the domain boundary
-                    # Find the neighbors of C
                     axis = F%2
                     nhbr_loc = nhbr_locs[int(F/2)]
-                    [flag, col_nhbr_1, col_nhbr_2] = \
+                    [_, col_nhbr_1, col_nhbr_2] = \
                         ji_mesh.get_col_nhbr(mesh, col_0,
                                              axis = axis,
                                              nhbr_loc = nhbr_loc)
@@ -63,18 +62,20 @@ def calc_bdry_conv_matrix(mesh):
                                 col_key_1 = col_1.key
                                 col_idx_1 = col_idxs[col_key_1]
                                 
-                                [col_mtx_00, col_mtx_01] = calc_col_matrix(col_0, col_1, F)
-
+                                [col_mtx_00, col_mtx_01] = calc_col_matrix(col_0,
+                                                                           col_1,
+                                                                           F)
+                                
                                 if col_mtxs[col_idx_0][col_idx_1] is None:
                                     col_mtxs[col_idx_0][col_idx_1] = col_mtx_01
                                 else:
                                     col_mtxs[col_idx_0][col_idx_1] += col_mtx_01
-
+                                    
                                 if col_mtxs[col_idx_0][col_idx_0] is None:
                                     col_mtxs[col_idx_0][col_idx_0] = col_mtx_00
                                 else:                        
                                     col_mtxs[col_idx_0][col_idx_0] += col_mtx_00
-                                
+                                    
     # Global boundary convection matrix is not block-diagonal
     # but we arranged the column matrices in the proper form
     bdry_conv_mtx = bmat(col_mtxs, format = 'csr')
@@ -92,9 +93,6 @@ def calc_col_matrix(col_0, col_1, F):
     # w* => Quadrature weights
     cell_items_0            = sorted(col_0.cells.items())
     [ndof_x_0, ndof_y_0]    = col_0.ndofs
-    [ncells_0, cell_idxs_0] = get_cell_idxs(col_0)
-
-    # Create cell indexing for constructing column mass matrix
     [ncells_0, cell_idxs_0] = get_cell_idxs(col_0)
     cell_mtxs_00            = [None] * ncells_0
 
@@ -146,157 +144,21 @@ def calc_col_matrix(col_0, col_1, F):
             # Otherwise we have the option of using the quadrature rule from
             # the neighboring column/cell
             if is_Fp:
-                cell_mtxs_00[cell_idx_0] += calc_cell_matrix(cell_0, cell_0,
-                                                             col_0, col_0, F)
+                cell_mtxs_00[cell_idx_0] += \
+                    calc_cell_matrix(cell_0, col_0, cell_0, col_0, F)
             else:
-                # CONTINUE FROM HERE, INSERT MATRIX INTO cell_mtxs_01
-            # If a cell happens to be its own neighbor, e.g., from PBCs,
-            # this code should handle it just fine b/c the get_cell_in_neighbor
-            # only cares about local column indexing, not which column it actually is
-            nhbr_cells = ji_mesh.get_cell_nhbr_in_col(cell_0, col_01)
-            for cell_01 in nhbr_cells:
-                if cell_01:
-                    if cell_01.is_lf:
-                        cell_key_01 = cell_01.key
-                        cell_idx_01 = cell_idxs_01[cell_key_01]
-                        
-                        [th0_01, th1_01] = cell_01.pos
-                        dth_01          = th1_01 - th0_01
-                        ndof_th_01      = cell_01.ndofs[0]
-                        [_, _, _, _, thb_01, wth_01] = qd.quad_xyth(nnodes_th = ndof_th_01)
-                        
-                        # (i, j, a) => beta
-                        beta = get_idx_map(ndof_x_01, ndof_y_01, ndof_th_01)
-                        
-                        # Dependence on F in constructing E^K'K,theta_ar is
-                        # handled already
-                        E_th = np.zeros([ndof_th_01, ndof_th_0])
-                        if ndof_th_0 >= ndof_th_01:
-                            thf_0   = push_forward(th0_0, th1_0, thb_0)
-                            Theta_F = Theta_F_func(thf_0)
-                            
-                            thb_0_01 = pull_back(th0_01, th1_01, thf_0)
-                            
-                            for aa in range(0, ndof_th_01):
-                                for rr in range(0, ndof_th_0):
-                                    wth_0_r = wth_0[rr]
-                                    Theta_F_r = Theta_F[rr]
-                                    xi_a = qd.lag_eval(thb_01, aa, thb_0_01[rr])
-                                    E_th[aa, rr] = wth_0_r * Theta_F_r * xi_a
-                                    
-                        else: # ndof_th_0 < ndof_th_01
-                            thf_01_0 = push_forward(th0_0, th1_0, thb_01)
-                            Theta_F = Theta_F_func(thf_01_0)
-                            
-                            thb_01_0_01 = pull_back(th0_01, th1_01, thf_01_0)
-                            
-                            for aa in range(0, ndof_th_01):
-                                for rr in range(0, ndof_th_0):
-                                    for aap in range(0, ndof_th_01):
-                                        xi_a = qd.lag_eval(thb_01, aa, thb_01_0_01[aap])
-                                        xi_r = qd.lag_eval(thb_0, rr, thb_01[aap]    )
-                                        E_th[aa, rr] += wth_01[aap] * Theta_F[aap] * xi_a * xi_r
-                        
-                        # Many quantities are actually dependent only on
-                        # the parity of F not F itself, so we can 
-                        # separate primarily into two cases
-                        if (F%2 == 0):
-                            # Number of *NON-ZERO* DoFs
-                            ndof_0    = ndof_y_0 * ndof_th_0 
-                            ndof_01   = ndof_y_01 * ndof_th_01
-                            
-                            # The entry locations are mostly dependent
-                            # on only the parity of F, and their value
-                            # is entirely dependent on F, so we can
-                            # handle those here, too
-                            alphalist = np.zeros([ndof_0 * ndof_01], dtype = np.int32)
-                            betalist  = np.zeros([ndof_0 * ndof_01], dtype = np.int32)
-                            vlist     = np.zeros([ndof_0 * ndof_01])
-                            
-                            # The x index depends on whether col_0 is actually
-                            # on the boundary of the domain or not.
-                            if col_0.bdry[F]: # On boundary of domain
-                                if (F == 0):
-                                    x_idx_0 = ndof_x_0 - 1
-                                elif (F == 2):
-                                    x_idx_0 = 0
-                                x_idx_01 = x_idx_0
-                            else:
-                                if (F == 0):
-                                    x_idx_0 = ndof_x_0 - 1
-                                    x_idx_01 = 0
-                                elif (F == 2):
-                                    x_idx_0 = 0
-                                    x_idx_01 = ndof_x_01 - 1
-                                
-                            idx = 0
-                            for jj in range(0, ndof_y_01):
-                                for qq in range(0, ndof_y_0):
-                                    E_y_jq = E_y[jj, qq]
-                                    for aa in range(0, ndof_th_01):
-                                        for rr in range(0, ndof_th_0):
-                                            E_th_ar = E_th[aa, rr]
-                                            
-                                            alphalist[idx] = alpha(x_idx_0, qq, rr)
-                                            betalist[idx]  = beta( x_idx_01, jj, aa)
-                                            vlist[idx] = dcoeff * E_th_ar * E_y_jq
-                                            
-                                            idx += 1
-                        elif (F%2 == 1):                            
-                            # Number of *NON-ZERO* DoFs
-                            ndof_0    = ndof_x_0 * ndof_th_0
-                            ndof_01    = ndof_x_01 * ndof_th_01
-                            
-                            alphalist = np.zeros([ndof_0 * ndof_01], dtype = np.int32)
-                            betalist  = np.zeros([ndof_0 * ndof_01], dtype = np.int32)
-                            vlist     = np.zeros([ndof_0 * ndof_01])
-                            
-                            # The y index depends on whether col_0 is actually
-                            # on the boundary of the domain or not.
-                            if col_0.bdry[F]: # On boundary of domain
-                                if (F == 1):
-                                    y_idx_0 = ndof_y_0 - 1
-                                elif (F == 3):
-                                    y_idx_0 = 0
-                                y_idx_01 = y_idx_0
-                            else:
-                                if (F == 1):
-                                    y_idx_0 = ndof_y_0 - 1
-                                    y_idx_01 = 0
-                                elif (F == 3):
-                                    y_idx_0 = 0
-                                    y_idx_01 = ndof_y_01 - 1
-                                
-                            idx = 0
-                            for ii in range(0, ndof_x_01):
-                                for pp in range(0, ndof_x_0):
-                                    E_x_ip = E_x[ii, pp]
-                                    for aa in range(0, ndof_th_01):
-                                        for rr in range(0, ndof_th_0):
-                                            E_th_ar = E_th[aa, rr]
-                                            
-                                            alphalist[idx] = alpha(pp, y_idx_0, rr)
-                                            betalist[idx]  = beta( ii, y_idx_01, aa)
-                                            vlist[idx] = dcoeff * E_th_ar * E_x_ip
-                                            
-                                            idx += 1
-                                            
-                    cell_ndof_0 = ndof_x_0 * ndof_y_0 * ndof_th_0
-                    cell_ndof_01 = ndof_x_01 * ndof_y_01 * ndof_th_01
+                nhbr_cells = ji_mesh.get_cell_nhbr_in_col(cell_0, col_1)
+                for cell_1 in nhbr_cells:
+                    if cell_1:
+                        if cell_1.is_lf:
+                            cell_key_1 = cell_1.key
+                            cell_idx_1 = cell_idxs_1[cell_key_1]
 
-                    if is_Fp:
-                        # Contribute to M^CC
-                        cell_mtxs_00[cell_idx_0] =\
-                            coo_matrix((vlist, (alphalist, betalist)),
-                                       shape = (cell_ndof_0, cell_ndof_01))
-                    else:
-                        # Contribute to M^CC'
-                        cell_mtxs_01[cell_idx_0][cell_idx_01] =\
-                            coo_matrix((vlist, (alphalist, betalist)),
-                                       shape = (cell_ndof_0, cell_ndof_01))
+                            cell_mtxs_01[cell_idx_0][cell_idx_1] += \
+                                calc_cell_matrix(cell_0, col_0, cell_1, col_1, F)
                     
     col_mtx_00 = block_diag(cell_mtxs_00, format = 'csr')
-    col_mtx_01 = bmat(cell_mtxs_01, format = 'csr')
+    col_mtx_01 = bmat(      cell_mtxs_01, format = 'csr')
 
     return [col_mtx_00, col_mtx_01]
 
@@ -304,6 +166,16 @@ def calc_cell_matrix(cell_0, col_0, cell_1, col_1, F):
     """
     Create the column interaction matrix between col_0, col_1.
     """
+
+    S_quad_0   = cell_0.quad
+    
+    # If a cell is in F^+, contribute to column-matrix M^CC.
+    is_Fp = ( ((S_quad_0 == 0) and (F == 0 or F == 1)) or
+              ((S_quad_0 == 1) and (F == 1 or F == 2)) or
+              ((S_quad_0 == 2) and (F == 2 or F == 3)) or
+              ((S_quad_0 == 3) and (F == 3 or F == 0)) )
+
+    
 
     # Get information about column C
     # _0 => Cell K in equations (in column C)
@@ -317,30 +189,47 @@ def calc_cell_matrix(cell_0, col_0, cell_1, col_1, F):
     [th0_0, th1_0] = cell_0.pos
     dth_0          = th1_0 - th0_0
     [ndof_th_0]    = cell_0.ndofs
+    [xxb_0, wx_0, yyb_0, wy_0, thb_0, wth_0] = \
+        qd.quad_xyth(nnodes_x  = ndof_x_0,
+                     nnodes_y  = ndof_y_0,
+                     nnodes_th = ndof_th_0)
+    
     cell_ndof_0    = ndof_x_0 * ndof_y_0 * ndof_th_0
     
-
+    
     # Set array to store cell matrices for inter-column matrices
     # Certainly not block diagonal, but set sizes later once we get number of
     # cells in neighboring columns
     [x0_1, y0_1, x1_1, y1_1]         = col_1.pos
     [dx_1, dy_1]                     = [x1_1 - x0_1, y1_1 - y0_1]
     [ndof_x_1, ndof_y_1]             = col_1.ndofs
-    [xxb_1, wx_1, yyb_1, wy_1, _, _] = qd.quad_xyth(nnodes_x = ndof_x_1,
-                                                    nnodes_y = ndof_y_1)
-    [th0_0, th1_0] = cell_1.pos
-    dth_0          = th1_1 - th0_1
+    
+    [th0_1, th1_1] = cell_1.pos
+    dth_1          = th1_1 - th0_1
     [ndof_th_1]    = cell_1.ndofs
+    
+    [xxb_1, wx_1, yyb_1, wy_1, thb_1, wth_1] = \
+        qd.quad_xyth(nnodes_x  = ndof_x_1,
+                     nnodes_y  = ndof_y_1,
+                     nnodes_th = ndof_th_1)
+    
     cell_ndof_1    = ndof_x_1 * ndof_y_1 * ndof_th_1
+
+    # If on the inflow boundary of the domain, return a zero matrix
+    if col_0.bdry[F] and not is_Fp:
+        cell_mtx = coo_matrix((cell_ndof_0, cell_ndof_1))
+        return cell_mtx
 
     # Theta^F function
     def Theta_F_func(theta):
         return np.cos(theta - F * np.pi / 2)
 
     # Set up non-Delta theta part of dcoeff
-    J      = np.array([[0, -1], [1, 0]])
-    dxy    = np.array([[dy_0], [dx_0]])
-    dcoeff = (dth_0 / 4.) * (np.linalg.matrix_power(J, F) @ dxy)[0,0]
+    if (F == 0) or (F == 2):
+        dcoeff = (dy_0 * dth_0) / 4.
+    else:
+        dcoeff = (dx_0 * dth_0) / 4.
+        
 
     # alpha is number of rows, beta is the number of columns
     alpha = get_idx_map(ndof_x_0, ndof_y_0, ndof_th_0)
@@ -401,9 +290,9 @@ def calc_cell_matrix(cell_0, col_0, cell_1, col_1, F):
         
         for aa in range(0, ndof_th_1):
             for rr in range(0, ndof_th_0):
-                wth_0_r = wth_0[rr]
+                wth_0_r   = wth_0[rr]
                 Theta_F_r = Theta_F[rr]
-                xi_a = qd.lag_eval(thb_1, aa, thb_0_1[rr])
+                xi_a      = qd.lag_eval(thb_1, aa, thb_0_1[rr])
                 E_th[aa, rr] = wth_0_r * Theta_F_r * xi_a
                 
     else: # ndof_th_0 < ndof_th_1
@@ -422,6 +311,8 @@ def calc_cell_matrix(cell_0, col_0, cell_1, col_1, F):
     # Many quantities are actually dependent only on
     # the parity of F not F itself, so we can 
     # separate primarily into two cases
+    
+    
     if (F%2 == 0):
         # Number of *NON-ZERO* DoFs
         ndof_0 = ndof_y_0 * ndof_th_0 
@@ -437,12 +328,12 @@ def calc_cell_matrix(cell_0, col_0, cell_1, col_1, F):
         
         # The x index depends on whether col_0 is actually
         # on the boundary of the domain or not.
-        if col_0.bdry[F]: # On boundary of domain
+        if col_0.bdry[F] or is_Fp: # On boundary of domain
             if (F == 0):
                 x_idx_0 = ndof_x_0 - 1
             elif (F == 2):
                 x_idx_0 = 0
-                x_idx_1 = x_idx_0
+            x_idx_1 = x_idx_0
         else:
             if (F == 0):
                 x_idx_0 = ndof_x_0 - 1
@@ -461,7 +352,7 @@ def calc_cell_matrix(cell_0, col_0, cell_1, col_1, F):
                         
                         alphalist[idx] = alpha(x_idx_0, qq, rr)
                         betalist[idx]  = beta( x_idx_1, jj, aa)
-                        vlist[idx] = dcoeff * E_th_ar * E_y_jq
+                        vlist[idx]     = dcoeff * E_th_ar * E_y_jq
                         
                         idx += 1
                         
@@ -476,12 +367,12 @@ def calc_cell_matrix(cell_0, col_0, cell_1, col_1, F):
         
         # The y index depends on whether col_0 is actually
         # on the boundary of the domain or not.
-        if col_0.bdry[F]: # On boundary of domain
+        if col_0.bdry[F] or is_Fp: # On boundary of domain
             if (F == 1):
                 y_idx_0 = ndof_y_0 - 1
             elif (F == 3):
                 y_idx_0 = 0
-                y_idx_1 = y_idx_0
+            y_idx_1 = y_idx_0
         else:
             if (F == 1):
                 y_idx_0 = ndof_y_0 - 1
@@ -504,7 +395,6 @@ def calc_cell_matrix(cell_0, col_0, cell_1, col_1, F):
                         
                         idx += 1
                         
-    # Contribute to M^CC
     cell_mtx = coo_matrix((vlist, (alphalist, betalist)),
                           shape = (cell_ndof_0, cell_ndof_1))
 
