@@ -5,14 +5,28 @@ import os, sys
 sys.path.append('../../src')
 from rad_amr import get_intr_mask
 
-def test_0(mesh, dir_name = 'test_rtdg'):
+def test_0(dir_name = 'test_rtdg'):
     """
     Creates a plots of the boundary mask to extract the interior and boundary
     entries of a matrix.
     """
 
-    test_0_dir = os.path.join(dir_name, 'test_0')
-    os.makedirs(test_0_dir, exist_ok = True)
+    test_dir = os.path.join(dir_name, 'test_0')
+    os.makedirs(test_dir, exist_ok = True)
+    
+    # Create the base mesh which will be refined in each trial.
+    [Lx, Ly]                   = [3., 2.]
+    [ndof_x, ndof_y, ndof_th]  = [2, 2, 2]
+    mesh = ji_mesh.Mesh(Ls     = [Lx, Ly],
+                        pbcs   = [False, False],
+                        ndofs  = [ndof_x, ndof_y, ndof_th],
+                        has_th = True)
+    
+    # Refine the mesh for initial trial
+    for _ in range(0, 2):
+        mesh.cols[0].ref_col()
+    for _ in range(0, 1):
+        mesh.ref_mesh()
 
     intr_mask = get_intr_mask(mesh)
     intr_mask_dense = intr_mask.astype(dtype = np.int32)

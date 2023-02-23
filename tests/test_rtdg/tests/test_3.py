@@ -1,12 +1,20 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.sparse.linalg import spsolve, eigs
+from time import perf_counter
 import os, sys
 
+from .get_forcing_vec    import get_forcing_vec
+from .get_projection_vec import get_projection_vec
+
 sys.path.append('../../src')
+from dg.mesh import ji_mesh
+from dg.mesh import tools as mesh_tools
 import dg.quadrature as qd
 from rad_amr import calc_intr_conv_matrix, calc_bdry_conv_matrix, \
-    push_forward, get_intr_mask, split_matrix, get_idx_map
+    get_intr_mask, split_matrix
+
+from utils import print_msg
 
 # Utilize a manufactured solution
 def anl_sol(x, y, th):
@@ -17,202 +25,203 @@ def f(x, y, th):
     return -2. * np.sin(th)**2 * np.exp(-(x**2 + y**2)) \
     * (x * np.cos(th) + y * np.sin(th))
 
-def test_3(mesh, dir_name = 'test_rtdg'):
+def test_3(dir_name = 'test_rtdg'):
     """
-    Creates a plots of the scattering matrix for a given mesh, sigma, and Phi.    
+    Creates various visualizations of the convection matrix and solves a 
+    manufactured problem.
     """
-
-    test_3_dir = os.path.join(dir_name, 'test_3')
-    os.makedirs(test_3_dir, exist_ok = True)
     
-    M_intr_conv = calc_intr_conv_matrix(mesh)
-    M_bdry_conv = calc_bdry_conv_matrix(mesh)
-
-    M_conv = M_bdry_conv - M_intr_conv
-
-    #file_name = 'JT_M_conv.csv'
-    #np.savetxt(os.path.join(test_3_dir, file_name),
-    #              M_conv.toarray(), delimiter = ",")
-    #quit()
-
-    ### VISUALIZE THE ENTIRE MATRIX
-    # Convetion Matrix
-    fig, ax = plt.subplots()
-
-    # Put gridlines where column matrices are
-    mesh_ndof = 0
-    for col_key, col in sorted(mesh.cols.items()):
-        col_ndof = 0
-        [ndof_x, ndof_y] = col.ndofs
-
-        for cell_key, cell in sorted(col.cells.items()):
-            [ndof_th] = cell.ndofs
-
-            col_ndof += ndof_x * ndof_y * ndof_th
-
-        mesh_ndof += col_ndof
-        ax.axhline(y = mesh_ndof, color = 'gray', linestyle = '--')
-        ax.axvline(x = mesh_ndof, color = 'gray', linestyle = '--')
+    test_dir = os.path.join(dir_name, 'test_3')
+    os.makedirs(test_dir, exist_ok = True)
     
-    ax.spy(M_conv, marker = 'o', markersize = 0.1, color = 'k')
-    ax.set_title('Global Convection Matrix')
+    # Create the base mesh which will be refined in each trial.
+    [Lx, Ly]                   = [3., 2.]
+    [ndof_x, ndof_y, ndof_th]  = [4, 4, 4]
+    mesh = ji_mesh.Mesh(Ls     = [Lx, Ly],
+                        pbcs   = [False, False],
+                        ndofs  = [ndof_x, ndof_y, ndof_th],
+                        has_th = True)
     
-    file_name = 'conv_matrix.png'
-    fig.set_size_inches(6.5, 6.5)
-    plt.savefig(os.path.join(test_3_dir, file_name), dpi = 300)
-    plt.close(fig)
-
-    # Boundary Convetion Matrix
-    fig, ax = plt.subplots()
-
-    # Put gridlines where column matrices are
-    mesh_ndof = 0
-    for col_key, col in sorted(mesh.cols.items()):
-        col_ndof = 0
-        [ndof_x, ndof_y] = col.ndofs
-
-        for cell_key, cell in sorted(col.cells.items()):
-            [ndof_th] = cell.ndofs
-
-            col_ndof += ndof_x * ndof_y * ndof_th
-
-        mesh_ndof += col_ndof
-        ax.axhline(y = mesh_ndof, color = 'gray', linestyle = '--')
-        ax.axvline(x = mesh_ndof, color = 'gray', linestyle = '--')
+    # Refine the mesh for initial trial
+    for _ in range(0, 2):
+        mesh.cols[0].ref_col()
+    for _ in range(0, 1):
+        mesh.ref_mesh()
     
-    ax.spy(M_bdry_conv, marker = 'o', markersize = 0.1, color = 'k')
-    ax.set_title('Global Boundary Convection Matrix')
-    
-    file_name = 'conv_bdry_matrix.png'
-    fig.set_size_inches(6.5, 6.5)
-    plt.savefig(os.path.join(test_3_dir, file_name), dpi = 300)
-    plt.close(fig)
-
-    # Interior Convetion Matrix
-    fig, ax = plt.subplots()
-
-    # Put gridlines where column matrices are
-    mesh_ndof = 0
-    for col_key, col in sorted(mesh.cols.items()):
-        col_ndof = 0
-        [ndof_x, ndof_y] = col.ndofs
-
-        for cell_key, cell in sorted(col.cells.items()):
-            [ndof_th] = cell.ndofs
-
-            col_ndof += ndof_x * ndof_y * ndof_th
-
-        mesh_ndof += col_ndof
-        ax.axhline(y = mesh_ndof, color = 'gray', linestyle = '--')
-        ax.axvline(x = mesh_ndof, color = 'gray', linestyle = '--')
-    
-    ax.spy(M_intr_conv, marker = 'o', markersize = 0.1, color = 'k')
-    ax.set_title('Global Interior Convection Matrix')
-    
-    file_name = 'conv_intr_matrix.png'
-    fig.set_size_inches(6.5, 6.5)
-    plt.savefig(os.path.join(test_3_dir, file_name), dpi = 300)
-    plt.close(fig)
-
-    ### VISUALIZE EIGENVALUES OF THE MATRICES
-    [M_intr_conv_intr, _] = split_matrix(mesh, M_intr_conv)
-    [M_bdry_conv_intr, _] = split_matrix(mesh, M_bdry_conv)
-    [M_conv_intr, _] = split_matrix(mesh, M_conv)
-    size = M_conv_intr.get_shape()
-    mesh_ndof = int(np.amin(size))
-    xx = np.arange(1, mesh_ndof + 1)
-    
-    evals_conv_intr = np.linalg.eig(M_conv_intr.toarray())[0]
-    evals_conv_intr = sorted(np.real(evals_conv_intr), reverse = True)
-
-    evals_intr_conv_intr = np.linalg.eig(M_intr_conv_intr.toarray())[0]
-    evals_intr_conv_intr = sorted(np.real(evals_intr_conv_intr), reverse = True)
-
-    evals_bdry_conv_intr = np.linalg.eig(M_bdry_conv_intr.toarray())[0]
-    evals_bdry_conv_intr = sorted(np.real(evals_bdry_conv_intr), reverse = True)
-
-    # Global convection matrix
-    fig, ax = plt.subplots()
-    ax.axhline(y = 0.0, color = 'gray', linestyle = '--')
-    ax.scatter(xx, evals_conv_intr,
-               color = 'k', s = 0.15)
-
-    ax.set_title(('Global Convection Matrix - Eigenvalues').format(mesh_ndof))
-
-    file_name = 'conv_matrix_evals.png'
-    fig.set_size_inches(6.5, 6.5)
-    plt.savefig(os.path.join(test_3_dir, file_name), dpi = 300)
-    plt.close(fig)
-
-    # Boundary convection matrix
-    fig, ax = plt.subplots()
-    ax.axhline(y = 0.0, color = 'gray', linestyle = '--')
-    ax.scatter(xx, evals_bdry_conv_intr,
-               color = 'k', s = 0.15)
-
-    ax.set_title(('Global Boundary Convection Matrix - Eigenvalues').format(mesh_ndof))
-
-    file_name = 'conv_bdry_matrix_evals.png'
-    fig.set_size_inches(6.5, 6.5)
-    plt.savefig(os.path.join(test_3_dir, file_name), dpi = 300)
-    plt.close(fig)
-
-    # Interior convection matrix
-    fig, ax = plt.subplots()
-    ax.axhline(y = 0.0, color = 'gray', linestyle = '--')
-    ax.scatter(xx, evals_intr_conv_intr,
-               color = 'k', s = 0.15)
-
-    ax.set_title(('Global Interior Convection Matrix - Eigenvalues').format(mesh_ndof))
-
-    file_name = 'conv_intr_matrix_evals.png'
-    fig.set_size_inches(6.5, 6.5)
-    plt.savefig(os.path.join(test_3_dir, file_name), dpi = 300)
-    plt.close(fig)
-    
-    ### SOLVE SIMPLIFIED PROBLEM
-    ntrial = 3
-    mesh_dAs = np.zeros([ntrial])
-    Linf_errors = np.zeros([ntrial])
+    # Solve simplified problem over several trials
+    ntrial    = 3
+    ref_ndofs = np.zeros([ntrial])
+    inf_errs  = np.zeros([ntrial])
     for trial in range(0, ntrial):
-        # Get number of degrees of spatial freedom of mesh
-        for col_key, col in sorted(mesh.cols.items()):
-            col_ndof = 0
+        perf_trial_0 = perf_counter()
+        print_msg('[Trial {}] Starting...'.format(trial))
+            
+        # Set up output directories
+        trial_dir = os.path.join(test_dir, 'trial_{}'.format(trial))
+        os.makedirs(trial_dir, exist_ok = True)
+
+        # Plot the mesh
+        mesh_tools.plot_mesh(mesh,
+                             file_name = os.path.join(trial_dir, 'mesh_3d.png'),
+                             plot_dim  = 3)
+        mesh_tools.plot_mesh(mesh,
+                             file_name   = os.path.join(trial_dir, 'mesh_2d.png'),
+                             plot_dim    = 2,
+                             label_cells = True)
+
+        # Get the ending indices for the column matrices, number of DOFs in mesh
+        col_items = sorted(mesh.cols.items())
+        ncol      = 0
+        for col_key, col in col_items:
             if col.is_lf:
-                # Get column information
-                [x0, y0, x1, y1] = col.pos
-                [dx, dy] = [x1 - x0, y1 - y0]
-
-                dA = dx * dy
-
-                mesh_dAs[trial] = dA
-
-        intr_mask  = get_intr_mask(mesh)
+                ncol += 1
         
-        f_vec      = get_forcing_vector(mesh, f)
-        f_vec_intr = f_vec[intr_mask]
+        col_end_idxs = [0] * ncol
+        mesh_ndof    = 0
+        idx          = 0
+        for col_key, col in col_items:
+            if col.is_lf:
+                col_ndof         = 0
+                [ndof_x, ndof_y] = col.ndofs
+                
+                cell_items = sorted(col.cells.items())
+                for cell_key, cell in cell_items:
+                    if cell.is_lf:
+                        [ndof_th] = cell.ndofs
+                        
+                        col_ndof  += ndof_x * ndof_y * ndof_th
+                
+                mesh_ndof += col_ndof
+                col_end_idxs[idx] = mesh_ndof
+                
+                idx += 1
+                
+        ref_ndofs[trial] = mesh_ndof
         
-        anl_sol_vec      = get_proj_vector(mesh, anl_sol)
-        bcs_vec          = anl_sol_vec[np.invert(intr_mask)]
-        anl_sol_intr_vec = anl_sol_vec[intr_mask]
+        # Construct matrices to solve manufactured problem
+        ## Interior convection matrix
+        perf_cons_0 = perf_counter()
+        print_msg('[Trial {}] Constructing interior convection matrix...'.format(trial))
         
         M_intr_conv = calc_intr_conv_matrix(mesh)
+        
+        perf_cons_f    = perf_counter()
+        perf_cons_diff = perf_cons_f - perf_cons_0
+        msg = (
+            '[Trial {}] Interior convection matrix constructed! '.format(trial) +
+            'Time Elapsed: {:08.3f} [s]'.format(perf_cons_diff)
+        )
+        print_msg(msg)
+        
+        ## Boundary convection matrix
+        perf_cons_0 = perf_counter()
+        print_msg('[Trial {}] Constructing boundary convection matrix...'.format(trial))
+        
         M_bdry_conv = calc_bdry_conv_matrix(mesh)
         
-        M_conv = M_bdry_conv - M_intr_conv
-        
-        [M_conv_intr, M_conv_bdry] = split_matrix(mesh, M_conv)
-        
-        apr_sol_intr_vec = spsolve(M_conv_intr, f_vec_intr - M_conv_bdry @ bcs_vec)
+        perf_cons_f    = perf_counter()
+        perf_cons_diff = perf_cons_f - perf_cons_0
+        msg = (
+            '[Trial {}] Boundary convection matrix constructed! '.format(trial) +
+            'Time Elapsed: {:08.3f} [s]'.format(perf_cons_diff)
+        )
+        print_msg(msg)
 
+        ## Forcing vector, analytic solution, interior DOFs mask
+        f_vec       = get_forcing_vec(mesh, f)
+        anl_sol_vec = get_projection_vec(mesh, anl_sol)
+        
+        intr_mask        = get_intr_mask(mesh)
+        f_vec_intr       = f_vec[intr_mask]
+        anl_sol_vec_intr = anl_sol_vec[intr_mask]
+        bcs_vec          = anl_sol_vec[np.invert(intr_mask)]
+        
+        ## Solve manufactured problem
+        perf_soln_0 = perf_counter()
+        print_msg('[Trial {}] Solving manufactured problem...'.format(trial))
+        
+        M_conv = M_bdry_conv - M_intr_conv
+        [M_intr, M_bdry] = split_matrix(mesh, M_conv)
+        
+        apr_sol_vec_intr = spsolve(M_intr, f_vec_intr - M_bdry @ bcs_vec)
+        
+        perf_soln_f    = perf_counter()
+        perf_soln_diff = perf_soln_f - perf_soln_0
+        msg = (
+            '[Trial {}] Manufactured problem solved! '.format(trial) +
+            'Time Elapsed: {:08.3f} [s]'.format(perf_cons_diff)
+        )
+        print_msg(msg)
+
+        # Calculate eigenvalues of interior convection matrix
+        '''
+        perf_evals_0 = perf_counter()
+        print_msg('[Trial {}] Calculating eigenvalues...'.format(trial))
+        
+        M_intr_evals = np.linalg.eig(M_intr.toarray())[0]
+        M_intr_evals = sorted(np.real(M_intr_evals), reverse = True)
+        
+        perf_evals_f    = perf_counter()
+        perf_evals_diff = perf_evals_f - perf_evals_0
+        msg = (
+            '[Trial {}] Eigenvalues calculated! '.format(trial) +
+            'Time Elapsed: {:08.3f} [s]'.format(perf_evals_diff)
+        )
+        print_msg(msg)
+        '''
+        
+        # Plot global convection matrix
+        fig, ax = plt.subplots()
+        for idx in range(0, ncol - 1):
+            ax.axhline(y         = col_end_idxs[idx],
+                       color     = 'gray',
+                       linestyle = '--',
+                       linewidth = 0.2)
+            ax.axvline(x         = col_end_idxs[idx],
+                       color     = 'gray',
+                       linestyle = '--',
+                       linewidth = 0.2)
+        ax.spy(M_conv,
+               marker     = 's',
+               markersize = 0.2,
+               color      = 'k')
+        ax.set_title('Global Convection Matrix')
+        
+        file_name = 'conv_matrix.png'
+        fig.set_size_inches(6.5, 6.5)
+        plt.savefig(os.path.join(trial_dir, file_name), dpi = 300)
+        plt.close(fig)
+        
+        # Plot eigenvalues of interior convection matrix
+        '''
+        fig, ax      = plt.subplots()
+        ndof_intr    = np.shape(M_intr)[0]
+        xx           = np.arange(1, ndof_intr + 1)
+        
+        ax.axhline(y         = 0.0,
+                   color     = 'gray',
+                   linestyle = '--',
+                   linewidth = 0.1)
+        ax.scatter(xx, M_intr_evals,
+                   color = 'k',
+                   s     = 0.15)
+
+        ax.set_title('Interior Convection Matrix - Eigenvalues (Real Part)')
+        
+        file_name = 'scat_matrix_evals.png'
+        fig.set_size_inches(6.5, 6.5)
+        plt.savefig(os.path.join(trial_dir, file_name), dpi = 300)
+        plt.close(fig)
+        '''
+        
         # Plot solutions
         fig, ax = plt.subplots()
 
-        ax.plot(anl_sol_intr_vec,
+        ax.plot(anl_sol_vec_intr,
                 label = 'Analytic Solution',
                 color = 'r',
                 drawstyle = 'steps-post')
-        ax.plot(apr_sol_intr_vec,
+        ax.plot(apr_sol_vec_intr,
                 label = 'Approximate Solution',
                 color = 'k', linestyle = ':',
                 drawstyle = 'steps-post')
@@ -223,198 +232,43 @@ def test_3(mesh, dir_name = 'test_rtdg'):
         
         file_name = 'soln_{}.png'.format(trial)
         fig.set_size_inches(6.5, 6.5)
-        plt.savefig(os.path.join(test_3_dir, file_name), dpi = 300)
+        plt.savefig(os.path.join(trial_dir, file_name), dpi = 300)
         plt.close(fig)
         
         # Caluclate error
-        Linf_errors[trial] = np.amax(np.abs(anl_sol_intr_vec - apr_sol_intr_vec))
+        inf_errs[trial] = np.amax(np.abs(anl_sol_vec_intr - apr_sol_vec_intr))
 
-        for col_key, col in sorted(mesh.cols.items()):
+        # Refine the mesh for the next trial
+        for col_key, col in col_items:
             if col.is_lf:
                 col.ref_col()
         mesh.ref_mesh()
+
+        perf_trial_f    = perf_counter()
+        perf_trial_diff = perf_trial_f - perf_trial_0
+        msg = (
+            '[Trial {}] Completed! '.format(trial) +
+            'Time Elapsed: {:08.3f} [s]'.format(perf_trial_diff)
+        )
+        print_msg(msg)
         
     # Plot errors
     fig, ax = plt.subplots()
     
-    ax.plot(mesh_dAs, Linf_errors, label = 'L$^{\infty}$ Error',
-            color = 'k', linestyle = '-')
+    ax.plot(ref_ndofs, inf_errs,
+            label     = 'L$^{\infty}$ Error',
+            color     = 'k',
+            linestyle = '-')
 
     ax.set_xscale('log', base = 2)
     ax.set_yscale('log', base = 10)
     
-    ax.set_xlabel('Column Area ($dA = dx * dy$)')
+    ax.set_xlabel('Total Degrees of Freedom')
     ax.set_ylabel('L$^{\infty}$ Error')
     
-    ax.set_title('Uniform $h$-Refinement Convergence Rate')
+    ax.set_title('Uniform $h$-Refinement Convergence Rate - Convection Problem')
     
-    file_name = 'h-ref_acc.png'
+    file_name = 'h-convergence-convection.png'
     fig.set_size_inches(6.5, 6.5)
-    plt.savefig(os.path.join(test_3_dir, file_name), dpi = 300)
+    plt.savefig(os.path.join(test_dir, file_name), dpi = 300)
     plt.close(fig)
-    
-
-def get_forcing_vector(mesh, f):
-    """
-    Create a global forcing vector corresponding to f.
-    """
-    
-    # Create column indexing for constructing global forcing vector,
-    # global solution vector
-    col_idx = 0
-    col_idxs = dict()
-    for col_key, col in sorted(mesh.cols.items()):
-        if col.is_lf:
-            col_idxs[col_key] = col_idx
-            col_idx += 1
-
-    ncols = col_idx # col_idx counts the number of existing columns in mesh
-    f_col_vecs = [None] * ncols # Global vector is a 1-D vector
-    
-    # Unpack f into a column vectors
-    for col_key, col in sorted(mesh.cols.items()):
-        if col.is_lf:
-            # Get column information, quadrature weights
-            col_idx = col_idxs[col_key]
-            [x0, y0, x1, y1] = col.pos
-            dx = x1 - x0
-            dy = y1 - y0
-            [ndof_x, ndof_y] = col.ndofs
-
-            [xxb, w_x, yyb, w_y, _, _] = qd.quad_xyth(nnodes_x = ndof_x,
-                                                      nnodes_y = ndof_y)
-
-            xxf = push_forward(x0, x1, xxb)
-            yyf = push_forward(y0, y1, yyb)
-            
-            # Create cell indexing for constructing column forcing vector
-            cell_idx = 0
-            cell_idxs = dict()
-            for cell_key, cell in sorted(col.cells.items()):
-                if cell.is_lf:
-                    cell_idxs[cell_key] = cell_idx
-                    cell_idx += 1
-
-            ncells = cell_idx # cell_idx counts the number of existing cells in column
-            f_cell_vecs = [None] * ncells # Column forcing vector is a 1-D vector
-            
-            for cell_key, cell in sorted(col.cells.items()):
-                if cell.is_lf:
-                    # Get cell information, quadrature weights
-                    cell_idx   = cell_idxs[cell_key]
-                    [th0, th1] = cell.pos
-                    dth = th1 - th0
-                    [ndof_th]  = cell.ndofs
-
-                    [_, _, _, _, thb, w_th] = qd.quad_xyth(nnodes_th = ndof_th)
-
-                    thf = push_forward(th0, th1, thb)
-
-                    beta = get_idx_map(ndof_x, ndof_y, ndof_th)
-
-                    dcoeff = dx * dy * dth / 8
-
-                    # List of entries, values for constructing the cell mask
-                    cell_ndof  = ndof_x * ndof_y * ndof_th
-                    f_cell_vec = np.zeros([cell_ndof])
-                    g_cell_vec = np.zeros([cell_ndof])
-                    for ii in range(0, ndof_x):
-                        wx_i = w_x[ii]
-                        for jj in range(0, ndof_y):
-                            wy_j = w_y[jj]
-                            for aa in range(0, ndof_th):
-                                wth_a = w_th[aa]
-                                f_ija = f(xxf[ii], yyf[jj], thf[aa])
-                                
-                                beta_idx = beta(ii, jj, aa)
-                                
-                                f_cell_vec[beta_idx] = dcoeff * wx_i * wy_j \
-                                    * wth_a * f_ija
-
-                    f_cell_vecs[cell_idx] = f_cell_vec
-
-            f_col_vecs[col_idx] = np.concatenate(f_cell_vecs, axis = None)
-
-    f_vec = np.concatenate(f_col_vecs, axis = None)
-
-    return f_vec
-
-def get_proj_vector(mesh, f):
-    """
-    Create a global forcing vector corresponding to f.
-    """
-    
-    # Create column indexing for constructing global forcing vector,
-    # global solution vector
-    col_idx = 0
-    col_idxs = dict()
-    for col_key, col in sorted(mesh.cols.items()):
-        if col.is_lf:
-            col_idxs[col_key] = col_idx
-            col_idx += 1
-
-    ncols = col_idx # col_idx counts the number of existing columns in mesh
-    f_col_vecs = [None] * ncols # Global vector is a 1-D vector
-    
-    # Unpack f into a column vectors
-    for col_key, col in sorted(mesh.cols.items()):
-        if col.is_lf:
-            # Get column information, quadrature weights
-            col_idx = col_idxs[col_key]
-            [x0, y0, x1, y1] = col.pos
-            dx = x1 - x0
-            dy = y1 - y0
-            [ndof_x, ndof_y] = col.ndofs
-            
-            [xxb, _, yyb, _, _, _] = qd.quad_xyth(nnodes_x = ndof_x,
-                                                  nnodes_y = ndof_y)
-            
-            xxf = push_forward(x0, x1, xxb)
-            yyf = push_forward(y0, y1, yyb)
-            
-            # Create cell indexing for constructing column forcing vector
-            cell_idx = 0
-            cell_idxs = dict()
-            for cell_key, cell in sorted(col.cells.items()):
-                if cell.is_lf:
-                    cell_idxs[cell_key] = cell_idx
-                    cell_idx += 1
-                    
-            ncells = cell_idx # cell_idx counts the number of existing cells in column
-            f_cell_vecs = [None] * ncells # Column forcing vector is a 1-D vector
-            
-            for cell_key, cell in sorted(col.cells.items()):
-                if cell.is_lf:
-                    # Get cell information, quadrature weights
-                    cell_idx   = cell_idxs[cell_key]
-                    [th0, th1] = cell.pos
-                    dth = th1 - th0
-                    [ndof_th]  = cell.ndofs
-                    
-                    [_, _, _, _, thb, _] = qd.quad_xyth(nnodes_th = ndof_th)
-                    
-                    thf = push_forward(th0, th1, thb)
-                    
-                    beta = get_idx_map(ndof_x, ndof_y, ndof_th)
-                    
-                    # List of entries, values for constructing the cell mask
-                    cell_ndof = ndof_x * ndof_y * ndof_th
-                    f_cell_vec  = np.zeros([cell_ndof])
-                    g_cell_vec  = np.zeros([cell_ndof])
-                    for ii in range(0, ndof_x):
-                        for jj in range(0, ndof_y):
-                            for aa in range(0, ndof_th):
-                                f_ija = f(xxf[ii], yyf[jj], thf[aa])
-                                
-                                beta_idx = beta(ii, jj, aa)
-                                
-                                f_cell_vec[beta_idx] = f_ija
-                                
-                    f_cell_vecs[cell_idx] = f_cell_vec
-                    
-            f_col_vecs[col_idx] = np.concatenate(f_cell_vecs, axis = None)
-            
-    f_vec = np.concatenate(f_col_vecs, axis = None)
-    
-    return f_vec
-

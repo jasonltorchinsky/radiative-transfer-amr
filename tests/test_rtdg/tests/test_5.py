@@ -11,34 +11,43 @@ sys.path.append('../../src')
 from dg.mesh import ji_mesh
 from dg.mesh import tools as mesh_tools
 import dg.quadrature as qd
-from rad_amr import calc_mass_matrix, push_forward, get_intr_mask, split_matrix
+from rad_amr import calc_mass_matrix, calc_scat_matrix, \
+    calc_intr_conv_matrix, calc_bdry_conv_matrix, \
+    get_intr_mask, split_matrix
 
 from utils import print_msg
 
 # Utilize a manufactured solution
 def anl_sol(x, y, th):
+    # Also used to calculate BCs!
     return np.sin(th)**2 * np.exp(-(x**2 + y**2))
 
 def kappa(x, y):
     return (x + 1)**6 * (np.sin(18 * np.pi * y) + 0.5)**2
 
+def sigma(x, y):
+    return 0.1 * kappa(x, y)
+
+def Phi(theta, phi):
+    return (1.0 / (3.0 * np.pi)) \
+        * (1 + (np.cos(theta) * np.cos(phi) + np.sin(theta) * np.sin(phi))**2)
+
 def f(x, y, th):
-    return np.exp(-(x**2 + y**2)) * (x + 1.)**6 \
-        * (np.sin(18. * np.pi * y) + 0.5)**2 \
-        * (np.sin(th))**2
+    return (-1. / 120.) * np.exp(-(x**2 + y**2)) \
+        * ((1. + x)**6 * (59. * np.cos(2. * th) - 54.) * np.sin(18. * np.pi * y)**2 \
+           + 240. * (x * np.cos(th) + y * np.sin(th)) * np.sin(th)**2)
 
-def test_1(dir_name = 'test_rtdg'):
+def test_5(dir_name = 'test_rtdg'):
     """
-    Creates various visualizations of the mass matrix and solves a 
-    manufactured problem.
+    Solves a manufactured problem of the full system.
     """
-
-    test_dir = os.path.join(dir_name, 'test_1')
+    
+    test_dir = os.path.join(dir_name, 'test_5')
     os.makedirs(test_dir, exist_ok = True)
     
     # Create the base mesh which will be refined in each trial.
     [Lx, Ly]                   = [3., 2.]
-    [ndof_x, ndof_y, ndof_th]  = [2, 2, 2]
+    [ndof_x, ndof_y, ndof_th]  = [5, 5, 5]
     mesh = ji_mesh.Mesh(Ls     = [Lx, Ly],
                         pbcs   = [False, False],
                         ndofs  = [ndof_x, ndof_y, ndof_th],
@@ -114,6 +123,48 @@ def test_1(dir_name = 'test_rtdg'):
             'Time Elapsed: {:08.3f} [s]'.format(perf_cons_diff)
         )
         print_msg(msg)
+        
+        ## Scattering matrix
+        perf_cons_0 = perf_counter()
+        print_msg('[Trial {}] Constructing scattering matrix...'.format(trial))
+        
+        M_scat = calc_scat_matrix(mesh, sigma, Phi)
+        
+        perf_cons_f    = perf_counter()
+        perf_cons_diff = perf_cons_f - perf_cons_0
+        msg = (
+            '[Trial {}] Scattering matrix constructed! '.format(trial) +
+            'Time Elapsed: {:08.3f} [s]'.format(perf_cons_diff)
+        )
+        print_msg(msg)
+        
+        ## Interior convection matrix
+        perf_cons_0 = perf_counter()
+        print_msg('[Trial {}] Constructing interior convection matrix...'.format(trial))
+        
+        M_intr_conv = calc_intr_conv_matrix(mesh)
+        
+        perf_cons_f    = perf_counter()
+        perf_cons_diff = perf_cons_f - perf_cons_0
+        msg = (
+            '[Trial {}] Interior convection matrix constructed! '.format(trial) +
+            'Time Elapsed: {:08.3f} [s]'.format(perf_cons_diff)
+        )
+        print_msg(msg)
+        
+        ## Boundary convection matrix
+        perf_cons_0 = perf_counter()
+        print_msg('[Trial {}] Constructing boundary convection matrix...'.format(trial))
+        
+        M_bdry_conv = calc_bdry_conv_matrix(mesh)
+        
+        perf_cons_f    = perf_counter()
+        perf_cons_diff = perf_cons_f - perf_cons_0
+        msg = (
+            '[Trial {}] Boundary convection matrix constructed! '.format(trial) +
+            'Time Elapsed: {:08.3f} [s]'.format(perf_cons_diff)
+        )
+        print_msg(msg)
 
         ## Forcing vector, analytic solution, interior DOFs mask
         f_vec       = get_forcing_vec(mesh, f)
@@ -127,9 +178,10 @@ def test_1(dir_name = 'test_rtdg'):
         ## Solve manufactured problem
         perf_soln_0 = perf_counter()
         print_msg('[Trial {}] Solving manufactured problem...'.format(trial))
-
-        [M_intr, M_bdry] = split_matrix(mesh, M_mass)
-
+        
+        M = (M_bdry_conv - M_intr_conv) + M_mass - M_scat
+        [M_intr, M_bdry] = split_matrix(mesh, M)
+        
         apr_sol_vec_intr = spsolve(M_intr, f_vec_intr - M_bdry @ bcs_vec)
         
         perf_soln_f    = perf_counter()
@@ -139,25 +191,8 @@ def test_1(dir_name = 'test_rtdg'):
             'Time Elapsed: {:08.3f} [s]'.format(perf_cons_diff)
         )
         print_msg(msg)
-
-        # Calculate eigenvalues of interior scattering matrix
-        '''
-        perf_evals_0 = perf_counter()
-        print_msg('[Trial {}] Calculating eigenvalues...'.format(trial))
         
-        M_intr_evals = np.linalg.eig(M_intr.toarray())[0]
-        M_intr_evals = sorted(np.real(M_intr_evals), reverse = True)
-        
-        perf_evals_f    = perf_counter()
-        perf_evals_diff = perf_evals_f - perf_evals_0
-        msg = (
-            '[Trial {}] Eigenvalues calculated! '.format(trial) +
-            'Time Elapsed: {:08.3f} [s]'.format(perf_evals_diff)
-        )
-        print_msg(msg)
-        '''
-        
-        # Plot global mass matrix
+        # Plot global matrix
         fig, ax = plt.subplots()
         for idx in range(0, ncol - 1):
             ax.axhline(y         = col_end_idxs[idx],
@@ -168,38 +203,17 @@ def test_1(dir_name = 'test_rtdg'):
                        color     = 'gray',
                        linestyle = '--',
                        linewidth = 0.2)
-        ax.spy(M_mass,
+        ax.spy(M,
                marker     = 's',
                markersize = 0.2,
                color      = 'k')
-        ax.set_title('Global Scattering Matrix')
+        ax.set_title('Global Complete Matrix')
         
-        file_name = 'mass_matrix.png'
+        file_name = 'conv_matrix.png'
         fig.set_size_inches(6.5, 6.5)
         plt.savefig(os.path.join(trial_dir, file_name), dpi = 300)
         plt.close(fig)
-        
-        # Plot eigenvalues of interior scattering matrix
-        '''
-        fig, ax      = plt.subplots()
-        ndof_intr    = np.shape(M_intr)[0]
-        xx           = np.arange(1, ndof_intr + 1)
-        
-        ax.axhline(y         = 0.0,
-                   color     = 'gray',
-                   linestyle = '--',
-                   linewidth = 0.1)
-        ax.scatter(xx, M_intr_evals,
-                   color = 'k',
-                   s     = 0.15)
 
-        ax.set_title('Interior Mass Matrix - Eigenvalues (Real Part)')
-        
-        file_name = 'scat_matrix_evals.png'
-        fig.set_size_inches(6.5, 6.5)
-        plt.savefig(os.path.join(trial_dir, file_name), dpi = 300)
-        plt.close(fig)
-        '''
         
         # Plot solutions
         fig, ax = plt.subplots()
@@ -253,9 +267,9 @@ def test_1(dir_name = 'test_rtdg'):
     ax.set_xlabel('Total Degrees of Freedom')
     ax.set_ylabel('L$^{\infty}$ Error')
     
-    ax.set_title('Uniform $h$-Refinement Convergence Rate - Mass Problem')
+    ax.set_title('Uniform $h$-Refinement Convergence Rate - Complete Problem')
     
-    file_name = 'h-convergence-mass.png'
+    file_name = 'h-convergence-complete.png'
     fig.set_size_inches(6.5, 6.5)
     plt.savefig(os.path.join(test_dir, file_name), dpi = 300)
     plt.close(fig)
