@@ -175,8 +175,6 @@ def calc_cell_matrix(cell_0, col_0, cell_1, col_1, F):
               ((S_quad_0 == 2) and (F == 2 or F == 3)) or
               ((S_quad_0 == 3) and (F == 3 or F == 0)) )
 
-    
-
     # Get information about column C
     # _0 => Cell K in equations (in column C)
     # **b => Pull back coordinates (in [-1, 1])

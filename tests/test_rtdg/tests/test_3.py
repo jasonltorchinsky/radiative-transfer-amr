@@ -6,7 +6,7 @@ import os, sys
 sys.path.append('../../src')
 import dg.quadrature as qd
 from rad_amr import calc_intr_conv_matrix, calc_bdry_conv_matrix, \
-    push_forward, get_intr_mask, split_matrix
+    push_forward, get_intr_mask, split_matrix, get_idx_map
 
 # Utilize a manufactured solution
 def anl_sol(x, y, th):
@@ -187,9 +187,9 @@ def test_3(mesh, dir_name = 'test_rtdg'):
 
                 mesh_dAs[trial] = dA
 
-        intr_mask = get_intr_mask(mesh)
+        intr_mask  = get_intr_mask(mesh)
         
-        f_vec = get_forcing_vector(mesh, f)
+        f_vec      = get_forcing_vector(mesh, f)
         f_vec_intr = f_vec[intr_mask]
         
         anl_sol_vec      = get_proj_vector(mesh, anl_sol)
