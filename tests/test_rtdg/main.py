@@ -52,7 +52,7 @@ def main():
     # Create the mesh on which to perform tests.
     Lx = 3
     Ly = 2
-    [ndofs_x, ndofs_y, ndofs_th] = [2, 2, 2]
+    [ndofs_x, ndofs_y, ndofs_th] = [4, 4, 4]
 
     # Construct the mesh, with some refinements.
     mesh = ji_mesh.Mesh(Ls = [Lx, Ly],

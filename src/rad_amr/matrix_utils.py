@@ -41,8 +41,10 @@ def get_intr_mask(mesh):
 
     ncols = col_idx # col_idx counts the number of existing columns in mesh
     col_masks = [None] * ncols # Global mask is a 1-D vector
+
+    col_items = sorted(mesh.cols.items())
     
-    for col_key, col in sorted(mesh.cols.items()):
+    for col_key, col in col_items:
         if col.is_lf:
             col_idx = col_idxs[col_key]
             [ndof_x, ndof_y] = col.ndofs
@@ -58,43 +60,45 @@ def get_intr_mask(mesh):
             ncells = cell_idx # cell_idx counts the number of existing cells in column
             cell_masks = [None] * ncells # Column mask is a 1-D vector
 
-            for cell_key, cell in sorted(col.cells.items()):
+            cell_items = sorted(col.cells.items())
+
+            for cell_key, cell in cell_items:
                 if cell.is_lf:
                     # Get cell information, quadrature weights
                     cell_idx   = cell_idxs[cell_key]
                     [ndof_th]  = cell.ndofs
-
-                    def beta(ii, jj, aa):
-                        val = ndof_th * ndof_y * ii \
-                            + ndof_th * jj \
-                            + aa
-                        return val
+                    
+                    S_quad = cell.quad
+                    
+                    
+                    beta = get_idx_map(ndof_x, ndof_y, ndof_th)
 
                     # List of entries, values for constructing the cell mask
                     cell_ndof = ndof_x * ndof_y * ndof_th
-                    cell_mask = np.ones([cell_ndof], dtype = bool) 
+                    cell_mask = np.ones([cell_ndof], dtype = bool)
 
-                    # Construct the cell mask
-                    if col.bdry[0]: # 0 => Right
+                    # Construct the cell mask - the boundary is the inflow
+                    # part of the spatial domain boundary
+                    if col.bdry[0] and (S_quad == 1 or S_quad == 2): # 0 => Right
                         for jj in range(0, ndof_y):
                             for aa in range(0, ndof_th):
                                 beta_idx = beta(ndof_x - 1, jj, aa)
                                 cell_mask[beta_idx] = False
 
 
-                    if col.bdry[1]: # 1 => Top
+                    if col.bdry[1] and (S_quad == 2 or S_quad == 3): # 1 => Top
                         for ii in range(0, ndof_x):
                             for aa in range(0, ndof_th):
                                 beta_idx = beta(ii, ndof_y - 1, aa)
                                 cell_mask[beta_idx] = False
 
-                    if col.bdry[2]: # 2 => Left
+                    if col.bdry[2] and (S_quad == 3 or S_quad == 0): # 2 => Left
                         for jj in range(0, ndof_y):
                             for aa in range(0, ndof_th):
-                                beta_idx = beta(ndof_x - 1, jj, aa)
+                                beta_idx = beta(0, jj, aa)
                                 cell_mask[beta_idx] = False
 
-                    if col.bdry[3]: # 3 => Bottom
+                    if col.bdry[3] and (S_quad == 0 or S_quad == 1): # 3 => Bottom
                         for ii in range(0, ndof_x):
                             for aa in range(0, ndof_th):
                                 beta_idx = beta(ii, 0, aa)

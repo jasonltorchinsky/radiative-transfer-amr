@@ -15,7 +15,7 @@ def anl_sol(x, y, th):
 
 def f(x, y, th):
     return -2. * np.sin(th)**2 * np.exp(-(x**2 + y**2)) \
-        * (x * np.cos(th) + y * np.sin(th))
+    * (x * np.cos(th) + y * np.sin(th))
 
 def test_3(mesh, dir_name = 'test_rtdg'):
     """
@@ -310,18 +310,14 @@ def get_forcing_vector(mesh, f):
 
                     thf = push_forward(th0, th1, thb)
 
-                    def beta(ii, jj, aa):
-                        val = ndof_th * ndof_y * ii \
-                            + ndof_th * jj \
-                            + aa
-                        return val
+                    beta = get_idx_map(ndof_x, ndof_y, ndof_th)
 
                     dcoeff = dx * dy * dth / 8
 
                     # List of entries, values for constructing the cell mask
-                    cell_ndof = ndof_x * ndof_y * ndof_th
-                    f_cell_vec  = np.zeros([cell_ndof])
-                    g_cell_vec  = np.zeros([cell_ndof])
+                    cell_ndof  = ndof_x * ndof_y * ndof_th
+                    f_cell_vec = np.zeros([cell_ndof])
+                    g_cell_vec = np.zeros([cell_ndof])
                     for ii in range(0, ndof_x):
                         wx_i = w_x[ii]
                         for jj in range(0, ndof_y):
@@ -369,10 +365,10 @@ def get_proj_vector(mesh, f):
             dx = x1 - x0
             dy = y1 - y0
             [ndof_x, ndof_y] = col.ndofs
-
+            
             [xxb, _, yyb, _, _, _] = qd.quad_xyth(nnodes_x = ndof_x,
                                                   nnodes_y = ndof_y)
-
+            
             xxf = push_forward(x0, x1, xxb)
             yyf = push_forward(y0, y1, yyb)
             
@@ -383,7 +379,7 @@ def get_proj_vector(mesh, f):
                 if cell.is_lf:
                     cell_idxs[cell_key] = cell_idx
                     cell_idx += 1
-
+                    
             ncells = cell_idx # cell_idx counts the number of existing cells in column
             f_cell_vecs = [None] * ncells # Column forcing vector is a 1-D vector
             
@@ -394,18 +390,13 @@ def get_proj_vector(mesh, f):
                     [th0, th1] = cell.pos
                     dth = th1 - th0
                     [ndof_th]  = cell.ndofs
-
+                    
                     [_, _, _, _, thb, _] = qd.quad_xyth(nnodes_th = ndof_th)
-
+                    
                     thf = push_forward(th0, th1, thb)
-
-                    def beta(ii, jj, aa):
-                        val = ndof_th * ndof_y * ii \
-                            + ndof_th * jj \
-                            + aa
-                        return val
-
-
+                    
+                    beta = get_idx_map(ndof_x, ndof_y, ndof_th)
+                    
                     # List of entries, values for constructing the cell mask
                     cell_ndof = ndof_x * ndof_y * ndof_th
                     f_cell_vec  = np.zeros([cell_ndof])
@@ -418,12 +409,12 @@ def get_proj_vector(mesh, f):
                                 beta_idx = beta(ii, jj, aa)
                                 
                                 f_cell_vec[beta_idx] = f_ija
-
+                                
                     f_cell_vecs[cell_idx] = f_cell_vec
-
+                    
             f_col_vecs[col_idx] = np.concatenate(f_cell_vecs, axis = None)
-
+            
     f_vec = np.concatenate(f_col_vecs, axis = None)
-
+    
     return f_vec
 

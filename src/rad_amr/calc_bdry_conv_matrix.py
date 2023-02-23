@@ -167,7 +167,7 @@ def calc_cell_matrix(cell_0, col_0, cell_1, col_1, F):
     Create the column interaction matrix between col_0, col_1.
     """
 
-    S_quad_0   = cell_0.quad
+    S_quad_0 = cell_0.quad
     
     # If a cell is in F^+, contribute to column-matrix M^CC.
     is_Fp = ( ((S_quad_0 == 0) and (F == 0 or F == 1)) or
