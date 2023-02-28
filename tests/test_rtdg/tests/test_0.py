@@ -2,6 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os, sys
 
+from .gen_mesh import gen_mesh
+
 sys.path.append('../../src')
 from dg.mesh import ji_mesh
 from rad_amr import get_intr_mask
@@ -15,19 +17,15 @@ def test_0(dir_name = 'test_rtdg'):
     test_dir = os.path.join(dir_name, 'test_0')
     os.makedirs(test_dir, exist_ok = True)
     
-    # Create the base mesh which will be refined in each trial.
+    # Get the base mesh
     [Lx, Ly]                   = [3., 2.]
+    pbcs                       = [False, False]
     [ndof_x, ndof_y, ndof_th]  = [2, 2, 2]
-    mesh = ji_mesh.Mesh(Ls     = [Lx, Ly],
-                        pbcs   = [False, False],
-                        ndofs  = [ndof_x, ndof_y, ndof_th],
-                        has_th = True)
-    
-    # Refine the mesh for initial trial
-    for _ in range(0, 2):
-        mesh.cols[0].ref_col()
-    for _ in range(0, 1):
-        mesh.ref_mesh()
+    has_th                     = True
+    mesh = gen_mesh(Ls     = [Lx, Ly],
+                    pbcs   = pbcs,
+                    ndofs  = [ndof_x, ndof_y, ndof_th],
+                    has_th = has_th)
 
     intr_mask = get_intr_mask(mesh)
     intr_mask_dense = intr_mask.astype(dtype = np.int32)

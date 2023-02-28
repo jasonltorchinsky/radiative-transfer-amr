@@ -39,7 +39,7 @@ def test_5(dir_name = 'test_rtdg'):
                     has_th = has_th)
     
     [anl_sol, kappa, sigma, Phi, f] = get_cons_soln(prob_name = 'comp',
-                                                    sol_num   = 1)
+                                                    sol_num   = 0)
     
     # Solve simplified problem over several trials
     ntrial    = 3

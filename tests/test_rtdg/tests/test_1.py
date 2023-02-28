@@ -37,7 +37,7 @@ def test_1(dir_name = 'test_rtdg'):
                     has_th = has_th)
     
     [anl_sol, kappa, _, _, f] = get_cons_soln(prob_name = 'mass',
-                                              sol_num   = 1)
+                                              sol_num   = 0)
     
     # Solve simplified problem over several trials
     ntrial    = 3
