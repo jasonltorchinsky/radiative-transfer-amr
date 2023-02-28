@@ -4,8 +4,10 @@ from scipy.sparse.linalg import spsolve, eigs
 from time import perf_counter
 import os, sys
 
+from .gen_mesh           import gen_mesh
 from .get_forcing_vec    import get_forcing_vec
 from .get_projection_vec import get_projection_vec
+from .get_cons_soln      import get_cons_soln
 
 sys.path.append('../../src')
 from dg.mesh import ji_mesh
@@ -17,37 +19,6 @@ from rad_amr import calc_mass_matrix, calc_scat_matrix, \
 
 from utils import print_msg
 
-# Utilize a manufactured solution
-def anl_sol(x, y, th):
-    # Also used to calculate BCs!
-    return np.sin(th)**2 * np.exp(-(x**2 + y**2))
-
-#def kappa(x, y):
-#    return (x + 1.)**6 * (np.sin(18. * np.pi * y))**2 + 1.
-
-def kappa(x, y):
-    return (x + 1.)**2 * (np.sin(2. * np.pi * y))**2 + 1.
-
-def sigma(x, y):
-    return 0.1 * kappa(x, y)
-
-def Phi(theta, phi):
-    return (1.0 / (3.0 * np.pi)) \
-        * (1 + (np.cos(theta) * np.cos(phi) + np.sin(theta) * np.sin(phi))**2)
-
-#def f(x, y, th):
-#    return (1. / 120.) * np.exp(-(x**2 + y**2)) \
-#        * ((np.cos(2. * th) - 6.) * kappa(x, y)
-#           - 240. * (np.sin(th))**2 * (x * np.cos(th)
-#                                       + y * np.sin(th)
-#                                       - 0.5 * kappa(x, y)))
-
-
-def f(x, y, th):
-    return (1. / 120.) * np.exp(-(x**2 + y**2)) \
-        * (60. * (np.cos(2. * th) - 1.) + (54. - 59. * np.cos(2. * th)) * kappa(x, y) \
-           - 240. * (np.sin(th))**2 * (x * np.cos(th) + y * np.sin(th) - 0.5))
-
 
 def test_5(dir_name = 'test_rtdg'):
     """
@@ -57,19 +28,18 @@ def test_5(dir_name = 'test_rtdg'):
     test_dir = os.path.join(dir_name, 'test_5')
     os.makedirs(test_dir, exist_ok = True)
     
-    # Create the base mesh which will be refined in each trial.
+    # Get the base mesh, manufactured solution
     [Lx, Ly]                   = [3., 2.]
+    pbcs                       = [False, False]
     [ndof_x, ndof_y, ndof_th]  = [4, 4, 4]
-    mesh = ji_mesh.Mesh(Ls     = [Lx, Ly],
-                        pbcs   = [False, False],
-                        ndofs  = [ndof_x, ndof_y, ndof_th],
-                        has_th = True)
+    has_th                     = True
+    mesh = gen_mesh(Ls     = [Lx, Ly],
+                    pbcs   = pbcs,
+                    ndofs  = [ndof_x, ndof_y, ndof_th],
+                    has_th = has_th)
     
-    # Refine the mesh for initial trial
-    for _ in range(0, 2):
-        mesh.cols[0].ref_col()
-    for _ in range(0, 1):
-        mesh.ref_mesh()
+    [anl_sol, kappa, sigma, Phi, f] = get_cons_soln(prob_name = 'comp',
+                                                    sol_num   = 1)
     
     # Solve simplified problem over several trials
     ntrial    = 3

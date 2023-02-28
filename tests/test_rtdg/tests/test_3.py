@@ -4,8 +4,10 @@ from scipy.sparse.linalg import spsolve, eigs
 from time import perf_counter
 import os, sys
 
+from .gen_mesh           import gen_mesh
 from .get_forcing_vec    import get_forcing_vec
 from .get_projection_vec import get_projection_vec
+from .get_cons_soln      import get_cons_soln
 
 sys.path.append('../../src')
 from dg.mesh import ji_mesh
@@ -16,15 +18,6 @@ from rad_amr import calc_intr_conv_matrix, calc_bdry_conv_matrix, \
 
 from utils import print_msg
 
-# Utilize a manufactured solution
-def anl_sol(x, y, th):
-    # Also used to calculate BCs!
-    return np.sin(th)**2 * np.exp(-(x**2 + y**2))
-
-def f(x, y, th):
-    return -2. * np.sin(th)**2 * np.exp(-(x**2 + y**2)) \
-    * (x * np.cos(th) + y * np.sin(th))
-
 def test_3(dir_name = 'test_rtdg'):
     """
     Creates various visualizations of the convection matrix and solves a 
@@ -34,19 +27,18 @@ def test_3(dir_name = 'test_rtdg'):
     test_dir = os.path.join(dir_name, 'test_3')
     os.makedirs(test_dir, exist_ok = True)
     
-    # Create the base mesh which will be refined in each trial.
+    # Get the base mesh, manufactured solution
     [Lx, Ly]                   = [3., 2.]
-    [ndof_x, ndof_y, ndof_th]  = [8, 8, 8]
-    mesh = ji_mesh.Mesh(Ls     = [Lx, Ly],
-                        pbcs   = [False, False],
-                        ndofs  = [ndof_x, ndof_y, ndof_th],
-                        has_th = True)
+    pbcs                       = [False, False]
+    [ndof_x, ndof_y, ndof_th]  = [4, 4, 4]
+    has_th                     = True
+    mesh = gen_mesh(Ls     = [Lx, Ly],
+                    pbcs   = pbcs,
+                    ndofs  = [ndof_x, ndof_y, ndof_th],
+                    has_th = has_th)
     
-    # Refine the mesh for initial trial
-    for _ in range(0, 2):
-        mesh.cols[0].ref_col()
-    for _ in range(0, 1):
-        mesh.ref_mesh()
+    [anl_sol, _, _, _, f] = get_cons_soln(prob_name = 'conv',
+                                          sol_num   = 1)
     
     # Solve simplified problem over several trials
     ntrial    = 3
