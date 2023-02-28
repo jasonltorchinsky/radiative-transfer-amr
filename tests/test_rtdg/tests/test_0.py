@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import os, sys
 
 sys.path.append('../../src')
+from dg.mesh import ji_mesh
 from rad_amr import get_intr_mask
 
 def test_0(dir_name = 'test_rtdg'):
@@ -56,11 +57,15 @@ def test_0(dir_name = 'test_rtdg'):
             ax.axvline(x = mesh_ndof, color = 'gray', linestyle = '-',
                        linewidth = 0.75)
         
-    ax.plot(intr_mask_dense, color = 'k', linestyle = '-',
-            drawstyle = 'steps-post')
+    ax.plot(intr_mask_dense,
+            color      = 'k',
+            marker     = 's',
+            markersize = 0.2,
+            linestyle  = 'None',
+            drawstyle  = 'steps-post')
     ax.set_title('Interior Mask')
     
     file_name = 'intr_mask.png'
     fig.set_size_inches(6.5, 6.5)
-    plt.savefig(os.path.join(test_0_dir, file_name), dpi = 300)
+    plt.savefig(os.path.join(test_dir, file_name), dpi = 300)
     plt.close(fig)

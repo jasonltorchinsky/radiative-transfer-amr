@@ -166,7 +166,8 @@ def calc_cell_matrix(cell_0, col_0, cell_1, col_1, F):
     """
     Create the column interaction matrix between col_0, col_1.
     """
-
+    
+    tol = 1.0E-15 # Tolerance for filling in the entry of a cell matrix.
     S_quad_0 = cell_0.quad
     
     # If a cell is in F^+, contribute to column-matrix M^CC.
@@ -348,11 +349,14 @@ def calc_cell_matrix(cell_0, col_0, cell_1, col_1, F):
                     for rr in range(0, ndof_th_0):
                         E_th_ar = E_th[aa, rr]
                         
-                        alphalist[idx] = alpha(x_idx_0, qq, rr)
-                        betalist[idx]  = beta( x_idx_1, jj, aa)
-                        vlist[idx]     = dcoeff * E_th_ar * E_y_jq
-                        
-                        idx += 1
+                        val = dcoeff * E_th_ar * E_y_jq
+                        # Only put the value into the matrix if it's worthwhile to.
+                        if np.abs(val) > tol:
+                            alphalist[idx] = alpha(x_idx_0, qq, rr)
+                            betalist[idx]  = beta( x_idx_1, jj, aa)
+                            vlist[idx]     = val
+                            
+                            idx += 1
                         
     elif (F%2 == 1):                            
         # Number of *NON-ZERO* DoFs
@@ -387,13 +391,18 @@ def calc_cell_matrix(cell_0, col_0, cell_1, col_1, F):
                     for rr in range(0, ndof_th_0):
                         E_th_ar = E_th[aa, rr]
                         
-                        alphalist[idx] = alpha(pp, y_idx_0, rr)
-                        betalist[idx]  = beta( ii, y_idx_1, aa)
-                        vlist[idx] = dcoeff * E_th_ar * E_x_ip
-                        
-                        idx += 1
+                        val = dcoeff * E_th_ar * E_x_ip
+                        # Only put the value into the matrix if it's worthwhile to.
+                        if np.abs(val) > tol:
+                            alphalist[idx] = alpha(pp, y_idx_0, rr)
+                            betalist[idx]  = beta( ii, y_idx_1, aa)
+                            vlist[idx]     = dcoeff * E_th_ar * E_x_ip
+                            
+                            idx += 1
                         
     cell_mtx = coo_matrix((vlist, (alphalist, betalist)),
                           shape = (cell_ndof_0, cell_ndof_1))
-
+    
+    cell_mtx.eliminate_zeros()
+    
     return cell_mtx

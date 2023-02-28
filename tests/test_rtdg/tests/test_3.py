@@ -36,7 +36,7 @@ def test_3(dir_name = 'test_rtdg'):
     
     # Create the base mesh which will be refined in each trial.
     [Lx, Ly]                   = [3., 2.]
-    [ndof_x, ndof_y, ndof_th]  = [4, 4, 4]
+    [ndof_x, ndof_y, ndof_th]  = [8, 8, 8]
     mesh = ji_mesh.Mesh(Ls     = [Lx, Ly],
                         pbcs   = [False, False],
                         ndofs  = [ndof_x, ndof_y, ndof_th],
@@ -132,9 +132,10 @@ def test_3(dir_name = 'test_rtdg'):
         anl_sol_vec = get_projection_vec(mesh, anl_sol)
         
         intr_mask        = get_intr_mask(mesh)
+        bdry_mask        = np.invert(intr_mask)
         f_vec_intr       = f_vec[intr_mask]
         anl_sol_vec_intr = anl_sol_vec[intr_mask]
-        bcs_vec          = anl_sol_vec[np.invert(intr_mask)]
+        bcs_vec          = anl_sol_vec[bdry_mask]
         
         ## Solve manufactured problem
         perf_soln_0 = perf_counter()
@@ -239,9 +240,9 @@ def test_3(dir_name = 'test_rtdg'):
         inf_errs[trial] = np.amax(np.abs(anl_sol_vec_intr - apr_sol_vec_intr))
 
         # Refine the mesh for the next trial
-        for col_key, col in col_items:
-            if col.is_lf:
-                col.ref_col()
+        #for col_key, col in col_items:
+        #    if col.is_lf:
+        #        col.ref_col()
         mesh.ref_mesh()
 
         perf_trial_f    = perf_counter()
@@ -261,7 +262,7 @@ def test_3(dir_name = 'test_rtdg'):
             linestyle = '-')
 
     ax.set_xscale('log', base = 2)
-    ax.set_yscale('log', base = 10)
+    ax.set_yscale('log', base = 2)
     
     ax.set_xlabel('Total Degrees of Freedom')
     ax.set_ylabel('L$^{\infty}$ Error')

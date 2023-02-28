@@ -7,13 +7,13 @@ sys.path.append('../../src')
 import dg.quadrature as qd
 from rad_amr import push_forward, pull_back
 
-def test_4(mesh, dir_name = 'test_rtdg'):
+def test_4(dir_name = 'test_rtdg'):
     """
     Test the push-forward, pull-back maps.
     """
     
-    test_4_dir = os.path.join(dir_name, 'test_4')
-    os.makedirs(test_4_dir, exist_ok = True)
+    test_dir = os.path.join(dir_name, 'test_4')
+    os.makedirs(test_dir, exist_ok = True)
 
     # Create simplified scenario of three elements sharing a boundary
     ndof_x_0 = 5
@@ -57,7 +57,7 @@ def test_4(mesh, dir_name = 'test_rtdg'):
     
     file_name = 'l+1_to_l_1.png'
     fig.set_size_inches(6.5, 6.5)
-    plt.savefig(os.path.join(test_4_dir, file_name), dpi = 300)
+    plt.savefig(os.path.join(test_dir, file_name), dpi = 300)
     plt.close(fig)
 
     ## Level l+1 cell basis to level l cell domain (right = 2)
@@ -86,7 +86,7 @@ def test_4(mesh, dir_name = 'test_rtdg'):
     
     file_name = 'l+1_to_l_2.png'
     fig.set_size_inches(6.5, 6.5)
-    plt.savefig(os.path.join(test_4_dir, file_name), dpi = 300)
+    plt.savefig(os.path.join(test_dir, file_name), dpi = 300)
     plt.close(fig)
 
 
@@ -116,5 +116,5 @@ def test_4(mesh, dir_name = 'test_rtdg'):
     
     file_name = 'l_to_l+1.png'
     fig.set_size_inches(6.5, 6.5)
-    plt.savefig(os.path.join(test_4_dir, file_name), dpi = 300)
+    plt.savefig(os.path.join(test_dir, file_name), dpi = 300)
     plt.close(fig)

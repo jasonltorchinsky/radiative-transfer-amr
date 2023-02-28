@@ -22,8 +22,11 @@ def anl_sol(x, y, th):
     # Also used to calculate BCs!
     return np.sin(th)**2 * np.exp(-(x**2 + y**2))
 
+#def kappa(x, y):
+#    return (x + 1.)**6 * (np.sin(18. * np.pi * y))**2 + 1.
+
 def kappa(x, y):
-    return (x + 1)**6 * (np.sin(18 * np.pi * y) + 0.5)**2
+    return (x + 1.)**2 * (np.sin(2. * np.pi * y))**2 + 1.
 
 def sigma(x, y):
     return 0.1 * kappa(x, y)
@@ -32,10 +35,19 @@ def Phi(theta, phi):
     return (1.0 / (3.0 * np.pi)) \
         * (1 + (np.cos(theta) * np.cos(phi) + np.sin(theta) * np.sin(phi))**2)
 
+#def f(x, y, th):
+#    return (1. / 120.) * np.exp(-(x**2 + y**2)) \
+#        * ((np.cos(2. * th) - 6.) * kappa(x, y)
+#           - 240. * (np.sin(th))**2 * (x * np.cos(th)
+#                                       + y * np.sin(th)
+#                                       - 0.5 * kappa(x, y)))
+
+
 def f(x, y, th):
-    return (-1. / 120.) * np.exp(-(x**2 + y**2)) \
-        * ((1. + x)**6 * (59. * np.cos(2. * th) - 54.) * np.sin(18. * np.pi * y)**2 \
-           + 240. * (x * np.cos(th) + y * np.sin(th)) * np.sin(th)**2)
+    return (1. / 120.) * np.exp(-(x**2 + y**2)) \
+        * (60. * (np.cos(2. * th) - 1.) + (54. - 59. * np.cos(2. * th)) * kappa(x, y) \
+           - 240. * (np.sin(th))**2 * (x * np.cos(th) + y * np.sin(th) - 0.5))
+
 
 def test_5(dir_name = 'test_rtdg'):
     """
@@ -47,7 +59,7 @@ def test_5(dir_name = 'test_rtdg'):
     
     # Create the base mesh which will be refined in each trial.
     [Lx, Ly]                   = [3., 2.]
-    [ndof_x, ndof_y, ndof_th]  = [5, 5, 5]
+    [ndof_x, ndof_y, ndof_th]  = [4, 4, 4]
     mesh = ji_mesh.Mesh(Ls     = [Lx, Ly],
                         pbcs   = [False, False],
                         ndofs  = [ndof_x, ndof_y, ndof_th],
@@ -171,9 +183,10 @@ def test_5(dir_name = 'test_rtdg'):
         anl_sol_vec = get_projection_vec(mesh, anl_sol)
         
         intr_mask        = get_intr_mask(mesh)
+        bdry_mask        = np.invert(intr_mask)
         f_vec_intr       = f_vec[intr_mask]
         anl_sol_vec_intr = anl_sol_vec[intr_mask]
-        bcs_vec          = anl_sol_vec[np.invert(intr_mask)]
+        bcs_vec          = anl_sol_vec[bdry_mask]
         
         ## Solve manufactured problem
         perf_soln_0 = perf_counter()
