@@ -41,7 +41,7 @@ def test_2(dir_name = 'test_rtdg'):
                                                     sol_num   = 0)
     
     # Solve simplified problem over several trials
-    ntrial    = 3
+    ntrial    = 5
     ref_ndofs = np.zeros([ntrial])
     inf_errs  = np.zeros([ntrial])
     for trial in range(0, ntrial):
@@ -228,12 +228,15 @@ def test_2(dir_name = 'test_rtdg'):
         
         # Caluclate error
         inf_errs[trial] = np.amax(np.abs(anl_sol_vec_intr - apr_sol_vec_intr))
-
+        
         # Refine the mesh for the next trial
-        for col_key, col in col_items:
-            if col.is_lf:
-                col.ref_col()
-        mesh.ref_mesh()
+        col_keys = sorted(mesh.cols.keys())
+        mesh.cols[col_keys[-1]].ref_col()
+        #mesh.ref_col(mesh.cols[col_keys[0]])
+        #for col_key, col in col_items:
+        #    if col.is_lf:
+        #        col.ref_col()
+        #mesh.ref_mesh()
 
         perf_trial_f    = perf_counter()
         perf_trial_diff = perf_trial_f - perf_trial_0
@@ -252,7 +255,7 @@ def test_2(dir_name = 'test_rtdg'):
             linestyle = '-')
 
     ax.set_xscale('log', base = 2)
-    ax.set_yscale('log', base = 10)
+    ax.set_yscale('log', base = 2)
     
     ax.set_xlabel('Total Degrees of Freedom')
     ax.set_ylabel('L$^{\infty}$ Error')

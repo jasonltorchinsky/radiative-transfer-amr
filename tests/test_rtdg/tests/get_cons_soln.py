@@ -44,7 +44,7 @@ def get_cons_soln(prob_name, sol_num):
             # kappa * u - sigma * int_0^2pi Phi u dth' = f
             def f(x, y, th):
                 return kappa(x, y) * anl_sol(x, y, th) \
-                    - ((1. / 120.) * np.exp(-(x**2 + y**2)) \
+                    + ((1. / 120.) * np.exp(-(x**2 + y**2)) \
                        * (np.cos(2. * th) - 6.) * kappa(x, y))
             
         elif prob_name == 'conv':

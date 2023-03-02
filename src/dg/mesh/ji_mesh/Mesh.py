@@ -217,11 +217,23 @@ class Column:
                                  quad = chld_quad)
                 self.add_cell(chld_cell)
 
+            # Make sure we maintain 2-neighbor condition
             for nhbr_loc in ['+', '-']:
-                nhbr = get_cell_nhbr(self, cell, nhbr_loc = nhbr_loc)
-                if lv - nhbr.lv == 1:
-                    self.ref_cell(nhbr)
-
+                for axis in range(0, 2):
+                    [flag, nhbr_0, nhbr_1] = get_col_nhbr(mesh, self,
+                                                          axis = axis,
+                                                          nhbr_loc = nhbr_loc)
+                    for nhbr in [nhbr_0, nhbr_1]:
+                        if nhbr:
+                            if nhbr.is_lf:
+                                [nhbr_cell_0, nhbr_cell_1] \
+                                    = get_cell_nhbr_in_col(cell, nhbr)
+                                for nhbr_cell in [nhbr_cell_0, nhbr_cell_1]:
+                                    if nhbr_cell:
+                                        if nhbr_cell.is_lf:
+                                            if lv - nhbr_cell.lv == 1:
+                                                self.ref_cell(nhbr_cell)
+                                                
             self.del_cell(cell)
 
     def ref_col(self):
