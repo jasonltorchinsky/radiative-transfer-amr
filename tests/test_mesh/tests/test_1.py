@@ -21,7 +21,7 @@ def test_1(dir_name = 'test_mesh'):
     
     # Create the original 2-D mesh
     [Lx, Ly] = [3, 2]
-    pbcs     = [True, False]
+    pbcs     = [False, False]
 
     mesh = ji_mesh.Mesh([Lx, Ly], pbcs, has_th = True)
     ncol_refs = 3
@@ -32,13 +32,13 @@ def test_1(dir_name = 'test_mesh'):
             
     
     # Refine the mesh some so we have a more interesting plot
-    nrefs = 0
+    nrefs = 2
     fig, ax = plt.subplots()
     file_name = os.path.join(mesh_dir, 'mesh_2d_{}.png'.format(nrefs))
     tools.plot_mesh(mesh, ax = ax, file_name = file_name,
                     label_cells = True, plot_dim = 2)
     
-    nuni_ref = 2
+    nuni_ref = 1
     for ref in range(0, nuni_ref):
         mesh.ref_mesh()
         nrefs += 1
@@ -47,7 +47,7 @@ def test_1(dir_name = 'test_mesh'):
         tools.plot_mesh(mesh, ax = ax, file_name = file_name,
                     label_cells = True, plot_dim = 2)
 
-    ncol_ref = 0
+    ncol_ref = 4
     for ref in range(0, ncol_ref):
         col_keys = sorted(list(mesh.cols.keys()))
         mesh.ref_col(mesh.cols[col_keys[-1]])
@@ -62,5 +62,5 @@ def test_1(dir_name = 'test_mesh'):
             file_name = os.path.join(nhbrs_dir, 'col_{}_nhbrs_2D.png'.format(col_key))
             tools.plot_col_nhbrs(mesh, col, file_name = file_name, plot_dim = 2)
             
-            #file_name = os.path.join(nhbrs_dir, 'col_{}_nhbrs_3D.png'.format(col_key))
-            #tools.plot_col_nhbrs(mesh, col, file_name = file_name, plot_dim = 3)
+            file_name = os.path.join(nhbrs_dir, 'col_{}_nhbrs_3D.png'.format(col_key))
+            tools.plot_col_nhbrs(mesh, col, file_name = file_name, plot_dim = 3)

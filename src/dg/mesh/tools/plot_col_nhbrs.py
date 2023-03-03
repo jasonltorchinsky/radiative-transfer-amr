@@ -45,14 +45,12 @@ def plot_col_nhbrs_2d(mesh, ax = None, col = None, file_name = None):
                              color = 'red', fill = True, alpha = 0.1)
             ax.add_patch(cell)
             
-            nhbr_locs = ['+', '-']
-            for axis in range(0, 2):
-                for nhbr_loc in nhbr_locs:
-                    [_, nhbr1, nhbr2] = \
-                        get_col_nhbr(mesh = mesh, col = col,
-                                     axis = axis, nhbr_loc = nhbr_loc)
-                    for nhbr in [nhbr1, nhbr2]:
-                        if nhbr != None:
+            for F in range(0, 4):
+                [nhbr_key1, nhbr_key2] = col.nhbr_keys[F]
+                for nhbr_key in [nhbr_key1, nhbr_key2]:
+                    if nhbr_key != None:
+                        nhbr = mesh.cols[nhbr_key]
+                        if nhbr.is_lf:
                             [x0, y0, x1, y1] = nhbr.pos
                             width = x1 - x0
                             height = y1 - y0
@@ -80,14 +78,12 @@ def plot_col_nhbrs_3d(mesh, ax = None, col = None,
             for face in prism:
                 ax.add_collection3d(face)
                 
-            nhbr_locs = ['+', '-']
-            for axis in range(0, 2):
-                for nhbr_loc in nhbr_locs:
-                    [_, nhbr1, nhbr2] = \
-                        get_col_nhbr(mesh = mesh, col = col,
-                                     axis = axis, nhbr_loc = nhbr_loc)
-                    for nhbr in [nhbr1, nhbr2]:
-                        if nhbr != None:
+            for F in range(0, 4):
+                [nhbr_key1, nhbr_key2] = col.nhbr_keys[F]
+                for nhbr_key in [nhbr_key1, nhbr_key2]:
+                    if nhbr_key != None:
+                        nhbr = mesh.cols[nhbr_key]
+                        if nhbr.is_lf:
                             [x0, y0, x1, y1] = nhbr.pos
                             
                             prism = get_prism([x0, x1], [y0, y1],

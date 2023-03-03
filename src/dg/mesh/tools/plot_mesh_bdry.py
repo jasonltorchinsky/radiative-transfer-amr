@@ -36,31 +36,22 @@ def plot_mesh_bdry_2d(mesh, ax = None, file_name = None):
     for col in list(mesh.cols.values()):
         if col.is_lf:
             [x0, y0, x1, y1] = col.pos
-            width = x1 - x0
+            width  = x1 - x0
             height = y1 - y0
 
             # Choose color dependent on which boundary the column is on
-            if col.bdry[0]: # 0 => Right
-                cell = Rectangle((x0, y0), width, height,
-                                 color = '#648FFF', fill = True, alpha = 0.2)
-                ax.add_patch(cell)
+            is_bdry = False
+            colors = ['#648FFF', '#DC267F', '#FE6100', '#FFB000']
+            for F in range(0, 4): # [Right, Top, Left, Bottom]
+                if not col.nhbr_keys[F][0]: # 0 => Right
+                    color = colors[F]
+                    cell = Rectangle((x0, y0), width, height,
+                                     color = color, fill = True, alpha = 0.2)
+                    ax.add_patch(cell)
 
-            if col.bdry[1]: # 1 => Top
-                cell = Rectangle((x0, y0), width, height,
-                                 color = '#DC267F', fill = True, alpha = 0.2)
-                ax.add_patch(cell)
-
-            if col.bdry[2]: # 2 => Left
-                cell = Rectangle((x0, y0), width, height,
-                                 color = '#FE6100', fill = True, alpha = 0.2)
-                ax.add_patch(cell)
-
-            if col.bdry[3]: # 3 => Bottom
-                cell = Rectangle((x0, y0), width, height,
-                                 color = '#FFB000', fill = True, alpha = 0.2)
-                ax.add_patch(cell)
-
-            if not any(col.bdry): # In the interior
+                    is_bdry = True
+            
+            if not is_bdry: # In the interior
                 cell = Rectangle((x0, y0), width, height,
                                  color = '#FFFFFF', fill = False)
                 ax.add_patch(cell)
