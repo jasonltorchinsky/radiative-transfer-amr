@@ -112,13 +112,17 @@ class Mesh:
                                [[chldn_keys[1], None], [None, None         ], [None, None         ], [chldn_keys[3], None]],
                                [[chldn_keys[0], None], [chldn_keys[2], None], [None, None         ], [None, None         ]]
                                ]
+            
             for F in range(0, 4):
                 # We only need to check the level of the first neighbor.
                 # If there are two neighbors, they are the same level.
                 nhbr_key = col.nhbr_keys[F][0]
-                if nhbr_key:
+                if nhbr_key is not None:
                     nhbr = self.cols[nhbr_key]
-                    if nhbr.is_lf:
+                    if nhbr_key == col.key: # col is own neighbor, special case
+                        chldn_nhbr_keys[F][F]       = chldn_nhbr_keys[F][(F+2)%4][:]
+                        chldn_nhbr_keys[(F+1)%4][F] = chldn_nhbr_keys[(F+1)%4][(F+2)%4][:]
+                    elif nhbr.is_lf:
                         nhbr_lv = nhbr.lv
                         if nhbr_lv == lv: # Refining current column,
                             # so single neighbor.
@@ -263,18 +267,40 @@ class Column:
                     for SS, S_quad in enumerate(S_quads):
                         if (chld_pos[0] >= S_quad[0]) and (chld_pos[1] <= S_quad[1]):
                             chldn_quads[ii] = SS
-                    
+
+            chldn_keys = [0] * 2
+            for ii in range(0, 2):
+                chld_idx        = chldn_idxs[ii]
+                chldn_keys[ii]  = calc_cell_key(chld_idx, lv + 1)
+                
+            chldn_nhbr_keys = [[None         ], [chldn_keys[1]],
+                               [chldn_keys[0]], [None         ]
+                               ]
+
+            for F in range(0, 2):
+                nhbr_key = cell.nhbr_keys[F]
+                if nhbr_key is not None:
+                    nhbr = self.cells[nhbr_key]
+                    if nhbr_key == cell.key: # cell is own neighbor, special case
+                        chldn_nhbr_keys[F][F] = chldn_nhbr_keys[F][F]
+                    elif nhbr.is_lf:
+                        chldn_nhbr_keys[F][F] = cell.nhbr_keys[F][:]
+                    else:
+                        print('ERROR IN MAKING CHILD CELLS, 2-NEIGHBOR ASSUMPTION VIOLATED')
+                        sys.exit(0)
 
             for ii in range(0, 2):
-                chld_idx  = chldn_idxs[ii]
-                chld_pos  = chldn_poss[ii]
-                chld_quad = chldn_quads[ii]
-                chld_cell = Cell(pos = chld_pos,
-                                 idx = chld_idx,
-                                 lv  = lv + 1,
-                                 is_lf = True,
-                                 ndofs = cell.ndofs[:],
-                                 quad = chld_quad)
+                chld_idx       = chldn_idxs[ii]
+                chld_pos       = chldn_poss[ii]
+                chld_quad      = chldn_quads[ii]
+                chld_nhbr_keys = chldn_nhbr_keys[ii]
+                chld_cell      = Cell(pos   = chld_pos,
+                                      idx   = chld_idx,
+                                      lv    = lv + 1,
+                                      is_lf = True,
+                                      ndofs = cell.ndofs[:],
+                                      quad  = chld_quad,
+                                      nhbr_keys = chld_nhbr_keys)
                 self.add_cell(chld_cell)
 
             # Make sure we maintain 2-neighbor condition
@@ -294,7 +320,7 @@ class Column:
 class Cell:
     ''' Each individual cell. '''
 
-    def __init__(self, pos, idx, lv, is_lf, ndofs, quad):
+    def __init__(self, pos, idx, lv, is_lf, ndofs, quad, nhbr_keys):
         self.pos   = pos    # Position in angular dimension
         self.idx   = idx    # Angular index of cell
         self.lv    = lv     # Level of angular refinement
@@ -302,18 +328,19 @@ class Cell:
         self.is_lf = is_lf  # Whether cell is a leaf or not
         self.ndofs = ndofs  # Degrees of freedom in theta-.
         self.quad  = quad   # Which angular quadrant the cell is in.
-        #self.nhbr_keys = nhbr_keys # Keys for neighboring cells in column.
+        self.nhbr_keys = nhbr_keys # Keys for neighboring cells in column.
         
     def __str__(self):
         pos_str = ( '[{:3.2f} pi'.format(self.pos[0] / np.pi) +
                     ', {:3.2f} pi]'.format(self.pos[1] / np.pi)
                    )
-        msg = ( 'Cell  :  {}, {}\n'.format(self.idx, self.lv) +
-                ' key  :  {}\n'.format(self.key) +
-                ' pos  :  {}\n'.format(pos_str) +
-                ' is_lf:  {}\n'.format(self.is_lf) +
-                ' ndofs:  {}\n'.format(self.ndofs) +
-                '  quad:  {}\n'.format(self.quad)
+        msg = ( '   Cell  :  {}, {}\n'.format(self.idx, self.lv) +
+                '    key  :  {}\n'.format(self.key) +
+                '    pos  :  {}\n'.format(pos_str) +
+                '    is_lf:  {}\n'.format(self.is_lf) +
+                '    ndofs:  {}\n'.format(self.ndofs) +
+                '     quad:  {}\n'.format(self.quad) +
+                'nhbr_keys:  {}\n'.format(self.nhbr_keys)
                )
 
         return msg

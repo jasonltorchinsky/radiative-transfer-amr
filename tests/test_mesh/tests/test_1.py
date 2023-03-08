@@ -21,7 +21,7 @@ def test_1(dir_name = 'test_mesh'):
     
     # Create the original 2-D mesh
     [Lx, Ly] = [3, 2]
-    pbcs     = [False, False]
+    pbcs     = [True, False]
 
     mesh = ji_mesh.Mesh([Lx, Ly], pbcs, has_th = True)
     ncol_refs = 3
