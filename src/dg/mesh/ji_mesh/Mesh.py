@@ -20,14 +20,16 @@ class Mesh:
                         lv    = 0,
                         is_lf = True,
                         ndofs = [ndofs[2]],
-                        quad  = None)
+                        quad  = None,
+                        nhbr_keys = [0, 0])
         else:
             cell = Cell(pos   = [0, 0],
                         idx   = 0,
                         lv    = 0,
                         is_lf = True,
                         ndofs = [0],
-                        quad  = None)
+                        quad  = None,
+                        nhbr_keys = None)
 
         # Create first column, put cell into it
         # Determine neighbor keys flags for column
@@ -83,7 +85,7 @@ class Mesh:
 
             for F in range(0, 4):
                 for nhbr_key in col.nhbr_keys[F]:
-                    if nhbr_key:
+                    if nhbr_key is not None:
                         nhbr = self.cols[nhbr_key]
                         if nhbr.is_lf:
                             nhbr_lv = nhbr.lv
@@ -163,7 +165,7 @@ class Mesh:
                 # We only need to check the level of the first neighbor.
                 # If there are two neighbors, they are the same level.
                 for nhbr_num, nhbr_key in enumerate(col.nhbr_keys[F]):
-                    if nhbr_key:
+                    if nhbr_key is not None:
                         if nhbr_key != col.key: # Make sure column isn't self.
                             nhbr = self.cols[nhbr_key]
                             if nhbr.is_lf:
@@ -209,7 +211,7 @@ class Column:
         self.key   = calc_col_key(idx, lv) # Unique key for column
         self.is_lf = is_lf # Whether column is a leaf or not
         self.ndofs = ndofs # Degrees of freedom in x-, y-.
-        self.cells = cells # List of cells in the column
+        self.cells = cells # Dict of cells in the column
         self.nhbr_keys = nhbr_keys  # List of neighbor keys
         
 
@@ -246,6 +248,17 @@ class Column:
             [z0, z1] = cell.pos
             quad = cell.quad
 
+            # Check if angularly neighboring cells need to be refined
+            for F in range (0, 2):
+                for nhbr_key in cell.nhbr_keys:
+                    if nhbr_key is not None:
+                        nhbr = self.cells[nhbr_key]
+                        if nhbr.is_lf:
+                            nhbr_lv = nhbr.lv
+                            if lv - nhbr_lv == 1:
+                                self.ref_cell(nhbr)
+                            
+
             # Add two columns that are repeats of current column
             chldn_idxs = [2 * idx    ,
                           2 * idx + 1]
@@ -273,8 +286,8 @@ class Column:
                 chld_idx        = chldn_idxs[ii]
                 chldn_keys[ii]  = calc_cell_key(chld_idx, lv + 1)
                 
-            chldn_nhbr_keys = [[None         ], [chldn_keys[1]],
-                               [chldn_keys[0]], [None         ]
+            chldn_nhbr_keys = [[None         , chldn_keys[1]],
+                               [chldn_keys[0], None         ]
                                ]
 
             for F in range(0, 2):
@@ -282,9 +295,9 @@ class Column:
                 if nhbr_key is not None:
                     nhbr = self.cells[nhbr_key]
                     if nhbr_key == cell.key: # cell is own neighbor, special case
-                        chldn_nhbr_keys[F][F] = chldn_nhbr_keys[F][F]
+                        chldn_nhbr_keys[F][F] = chldn_nhbr_keys[F][(F+1)%2]
                     elif nhbr.is_lf:
-                        chldn_nhbr_keys[F][F] = cell.nhbr_keys[F][:]
+                        chldn_nhbr_keys[F][F] = cell.nhbr_keys[F]
                     else:
                         print('ERROR IN MAKING CHILD CELLS, 2-NEIGHBOR ASSUMPTION VIOLATED')
                         sys.exit(0)
@@ -302,6 +315,14 @@ class Column:
                                       quad  = chld_quad,
                                       nhbr_keys = chld_nhbr_keys)
                 self.add_cell(chld_cell)
+
+            # Also need to go to neighbor and update its keys
+            for F, nhbr_key in enumerate(cell.nhbr_keys):
+                if nhbr_key is not None:
+                    if nhbr_key != cell.key: # Make sure cell isn't self
+                        nhbr = self.cells[nhbr_key]
+                        if nhbr.is_lf:
+                            nhbr.nhbr_keys[(F+1)%2] = chldn_keys[F]
 
             # Make sure we maintain 2-neighbor condition
             # TO BE FIXED

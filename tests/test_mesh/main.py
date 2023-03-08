@@ -7,7 +7,7 @@ import os, sys
 sys.path.append('../../src')
 from utils import print_msg
 
-from tests import test_0, test_1, test_2, test_3, test_4
+from tests import test_0, test_1, test_2, test_3, test_4, test_5
 
 def main():
 
@@ -35,22 +35,25 @@ def main():
     parser.add_argument('--test_4', nargs = 1, default = [0],
                         type = int, choices = [0, 1], required = False,
                         help = 'Do not run (0) or run (1) Test 4 - Find Cell Spatial Neighbors in Each Direction')
+    parser.add_argument('--test_5', nargs = 1, default = [0],
+                        type = int, choices = [0, 1], required = False,
+                        help = 'Do not run (0) or run (1) Test 4 - Single Column Angular Refinement')
     
     args = parser.parse_args()
-    ntests = 5
+    ntests = 6
     if args.test_all[0]:
         run_tests = [True] * ntests
     else:
         run_tests = [args.test_0[0], args.test_1[0],
                      args.test_2[0], args.test_3[0],
-                     args.test_4[0]
+                     args.test_4[0], args.test_5[0]
                      ]
 
     dir_name = args.dir
     os.makedirs(dir_name, exist_ok = True)
 
 
-    test_funcs = [test_0, test_1, test_2, test_3, test_4]
+    test_funcs = [test_0, test_1, test_2, test_3, test_4, test_5]
 
     for ntest, test_func in enumerate(test_funcs):
         if run_tests[ntest]:

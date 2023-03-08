@@ -24,17 +24,17 @@ def plot_cell_nhbrs(mesh, col, cell, file_name = None, **kwargs):
                 for face in prism:
                     ax.add_collection3d(face)
                     
-                nhbr_locs = ['+', '-']
-                for nhbr_loc in nhbr_locs:
-                    nhbr = get_cell_nhbr(col = col, cell = cell,
-                                         nhbr_loc = nhbr_loc)
-                    if nhbr != None:
-                        [z0, z1] = nhbr.pos
+                for nhbr_key in cell.nhbr_keys:
+                    if nhbr_key is not None:
+                        nhbr = col.cells[nhbr_key]
                         
-                        prism = get_prism([x0, x1], [y0, y1], [z0, z1],
-                                          color = 'blue')
-                        for face in prism:
-                            ax.add_collection3d(face)
+                        if nhbr.is_lf:
+                            [z0, z1] = nhbr.pos
+                            
+                            prism = get_prism([x0, x1], [y0, y1], [z0, z1],
+                                              color = 'blue')
+                            for face in prism:
+                                ax.add_collection3d(face)
                             
             if file_name:
                 fig.set_size_inches(6.5, 6.5)
