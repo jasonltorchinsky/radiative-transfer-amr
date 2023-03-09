@@ -28,7 +28,7 @@ def test_1(dir_name = 'test_mesh'):
     for col_key, col in sorted(mesh.cols.items()):
         if col.is_lf:
             for ref in range(0, ncol_refs):
-                col.ref_col()
+                mesh.ref_col(col, kind = 'ang')
             
     
     # Refine the mesh some so we have a more interesting plot
@@ -50,7 +50,7 @@ def test_1(dir_name = 'test_mesh'):
     ncol_ref = 4
     for ref in range(0, ncol_ref):
         col_keys = sorted(list(mesh.cols.keys()))
-        mesh.ref_col(mesh.cols[col_keys[-1]])
+        mesh.ref_col(mesh.cols[col_keys[-1]], kind ='spt')
         nrefs += 1
         fig, ax = plt.subplots()
         file_name = os.path.join(mesh_dir, 'mesh_2d_{}.png'.format(nrefs))
