@@ -31,8 +31,8 @@ def test_5(dir_name = 'test_mesh'):
     for ref in range(0, ncol_ref):
         cell_keys = sorted(col.cells.keys())
         cell = col.cells[cell_keys[-1]]
-        col.ref_cell(cell)
-        #col.ref_col()
+        mesh.ref_cell(col, cell)
+        #mesh.ref_col(col, kind = 'ang')
         
         file_name = os.path.join(mesh_dir, 'mesh_3d_{}.png'.format(ref))
         tools.plot_mesh(mesh, file_name = file_name,

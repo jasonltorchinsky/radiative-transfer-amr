@@ -15,21 +15,23 @@ def plot_cell_nhbrs(mesh, col, cell, file_name = None, **kwargs):
     [fig, ax] = plot_mesh(mesh, ax = None, file_name = None,
                           plot_dim = 3, **kwargs)
 
-    if col in list(mesh.cols.values()):
+    cols = list(mesh.cols.values())
+    if col in cols:
         if col.is_lf:
             [x0, y0, x1, y1] = col.pos
-            if cell in list(col.cells.values()):
+            cells = list(col.cells.values())
+            if cell in cells:
                 [z0, z1] = cell.pos
                 prism = get_prism([x0, x1], [y0, y1], [z0, z1], color = 'red')
                 for face in prism:
                     ax.add_collection3d(face)
                     
-                for nhbr_key in cell.nhbr_keys:
-                    if nhbr_key is not None:
-                        nhbr = col.cells[nhbr_key]
+                for cell_nhbr_key in cell.nhbr_keys:
+                    if cell_nhbr_key is not None:
+                        cell_nhbr = col.cells[cell_nhbr_key]
                         
-                        if nhbr.is_lf:
-                            [z0, z1] = nhbr.pos
+                        if cell_nhbr.is_lf:
+                            [z0, z1] = cell_nhbr.pos
                             
                             prism = get_prism([x0, x1], [y0, y1], [z0, z1],
                                               color = 'blue')

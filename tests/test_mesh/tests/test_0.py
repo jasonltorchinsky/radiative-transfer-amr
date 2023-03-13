@@ -33,7 +33,7 @@ def test_0(dir_name = 'test_mesh'):
         fig, ax = plt.subplots()
         file_name = os.path.join(dir_name, 'mesh_2d_{}.png'.format(nrefs))
         tools.plot_mesh(mesh, ax = ax, file_name = file_name,
-                    label_cells = True, plot_dim = 2)
+                        label_cells = True, plot_dim = 2)
 
     ncol_ref = 5
     for ref in range(0, ncol_ref):

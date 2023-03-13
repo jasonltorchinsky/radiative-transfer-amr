@@ -37,7 +37,7 @@ def main():
                         help = 'Do not run (0) or run (1) Test 4 - Find Cell Spatial Neighbors in Each Direction')
     parser.add_argument('--test_5', nargs = 1, default = [0],
                         type = int, choices = [0, 1], required = False,
-                        help = 'Do not run (0) or run (1) Test 4 - Single Column Angular Refinement')
+                        help = 'Do not run (0) or run (1) Test 5 - Single Column Angular Refinement')
     
     args = parser.parse_args()
     ntests = 6
