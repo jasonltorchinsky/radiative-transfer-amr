@@ -5,7 +5,6 @@ from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 from .plot_mesh import plot_mesh, get_prism
-from ..ji_mesh import get_col_nhbr
 
 def plot_col_nhbrs(mesh, col, file_name = None, **kwargs):
     

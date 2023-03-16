@@ -38,7 +38,7 @@ def test_0(dir_name = 'test_mesh'):
     ncol_ref = 5
     for ref in range(0, ncol_ref):
         col_keys = sorted(list(mesh.cols.keys()))
-        mesh.ref_col(mesh.cols[col_keys[-1]])
+        mesh.ref_col(col_keys[-1])
         nrefs += 1
         fig, ax = plt.subplots()
         file_name = os.path.join(dir_name, 'mesh_2d_{}.png'.format(nrefs))

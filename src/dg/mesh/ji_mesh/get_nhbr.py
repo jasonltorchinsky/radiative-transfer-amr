@@ -215,12 +215,15 @@ def get_cell_nhbr(col, cell, nhbr_loc = '+'):
     
     return get_cell_ang_nhbr(col, cell, nhbr_loc)
 
-def get_cell_nhbr_in_col(cell, nhbr_col):
+def get_cell_nhbr_in_col(mesh, col_key, cell_key, nhbr_col_key):
 
-    nhbr_cells = [None, None]
+    cell     = mesh.cols[col_key].cells[cell_key]
+    nhbr_col = mesh.cols[nhbr_col_key]
+    
+    nhbr_cell_keys = [None, None]
     
     idx = cell.idx
-    lv = cell.lv
+    lv  = cell.lv
     key = cell.key
 
     # Since the cells in each column are indexed the same, it comes down
@@ -230,7 +233,7 @@ def get_cell_nhbr_in_col(cell, nhbr_col):
         nhbr_key = key
         nhbr = nhbr_col.cells[nhbr_key]
         if nhbr.is_lf:
-            nhbr_cells[0] = nhbr
+            nhbr_cell_keys[0] = nhbr_key
     except:
         None
         
@@ -240,26 +243,26 @@ def get_cell_nhbr_in_col(cell, nhbr_col):
             nhbr_key = calc_cell_key(prnt_idx, prnt_lv)
             nhbr = nhbr_col.cells[nhbr_key]
             if nhbr.is_lf:
-                nhbr_cells[0] = nhbr
+                nhbr_cell_keys[0] = nhbr_key
         except:
             None
             
         try: # Child-level neighbor
             chld_0_idx = 2*idx
             chld_1_idx = 2*idx + 1
-            chld_lv = lv + 1
+            chld_lv    = lv + 1
             nhbr_0_key = calc_cell_key(chld_0_idx, chld_lv)
             nhbr_1_key = calc_cell_key(chld_1_idx, chld_lv)
             
             nhbr_0 = nhbr_col.cells[nhbr_0_key]
             if nhbr_0.is_lf:
-                nhbr_cells[0] = nhbr_0
+                nhbr_cell_keys[0] = nhbr_0_key
                 
                 nhbr_1 = nhbr_col.cells[nhbr_1_key]
             if nhbr_1.is_lf:
-                nhbr_cells[1] = nhbr_1
+                nhbr_cell_keys[1] = nhbr_1_key
 
         except:
             None
 
-    return nhbr_cells
+    return nhbr_cell_keys

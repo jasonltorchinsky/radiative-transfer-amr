@@ -30,25 +30,27 @@ def test_2(dir_name = 'test_mesh'):
     
     # Refine the mesh some so we have a more interesting plot
     nrefs = 0
-    fig, ax = plt.subplots()
+    
     file_name = os.path.join(mesh_dir, 'mesh_2d_{}.png'.format(nrefs))
-    tools.plot_mesh(mesh, ax = ax, file_name = file_name,
+    tools.plot_mesh(mesh, ax = None, file_name = file_name,
                     label_cells = True, plot_dim = 2)
     
     nuni_ref = 1
     for ref in range(0, nuni_ref):
         mesh.ref_mesh(kind = 'spt')
         nrefs += 1
-        fig, ax = plt.subplots()
+        
         file_name = os.path.join(mesh_dir, 'mesh_2d_{}.png'.format(nrefs))
-        tools.plot_mesh(mesh, ax = ax, file_name = file_name,
+        tools.plot_mesh(mesh, ax = None, file_name = file_name,
                     label_cells = True, plot_dim = 2)
 
     ncol_ref = 2
     for ref in range(0, ncol_ref):
         col_keys = sorted(list(mesh.cols.keys()))
-        mesh.ref_col(mesh.cols[col_keys[-1]], kind = 'all')
+        cell_keys = sorted(list(mesh.cols[col_keys[-1]].cells.keys()))
+        mesh.ref_cell(col_keys[-1], cell_keys[-1])
         nrefs += 1
+        
         file_name = os.path.join(mesh_dir, 'mesh_2d_{}.png'.format(nrefs))
         tools.plot_mesh(mesh, ax = None, file_name = file_name,
                         label_cells = True, plot_dim = 2)
