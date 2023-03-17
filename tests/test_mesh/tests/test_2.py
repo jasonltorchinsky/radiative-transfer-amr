@@ -7,7 +7,7 @@ from dg.mesh import ji_mesh, tools
 
 def test_2(dir_name = 'test_mesh'):
     """
-    Creates a simple 3-D mesh and tests the find-neighbors function for cells.
+    Column spatial refinement, and spatial neighbors for columns.
     """
 
     dir_name = os.path.join(dir_name, 'test_2')
@@ -24,44 +24,42 @@ def test_2(dir_name = 'test_mesh'):
     pbcs     = [True, False]
 
     mesh = ji_mesh.Mesh([Lx, Ly], pbcs, has_th = True)
-    nang_refs = 2
-    for ref in range(0, nang_refs):
-        mesh.ref_mesh(kind = 'ang')
-    
+
     # Refine the mesh some so we have a more interesting plot
     nrefs = 0
     
     file_name = os.path.join(mesh_dir, 'mesh_2d_{}.png'.format(nrefs))
     tools.plot_mesh(mesh, ax = None, file_name = file_name,
-                    label_cells = True, plot_dim = 2)
-    
-    nuni_ref = 1
-    for ref in range(0, nuni_ref):
+                    label_cells = (nrefs <= 3), plot_dim = 2)
+
+    # Uniform spatial refinements
+    nunispt_ref = 2
+    for ref in range(0, nunispt_ref):
         mesh.ref_mesh(kind = 'spt')
+
         nrefs += 1
-        
+
         file_name = os.path.join(mesh_dir, 'mesh_2d_{}.png'.format(nrefs))
         tools.plot_mesh(mesh, ax = None, file_name = file_name,
-                    label_cells = True, plot_dim = 2)
-
-    ncol_ref = 2
-    for ref in range(0, ncol_ref):
+                        label_cells = (nrefs <= 3), plot_dim = 2)
+        
+    
+    ncolspt_ref = 3
+    for ref in range(0, ncolspt_ref):
         col_keys = sorted(list(mesh.cols.keys()))
-        cell_keys = sorted(list(mesh.cols[col_keys[-1]].cells.keys()))
-        mesh.ref_cell(col_keys[-1], cell_keys[-1])
+        mesh.ref_col(col_keys[-1], kind = 'spt')
         nrefs += 1
         
         file_name = os.path.join(mesh_dir, 'mesh_2d_{}.png'.format(nrefs))
         tools.plot_mesh(mesh, ax = None, file_name = file_name,
-                        label_cells = True, plot_dim = 2)
+                        label_cells = (nrefs <= 3), plot_dim = 2)
         
-        file_name = os.path.join(mesh_dir, 'mesh_3d_{}.png'.format(nrefs))
-        tools.plot_mesh(mesh, ax = None, file_name = file_name,
-                        label_cells = False, plot_dim = 3)
-
+    file_name = os.path.join(mesh_dir, 'mesh_2d_bdry.png')
+    tools.plot_mesh_bdry(mesh, file_name = file_name,
+                         label_cells = False, plot_dim = 2)
+    
     for col_key, col in sorted(mesh.cols.items()):
         if col.is_lf:
-            for cell_key, cell in sorted(col.cells.items()):
-                file_str  = 'cell_{}_{}_nhbrs.png'.format(col_key, cell_key)
-                file_name = os.path.join(nhbrs_dir, file_str)
-                tools.plot_cell_nhbrs(mesh, col, cell, file_name = file_name)
+            file_str  = 'col_{}_nhbrs.png'.format(col_key)
+            file_name = os.path.join(nhbrs_dir, file_str)
+            tools.plot_col_nhbrs(mesh, col, file_name = file_name)

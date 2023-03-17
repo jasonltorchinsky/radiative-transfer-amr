@@ -11,11 +11,12 @@ from .calc_key import calc_cell_key
 def ref_cell(self, col_key, cell_key):
     col  = self.cols[col_key]
     cell = col.cells[cell_key]
+    
     if cell.is_lf:
-        idx = cell.idx
-        lv  = cell.lv
+        idx      = cell.idx
+        lv       = cell.lv
         [z0, zf] = cell.pos
-        quad = cell.quad
+        quad     = cell.quad
         
         # Check if angularly neighboring cells need to be refined
         for F in range(0, 2):
@@ -101,7 +102,7 @@ def ref_cell(self, col_key, cell_key):
                                   is_lf = True,
                                   ndofs = cell.ndofs[:],
                                   quad  = chld_quad,
-                                  nhbr_keys = chld_nhbr_keys)
+                                  nhbr_keys = chld_nhbr_keys[:])
             col.add_cell(chld_cell)
         
         # Also need to go to neighbor and update its keys

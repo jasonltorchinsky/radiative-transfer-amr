@@ -1,3 +1,4 @@
+import copy
 import sys
 
 from .Column import Column
@@ -7,10 +8,11 @@ from .calc_key import calc_col_key
 # Refine a column spatially
 def ref_col_spt(self, col_key):
     col = self.cols[col_key]
+    
     if col.is_lf:
         [i, j]           = col.idx[:]
         lv               = col.lv
-        [x0, y0, xf, yf] = col.pos
+        [x0, y0, xf, yf] = col.pos[:]
         
         # Check if neighbors need to be refined first.
         for F in range(0, 4):
@@ -85,13 +87,13 @@ def ref_col_spt(self, col_key):
             chld_idx       = chldn_idxs[ii]
             chld_pos       = chldn_poss[ii]
             chld_nhbr_keys = chldn_nhbr_keys[ii]
-            chld_col       = Column(pos = chld_pos,
-                                    idx = chld_idx,
-                                    lv  = lv + 1,
+            chld_col       = Column(pos   = chld_pos,
+                                    idx   = chld_idx[:],
+                                    lv    = lv + 1,
                                     is_lf = True,
-                                    ndofs = col.ndofs,
-                                    cells = col.cells.copy(),
-                                    nhbr_keys  = chld_nhbr_keys)
+                                    ndofs = col.ndofs[:],
+                                    cells = copy.deepcopy(col.cells),
+                                    nhbr_keys  = chld_nhbr_keys[:])
             self.add_col(chld_col)
                 
         # Update keys of neighboring columns

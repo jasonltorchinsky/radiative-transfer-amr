@@ -232,10 +232,9 @@ def test_3(dir_name = 'test_rtdg'):
         inf_errs[trial] = np.amax(np.abs(anl_sol_vec_intr - apr_sol_vec_intr))
 
         # Refine the mesh for the next trial
-        #for col_key, col in col_items:
-        #    if col.is_lf:
-        #        col.ref_col()
-        mesh.ref_mesh()
+        #col_keys = sorted(mesh.cols.keys())
+        #mesh.ref_col(col_keys[-1], kind = 'ang')
+        mesh.ref_mesh(kind = 'all')
 
         perf_trial_f    = perf_counter()
         perf_trial_diff = perf_trial_f - perf_trial_0
