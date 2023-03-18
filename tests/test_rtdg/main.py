@@ -21,24 +21,36 @@ def main():
     parser.add_argument('--test_all', nargs = 1, default = [0],
                         type = int, choices = [0, 1], required = False,
                         help = 'Do not run (0) or run (1) all tests (overrides other flags)')
+
+    help_str = 'Do not run (0) or run (1) Test 0 - Push Forward, Pull Back'
     parser.add_argument('--test_0', nargs = 1, default = [0],
                         type = int, choices = [0, 1], required = False,
-                        help = 'Do not run (0) or run (1) Test 0 - Matrix Mask Construction')
+                        help = help_str)
+
+    help_str = 'Do not run (0) or run (1) Test 1 - Matrix Mask Construction'
     parser.add_argument('--test_1', nargs = 1, default = [0],
                         type = int, choices = [0, 1], required = False,
-                        help = 'Do not run (0) or run (1) Test 1 - Mass Matrix Manufactured Problem')
+                        help = help_str)
+
+    help_str = 'Do not run (0) or run (1) Test 2 - Mass Matrix Manufactured Problem'
     parser.add_argument('--test_2', nargs = 1, default = [0],
                         type = int, choices = [0, 1], required = False,
-                        help = 'Do not run (0) or run (1) Test 2 - Scattering Matrix Manufactured Problem')
+                        help = help_str)
+
+    help_str = 'Do not run (0) or run (1) Test 2 - Scattering Matrix Manufactured Problem'
     parser.add_argument('--test_3', nargs = 1, default = [0],
                         type = int, choices = [0, 1], required = False,
-                        help = 'Do not run (0) or run (1) Test 3 - Convection Matrix Manufactured Problem')
+                        help = help_str)
+
+    help_str = 'Do not run (0) or run (1) Test 3 - Convection Matrix Manufactured Problem'
     parser.add_argument('--test_4', nargs = 1, default = [0],
                         type = int, choices = [0, 1], required = False,
-                        help = 'Do not run (0) or run (1) Test 4 - Push Forward, Pull Back')
+                        help = help_str)
+    
+    help_str = 'Do not run (0) or run (1) Test 5 - Complete Matrix Manufactured Problem'
     parser.add_argument('--test_5', nargs = 1, default = [0],
                         type = int, choices = [0, 1], required = False,
-                        help = 'Do not run (0) or run (1) Test 5 - Complete Matrix Manufactured Problem')
+                        help = help_str)
 
     args = parser.parse_args()
     ntest = 6

@@ -224,12 +224,8 @@ def test_5(dir_name = 'test_rtdg'):
 
         # Refine the mesh for the next trial
         #col_keys = sorted(mesh.cols.keys())
-        #mesh.cols[col_keys[1]].ref_col()
-        #mesh.ref_col(mesh.cols[col_keys[1]])
-        #for col_key, col in col_items:
-        #    if col.is_lf:
-        #       col.ref_col()
-        mesh.ref_mesh()
+        #mesh.ref_col(col_keys[-1], kind = 'all')
+        mesh.ref_mesh(kind = 'all')
 
         perf_trial_f    = perf_counter()
         perf_trial_diff = perf_trial_f - perf_trial_0
@@ -249,6 +245,11 @@ def test_5(dir_name = 'test_rtdg'):
 
     ax.set_xscale('log', base = 2)
     ax.set_yscale('log', base = 2)
+
+    if np.log2(max(inf_errs)) - np.log2(min(inf_errs)) < 1:
+        ymin = 2**(np.floor(np.log2(min(inf_errs))))
+        ymax = 2**(np.ceil(np.log2(max(inf_errs))))
+        ax.set_ylim([ymin, ymax])
     
     ax.set_xlabel('Total Degrees of Freedom')
     ax.set_ylabel('L$^{\infty}$ Error')

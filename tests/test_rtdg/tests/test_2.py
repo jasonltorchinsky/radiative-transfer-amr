@@ -13,17 +13,16 @@ sys.path.append('../../src')
 from dg.mesh import ji_mesh
 from dg.mesh import tools as mesh_tools
 import dg.quadrature as qd
-from rad_amr import calc_mass_matrix, calc_scat_matrix, push_forward, \
-    get_intr_mask, split_matrix
+from rad_amr import calc_mass_matrix, push_forward, get_intr_mask, split_matrix
 
 from utils import print_msg
 
 def test_2(dir_name = 'test_rtdg'):
     """
-    Creates various visualizations of the scattering matrix and solves a 
+    Creates various visualizations of the mass matrix and solves a 
     manufactured problem.
     """
-    
+
     test_dir = os.path.join(dir_name, 'test_2')
     os.makedirs(test_dir, exist_ok = True)
     
@@ -37,11 +36,11 @@ def test_2(dir_name = 'test_rtdg'):
                     ndofs  = [ndof_x, ndof_y, ndof_th],
                     has_th = has_th)
     
-    [anl_sol, kappa, sigma, Phi, f] = get_cons_soln(prob_name = 'scat',
-                                                    sol_num   = 0)
+    [anl_sol, kappa, _, _, f] = get_cons_soln(prob_name = 'mass',
+                                              sol_num   = 0)
     
     # Solve simplified problem over several trials
-    ntrial    = 5
+    ntrial    = 3
     ref_ndofs = np.zeros([ntrial])
     inf_errs  = np.zeros([ntrial])
     for trial in range(0, ntrial):
@@ -53,11 +52,13 @@ def test_2(dir_name = 'test_rtdg'):
         os.makedirs(trial_dir, exist_ok = True)
 
         # Plot the mesh
+        file_name = os.path.join(trial_dir, 'mesh_3d.png')
         mesh_tools.plot_mesh(mesh,
-                             file_name = os.path.join(trial_dir, 'mesh_3d.png'),
+                             file_name = file_name,
                              plot_dim  = 3)
+        file_name = os.path.join(trial_dir, 'mesh_2d.png')
         mesh_tools.plot_mesh(mesh,
-                             file_name   = os.path.join(trial_dir, 'mesh_2d.png'),
+                             file_name   = file_name,
                              plot_dim    = 2,
                              label_cells = True)
 
@@ -91,20 +92,6 @@ def test_2(dir_name = 'test_rtdg'):
         ref_ndofs[trial] = mesh_ndof
         
         # Construct matrices to solve manufactured problem
-        ## Scattering matrix
-        perf_cons_0 = perf_counter()
-        print_msg('[Trial {}] Constructing scattering matrix...'.format(trial))
-        
-        M_scat = calc_scat_matrix(mesh, sigma, Phi)
-        
-        perf_cons_f    = perf_counter()
-        perf_cons_diff = perf_cons_f - perf_cons_0
-        msg = (
-            '[Trial {}] Scattering matrix constructed! '.format(trial) +
-            'Time Elapsed: {:08.3f} [s]'.format(perf_cons_diff)
-        )
-        print_msg(msg)
-        
         ## Mass matrix
         perf_cons_0 = perf_counter()
         print_msg('[Trial {}] Constructing mass matrix...'.format(trial))
@@ -132,7 +119,7 @@ def test_2(dir_name = 'test_rtdg'):
         perf_soln_0 = perf_counter()
         print_msg('[Trial {}] Solving manufactured problem...'.format(trial))
 
-        [M_intr, M_bdry] = split_matrix(mesh, M_mass - M_scat)
+        [M_intr, M_bdry] = split_matrix(mesh, M_mass)
 
         apr_sol_vec_intr = spsolve(M_intr, f_vec_intr - M_bdry @ bcs_vec)
         
@@ -161,7 +148,7 @@ def test_2(dir_name = 'test_rtdg'):
         print_msg(msg)
         '''
         
-        # Plot global scattering matrix
+        # Plot global mass matrix
         fig, ax = plt.subplots()
         for idx in range(0, ncol - 1):
             ax.axhline(y         = col_end_idxs[idx],
@@ -172,13 +159,13 @@ def test_2(dir_name = 'test_rtdg'):
                        color     = 'gray',
                        linestyle = '--',
                        linewidth = 0.2)
-        ax.spy(M_scat,
+        ax.spy(M_mass,
                marker     = 's',
                markersize = 0.2,
                color      = 'k')
         ax.set_title('Global Scattering Matrix')
         
-        file_name = 'scat_matrix.png'
+        file_name = 'mass_matrix.png'
         fig.set_size_inches(6.5, 6.5)
         plt.savefig(os.path.join(trial_dir, file_name), dpi = 300)
         plt.close(fig)
@@ -197,7 +184,7 @@ def test_2(dir_name = 'test_rtdg'):
                    color = 'k',
                    s     = 0.15)
 
-        ax.set_title('Interior Scattering Matrix - Eigenvalues (Real Part)')
+        ax.set_title('Interior Mass Matrix - Eigenvalues (Real Part)')
         
         file_name = 'scat_matrix_evals.png'
         fig.set_size_inches(6.5, 6.5)
@@ -228,11 +215,11 @@ def test_2(dir_name = 'test_rtdg'):
         
         # Caluclate error
         inf_errs[trial] = np.amax(np.abs(anl_sol_vec_intr - apr_sol_vec_intr))
-        
+
         # Refine the mesh for the next trial
         col_keys = sorted(mesh.cols.keys())
-        mesh.ref_col(col_keys[-1], kind = 'ang')
-        #mesh.ref_mesh(kind = 'all')
+        mesh.ref_col(col_keys[-1], kind = 'spt')
+        #mesh.ref_mesh(kind = 'spt')
 
         perf_trial_f    = perf_counter()
         perf_trial_diff = perf_trial_f - perf_trial_0
@@ -256,9 +243,9 @@ def test_2(dir_name = 'test_rtdg'):
     ax.set_xlabel('Total Degrees of Freedom')
     ax.set_ylabel('L$^{\infty}$ Error')
     
-    ax.set_title('Uniform $h$-Refinement Convergence Rate - Scattering Problem')
+    ax.set_title('Uniform $h$-Refinement Convergence Rate - Mass Problem')
     
-    file_name = 'h-convergence-scatttering.png'
+    file_name = 'h-convergence-mass.png'
     fig.set_size_inches(6.5, 6.5)
     plt.savefig(os.path.join(test_dir, file_name), dpi = 300)
     plt.close(fig)

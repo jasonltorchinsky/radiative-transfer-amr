@@ -13,14 +13,14 @@ sys.path.append('../../src')
 from dg.mesh import ji_mesh
 from dg.mesh import tools as mesh_tools
 import dg.quadrature as qd
-from rad_amr import calc_intr_conv_matrix, calc_bdry_conv_matrix, \
+from rad_amr import calc_mass_matrix, calc_scat_matrix, push_forward, \
     get_intr_mask, split_matrix
 
 from utils import print_msg
 
 def test_3(dir_name = 'test_rtdg'):
     """
-    Creates various visualizations of the convection matrix and solves a 
+    Creates various visualizations of the scattering matrix and solves a 
     manufactured problem.
     """
     
@@ -37,11 +37,11 @@ def test_3(dir_name = 'test_rtdg'):
                     ndofs  = [ndof_x, ndof_y, ndof_th],
                     has_th = has_th)
     
-    [anl_sol, _, _, _, f] = get_cons_soln(prob_name = 'conv',
-                                          sol_num   = 0)
+    [anl_sol, kappa, sigma, Phi, f] = get_cons_soln(prob_name = 'scat',
+                                                    sol_num   = 0)
     
     # Solve simplified problem over several trials
-    ntrial    = 3
+    ntrial    = 5
     ref_ndofs = np.zeros([ntrial])
     inf_errs  = np.zeros([ntrial])
     for trial in range(0, ntrial):
@@ -91,30 +91,30 @@ def test_3(dir_name = 'test_rtdg'):
         ref_ndofs[trial] = mesh_ndof
         
         # Construct matrices to solve manufactured problem
-        ## Interior convection matrix
+        ## Scattering matrix
         perf_cons_0 = perf_counter()
-        print_msg('[Trial {}] Constructing interior convection matrix...'.format(trial))
+        print_msg('[Trial {}] Constructing scattering matrix...'.format(trial))
         
-        M_intr_conv = calc_intr_conv_matrix(mesh)
+        M_scat = calc_scat_matrix(mesh, sigma, Phi)
         
         perf_cons_f    = perf_counter()
         perf_cons_diff = perf_cons_f - perf_cons_0
         msg = (
-            '[Trial {}] Interior convection matrix constructed! '.format(trial) +
+            '[Trial {}] Scattering matrix constructed! '.format(trial) +
             'Time Elapsed: {:08.3f} [s]'.format(perf_cons_diff)
         )
         print_msg(msg)
         
-        ## Boundary convection matrix
+        ## Mass matrix
         perf_cons_0 = perf_counter()
-        print_msg('[Trial {}] Constructing boundary convection matrix...'.format(trial))
+        print_msg('[Trial {}] Constructing mass matrix...'.format(trial))
         
-        M_bdry_conv = calc_bdry_conv_matrix(mesh)
+        M_mass = calc_mass_matrix(mesh, kappa)
         
         perf_cons_f    = perf_counter()
         perf_cons_diff = perf_cons_f - perf_cons_0
         msg = (
-            '[Trial {}] Boundary convection matrix constructed! '.format(trial) +
+            '[Trial {}] Mass matrix constructed! '.format(trial) +
             'Time Elapsed: {:08.3f} [s]'.format(perf_cons_diff)
         )
         print_msg(msg)
@@ -124,18 +124,16 @@ def test_3(dir_name = 'test_rtdg'):
         anl_sol_vec = get_projection_vec(mesh, anl_sol)
         
         intr_mask        = get_intr_mask(mesh)
-        bdry_mask        = np.invert(intr_mask)
         f_vec_intr       = f_vec[intr_mask]
         anl_sol_vec_intr = anl_sol_vec[intr_mask]
-        bcs_vec          = anl_sol_vec[bdry_mask]
+        bcs_vec          = anl_sol_vec[np.invert(intr_mask)]
         
         ## Solve manufactured problem
         perf_soln_0 = perf_counter()
         print_msg('[Trial {}] Solving manufactured problem...'.format(trial))
-        
-        M_conv = M_bdry_conv - M_intr_conv
-        [M_intr, M_bdry] = split_matrix(mesh, M_conv)
-        
+
+        [M_intr, M_bdry] = split_matrix(mesh, M_mass - M_scat)
+
         apr_sol_vec_intr = spsolve(M_intr, f_vec_intr - M_bdry @ bcs_vec)
         
         perf_soln_f    = perf_counter()
@@ -146,7 +144,7 @@ def test_3(dir_name = 'test_rtdg'):
         )
         print_msg(msg)
 
-        # Calculate eigenvalues of interior convection matrix
+        # Calculate eigenvalues of interior scattering matrix
         '''
         perf_evals_0 = perf_counter()
         print_msg('[Trial {}] Calculating eigenvalues...'.format(trial))
@@ -163,7 +161,7 @@ def test_3(dir_name = 'test_rtdg'):
         print_msg(msg)
         '''
         
-        # Plot global convection matrix
+        # Plot global scattering matrix
         fig, ax = plt.subplots()
         for idx in range(0, ncol - 1):
             ax.axhline(y         = col_end_idxs[idx],
@@ -174,18 +172,18 @@ def test_3(dir_name = 'test_rtdg'):
                        color     = 'gray',
                        linestyle = '--',
                        linewidth = 0.2)
-        ax.spy(M_conv,
+        ax.spy(M_scat,
                marker     = 's',
                markersize = 0.2,
                color      = 'k')
-        ax.set_title('Global Convection Matrix')
+        ax.set_title('Global Scattering Matrix')
         
-        file_name = 'conv_matrix.png'
+        file_name = 'scat_matrix.png'
         fig.set_size_inches(6.5, 6.5)
         plt.savefig(os.path.join(trial_dir, file_name), dpi = 300)
         plt.close(fig)
         
-        # Plot eigenvalues of interior convection matrix
+        # Plot eigenvalues of interior scattering matrix
         '''
         fig, ax      = plt.subplots()
         ndof_intr    = np.shape(M_intr)[0]
@@ -199,7 +197,7 @@ def test_3(dir_name = 'test_rtdg'):
                    color = 'k',
                    s     = 0.15)
 
-        ax.set_title('Interior Convection Matrix - Eigenvalues (Real Part)')
+        ax.set_title('Interior Scattering Matrix - Eigenvalues (Real Part)')
         
         file_name = 'scat_matrix_evals.png'
         fig.set_size_inches(6.5, 6.5)
@@ -230,11 +228,11 @@ def test_3(dir_name = 'test_rtdg'):
         
         # Caluclate error
         inf_errs[trial] = np.amax(np.abs(anl_sol_vec_intr - apr_sol_vec_intr))
-
+        
         # Refine the mesh for the next trial
-        #col_keys = sorted(mesh.cols.keys())
-        #mesh.ref_col(col_keys[-1], kind = 'ang')
-        mesh.ref_mesh(kind = 'spt')
+        col_keys = sorted(mesh.cols.keys())
+        mesh.ref_col(col_keys[-1], kind = 'ang')
+        #mesh.ref_mesh(kind = 'all')
 
         perf_trial_f    = perf_counter()
         perf_trial_diff = perf_trial_f - perf_trial_0
@@ -258,9 +256,9 @@ def test_3(dir_name = 'test_rtdg'):
     ax.set_xlabel('Total Degrees of Freedom')
     ax.set_ylabel('L$^{\infty}$ Error')
     
-    ax.set_title('Uniform $h$-Refinement Convergence Rate - Convection Problem')
+    ax.set_title('Uniform $h$-Refinement Convergence Rate - Scattering Problem')
     
-    file_name = 'h-convergence-convection.png'
+    file_name = 'h-convergence-scatttering.png'
     fig.set_size_inches(6.5, 6.5)
     plt.savefig(os.path.join(test_dir, file_name), dpi = 300)
     plt.close(fig)

@@ -12,8 +12,9 @@ def calc_scat_matrix(mesh, sigma, Phi):
     [ncols, col_idxs] = get_col_idxs(mesh)
     col_mtxs = [None] * ncols # Global scattering matrix is block-diagonal, and so
                               # there are only ncol non-zero column scattering matrices
-
-    for col_key, col in sorted(mesh.cols.items()):
+    
+    col_items = sorted(mesh.cols.items())
+    for col_key, col in col_items:
         if col.is_lf:
             # Get column information, quadrature weights
             col_idx = col_idxs[col_key]
