@@ -12,9 +12,8 @@ from utils import print_msg
 
 
 def calc_bdry_conv_matrix(mesh):
-
+    
     # Variables that are the same throughout the loops
-    nhbr_locs = ['+', '-']
     col_items = sorted(mesh.cols.items())
     
     # Create column indexing for constructing global mass matrix
@@ -38,9 +37,12 @@ def calc_bdry_conv_matrix(mesh):
 
             # Loop through the faces of C
             for F in range(0, 4):
-                if col_0.nhbr_keys[F][0] is None: # If column is on the spatial domain boundary,
-                    # no need to find a neightbor.
-                    [col_mtx_00, col_mtx_01] = calc_col_matrix(mesh, col_0, col_0, F)
+                if ((col_0.nhbr_keys[F][0] is None) and
+                    (col_0.nhbr_keys[F][1] is None)): # Spatial domain boundary
+                    [col_mtx_00, col_mtx_01] = calc_col_matrix(mesh,
+                                                               col_key_0,
+                                                               col_key_0,
+                                                               F)
                     
                     # The intra-column matrix may already exist. If so, add to it.
                     if col_mtxs[col_idx_0][col_idx_0] is None:
@@ -58,8 +60,8 @@ def calc_bdry_conv_matrix(mesh):
                                 col_idx_1 = col_idxs[col_key_1]
                                 
                                 [col_mtx_00, col_mtx_01] = calc_col_matrix(mesh,
-                                                                           col_0,
-                                                                           col_1,
+                                                                           col_key_0,
+                                                                           col_key_1,
                                                                            F)
                                 
                                 if col_mtxs[col_idx_0][col_idx_1] is None:
@@ -78,11 +80,14 @@ def calc_bdry_conv_matrix(mesh):
 
     return bdry_conv_mtx
 
-def calc_col_matrix(mesh, col_0, col_1, F):
+def calc_col_matrix(mesh, col_key_0, col_key_1, F):
     """
     Create the column interaction matrix between col_0, col_1.
     """
 
+    col_0 = mesh.cols[col_key_0]
+    col_1 = mesh.cols[col_key_1]
+    
     # Get information about column C
     # _0 => Cell K in equations (in column C)
     # **b => Pull back coordinates (in [-1, 1])
@@ -141,12 +146,17 @@ def calc_col_matrix(mesh, col_0, col_1, F):
             # the neighboring column/cell
             if is_Fp:
                 cell_mtxs_00[cell_idx_0] += \
-                    calc_cell_matrix(cell_0, col_0, cell_0, col_0, F)
+                    calc_cell_matrix(mesh,
+                                     col_key_0,
+                                     cell_key_0,
+                                     col_key_0,
+                                     cell_key_0,
+                                     F)
             else:
                 nhbr_cell_keys = ji_mesh.get_cell_nhbr_in_col(mesh,
-                                                              col_0.key,
-                                                              cell_0.key,
-                                                              col_1.key)
+                                                              col_key_0,
+                                                              cell_key_0,
+                                                              col_key_1)
                 for cell_key_1 in nhbr_cell_keys:
                     if cell_key_1 is not None:
                         cell_1 = col_1.cells[cell_key_1]
@@ -154,17 +164,28 @@ def calc_col_matrix(mesh, col_0, col_1, F):
                             cell_idx_1 = cell_idxs_1[cell_key_1]
 
                             cell_mtxs_01[cell_idx_0][cell_idx_1] += \
-                                calc_cell_matrix(cell_0, col_0, cell_1, col_1, F)
+                                calc_cell_matrix(mesh,
+                                                 col_key_0,
+                                                 cell_key_0,
+                                                 col_key_1,
+                                                 cell_key_1,
+                                                 F)
                     
     col_mtx_00 = block_diag(cell_mtxs_00, format = 'csr')
     col_mtx_01 = bmat(      cell_mtxs_01, format = 'csr')
 
     return [col_mtx_00, col_mtx_01]
 
-def calc_cell_matrix(cell_0, col_0, cell_1, col_1, F):
+def calc_cell_matrix(mesh, col_key_0, cell_key_0, col_key_1, cell_key_1, F):
     """
     Create the column interaction matrix between col_0, col_1.
     """
+    
+    col_0  = mesh.cols[col_key_0]
+    cell_0 = col_0.cells[cell_key_0]
+    
+    col_1  = mesh.cols[col_key_1]
+    cell_1 = col_1.cells[cell_key_1]
     
     tol = 1.0E-15 # Tolerance for filling in the entry of a cell matrix.
     S_quad_0 = cell_0.quad
@@ -182,8 +203,7 @@ def calc_cell_matrix(cell_0, col_0, cell_1, col_1, F):
     [x0_0, y0_0, x1_0, y1_0]         = col_0.pos
     [dx_0, dy_0]                     = [x1_0 - x0_0, y1_0 - y0_0]
     [ndof_x_0, ndof_y_0]             = col_0.ndofs
-    [xxb_0, wx_0, yyb_0, wy_0, _, _] = qd.quad_xyth(nnodes_x = ndof_x_0,
-                                                    nnodes_y = ndof_y_0)
+    
     [th0_0, th1_0] = cell_0.pos
     dth_0          = th1_0 - th0_0
     [ndof_th_0]    = cell_0.ndofs
@@ -214,7 +234,9 @@ def calc_cell_matrix(cell_0, col_0, cell_1, col_1, F):
     cell_ndof_1    = ndof_x_1 * ndof_y_1 * ndof_th_1
 
     # If on the inflow boundary of the domain, return a zero matrix
-    if (col_0.nhbr_keys[F][0] is None) and not is_Fp:
+    if (((col_0.nhbr_keys[F][0] is None) and
+         (col_0.nhbr_keys[F][1] is None)) and
+        not is_Fp):
         cell_mtx = coo_matrix((cell_ndof_0, cell_ndof_1))
         return cell_mtx
 
@@ -326,7 +348,9 @@ def calc_cell_matrix(cell_0, col_0, cell_1, col_1, F):
         
         # The x index depends on whether col_0 is actually
         # on the boundary of the domain or not.
-        if (col_0.nhbr_keys[F][0] is None) or is_Fp: # On boundary of domain
+        if (((col_0.nhbr_keys[F][0] is None) and
+             (col_0.nhbr_keys[F][1] is None))
+            or is_Fp): # On boundary of domain
             if (F == 0):
                 x_idx_0 = ndof_x_0 - 1
             elif (F == 2):
@@ -368,7 +392,9 @@ def calc_cell_matrix(cell_0, col_0, cell_1, col_1, F):
         
         # The y index depends on whether col_0 is actually
         # on the boundary of the domain or not.
-        if (col_0.nhbr_keys[F][0] is None) or is_Fp: # On boundary of domain
+        if (((col_0.nhbr_keys[F][0] is None) and
+             (col_0.nhbr_keys[F][1] is None))
+            or is_Fp): # On boundary of domain
             if (F == 1):
                 y_idx_0 = ndof_y_0 - 1
             elif (F == 3):
