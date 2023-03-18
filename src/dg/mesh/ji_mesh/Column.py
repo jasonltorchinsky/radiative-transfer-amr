@@ -13,10 +13,11 @@ class Column:
         
 
     def __str__(self):
-        msg = ( 'Column    :  {}, {}\n'.format(self.idx, self.lv) +
+        msg = ( '    Column:  {}, {}\n'.format(self.idx, self.lv) +
                 '       key:  {}\n'.format(self.key) +
                 '       pos:  {}\n'.format(self.pos) +
                 '     is_lf:  {}\n'.format(self.is_lf) +
+                '     ndofs:  {}\n'.format(self.ndofs) +
                 '     cells:  {}\n'.format(list(self.cells.keys())) +
                 ' nhbr_keys:  {}\n'.format(self.nhbr_keys)
                )

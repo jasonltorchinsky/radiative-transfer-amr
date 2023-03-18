@@ -79,7 +79,8 @@ def get_intr_mask(mesh):
 
                     # Construct the cell mask - the boundary is the inflow
                     # part of the spatial domain boundary
-                    if ((col.nhbr_keys[0][0] is not None) and # If nhbr, would be [0]
+                    if ((col.nhbr_keys[0][0] is None) and # If nhbr, would be [0]
+                        (col.nhbr_keys[0][1] is None) and
                         (S_quad == 1 or S_quad == 2)): # 0 => Right
                         for jj in range(0, ndof_y):
                             for aa in range(0, ndof_th):
@@ -87,21 +88,24 @@ def get_intr_mask(mesh):
                                 cell_mask[beta_idx] = False
 
 
-                    if ((col.nhbr_keys[1][0] is not None) and
+                    if ((col.nhbr_keys[1][0] is None) and
+                        (col.nhbr_keys[1][1] is None) and
                         (S_quad == 2 or S_quad == 3)): # 1 => Top
                         for ii in range(0, ndof_x):
                             for aa in range(0, ndof_th):
                                 beta_idx = beta(ii, ndof_y - 1, aa)
                                 cell_mask[beta_idx] = False
 
-                    if ((col.nhbr_keys[2][0] is not None) and
+                    if ((col.nhbr_keys[2][0] is None) and
+                        (col.nhbr_keys[2][1] is None) and
                         (S_quad == 3 or S_quad == 0)): # 2 => Left
                         for jj in range(0, ndof_y):
                             for aa in range(0, ndof_th):
                                 beta_idx = beta(0, jj, aa)
                                 cell_mask[beta_idx] = False
 
-                    if ((col.nhbr_keys[3][0] is not None) and
+                    if ((col.nhbr_keys[3][0] is None) and
+                        (col.nhbr_keys[3][1] is None) and
                         (S_quad == 0 or S_quad == 1)): # 3 => Bottom
                         for ii in range(0, ndof_x):
                             for aa in range(0, ndof_th):

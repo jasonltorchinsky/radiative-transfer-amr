@@ -234,7 +234,7 @@ def test_3(dir_name = 'test_rtdg'):
         # Refine the mesh for the next trial
         #col_keys = sorted(mesh.cols.keys())
         #mesh.ref_col(col_keys[-1], kind = 'ang')
-        mesh.ref_mesh(kind = 'all')
+        mesh.ref_mesh(kind = 'spt')
 
         perf_trial_f    = perf_counter()
         perf_trial_diff = perf_trial_f - perf_trial_0
