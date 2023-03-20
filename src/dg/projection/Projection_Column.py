@@ -1,21 +1,19 @@
 class Projection_Column:
     def __init__(self, col, proj_cells):
-        self.pos   = col.pos    # Spatial corners of columns
-        self.idx   = col.idx    # Spatial index for column
-        self.lv    = col.lv     # Level of spatial refinement for column
-        self.key   = col.key    # Unique key for column
-        self.ndofs = col.ndofs  # Degrees of freedom in x-, y-
-        self.cells = proj_cells # Dict of cells in the column
+        self.pos   = col.pos[:]    # Spatial corners of columns
+        self.idx   = col.idx[:]    # Spatial index for column
+        self.lv    = col.lv        # Level of spatial refinement for column
+        self.key   = col.key       # Unique key for column
+        self.ndofs = col.ndofs[:]  # Degrees of freedom in x-, y-
+        self.cells = proj_cells    # Dict of cells in the column
         
 
     def __str__(self):
         msg = ( '    Column:  {}, {}\n'.format(self.idx, self.lv) +
                 '       key:  {}\n'.format(self.key) +
                 '       pos:  {}\n'.format(self.pos) +
-                '     is_lf:  {}\n'.format(self.is_lf) +
                 '     ndofs:  {}\n'.format(self.ndofs) +
-                '     cells:  {}\n'.format(list(self.cells.keys())) +
-                ' nhbr_keys:  {}\n'.format(self.nhbr_keys)
+                '     cells:  {}\n'.format(list(self.cells.keys()))
                )
 
         return msg

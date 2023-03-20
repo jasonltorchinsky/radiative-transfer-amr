@@ -25,7 +25,7 @@ class Mesh:
                         idx       = 0,
                         lv        = 0,
                         is_lf     = True,
-                        ndofs     = [0],
+                        ndofs     = [1],
                         quad      = None,
                         nhbr_keys = [None, None])
 

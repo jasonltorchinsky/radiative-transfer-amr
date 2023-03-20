@@ -5,7 +5,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 from .plot_mesh import plot_mesh, get_prism
-from .. import get_cell_nhbr_in_col
+from ..ji_mesh import get_cell_nhbr_in_col
 
 def plot_cell_nhbrs_in_col(mesh, col, cell, nhbr_col,
                            file_name = None, **kwargs):
