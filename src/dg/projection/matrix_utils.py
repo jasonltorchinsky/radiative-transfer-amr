@@ -4,8 +4,6 @@ from scipy.sparse import coo_matrix, csr_matrix, csc_matrix, bmat
 import dg.quadrature as qd
 from dg.mesh import ji_mesh, tools
 
-
-
 def get_intr_mask(mesh):
     """
     We create the mask in a similar way to creating the matrices -

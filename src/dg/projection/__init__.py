@@ -75,3 +75,5 @@ class Projection():
                )
         
         return msg
+
+    from .vectorization import to_vector
