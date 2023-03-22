@@ -12,7 +12,8 @@ from .get_cons_soln      import get_cons_soln
 sys.path.append('../../src')
 from dg.mesh.utils import plot_mesh
 from dg.matrix import get_intr_mask, split_matrix
-from dg.projection import push_forward
+from dg.projection import push_forward, to_projection
+from dg.projection.utils import plot_projection
 import dg.quadrature as qd
 from rad_amr import calc_intr_conv_matrix, calc_bdry_conv_matrix
 
@@ -41,7 +42,7 @@ def test_4(dir_name = 'test_rtdg'):
                                           sol_num   = 0)
     
     # Solve simplified problem over several trials
-    ntrial    = 5
+    ntrial    = 8
     ref_ndofs = np.zeros([ntrial])
     inf_errs  = np.zeros([ntrial])
     for trial in range(0, ntrial):
@@ -146,6 +147,17 @@ def test_4(dir_name = 'test_rtdg'):
         )
         print_msg(msg)
 
+        # Plot the difference in solutions
+        diff_vec_intr = apr_sol_vec_intr - anl_sol_vec_intr
+        zero_bcs_vec  = 0. * bcs_vec
+        diff_vec      = merge_vecs(intr_mask, diff_vec_intr, zero_bcs_vec)
+        diff_proj     = to_projection(mesh, diff_vec)
+        
+        file_name = os.path.join(trial_dir, 'diff.png')
+        angles = [0, np.pi/3, 2 * np.pi / 3, np.pi,
+                  4 * np.pi / 3, 5 * np.pi / 3]
+        plot_projection(diff_proj, file_name = file_name, angles = angles)
+
         # Calculate eigenvalues of interior convection matrix
         '''
         perf_evals_0 = perf_counter()
@@ -232,9 +244,9 @@ def test_4(dir_name = 'test_rtdg'):
         inf_errs[trial] = np.amax(np.abs(anl_sol_vec_intr - apr_sol_vec_intr))
 
         # Refine the mesh for the next trial
-        #col_keys = sorted(mesh.cols.keys())
-        #mesh.ref_col(col_keys[-1], kind = 'spt')
-        mesh.ref_mesh(kind = 'spt')
+        col_keys = sorted(mesh.cols.keys())
+        mesh.ref_col(col_keys[-4], kind = 'spt')
+        #mesh.ref_mesh(kind = 'spt')
 
         perf_trial_f    = perf_counter()
         perf_trial_diff = perf_trial_f - perf_trial_0
@@ -269,3 +281,24 @@ def test_4(dir_name = 'test_rtdg'):
     fig.set_size_inches(6.5, 6.5)
     plt.savefig(os.path.join(test_dir, file_name), dpi = 300)
     plt.close(fig)
+
+
+def merge_vecs(intr_mask, intr_vec, bdry_vec):
+
+    ndof = np.size(intr_mask)
+
+    vec = np.zeros(ndof)
+    intr_idx = 0
+    bdry_idx = 0
+
+    for ii in range(0, ndof):
+        if intr_mask[ii]:
+            vec[ii] = intr_vec[intr_idx]
+
+            intr_idx += 1
+        else:
+            vec[ii] = bdry_vec[bdry_idx]
+            
+            bdry_idx += 1
+
+    return vec
