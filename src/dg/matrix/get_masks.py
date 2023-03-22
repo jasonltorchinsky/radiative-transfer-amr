@@ -1,6 +1,8 @@
 import numpy as np
 from scipy.sparse import csr_matrix, csc_matrix
 
+from .get_idxs import get_idx_map, get_col_idxs, get_cell_idxs
+
 def get_intr_mask(mesh):
     """
     We create the mask in a similar way to creating the matrices -
@@ -8,15 +10,7 @@ def get_intr_mask(mesh):
     scipy.sparse doesn't work for vectors, so we use a dense representation here.
     """
     
-    # Create column indexing for constructing global mask
-    col_idx = 0
-    col_idxs = dict()
-    for col_key, col in sorted(mesh.cols.items()):
-        if col.is_lf:
-            col_idxs[col_key] = col_idx
-            col_idx += 1
-
-    ncols = col_idx # col_idx counts the number of existing columns in mesh
+    [ncols, col_idxs] = get_col_idxs(mesh)
     col_masks = [None] * ncols # Global mask is a 1-D vector
 
     col_items = sorted(mesh.cols.items())
@@ -26,15 +20,7 @@ def get_intr_mask(mesh):
             col_idx = col_idxs[col_key]
             [ndof_x, ndof_y] = col.ndofs
             
-            # Create cell indexing for constructing column mask
-            cell_idx = 0
-            cell_idxs = dict()
-            for cell_key, cell in sorted(col.cells.items()):
-                if cell.is_lf:
-                    cell_idxs[cell_key] = cell_idx
-                    cell_idx += 1
-
-            ncells = cell_idx # cell_idx counts the number of existing cells in column
+            [ncells, cell_idxs] = get_cell_idxs(mesh, col_key)
             cell_masks = [None] * ncells # Column mask is a 1-D vector
 
             cell_items = sorted(col.cells.items())
@@ -46,7 +32,6 @@ def get_intr_mask(mesh):
                     [ndof_th]  = cell.ndofs
                     
                     S_quad = cell.quad
-                    
                     
                     beta = get_idx_map(ndof_x, ndof_y, ndof_th)
 

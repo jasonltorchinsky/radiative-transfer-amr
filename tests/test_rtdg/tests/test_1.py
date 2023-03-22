@@ -5,8 +5,7 @@ import os, sys
 from .gen_mesh import gen_mesh
 
 sys.path.append('../../src')
-from dg.mesh import ji_mesh
-from rad_amr import get_intr_mask
+from dg.matrix import get_intr_mask
 
 def test_1(dir_name = 'test_rtdg'):
     """

@@ -1,9 +1,8 @@
 import numpy as np
 from scipy.sparse import coo_matrix, csr_matrix, block_diag, bmat
 
-from .Projection import Projection_2D
-from .matrix_utils import push_forward, get_col_idxs, get_cell_idxs, get_idx_map
-
+from dg.matrix import get_idx_map, get_col_idxs, get_cell_idxs
+from dg.projection import push_forward
 import dg.quadrature as qd
 
 def calc_mass_matrix(mesh, kappa):
@@ -29,7 +28,7 @@ def calc_mass_matrix(mesh, kappa):
             yyf = push_forward(y0, y1, yyb)
             
             # Create cell indexing for constructing column mass matrix
-            [ncells, cell_idxs] = get_cell_idxs(col)
+            [ncells, cell_idxs] = get_cell_idxs(mesh, col_key)
             cell_mtxs = [None] * ncells # Column mass matrix is block-diagonal, and
                                         # so there are only ncell non-zero cell
                                         # mass matrices

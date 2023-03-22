@@ -5,7 +5,7 @@ import os, sys
 
 sys.path.append('../../src')
 import dg.quadrature as qd
-from rad_amr import push_forward, pull_back
+from dg.projection import push_forward, pull_back
 
 def test_0(dir_name = 'test_rtdg'):
     """
@@ -28,8 +28,8 @@ def test_0(dir_name = 'test_rtdg'):
     [nodes_x_1, _, _, _ ,_, _] = qd.quad_xyth(nnodes_x = ndof_x_1)
     [nodes_x_2, _, _, _ ,_, _] = qd.quad_xyth(nnodes_x = ndof_x_2)
 
-    nx = 500
-    xxb     = np.linspace(-1, 1, nx)
+    nx  = 500
+    xxb = np.linspace(-1, 1, nx)
 
     ## Level l+1 cell basis to level l cell domain (left = 1)
     xxf_0   = push_forward(x0_0, x1_0, xxb)

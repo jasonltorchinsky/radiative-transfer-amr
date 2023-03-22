@@ -1,11 +1,9 @@
 import numpy as np
 from scipy.sparse import coo_matrix, csr_matrix, block_diag, bmat
 
-from .Projection import Projection_2D
-from .matrix_utils import push_forward, pull_back, get_col_idxs, \
-    get_cell_idxs, get_idx_map
-
-from dg.mesh import ji_mesh
+from dg.matrix import get_idx_map, get_col_idxs, get_cell_idxs
+import dg.mesh as ji_mesh
+from dg.projection import push_forward, pull_back
 import dg.quadrature as qd
 
 from utils import print_msg
@@ -94,7 +92,7 @@ def calc_col_matrix(mesh, col_key_0, col_key_1, F):
     # w* => Quadrature weights
     cell_items_0            = sorted(col_0.cells.items())
     [ndof_x_0, ndof_y_0]    = col_0.ndofs
-    [ncells_0, cell_idxs_0] = get_cell_idxs(col_0)
+    [ncells_0, cell_idxs_0] = get_cell_idxs(mesh, col_key_0)
     cell_mtxs_00            = [None] * ncells_0
 
     # Set array to store cell matrices for inter-column matrices
@@ -102,7 +100,7 @@ def calc_col_matrix(mesh, col_key_0, col_key_1, F):
     # cells in neighboring columns
     cell_items_1            = sorted(col_1.cells.items())
     [ndof_x_1, ndof_y_1]    = col_1.ndofs
-    [ncells_1, cell_idxs_1] = get_cell_idxs(col_1)
+    [ncells_1, cell_idxs_1] = get_cell_idxs(mesh, col_key_1)
     cell_mtxs_01            = [[None] * ncells_1 for K in range(0, ncells_0)]
 
     # To ensure proper matrix construction, we initialize all cell

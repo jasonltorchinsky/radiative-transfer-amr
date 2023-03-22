@@ -1,7 +1,7 @@
 import sys
 
 sys.path.append('../../src')
-from dg.mesh import ji_mesh
+import dg.mesh as ji_mesh
 
 def gen_mesh(Ls, pbcs, ndofs, has_th):
     """

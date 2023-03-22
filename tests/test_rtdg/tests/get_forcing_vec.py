@@ -2,8 +2,9 @@ import numpy as np
 import sys
 
 sys.path.append('../../src')
+from dg.matrix import get_idx_map, get_col_idxs, get_cell_idxs
+from dg.projection import push_forward
 import dg.quadrature as qd
-from rad_amr import push_forward, get_col_idxs, get_cell_idxs, get_idx_map
 
 def get_forcing_vec(mesh, f):
     """
@@ -33,7 +34,7 @@ def get_forcing_vec(mesh, f):
             
             # Create cell indexing for constructing column forcing vector
             cell_items         = sorted(col.cells.items())
-            [ncell, cell_idxs] = get_cell_idxs(col)
+            [ncell, cell_idxs] = get_cell_idxs(mesh, col_key)
             f_cell_vecs        = [None] * ncell # Column forcing vector is a 1-D vector
             
             for cell_key, cell in cell_items:

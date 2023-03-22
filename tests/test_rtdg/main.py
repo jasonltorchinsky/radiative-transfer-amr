@@ -5,9 +5,6 @@ from time import perf_counter
 import os, sys
 
 sys.path.append('../../src')
-from dg.mesh import ji_mesh
-from dg.mesh import tools as mesh_tools
-
 from utils import print_msg
 
 from tests import test_0, test_1, test_2, test_3, test_4, test_5

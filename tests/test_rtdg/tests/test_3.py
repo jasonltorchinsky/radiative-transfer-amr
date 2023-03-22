@@ -10,11 +10,11 @@ from .get_projection_vec import get_projection_vec
 from .get_cons_soln      import get_cons_soln
 
 sys.path.append('../../src')
-from dg.mesh import ji_mesh
-from dg.mesh import tools as mesh_tools
+from dg.mesh.utils import plot_mesh
+from dg.matrix import get_intr_mask, split_matrix
+from dg.projection import push_forward
 import dg.quadrature as qd
-from rad_amr import calc_mass_matrix, calc_scat_matrix, push_forward, \
-    get_intr_mask, split_matrix
+from rad_amr import calc_mass_matrix, calc_scat_matrix
 
 from utils import print_msg
 
@@ -53,13 +53,13 @@ def test_3(dir_name = 'test_rtdg'):
         os.makedirs(trial_dir, exist_ok = True)
 
         # Plot the mesh
-        mesh_tools.plot_mesh(mesh,
-                             file_name = os.path.join(trial_dir, 'mesh_3d.png'),
-                             plot_dim  = 3)
-        mesh_tools.plot_mesh(mesh,
-                             file_name   = os.path.join(trial_dir, 'mesh_2d.png'),
-                             plot_dim    = 2,
-                             label_cells = True)
+        plot_mesh(mesh,
+                  file_name = os.path.join(trial_dir, 'mesh_3d.png'),
+                  plot_dim  = 3)
+        plot_mesh(mesh,
+                  file_name   = os.path.join(trial_dir, 'mesh_2d.png'),
+                  plot_dim    = 2,
+                  label_cells = True)
 
         # Get the ending indices for the column matrices, number of DOFs in mesh
         col_items = sorted(mesh.cols.items())
