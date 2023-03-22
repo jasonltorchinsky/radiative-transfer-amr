@@ -13,6 +13,21 @@ def get_idx_map(ndof_x, ndof_y, ndof_th):
 
     return idx_map
 
+def get_idx_inv_map(ndof_x, ndof_y, ndof_th):
+    """
+    Get the map from alpha => p,q,r, beta => i,j,a.
+    NOTE: Keep ndof_x as an input in case the idx map changes in the future.
+    """
+
+    def idx_inv_map(idx):
+        a = idx%ndof_th
+        j = int((idx - a)/ndof_th)%ndof_y
+        i = int((idx - (ndof_th * j + a)) / (ndof_th * ndof_y))
+
+        return [i, j, a]
+
+    return idx_inv_map
+
 
 def get_col_idxs(mesh):
     """

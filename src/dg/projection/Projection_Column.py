@@ -4,6 +4,7 @@ class Projection_Column:
         self.idx   = col.idx[:]    # Spatial index for column
         self.lv    = col.lv        # Level of spatial refinement for column
         self.key   = col.key       # Unique key for column
+        self.is_lf = col.is_lf     # Whether cell is a leaf or not
         self.ndofs = col.ndofs[:]  # Degrees of freedom in x-, y-
         self.cells = proj_cells    # Dict of cells in the column
         

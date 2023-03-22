@@ -21,10 +21,10 @@ def test_5(func, func_ddx, quad_type = 'lg', dir_name = 'test_quad'):
         quad_type_str = 'Legendre-Gauss-Lobatto'
 
     else:
-        print('ERROR: Test 3 recieved invalid quad_type. Please use "lg" or "lgl".')
+        print('ERROR: Test 5 recieved invalid quad_type. Please use "lg" or "lgl".')
         quit()
 
-    nnodes_list = np.arange(2**2, 2**7 + 1, 8)
+    nnodes_list = np.arange(2**2, 2**7 + 1, 16)
     ntrials = np.size(nnodes_list)
     
     # Calculate error using a high-order quadrature rule

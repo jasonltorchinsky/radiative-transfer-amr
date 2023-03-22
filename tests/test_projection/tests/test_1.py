@@ -46,9 +46,18 @@ def test_1(dir_name = 'test_mesh'):
     dg.projection.utils.plot_projection(proj, file_name = file_name,
                                         angles = angles)
     
-    nuni_ref = 4
-    for ref in range(0, nuni_ref):
-        mesh.ref_mesh(kind = 'all')
+    nref = 6
+    for ref in range(0, nref):
+        
+        col_keys = sorted(list(mesh.cols.keys()))
+        col_key = col_keys[-1]
+        col = mesh.cols[col_key]
+        cell_keys = sorted(list(col.cells.keys()))
+        cell_key = cell_keys[-1]
+        mesh.ref_cell(col_key, cell_key)
+        mesh.ref_col(col_key, kind = 'spt')
+        
+        #mesh.ref_mesh(kind = 'all')
         proj = dg.projection.Projection(mesh, test_func)
         nrefs += 1
         

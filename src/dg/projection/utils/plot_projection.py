@@ -153,7 +153,7 @@ def plot_projection_3d(projection, file_name = None, **kwargs):
                     for ii in range(0, ndof_x):
                         for jj in range(0, ndof_y):
                             for aa in range(0, ndof_th):
-                                vals_xy[ii, jj] = vals_xyth[ii, jj, aa] \
+                                vals_xy[ii, jj] += vals_xyth[ii, jj, aa] \
                                     * lag_eval(thb, aa, th_pb)
                     
                     pc = ax.pcolormesh(xxf, yyf, vals_xy.transpose(),

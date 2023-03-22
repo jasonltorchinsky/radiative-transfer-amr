@@ -1,5 +1,7 @@
 import numpy as np
 
+from .lag_eval import lag_eval
+
 def lag_ddx(nodes):
     '''
     Returns differentiation matrix for a function f evaluated at the nodes.
@@ -17,8 +19,32 @@ def lag_ddx(nodes):
 
 def lag_ddx_eval(nodes, j, x):
     '''
-    Calculates the derivative of the jth Lagrange polynomial for a given set of
-    nodes.
+    Calculates the *approximate value* of the derivative of the jth Lagrange
+    polynomial for a given set of nodes.
+    '''
+
+    nnodes = np.shape(nodes)[0]
+    
+    xm = x - 10.**(-10)
+    if xm < -1:
+        xm = -1.
+    
+    xp = x + 10.**(-10)
+    if xp > 1:
+        xp = 1
+    
+    dx = xp - xm
+    
+    fm = lag_eval(nodes, j, xm)
+    fp = lag_eval(nodes, j, xp)
+    res = (fp - fm) / dx
+    
+    return res
+
+def lag_ddx_eval_exact(nodes, j, x):
+    '''
+    Calculates the exact value of the derivative of the jth Lagrange polynomial
+    for a given set of  nodes.
     '''
 
     nnodes = np.shape(nodes)[0]

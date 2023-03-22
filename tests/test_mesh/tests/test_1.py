@@ -3,7 +3,8 @@ import matplotlib.pyplot as plt
 import os, sys
 
 sys.path.append('../../src')
-from dg.mesh import ji_mesh, tools
+import dg.mesh as ji_mesh
+import dg.mesh.utils
 
 def test_1(dir_name = 'test_mesh'):
     """
@@ -29,8 +30,8 @@ def test_1(dir_name = 'test_mesh'):
     nrefs = 0
     
     file_name = os.path.join(mesh_dir, 'mesh_3d_{}.png'.format(nrefs))
-    tools.plot_mesh(mesh, ax = None, file_name = file_name,
-                    label_cells = False, plot_dim = 3)
+    ji_mesh.utils.plot_mesh(mesh, ax = None, file_name = file_name,
+                            label_cells = False, plot_dim = 3)
 
     # Uniform angular refinements
     nuniang_ref = 2
@@ -40,8 +41,8 @@ def test_1(dir_name = 'test_mesh'):
         nrefs += 1
 
         file_name = os.path.join(mesh_dir, 'mesh_3d_{}.png'.format(nrefs))
-        tools.plot_mesh(mesh, ax = None, file_name = file_name,
-                        label_cells = False, plot_dim = 3)
+        ji_mesh.utils.plot_mesh(mesh, ax = None, file_name = file_name,
+                                label_cells = False, plot_dim = 3)
         
     ncell_ref = 3
     for ref in range(0, ncell_ref):
@@ -51,16 +52,16 @@ def test_1(dir_name = 'test_mesh'):
         nrefs += 1
         
         file_name = os.path.join(mesh_dir, 'mesh_3d_{}.png'.format(nrefs))
-        tools.plot_mesh(mesh, ax = None, file_name = file_name,
-                        label_cells = False, plot_dim = 3)
+        ji_mesh.utils.plot_mesh(mesh, ax = None, file_name = file_name,
+                                label_cells = False, plot_dim = 3)
 
     file_name = os.path.join(mesh_dir, 'mesh_2d_bdry.png')
-    tools.plot_mesh_bdry(mesh, file_name = file_name,
-                         label_cells = False, plot_dim = 2)
+    ji_mesh.utils.plot_mesh_bdry(mesh, file_name = file_name,
+                                 label_cells = False, plot_dim = 2)
     
     for col_key, col in sorted(mesh.cols.items()):
         if col.is_lf:
             for cell_key, cell in sorted(col.cells.items()):
                 file_str  = 'cell_{}_{}_nhbrs.png'.format(col_key, cell_key)
                 file_name = os.path.join(nhbrs_dir, file_str)
-                tools.plot_cell_nhbrs(mesh, col, cell, file_name = file_name)
+                ji_mesh.utils.plot_cell_nhbrs(mesh, col, cell, file_name = file_name)

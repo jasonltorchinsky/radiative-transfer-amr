@@ -5,6 +5,7 @@ from .Projection_Cell import Projection_Cell
 
 from .push_pull import push_forward, pull_back
 
+from ..matrix import get_idx_inv_map, get_col_idxs, get_cell_idxs
 from ..quadrature import quad_xyth
 
 class Projection():
@@ -76,4 +77,51 @@ class Projection():
         
         return msg
 
-    from .vectorization import to_vector
+    from .to_vector import to_vector
+
+def to_projection(mesh, vec):
+    """
+    Convert a vector to a projection.
+    """
+
+    if not mesh.has_th:
+        def zero(x, y):
+            return 0
+    else:
+        def zero(x, y, th):
+            return 0
+
+    proj = Projection(mesh, zero)
+
+    [ncol, col_idxs] = get_col_idxs(mesh)
+    col_items = sorted(mesh.cols.items())
+
+    g_idx = 0 # Starting index of the current cell matrix
+    for col_key, col in col_items:
+        if col.is_lf:
+            col_idx = col_idxs[col_key]
+            [ndof_x, ndof_y] = col.ndofs[:]
+            
+            [ncell, cell_idxs] = get_cell_idxs(mesh, col_key)
+            cell_items = sorted(col.cells.items())
+            
+            for cell_key, cell in cell_items:
+                if cell.is_lf:
+                    cell_idx = cell_idxs[cell_key]
+                    [ndof_th] = cell.ndofs
+                    
+                    cell_vals = np.zeros([ndof_x, ndof_y, ndof_th])
+                    
+                    ija = get_idx_inv_map(ndof_x, ndof_y, ndof_th)
+                    
+                    cell_ndof = ndof_x * ndof_y * ndof_th
+                    cell_vec  = vec[g_idx:g_idx + cell_ndof]
+                    for beta in range(0, cell_ndof):
+                        [ii, jj, aa] = ija(beta)
+                        cell_vals[ii, jj, aa] = cell_vec[beta]
+                        
+                    proj.cols[col_key].cells[cell_key].vals = cell_vals[:,:,:]
+                    
+                    g_idx += cell_ndof
+
+    return proj

@@ -6,6 +6,7 @@ class Projection_Cell():
         self.idx   = cell.idx      # Angular index of cell
         self.lv    = cell.lv       # Level of angular refinement
         self.key   = cell.key      # Unique key for cell
+        self.is_lf = cell.is_lf  # Whether cell is a leaf or not
         self.ndofs = cell.ndofs[:] # Degrees of freedom in theta-..
 
         self.vals = vals

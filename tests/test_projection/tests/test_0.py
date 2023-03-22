@@ -44,9 +44,13 @@ def test_0(dir_name = 'test_mesh'):
     file_name = os.path.join(proj_dir, 'proj_{}.png'.format(nrefs))
     dg.projection.utils.plot_projection(proj, file_name = file_name)
     
-    nuni_ref = 4
-    for ref in range(0, nuni_ref):
-        mesh.ref_mesh(kind = 'spt')
+    nspt_ref = 4
+    for ref in range(0, nspt_ref):
+        
+        col_keys = sorted(list(mesh.cols.keys()))
+        mesh.ref_col(col_keys[-1], kind = 'spt')
+        
+        #mesh.ref_mesh(kind = 'spt')
         proj = dg.projection.Projection(mesh, test_func)
         nrefs += 1
         
