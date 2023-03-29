@@ -248,7 +248,7 @@ def test_4(dir_name = 'test_rtdg'):
 
         # Refine the mesh for the next trial
         
-        ref_type = 1
+        ref_type = 0
         if ref_type == 0:
             ## Refine a given column spatially
             col_keys = sorted(mesh.cols.keys())

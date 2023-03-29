@@ -33,6 +33,7 @@ def plot_mesh_bdry_2d(mesh, ax = None, file_name = None):
 
     [Lx, Ly] = mesh.Ls
 
+    colors = ['#648FFF', '#DC267F', '#FE6100', '#FFB000']
     for col in list(mesh.cols.values()):
         if col.is_lf:
             [x0, y0, x1, y1] = col.pos
@@ -41,9 +42,9 @@ def plot_mesh_bdry_2d(mesh, ax = None, file_name = None):
 
             # Choose color dependent on which boundary the column is on
             is_bdry = False
-            colors = ['#648FFF', '#DC267F', '#FE6100', '#FFB000']
             for F in range(0, 4): # [Right, Top, Left, Bottom]
-                if col.nhbr_keys[F][0] is None:
+                if ((col.nhbr_keys[F][0] is None) and
+                    (col.nhbr_keys[F][1] is None)):
                     color = colors[F]
                     cell = Rectangle((x0, y0), width, height,
                                      color = color, fill = True, alpha = 0.2)

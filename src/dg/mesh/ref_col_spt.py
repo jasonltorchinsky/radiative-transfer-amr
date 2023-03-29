@@ -16,7 +16,8 @@ def ref_col_spt(self, col_key):
         
         # Check if neighbors need to be refined first.
         for F in range(0, 4):
-            for nhbr_key in col.nhbr_keys[F]:
+            unique_nhbr_keys = list(set(col.nhbr_keys[F]))
+            for nhbr_key in unique_nhbr_keys:
                 if nhbr_key is not None:
                     nhbr = self.cols[nhbr_key]
                     if nhbr.is_lf:
@@ -49,50 +50,62 @@ def ref_col_spt(self, col_key):
             chld_idx       = chldn_idxs[ii]
             chldn_keys[ii] = calc_col_key(chld_idx, lv + 1)
             
-        # The children neighbor keys depend on the levels of the neighbors.
-        chldn_nhbr_keys_0 = [
-            [chldn_keys[2],       chldn_keys[2]      ], # F = 0
-            [chldn_keys[1],       chldn_keys[1]      ], # F = 1
-            [col.nhbr_keys[2][1], col.nhbr_keys[2][1]], # F = 2
-            [col.nhbr_keys[3][0], col.nhbr_keys[3][0]]  # F = 3
-        ]
-
-        chldn_nhbr_keys_1 = [
-            [chldn_keys[3],       chldn_keys[3]      ], # F = 0
-            [col.nhbr_keys[1][1], col.nhbr_keys[1][1]], # F = 1
-            [col.nhbr_keys[3][0], col.nhbr_keys[3][0]], # F = 2
-            [chldn_keys[0],       chldn_keys[0]      ]  # F = 3
-        ]
-
-        # CONTINUE REDOING FROM HERE!
+        # Neighbor keys of child 0 (bottom-left)
+        chldn_nhbr_keys_0 = [[None, None], [None, None], [None, None], [None, None]]
+        chldn_nhbr_keys_0[0] =     [chldn_keys[2],       chldn_keys[2]      ] # F = 0
+        chldn_nhbr_keys_0[1] =     [chldn_keys[1],       chldn_keys[1]      ] # F = 1
+        if col.nhbr_keys[2][1] != col_key:
+            chldn_nhbr_keys_0[2] = [col.nhbr_keys[2][1], col.nhbr_keys[2][1]] # F = 2
+        else: # Edge case, column is its own neighbor
+            chldn_nhbr_keys_0[2] = [chldn_keys[2],       chldn_keys[2]      ] # F = 2
+        if col.nhbr_keys[3][0] != col_key:
+            chldn_nhbr_keys_0[3] = [col.nhbr_keys[3][0], col.nhbr_keys[3][0]] # F = 3
+        else: # Edge case, column is its own neighbor
+            chldn_nhbr_keys_0[3] = [chldn_keys[1],       chldn_keys[1]      ] # F = 3
         
-        for F in range(0, 4):
-            # We only need to check the level of the first neighbor.
-            # If there are two neighbors, they are the same level.
-            nhbr_key = col.nhbr_keys[F][0]
-            if nhbr_key is not None:
-                nhbr = self.cols[nhbr_key]
-                if nhbr_key == col.key: # col is own neighbor, special case
-                    chldn_nhbr_keys[F][F]       = chldn_nhbr_keys[F][(F+2)%4][:]
-                    chldn_nhbr_keys[(F+1)%4][F] = chldn_nhbr_keys[(F+1)%4][(F+2)%4][:]
-                elif nhbr.is_lf:
-                    nhbr_lv = nhbr.lv
-                    if nhbr_lv == lv: # Refining current column,
-                        # so single neighbor.
-                        # Note: [a][b] => [child #][face of child]
-                        chldn_nhbr_keys[F][F]       = col.nhbr_keys[F][:]
-                        chldn_nhbr_keys[(F+1)%4][F] = col.nhbr_keys[F][:]
-                    elif nhbr_lv - lv == 1: # Neighbor is one level more refined,
-                        # so has two neighbors.
-                        chldn_nhbr_keys[F][F]       = [col.nhbr_keys[F][0], None]
-                        chldn_nhbr_keys[(F+1)%4][F] = [col.nhbr_keys[F][1], None]
-                    else:
-                        msg = ('ERROR IN MAKING CHILD COLUMNS, ' +
-                               '2-NEIGHBOR ASSUMPTION VIOLATED')
-                        print(msg)
-                        sys.exit(0)
-                            
+        # Neighbor keys of child 1 (top-left)
+        chldn_nhbr_keys_1 = [[None, None], [None, None], [None, None], [None, None]]
+        chldn_nhbr_keys_1[0] =     [chldn_keys[3],       chldn_keys[3]      ] # F = 0
+        if col.nhbr_keys[1][1] != col_key:
+            chldn_nhbr_keys_1[1] = [col.nhbr_keys[1][1], col.nhbr_keys[1][1]] # F = 1
+        else: # Edge case, column is its own neighbor
+            chldn_nhbr_keys_1[1] = [chldn_keys[0],       chldn_keys[0]      ] # F = 1
+        if col.nhbr_keys[2][0] != col_key:
+            chldn_nhbr_keys_1[2] = [col.nhbr_keys[2][0], col.nhbr_keys[2][0]] # F = 2
+        else: # Edge case, column is its own neighbor
+            chldn_nhbr_keys_1[2] = [chldn_keys[3],       chldn_keys[3]      ] # F = 2
+        chldn_nhbr_keys_1[3] =     [chldn_keys[0],       chldn_keys[0]      ] # F = 3
         
+        # Neighbor keys of child 2 (bottom-right)
+        chldn_nhbr_keys_2 = [[None, None], [None, None], [None, None], [None, None]]
+        if col.nhbr_keys[0][0] != col_key:
+            chldn_nhbr_keys_2[0] = [col.nhbr_keys[0][0], col.nhbr_keys[0][0]] # F = 0
+        else: # Edge case, column is its own neighbor
+            chldn_nhbr_keys_2[0] = [chldn_keys[0],       chldn_keys[0]      ] # F = 0
+        chldn_nhbr_keys_2[1] =     [chldn_keys[3],       chldn_keys[3]      ] # F = 1
+        chldn_nhbr_keys_2[2] =     [chldn_keys[0],       chldn_keys[0]      ] # F = 2
+        if col.nhbr_keys[3][1] != col_key:
+            chldn_nhbr_keys_2[3] = [col.nhbr_keys[3][1], col.nhbr_keys[3][1]] # F = 3
+        else: # Edge case, column is its own neighbor
+            chldn_nhbr_keys_2[3] = [chldn_keys[3],       chldn_keys[3]      ] # F = 3
+        
+        # Neighbor keys of child 3 (top-right)
+        chldn_nhbr_keys_3 = [[None, None], [None, None], [None, None], [None, None]]
+        if col.nhbr_keys[0][1] != col_key:
+            chldn_nhbr_keys_3[0] = [col.nhbr_keys[0][1], col.nhbr_keys[0][1]] # F = 0
+        else: # Edge case, column is its own neighbor
+            chldn_nhbr_keys_3[0] = [chldn_keys[1],       chldn_keys[1]      ] # F = 0
+        if col.nhbr_keys[1][0] != col_key:
+            chldn_nhbr_keys_3[1] = [col.nhbr_keys[1][0], col.nhbr_keys[1][0]] # F = 1
+        else: # Edge case, column is its own neighbor
+            chldn_nhbr_keys_3[1] = [chldn_keys[2],       chldn_keys[2]      ] # F = 1
+        chldn_nhbr_keys_3[2] =     [chldn_keys[1],       chldn_keys[1]      ] # F = 2
+        chldn_nhbr_keys_3[3] =     [chldn_keys[2],       chldn_keys[2]      ] # F = 3
+
+        chldn_nhbr_keys = [chldn_nhbr_keys_0,
+                           chldn_nhbr_keys_1,
+                           chldn_nhbr_keys_2,
+                           chldn_nhbr_keys_3]
         
         for ii in range(0, 4):
             chld_idx       = chldn_idxs[ii]
@@ -107,36 +120,22 @@ def ref_col_spt(self, col_key):
                                     nhbr_keys  = chld_nhbr_keys[:])
             self.add_col(chld_col)
                 
-        # Update keys of neighboring columns
+        # Update nhbr_keys of neighboring columns
+        new_nhbr_chld_idxs = [2, 3, 1, 0]
         for F in range(0, 4):
-            # We only need to check the level of the first neighbor.
-            # If there are two neighbors, they are the same level.
-            for nhbr_num, nhbr_key in enumerate(col.nhbr_keys[F]):
-                if nhbr_key is not None:
-                    if nhbr_key != col.key: # Make sure column isn't self.
-                        nhbr = self.cols[nhbr_key]
-                        if nhbr.is_lf:
-                            nhbr_lv = nhbr.lv
-                            if nhbr_lv == lv: # Refining current column,
-                                # so single neighbor now has two neighbors
-                                # Note: [a][b] => [child #][face of child]
-                                # Order matters here, we go counterclockwise
-                                # from the POV of the column of interest
-                                key_0 = F
-                                key_1 = (F + 1) % 4
-                                
-                                nhbr_keys = [chldn_keys[key_1], chldn_keys[key_0]]
-                                
-                                nhbr.nhbr_keys[(F + 2)%4] = nhbr_keys
-                                
-                            elif nhbr_lv - lv == 1: # Neighbor is one level more refined,
-                                # so two neighbors now each have one.
-                                key = (F + nhbr_num) % 4
-                                nhbr.nhbr_keys[(F + 2)%4] = [chldn_keys[key], None]
-                            else:
-                                msg = ('ERROR IN REASSIGNING NEIGHBOR KEYS, ' +
-                                       '2-NEIGHBOR ASSUMPTION VIOLATED')
-                                print()
-                                sys.exit(0)
+            for nhbr_num in range(0, 2):
+                nhbr_key = col.nhbr_keys[F][nhbr_num]
+                if (nhbr_key is not None):
+                    nhbr = self.cols[nhbr_key]
+                    if nhbr.is_lf:
+                        idx = 2 * F + nhbr_num
+                        ii = new_nhbr_chld_idxs[int((idx + 1) / 2) % 4]
+                        nhbr_key = chldn_keys[ii]
+                        nhbr_lv = nhbr.lv
+                        if nhbr_lv - lv == 0:
+                            nhbr.nhbr_keys[(F + 2)%4][(nhbr_num + 1)%2] = nhbr_key
+                        elif nhbr_lv- lv == 1:
+                            nhbr.nhbr_keys[(F + 2)%4][0] = nhbr_key
+                            nhbr.nhbr_keys[(F + 2)%4][1] = nhbr_key
                                 
         self.del_col(col_key)

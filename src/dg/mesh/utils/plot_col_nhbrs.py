@@ -33,7 +33,8 @@ def plot_col_nhbrs_2d(mesh, ax = None, col = None, file_name = None):
 
     Lx = mesh.Ls[0]
     Ly = mesh.Ls[1]
-
+    colors = ['#648FFF', '#DC267F', '#FE6100', '#FFB000']
+    
     if col in list(mesh.cols.values()):
         if col.is_lf:
             [x0, y0, x1, y1] = col.pos
@@ -41,7 +42,7 @@ def plot_col_nhbrs_2d(mesh, ax = None, col = None, file_name = None):
             height = y1 - y0
             
             cell = Rectangle((x0, y0), width, height,
-                             color = 'red', fill = True, alpha = 0.1)
+                             color = 'black', fill = True, alpha = 0.1)
             ax.add_patch(cell)
             
             for F in range(0, 4):
@@ -55,7 +56,8 @@ def plot_col_nhbrs_2d(mesh, ax = None, col = None, file_name = None):
                             height = y1 - y0
                             
                             cell = Rectangle((x0, y0), width, height,
-                                             color = 'blue', fill = True, alpha = 0.1)
+                                             color = colors[F],
+                                             fill = True, alpha = 0.1)
                             ax.add_patch(cell)
                             
             if file_name:

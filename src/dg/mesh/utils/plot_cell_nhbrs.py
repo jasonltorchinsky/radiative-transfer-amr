@@ -15,6 +15,7 @@ def plot_cell_nhbrs(mesh, col, cell, file_name = None, **kwargs):
     [fig, ax] = plot_mesh(mesh, ax = None, file_name = None,
                           plot_dim = 3, **kwargs)
 
+    colors = ['#648FFF', '#DC267F', '#FE6100', '#FFB000']
     cols = list(mesh.cols.values())
     if col in cols:
         if col.is_lf:
@@ -22,7 +23,7 @@ def plot_cell_nhbrs(mesh, col, cell, file_name = None, **kwargs):
             cells = list(col.cells.values())
             if cell in cells:
                 [z0, zf] = cell.pos
-                prism = get_prism([x0, xf], [y0, yf], [z0, zf], color = 'red')
+                prism = get_prism([x0, xf], [y0, yf], [z0, zf], color = 'black')
                 for face in prism:
                     ax.add_collection3d(face)
 
@@ -59,7 +60,7 @@ def plot_cell_nhbrs(mesh, col, cell, file_name = None, **kwargs):
                                             prism = get_prism([x0, xf],
                                                               [y0, yf],
                                                               [z0, zf],
-                                                              color = 'blue')
+                                                              color = colors[F])
                                             for face in prism:
                                                 ax.add_collection3d(face)
                             

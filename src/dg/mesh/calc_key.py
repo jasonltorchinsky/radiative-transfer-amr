@@ -5,7 +5,7 @@ def calc_col_key(idx, lv):
     for ll in range(0, lv):
         key += 4 ** ll
         
-    key += 2**lv * idx[0] + idx[1]
+    key += 2**lv * idx[1] + idx[0]
         
     return key
 

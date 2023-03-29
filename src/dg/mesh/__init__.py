@@ -41,12 +41,12 @@ class Mesh:
         
         # Which faces have a neighbor?
         if pbcs[0]: # Periodic in x, is own neighbor in x.
-            nhbr_keys[0] = [0, None]
-            nhbr_keys[2] = [0, None]
+            nhbr_keys[0] = [0, 0]
+            nhbr_keys[2] = [0, 0]
 
         if pbcs[1]: # Periodic in y, is own neighbor in y.
-            nhbr_keys[1] = [0, None]
-            nhbr_keys[3] = [0, None]
+            nhbr_keys[1] = [0, 0]
+            nhbr_keys[3] = [0, 0]
             
         col = Column(pos       = [0, 0, Ls[0], Ls[1]],
                      idx       = [0, 0],

@@ -49,7 +49,7 @@ def calc_bdry_conv_matrix(mesh):
                         col_mtxs[col_idx_0][col_idx_0] += col_mtx_00 + col_mtx_01
                         
                 else: #Column is not on the spatial domain boundary
-                    col_nhbr_keys_0 = col_0.nhbr_keys[F]
+                    col_nhbr_keys_0 = list(set(col_0.nhbr_keys[F]))
                     
                     for col_key_1 in col_nhbr_keys_0:
                         if col_key_1 is not None:

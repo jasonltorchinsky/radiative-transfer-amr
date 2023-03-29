@@ -19,7 +19,7 @@ def test_0(dir_name = 'test_mesh'):
 
     # Create the original 2-D mesh
     [Lx, Ly] = [3., 2.]
-    pbcs     = [False, True]
+    pbcs     = [True, True]
 
     mesh = ji_mesh.Mesh([Lx, Ly], pbcs, has_th = False)
     
