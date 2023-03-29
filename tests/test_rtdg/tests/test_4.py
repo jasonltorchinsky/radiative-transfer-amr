@@ -31,7 +31,7 @@ def test_4(dir_name = 'test_rtdg'):
     # Get the base mesh, manufactured solution
     [Lx, Ly]                   = [3., 2.]
     pbcs                       = [False, False]
-    [ndof_x, ndof_y, ndof_th]  = [2, 2, 2]
+    [ndof_x, ndof_y, ndof_th]  = [5, 5, 5]
     has_th                     = True
     mesh = gen_mesh(Ls     = [Lx, Ly],
                     pbcs   = pbcs,
