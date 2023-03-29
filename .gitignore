@@ -136,3 +136,4 @@ dmypy.json
 run/*
 *.png
 *.pdf
+*.csv
