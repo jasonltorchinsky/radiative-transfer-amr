@@ -30,10 +30,19 @@ def ref_col_spt(self, col_key):
                             
         # Add four columns that are repeats of current column with
         # different domain and neighbors
-        chldn_idxs = [[2 * i    , 2 * j + 1],
-                      [2 * i + 1, 2 * j + 1],
+        chldn_idxs = [[2 * i    , 2 * j    ],
                       [2 * i + 1, 2 * j    ],
-                      [2 * i    , 2 * j    ]]
+                      [2 * i    , 2 * j + 1],
+                      [2 * i + 1, 2 * j + 1]]
+        
+        x_mid = (x0 + xf) / 2.
+        y_mid = (y0 + yf) / 2.
+        chldn_poss = [
+            [x0,    y0,    x_mid, y_mid],
+            [x0,    y_mid, x_mid, yf   ],
+            [x_mid, y0,    xf,    y_mid],
+            [x_mid, y_mid, xf,    yf   ]
+        ]
         
         chldn_keys = [0] * 4
         for ii in range(0, 4):
@@ -41,12 +50,21 @@ def ref_col_spt(self, col_key):
             chldn_keys[ii] = calc_col_key(chld_idx, lv + 1)
             
         # The children neighbor keys depend on the levels of the neighbors.
-        chldn_nhbr_keys = [
-            [[None, None], [chldn_keys[1], None], [chldn_keys[3], None], [None, None]],
-            [[None, None], [None, None], [chldn_keys[2], None], [chldn_keys[0], None]],
-            [[chldn_keys[1], None], [None, None], [None, None], [chldn_keys[3], None]],
-            [[chldn_keys[0], None], [chldn_keys[2], None], [None, None], [None, None]]
+        chldn_nhbr_keys_0 = [
+            [chldn_keys[2],       chldn_keys[2]      ], # F = 0
+            [chldn_keys[1],       chldn_keys[1]      ], # F = 1
+            [col.nhbr_keys[2][1], col.nhbr_keys[2][1]], # F = 2
+            [col.nhbr_keys[3][0], col.nhbr_keys[3][0]]  # F = 3
         ]
+
+        chldn_nhbr_keys_1 = [
+            [chldn_keys[3],       chldn_keys[3]      ], # F = 0
+            [col.nhbr_keys[1][1], col.nhbr_keys[1][1]], # F = 1
+            [col.nhbr_keys[3][0], col.nhbr_keys[3][0]], # F = 2
+            [chldn_keys[0],       chldn_keys[0]      ]  # F = 3
+        ]
+
+        # CONTINUE REDOING FROM HERE!
         
         for F in range(0, 4):
             # We only need to check the level of the first neighbor.
@@ -74,14 +92,7 @@ def ref_col_spt(self, col_key):
                         print(msg)
                         sys.exit(0)
                             
-        x_mid = (x0 + xf) / 2.
-        y_mid = (y0 + yf) / 2.
-        chldn_poss = [
-            [x_mid, y0   , xf   , y_mid],
-            [x_mid, y_mid, xf   , yf   ],
-            [x0   , y_mid, x_mid, yf   ],
-            [x0   , y0   , x_mid, y_mid]
-        ]
+        
         
         for ii in range(0, 4):
             chld_idx       = chldn_idxs[ii]

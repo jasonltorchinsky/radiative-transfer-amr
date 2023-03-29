@@ -31,7 +31,7 @@ def test_4(dir_name = 'test_rtdg'):
     # Get the base mesh, manufactured solution
     [Lx, Ly]                   = [3., 2.]
     pbcs                       = [False, False]
-    [ndof_x, ndof_y, ndof_th]  = [5, 5, 5]
+    [ndof_x, ndof_y, ndof_th]  = [2, 2, 2]
     has_th                     = True
     mesh = gen_mesh(Ls     = [Lx, Ly],
                     pbcs   = pbcs,
@@ -42,7 +42,7 @@ def test_4(dir_name = 'test_rtdg'):
                                           sol_num   = 0)
     
     # Solve simplified problem over several trials
-    ntrial    = 8
+    ntrial    = 4
     ref_ndofs = np.zeros([ntrial])
     inf_errs  = np.zeros([ntrial])
     for trial in range(0, ntrial):
@@ -197,8 +197,8 @@ def test_4(dir_name = 'test_rtdg'):
         plt.savefig(os.path.join(trial_dir, file_name), dpi = 300)
         plt.close(fig)
 
-        file_name = 'conv_matrix.csv'
-        np.savetxt(os.path.join(trial_dir, file_name), M_conv.toarray(), delimiter = ',')
+        #file_name = 'conv_matrix.csv'
+        #np.savetxt(os.path.join(trial_dir, file_name), M_conv.toarray(), delimiter = ',')
         
         # Plot eigenvalues of interior convection matrix
         '''
@@ -247,14 +247,45 @@ def test_4(dir_name = 'test_rtdg'):
         inf_errs[trial] = np.amax(np.abs(anl_sol_vec_intr - apr_sol_vec_intr))
 
         # Refine the mesh for the next trial
-        col_keys = sorted(mesh.cols.keys())
-        mesh.ref_col(col_keys[-4], kind = 'spt')
-        #mesh.ref_mesh(kind = 'spt')
-
+        
+        ref_type = 1
+        if ref_type == 0:
+            ## Refine a given column spatially
+            col_keys = sorted(mesh.cols.keys())
+            mesh.ref_col(col_keys[-4], kind = 'spt')
+        elif ref_type == 1:
+            ## Refine the mesh uniformly spatially
+            mesh.ref_mesh(kind = 'spt')
+        elif ref_type == 2:
+            ## Refine the column spatially with the biggest "error"
+            max_err = 0
+            col_errs = {}
+            diff_proj_col_items = sorted(diff_proj.cols.items())
+            for col_key, col in diff_proj_col_items:
+                if col.is_lf:
+                    col_err = 0
+                    cell_items = sorted(col.cells.items())
+                    for cell_key, cell in cell_items:
+                        if cell.is_lf:
+                            cell_err = np.amax(np.abs(cell.vals))
+                            col_err = max(col_err, cell_err)
+                            
+                    col_errs[col_key] = col_err
+                    max_err = max(max_err, col_err)
+                    
+            col_keys = sorted(mesh.cols.keys())
+            for col_key in col_keys:
+                if col_key in mesh.cols.keys():
+                    col = mesh.cols[col_key]
+                    if col.is_lf:
+                        col_err = col_errs[col_key]
+                        if col_err > 0.8 * max_err:
+                            mesh.ref_col(col_key, kind = 'spt')
+            
         perf_trial_f    = perf_counter()
         perf_trial_diff = perf_trial_f - perf_trial_0
         msg = (
-            '[Trial {}] Completed! '.format(trial) +
+            '[Trial {}] Trial completed! '.format(trial) +
             'Time Elapsed: {:08.3f} [s]'.format(perf_trial_diff)
         )
         print_msg(msg)

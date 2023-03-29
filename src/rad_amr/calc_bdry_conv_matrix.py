@@ -255,7 +255,7 @@ def calc_cell_matrix(mesh, col_key_0, cell_key_0, col_key_1, cell_key_1, F):
                     
     if (F%2 == 0): # Construct E^K'K,y_jq
         E_y = np.zeros([ndof_y_1, ndof_y_0])
-        if ndof_y_0 >= ndof_y_1:
+        if ndof_y_0 > ndof_y_1:
             yyf_0   = push_forward(y0_0, y1_0, yyb_0)
             yyb_0_1 = pull_back(   y0_1, y1_1, yyf_0)
             
@@ -278,7 +278,7 @@ def calc_cell_matrix(mesh, col_key_0, cell_key_0, col_key_1, cell_key_1, F):
                                 
     else: # F%2 == 1, construct E^K'K,x_ip
         E_x = np.zeros([ndof_x_1, ndof_x_0])
-        if ndof_x_0 >= ndof_x_1:
+        if ndof_x_0 > ndof_x_1:
             xxf_0   = push_forward(x0_0, x1_0, xxb_0)
             xxb_0_1 = pull_back(   x0_1, x1_1, xxf_0)
             
