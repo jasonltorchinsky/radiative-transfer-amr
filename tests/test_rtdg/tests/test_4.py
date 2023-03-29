@@ -196,6 +196,9 @@ def test_4(dir_name = 'test_rtdg'):
         fig.set_size_inches(6.5, 6.5)
         plt.savefig(os.path.join(trial_dir, file_name), dpi = 300)
         plt.close(fig)
+
+        file_name = 'conv_matrix.csv'
+        np.savetxt(os.path.join(trial_dir, file_name), M_conv.toarray(), delimiter = ',')
         
         # Plot eigenvalues of interior convection matrix
         '''
