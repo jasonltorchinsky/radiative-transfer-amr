@@ -14,7 +14,7 @@ from dg.mesh.utils import plot_mesh
 from dg.matrix import get_intr_mask, split_matrix
 from dg.projection import push_forward
 import dg.quadrature as qd
-from rad_amr import calc_mass_matrix
+from rt import calc_mass_matrix
 
 from utils import print_msg
 
@@ -38,7 +38,7 @@ def test_2(dir_name = 'test_rtdg'):
                     has_th = has_th)
     
     [anl_sol, kappa, _, _, f] = get_cons_soln(prob_name = 'mass',
-                                              sol_num   = 2)
+                                              sol_num   = 0)
     
     # Solve simplified problem over several trials
     ntrial    = 3

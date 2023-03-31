@@ -15,7 +15,7 @@ from dg.matrix import get_intr_mask, split_matrix
 from dg.projection import push_forward, to_projection
 from dg.projection.utils import plot_projection
 import dg.quadrature as qd
-from rad_amr import calc_intr_conv_matrix, calc_bdry_conv_matrix
+from rt import calc_intr_conv_matrix, calc_bdry_conv_matrix
 
 from utils import print_msg
 
@@ -37,7 +37,7 @@ def test_4(dir_name = 'test_rtdg'):
     # Get the base mesh, manufactured solution
     [Lx, Ly]                   = [3., 2.]
     pbcs                       = [False, False]
-    [ndof_x, ndof_y, ndof_th]  = [3, 3, 3]
+    [ndof_x, ndof_y, ndof_th]  = [2, 2, 2]
     has_th                     = True
     mesh = gen_mesh(Ls     = [Lx, Ly],
                     pbcs   = pbcs,
@@ -45,7 +45,7 @@ def test_4(dir_name = 'test_rtdg'):
                     has_th = has_th)
     
     [anl_sol, _, _, _, f] = get_cons_soln(prob_name = 'conv',
-                                          sol_num   = 2)
+                                          sol_num   = 0)
     
     # Solve simplified problem over several trials
     ref_ndofs = np.zeros([ntrial])

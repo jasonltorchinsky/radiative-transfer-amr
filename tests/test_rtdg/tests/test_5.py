@@ -15,7 +15,7 @@ from dg.matrix import get_intr_mask, split_matrix
 from dg.projection import push_forward, to_projection
 from dg.projection.utils import plot_projection
 import dg.quadrature as qd
-from rad_amr import calc_mass_matrix, calc_scat_matrix, \
+from rt import calc_mass_matrix, calc_scat_matrix, \
     calc_intr_conv_matrix, calc_bdry_conv_matrix
 
 from utils import print_msg
@@ -32,13 +32,13 @@ def test_5(dir_name = 'test_rtdg'):
     # Set the refinement type: 'sin' - single column
     #                        : 'uni' - uniform
     #                        : 'amr' - adaptive
-    ref_type = 'uni'
-    ntrial   = 3
+    ref_type = 'amr'
+    ntrial   = 4
     
     # Get the base mesh, manufactured solution
     [Lx, Ly]                   = [3., 2.]
     pbcs                       = [False, False]
-    [ndof_x, ndof_y, ndof_th]  = [3, 3, 3]
+    [ndof_x, ndof_y, ndof_th]  = [4, 4, 4]
     has_th                     = True
     mesh = gen_mesh(Ls     = [Lx, Ly],
                     pbcs   = pbcs,
@@ -46,7 +46,7 @@ def test_5(dir_name = 'test_rtdg'):
                     has_th = has_th)
     
     [anl_sol, kappa, sigma, Phi, f] = get_cons_soln(prob_name = 'comp',
-                                                    sol_num   = 2)
+                                                    sol_num   = 1)
     
     # Solve simplified problem over several trials
     ref_ndofs = np.zeros([ntrial])
@@ -242,12 +242,12 @@ def test_5(dir_name = 'test_rtdg'):
 
         # Refine the mesh for the next trial
         if ref_type == 'sin':
-            ## Refine a given column spatially
+            ## Refine a given column
             col_keys = sorted(mesh.cols.keys())
             mesh.ref_col(col_keys[-4], kind = 'all')
         elif ref_type == 'uni':
             ## Refine the mesh uniformly
-            mesh.ref_mesh(kind = 'all')
+            mesh.ref_mesh(kind = 'spt')
         elif ref_type == 'amr':
             ## Refine the column spatially with the biggest "error"
             max_err = 0
@@ -272,7 +272,7 @@ def test_5(dir_name = 'test_rtdg'):
                     if col.is_lf:
                         col_err = col_errs[col_key]
                         if col_err > 0.9 * max_err:
-                            mesh.ref_col(col_key, kind = 'all')
+                            mesh.ref_col(col_key, kind = 'spt')
 
         perf_trial_f    = perf_counter()
         perf_trial_diff = perf_trial_f - perf_trial_0
