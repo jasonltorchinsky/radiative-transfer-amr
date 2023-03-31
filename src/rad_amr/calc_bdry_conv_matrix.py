@@ -50,6 +50,7 @@ def calc_bdry_conv_matrix(mesh):
                         
                 else: #Column is not on the spatial domain boundary
                     col_nhbr_keys_0 = list(set(col_0.nhbr_keys[F]))
+                    n_col_nhbr = len(col_nhbr_keys_0)
                     
                     for col_key_1 in col_nhbr_keys_0:
                         if col_key_1 is not None:
@@ -68,9 +69,9 @@ def calc_bdry_conv_matrix(mesh):
                                     col_mtxs[col_idx_0][col_idx_1] += col_mtx_01
                                     
                                 if col_mtxs[col_idx_0][col_idx_0] is None:
-                                    col_mtxs[col_idx_0][col_idx_0] = col_mtx_00
+                                    col_mtxs[col_idx_0][col_idx_0] = (1. / n_col_nhbr) * col_mtx_00
                                 else:                        
-                                    col_mtxs[col_idx_0][col_idx_0] += col_mtx_00
+                                    col_mtxs[col_idx_0][col_idx_0] += (1. / n_col_nhbr) * col_mtx_00
                                     
     # Global boundary convection matrix is not block-diagonal
     # but we arranged the column matrices in the proper form

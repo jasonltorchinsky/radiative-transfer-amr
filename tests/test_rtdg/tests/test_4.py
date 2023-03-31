@@ -27,11 +27,17 @@ def test_4(dir_name = 'test_rtdg'):
     
     test_dir = os.path.join(dir_name, 'test_4')
     os.makedirs(test_dir, exist_ok = True)
+
+    # Set the refinement type: 'sin' - single column
+    #                        : 'uni' - uniform
+    #                        : 'amr' - adaptive
+    ref_type = 'uni'
+    ntrial   = 4
     
     # Get the base mesh, manufactured solution
     [Lx, Ly]                   = [3., 2.]
     pbcs                       = [False, False]
-    [ndof_x, ndof_y, ndof_th]  = [2, 2, 2]
+    [ndof_x, ndof_y, ndof_th]  = [3, 3, 3]
     has_th                     = True
     mesh = gen_mesh(Ls     = [Lx, Ly],
                     pbcs   = pbcs,
@@ -39,10 +45,9 @@ def test_4(dir_name = 'test_rtdg'):
                     has_th = has_th)
     
     [anl_sol, _, _, _, f] = get_cons_soln(prob_name = 'conv',
-                                          sol_num   = 0)
+                                          sol_num   = 2)
     
     # Solve simplified problem over several trials
-    ntrial    = 4
     ref_ndofs = np.zeros([ntrial])
     inf_errs  = np.zeros([ntrial])
     for trial in range(0, ntrial):
@@ -60,7 +65,7 @@ def test_4(dir_name = 'test_rtdg'):
         plot_mesh(mesh,
                   file_name   = os.path.join(trial_dir, 'mesh_2d.png'),
                   plot_dim    = 2,
-                  label_cells = True)
+                  label_cells = (trial <= 3))
 
         # Get the ending indices for the column matrices, number of DOFs in mesh
         col_items = sorted(mesh.cols.items())
@@ -143,7 +148,7 @@ def test_4(dir_name = 'test_rtdg'):
         perf_soln_diff = perf_soln_f - perf_soln_0
         msg = (
             '[Trial {}] Manufactured problem solved! '.format(trial) +
-            'Time Elapsed: {:08.3f} [s]'.format(perf_cons_diff)
+            'Time Elapsed: {:08.3f} [s]'.format(perf_soln_diff)
         )
         print_msg(msg)
 
@@ -247,16 +252,14 @@ def test_4(dir_name = 'test_rtdg'):
         inf_errs[trial] = np.amax(np.abs(anl_sol_vec_intr - apr_sol_vec_intr))
 
         # Refine the mesh for the next trial
-        
-        ref_type = 0
-        if ref_type == 0:
+        if ref_type == 'sin':
             ## Refine a given column spatially
             col_keys = sorted(mesh.cols.keys())
             mesh.ref_col(col_keys[-4], kind = 'spt')
-        elif ref_type == 1:
+        elif ref_type == 'uni':
             ## Refine the mesh uniformly spatially
             mesh.ref_mesh(kind = 'spt')
-        elif ref_type == 2:
+        elif ref_type == 'amr':
             ## Refine the column spatially with the biggest "error"
             max_err = 0
             col_errs = {}
@@ -279,7 +282,7 @@ def test_4(dir_name = 'test_rtdg'):
                     col = mesh.cols[col_key]
                     if col.is_lf:
                         col_err = col_errs[col_key]
-                        if col_err > 0.8 * max_err:
+                        if col_err > 0.9 * max_err:
                             mesh.ref_col(col_key, kind = 'spt')
             
         perf_trial_f    = perf_counter()
@@ -308,8 +311,16 @@ def test_4(dir_name = 'test_rtdg'):
     
     ax.set_xlabel('Total Degrees of Freedom')
     ax.set_ylabel('L$^{\infty}$ Error')
-    
-    ax.set_title('Uniform $h$-Refinement Convergence Rate - Convection Problem')
+
+    ref_str = ''
+    if ref_type == 'sin':
+        ref_str = 'Single Column'
+    elif ref_type == 'uni':
+        ref_str = 'Uniform'
+    elif ref_type == 'amr':
+        ref_str = 'Adaptive'
+    title_str = '{} Spatial $h$-Refinement Convergence Rate - Convection Problem'.format(ref_str)
+    ax.set_title(title_str)
     
     file_name = 'h-convergence-convection.png'
     fig.set_size_inches(6.5, 6.5)

@@ -38,10 +38,10 @@ def test_3(dir_name = 'test_rtdg'):
                     has_th = has_th)
     
     [anl_sol, kappa, sigma, Phi, f] = get_cons_soln(prob_name = 'scat',
-                                                    sol_num   = 0)
+                                                    sol_num   = 2)
     
     # Solve simplified problem over several trials
-    ntrial    = 5
+    ntrial    = 3
     ref_ndofs = np.zeros([ntrial])
     inf_errs  = np.zeros([ntrial])
     for trial in range(0, ntrial):
@@ -230,9 +230,9 @@ def test_3(dir_name = 'test_rtdg'):
         inf_errs[trial] = np.amax(np.abs(anl_sol_vec_intr - apr_sol_vec_intr))
         
         # Refine the mesh for the next trial
-        col_keys = sorted(mesh.cols.keys())
-        mesh.ref_col(col_keys[-1], kind = 'ang')
-        #mesh.ref_mesh(kind = 'all')
+        #col_keys = sorted(mesh.cols.keys())
+        #mesh.ref_col(col_keys[-1], kind = 'ang')
+        mesh.ref_mesh(kind = 'ang')
 
         perf_trial_f    = perf_counter()
         perf_trial_diff = perf_trial_f - perf_trial_0

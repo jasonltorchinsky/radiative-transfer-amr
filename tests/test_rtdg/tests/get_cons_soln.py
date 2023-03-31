@@ -97,9 +97,8 @@ def get_cons_soln(prob_name, sol_num):
         elif prob_name == 'scat':
             # kappa * u - sigma * int_0^2pi Phi u dth' = f
             def f(x, y, th):
-                return kappa(x, y) * anl_sol(x, y, th) \
-                    - ((1. / 120.) * np.exp(-(x**2 + y**2)) \
-                       * (np.cos(2. * th) - 6.) * kappa(x, y))
+                return (1. / 120.) * np.exp(-(x**2 + y**2)) * kappa(x, y) \
+                    * (54. - 59. * np.cos(2 * th))
             
         elif prob_name == 'conv':
             # s.grad(u) = f
@@ -119,8 +118,61 @@ def get_cons_soln(prob_name, sol_num):
             msg = 'ERROR: Problem name {} is unsupported.'.format(prob_name)
             print_msg(msg)
             quit()
+
+    elif sol_num == 2:
+        """
+        Sinusoidal * Gaussian analytic solution with steep gradient.
+        Slightly oscillatory extinction coefficient.
+        Slightly oscillatory scattering coefficient (0.1 * kappa).
+        Rayleigh scattering.
+        """
+        
+        # Every sub-problem can have the same analytic solution,
+        # extinction function, scattering coefficient, and phase function
+        # The forcing term will change
+        def anl_sol(x, y, th):
+            return (np.cos(th))**2 * np.exp(-((x - 1.5)**4 + (y - 1.)**4))
+        
+        def kappa(x, y):
+            return np.exp(-((x - 1.5)**2 + (y - 1.)**2)) + 1.
+        
+        def sigma(x, y):
+            return 0.1 * kappa(x, y)
+        
+        def Phi(theta, phi):
+            cosTh = np.cos(theta) * np.cos(phi) + np.sin(theta) * np.sin(phi)
+            return (1.0 / (3.0 * np.pi)) * (1 + cosTh**2)
+        
+        if prob_name == 'mass':
+            # kappa * u = f
+            def f(x, y, th):
+                return kappa(x, y) * anl_sol(x, y, th)
             
-    elif sol_num == 2: # NOT FUNCTIONING
+        elif prob_name == 'scat':
+            # kappa * u - sigma * int_0^2pi Phi u dth' = f
+            def f(x, y, th):
+                return (1. / 120.) * kappa(x, y) * anl_sol(x, y, th) / (np.cos(th))**2 \
+                    * (54. + 59. * np.cos(2. * th))
+            
+        elif prob_name == 'conv':
+            # s.grad(u) = f
+            def f(x, y, th):
+                return  -4. * anl_sol(x, y, th) \
+                    * ((x - 1.5)**3 * np.cos(th) + (y - 1.)**3 * np.sin(th))
+            
+        elif prob_name == 'comp':
+            # s.grad(u) + kappa * u - sigma * int_0^2pi Phi u dth' = f
+            def f(x, y, th):
+                return anl_sol(x, y, th) \
+                    * (kappa(x, y) * (1. - (1. / 120.) * (np.cos(th)**(-2)) * (54. + 59. * np.cos(2. * th))) \
+                       -4. * ((x - 1.5)**3 * np.cos(th) + (y - 1.)**3 * np.sin(th)))
+            
+        else:
+            msg = 'ERROR: Problem name {} is unsupported.'.format(prob_name)
+            print_msg(msg)
+            quit()
+            
+    elif sol_num == 3: # NOT FUNCTIONING
         """
         Sinusoidal * Gaussian analytic solution.
         Highly oscillatory extinction coefficient.

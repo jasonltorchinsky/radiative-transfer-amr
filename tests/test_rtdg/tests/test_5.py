@@ -12,7 +12,8 @@ from .get_cons_soln      import get_cons_soln
 sys.path.append('../../src')
 from dg.mesh.utils import plot_mesh
 from dg.matrix import get_intr_mask, split_matrix
-from dg.projection import push_forward
+from dg.projection import push_forward, to_projection
+from dg.projection.utils import plot_projection
 import dg.quadrature as qd
 from rad_amr import calc_mass_matrix, calc_scat_matrix, \
     calc_intr_conv_matrix, calc_bdry_conv_matrix
@@ -27,11 +28,17 @@ def test_5(dir_name = 'test_rtdg'):
     
     test_dir = os.path.join(dir_name, 'test_5')
     os.makedirs(test_dir, exist_ok = True)
+
+    # Set the refinement type: 'sin' - single column
+    #                        : 'uni' - uniform
+    #                        : 'amr' - adaptive
+    ref_type = 'uni'
+    ntrial   = 3
     
     # Get the base mesh, manufactured solution
     [Lx, Ly]                   = [3., 2.]
     pbcs                       = [False, False]
-    [ndof_x, ndof_y, ndof_th]  = [4, 4, 4]
+    [ndof_x, ndof_y, ndof_th]  = [3, 3, 3]
     has_th                     = True
     mesh = gen_mesh(Ls     = [Lx, Ly],
                     pbcs   = pbcs,
@@ -39,10 +46,9 @@ def test_5(dir_name = 'test_rtdg'):
                     has_th = has_th)
     
     [anl_sol, kappa, sigma, Phi, f] = get_cons_soln(prob_name = 'comp',
-                                                    sol_num   = 0)
+                                                    sol_num   = 2)
     
     # Solve simplified problem over several trials
-    ntrial    = 3
     ref_ndofs = np.zeros([ntrial])
     inf_errs  = np.zeros([ntrial])
     for trial in range(0, ntrial):
@@ -60,7 +66,7 @@ def test_5(dir_name = 'test_rtdg'):
         plot_mesh(mesh,
                   file_name   = os.path.join(trial_dir, 'mesh_2d.png'),
                   plot_dim    = 2,
-                  label_cells = True)
+                  label_cells = (trial <= 3))
 
         # Get the ending indices for the column matrices, number of DOFs in mesh
         col_items = sorted(mesh.cols.items())
@@ -171,9 +177,21 @@ def test_5(dir_name = 'test_rtdg'):
         perf_soln_diff = perf_soln_f - perf_soln_0
         msg = (
             '[Trial {}] Manufactured problem solved! '.format(trial) +
-            'Time Elapsed: {:08.3f} [s]'.format(perf_cons_diff)
+            'Time Elapsed: {:08.3f} [s]'.format(perf_soln_diff)
         )
         print_msg(msg)
+
+        # Plot the difference in solutions
+        diff_vec_intr = apr_sol_vec_intr - anl_sol_vec_intr
+        zero_bcs_vec  = 0. * bcs_vec
+        diff_vec      = merge_vecs(intr_mask, diff_vec_intr, zero_bcs_vec)
+        diff_proj     = to_projection(mesh, diff_vec)
+        
+        file_name = os.path.join(trial_dir, 'diff.png')
+        angles = [0, np.pi/3, 2 * np.pi / 3, np.pi,
+                  4 * np.pi / 3, 5 * np.pi / 3]
+        plot_projection(diff_proj, file_name = file_name, angles = angles)
+
         
         # Plot global matrix
         fig, ax = plt.subplots()
@@ -192,7 +210,7 @@ def test_5(dir_name = 'test_rtdg'):
                color      = 'k')
         ax.set_title('Global Complete Matrix')
         
-        file_name = 'conv_matrix.png'
+        file_name = 'comp_matrix.png'
         fig.set_size_inches(6.5, 6.5)
         plt.savefig(os.path.join(trial_dir, file_name), dpi = 300)
         plt.close(fig)
@@ -223,14 +241,43 @@ def test_5(dir_name = 'test_rtdg'):
         inf_errs[trial] = np.amax(np.abs(anl_sol_vec_intr - apr_sol_vec_intr))
 
         # Refine the mesh for the next trial
-        col_keys = sorted(mesh.cols.keys())
-        mesh.ref_col(col_keys[-1], kind = 'all')
-        #mesh.ref_mesh(kind = 'all')
+        if ref_type == 'sin':
+            ## Refine a given column spatially
+            col_keys = sorted(mesh.cols.keys())
+            mesh.ref_col(col_keys[-4], kind = 'all')
+        elif ref_type == 'uni':
+            ## Refine the mesh uniformly
+            mesh.ref_mesh(kind = 'all')
+        elif ref_type == 'amr':
+            ## Refine the column spatially with the biggest "error"
+            max_err = 0
+            col_errs = {}
+            diff_proj_col_items = sorted(diff_proj.cols.items())
+            for col_key, col in diff_proj_col_items:
+                if col.is_lf:
+                    col_err = 0
+                    cell_items = sorted(col.cells.items())
+                    for cell_key, cell in cell_items:
+                        if cell.is_lf:
+                            cell_err = np.amax(np.abs(cell.vals))
+                            col_err = max(col_err, cell_err)
+                            
+                    col_errs[col_key] = col_err
+                    max_err = max(max_err, col_err)
+                    
+            col_keys = sorted(mesh.cols.keys())
+            for col_key in col_keys:
+                if col_key in mesh.cols.keys():
+                    col = mesh.cols[col_key]
+                    if col.is_lf:
+                        col_err = col_errs[col_key]
+                        if col_err > 0.9 * max_err:
+                            mesh.ref_col(col_key, kind = 'all')
 
         perf_trial_f    = perf_counter()
         perf_trial_diff = perf_trial_f - perf_trial_0
         msg = (
-            '[Trial {}] Completed! '.format(trial) +
+            '[Trial {}] Trial completed! '.format(trial) +
             'Time Elapsed: {:08.3f} [s]'.format(perf_trial_diff)
         )
         print_msg(msg)
@@ -253,10 +300,39 @@ def test_5(dir_name = 'test_rtdg'):
     
     ax.set_xlabel('Total Degrees of Freedom')
     ax.set_ylabel('L$^{\infty}$ Error')
-    
-    ax.set_title('Uniform $h$-Refinement Convergence Rate - Complete Problem')
+
+
+    ref_str = ''
+    if ref_type == 'sin':
+        ref_str = 'Single Column'
+    elif ref_type == 'uni':
+        ref_str = 'Uniform'
+    elif ref_type == 'amr':
+        ref_str = 'Adaptive'
+    title_str = '{} $h$-Refinement Convergence Rate - Complete Problem'.format(ref_str)
+    ax.set_title(title_str)
     
     file_name = 'h-convergence-complete.png'
     fig.set_size_inches(6.5, 6.5)
     plt.savefig(os.path.join(test_dir, file_name), dpi = 300)
     plt.close(fig)
+
+def merge_vecs(intr_mask, intr_vec, bdry_vec):
+    
+    ndof = np.size(intr_mask)
+
+    vec = np.zeros(ndof)
+    intr_idx = 0
+    bdry_idx = 0
+
+    for ii in range(0, ndof):
+        if intr_mask[ii]:
+            vec[ii] = intr_vec[intr_idx]
+
+            intr_idx += 1
+        else:
+            vec[ii] = bdry_vec[bdry_idx]
+            
+            bdry_idx += 1
+
+    return vec
