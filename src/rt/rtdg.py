@@ -1,3 +1,5 @@
+import numpy as np
+from scipy.sparse.linalg import spsolve
 import sys
 
 from .calc_mass_matrix import calc_mass_matrix
@@ -11,9 +13,9 @@ from utils import print_msg
 
 sys.path.append('../src')
 from dg.matrix import get_intr_mask, split_matrix
+from dg.projection import push_forward, to_projection
 
-def rtdg_amr(mesh, kappa, sigma, Phi, f = None,
-             bcs = [None, None, None, None]):
+def rtdg(mesh, kappa, sigma, Phi, bcs, f = None):
     """
     Solve the RT problem.
     """
@@ -24,6 +26,7 @@ def rtdg_amr(mesh, kappa, sigma, Phi, f = None,
     M_bdry_conv = calc_bdry_conv_matrix(mesh)
     
     M = (M_bdry_conv - M_intr_conv) + M_mass - M_scat
+    [M_intr, M_bdry] = split_matrix(mesh, M)
     
     if f is None:
         def forcing(x, y, th):
@@ -32,12 +35,36 @@ def rtdg_amr(mesh, kappa, sigma, Phi, f = None,
         def forcing(x, y, th):
             return f(x, y)
     
-    f_vec = calc_forcing_vec(mesh, f)
     bcs_vec = calc_bcs_vec(mesh, bcs)
     
     intr_mask = get_intr_mask(mesh)
     bdry_mask = np.invert(intr_mask)
+    
+    f_vec = calc_forcing_vec(mesh, forcing)
+    f_intr_vec = f_vec[intr_mask]
+    
+    u_intr_vec = spsolve(M_intr, f_intr_vec - M_bdry @ bcs_vec)
+    u_vec  = merge_vecs(intr_mask, u_intr_vec, bcs_vec)
+    u_proj = to_projection(mesh, u_vec)
 
-    print_msg('Hello world!')
+    return u_proj
+
+def merge_vecs(intr_mask, intr_vec, bdry_vec):
     
-    
+    ndof = np.size(intr_mask)
+
+    vec = np.zeros(ndof)
+    intr_idx = 0
+    bdry_idx = 0
+
+    for ii in range(0, ndof):
+        if intr_mask[ii]:
+            vec[ii] = intr_vec[intr_idx]
+
+            intr_idx += 1
+        else:
+            vec[ii] = bdry_vec[bdry_idx]
+            
+            bdry_idx += 1
+
+    return vec

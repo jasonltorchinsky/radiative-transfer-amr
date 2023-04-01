@@ -59,11 +59,6 @@ def plot_projection_2d(projection, file_name = None, **kwargs):
         
         xxf = push_forward(x0, x1, xxb)
         yyf = push_forward(y0, y1, yyb)
-
-        ax.axvline(x = x1, color = 'black', linestyle = '-',
-                   linewidth = 0.25)
-        ax.axhline(y = y1, color = 'black', linestyle = '-',
-                   linewidth = 0.25)
         
         # There should only be one cell, so this should be okay
         cell_items = sorted(col.cells.items())
@@ -72,11 +67,14 @@ def plot_projection_2d(projection, file_name = None, **kwargs):
             
             pc = ax.pcolormesh(xxf, yyf, vals.transpose(), shading = 'auto',
                                vmin = vmin, vmax = vmax)
+        
+        rect = Rectangle((x0, y0), dx, dy, fill = False)
+        ax.add_patch(rect)
                 
     fig.colorbar(pc)
     
     if file_name:
-        fig.set_size_inches(6.5, 6.5 * (Ly / Lx))
+        fig.set_size_inches(12, 12 * (Ly / Lx))
         plt.savefig(file_name, dpi = 300)
         plt.close(fig)
 
@@ -134,11 +132,6 @@ def plot_projection_3d(projection, file_name = None, **kwargs):
             xxf = push_forward(x0, x1, xxb)
             yyf = push_forward(y0, y1, yyb)
             
-            ax.axvline(x = x1, color = 'black', linestyle = '-',
-                       linewidth = 0.25)
-            ax.axhline(y = y1, color = 'black', linestyle = '-',
-                       linewidth = 0.25)
-            
             # There should only be one cell, so this should be okay
             cell_items = sorted(col.cells.items())
             for cell_key, cell in cell_items:
@@ -159,15 +152,17 @@ def plot_projection_3d(projection, file_name = None, **kwargs):
                     pc = ax.pcolormesh(xxf, yyf, vals_xy.transpose(),
                                        shading = 'auto',
                                        vmin = vmin, vmax = vmax)
-
-                    break
                     
+                    break
+                
+            rect = Rectangle((x0, y0), dx, dy, fill = False)
+            ax.add_patch(rect)
     
     fig.colorbar(pc, ax = axs, location = 'right')
     
     if file_name:
-        width  = (ncols / nrows) * 6.5
-        height = (nrows / ncols) * 6.5
+        width  = (ncols / nrows) * 12
+        height = (nrows / ncols) * 12
         fig.set_size_inches(width, height)
         plt.savefig(file_name, dpi = 300)
         plt.close(fig)

@@ -42,14 +42,14 @@ class Projection():
                 cell_items = sorted(col.cells.items())
                 for cell_key, cell in cell_items:
                     if cell.is_lf:
-                        [th0, th1] = cell.pos
-                        dth        = th1 - th0
-                        [ndof_th]  = cell.ndofs
                         if self.has_th:
+                            [th0, th1] = cell.pos
+                            [ndof_th]  = cell.ndofs
                             [_, _, _, _, thb, _] = quad_xyth(nnodes_th = ndof_th)
                             
                             thf = push_forward(th0, th1, thb)
                         else:
+                            ndof_th = 1
                             thf = np.zeros([1])
 
                         vals = np.zeros([ndof_x, ndof_y, ndof_th])

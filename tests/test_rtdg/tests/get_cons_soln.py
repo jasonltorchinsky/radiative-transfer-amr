@@ -122,7 +122,7 @@ def get_cons_soln(prob_name, sol_num):
         def f_conv(x, y, th): # *JUST* s.grad(u)
             return 0
         
-    elif sol_num == 3: # NOT FUNCTIONING
+    elif sol_num == 4: # NOT FUNCTIONING
         """
         Sinusoidal * Gaussian analytic solution.
         Highly oscillatory extinction coefficient.
