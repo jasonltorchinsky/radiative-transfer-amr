@@ -100,7 +100,7 @@ def test_6(dir_name = 'test_rtdg'):
             mesh.ref_col(col_keys[-4], kind = 'all')
         elif ref_type == 'uni':
             ## Refine the mesh uniformly
-            mesh.ref_mesh(kind = 'all')
+            mesh.ref_mesh(kind = 'ang')
             
         perf_trial_f    = perf_counter()
         perf_trial_diff = perf_trial_f - perf_trial_0
