@@ -120,7 +120,7 @@ def test_2(dir_name = 'test_rt'):
         perf_soln_0 = perf_counter()
         print_msg('[Trial {}] Solving manufactured problem...'.format(trial))
 
-        [M_intr, M_bdry] = split_matrix(mesh, M_mass)
+        [M_intr, M_bdry] = split_matrix(mesh, M_mass, intr_mask)
 
         apr_sol_vec_intr = spsolve(M_intr, f_vec_intr - M_bdry @ bcs_vec)
         
@@ -226,7 +226,7 @@ def test_2(dir_name = 'test_rt'):
         perf_trial_diff = perf_trial_f - perf_trial_0
         msg = (
             '[Trial {}] Completed! '.format(trial) +
-            'Time Elapsed: {:08.3f} [s]'.format(perf_trial_diff)
+            'Time Elapsed: {:08.3f} [s]\n'.format(perf_trial_diff)
         )
         print_msg(msg)
         

@@ -72,14 +72,14 @@ def main():
     for ntest, test_func in enumerate(test_funcs):
         if run_tests[ntest]:
             perf_0 = perf_counter()
-            print_msg('Starting Test {}...'.format(ntest))
+            print_msg('Starting Test {}...\n'.format(ntest))
             
             test_func(dir_name = dir_name)
             
             perf_f = perf_counter()
             perf_diff = perf_f - perf_0
             msg = ('Completed Test {}! ' +
-                   'Time Elapsed: {:08.3f} [s]').format(ntest, perf_diff)
+                   'Time Elapsed: {:08.3f} [s]\n').format(ntest, perf_diff)
             print_msg(msg)
         
     

@@ -101,7 +101,7 @@ def get_cons_soln(prob_name, sol_num):
             return -2. * anl_sol(x, y, th) \
                 * ((x - 1.5) * np.cos(th) + (y - 1.) * np.sin(th))
 
-        def anl_sol_intg_th(x, y, th):
+        def anl_sol_intg_th(x, y):
             return (300540195. * np.pi / 1073741824.) \
                 * np.exp(-((x - 1.5)**2 + (y - 1.)**2))
     
@@ -132,10 +132,39 @@ def get_cons_soln(prob_name, sol_num):
         def f_conv(x, y, th): # *JUST* s.grad(u)
             return 0
 
-        def anl_sol_intg_th(x, y, th):
+        def anl_sol_intg_th(x, y):
             return (300540195. * np.pi / 1073741824.)
+
+    elif sol_num == 4:
+        """
+        Flat in space, gentle in angle.
+        """
         
-    elif sol_num == 4: # NOT FUNCTIONING
+        def anl_sol(x, y, th):
+            return (1. / 2.) * (np.sin(th / 2.))**2
+        
+        def kappa(x, y):
+            return np.exp(-((x - 1.5)**2 + (y - 1.)**2)) + 1.
+        
+        def sigma(x, y):
+            return 0.1 * kappa(x, y)
+        
+        def Phi(th, phi):
+            return (1.0 / (3.0 * np.pi)) * (1 + (np.cos(th - phi))**2)
+        
+        def f_mass(x, y, th): # *JUST* kappa * u
+            return kappa(x, y) * anl_sol(x, y, th)
+
+        def f_scat(x, y, th): # *JUST* sigma * int_0^2pi Phi(th, th') * u(x, y, th') dth'
+            return sigma(x, y) * (1. / 4.)
+
+        def f_conv(x, y, th): # *JUST* s.grad(u)
+            return 0
+
+        def anl_sol_intg_th(x, y):
+            return np.pi / 2
+        
+    elif sol_num == 5: # NOT FUNCTIONING
         """
         Sinusoidal * Gaussian analytic solution.
         Highly oscillatory extinction coefficient.

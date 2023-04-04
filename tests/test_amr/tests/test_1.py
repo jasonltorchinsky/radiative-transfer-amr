@@ -17,17 +17,17 @@ from dg.projection.utils import plot_projection
 import dg.quadrature as qd
 from rt import calc_mass_matrix, calc_scat_matrix, \
     calc_intr_conv_matrix, calc_bdry_conv_matrix
-from amr import intg_col_bdry_th
+from amr import col_jump_err
 
 from utils import print_msg
 
 
-def test_0(dir_name = 'test_amr'):
+def test_1(dir_name = 'test_amr'):
     """
-    Tests the angular integration on the spatial boundary of columns.
+    Tests the jump error calculation.
     """
     
-    test_dir = os.path.join(dir_name, 'test_0')
+    test_dir = os.path.join(dir_name, 'test_1')
     os.makedirs(test_dir, exist_ok = True)
 
     # Set the refinement type: 'sin' - single column
@@ -50,9 +50,8 @@ def test_0(dir_name = 'test_amr'):
                                                                      sol_num   = 0)
     
     # Solve simplified problem over several trials
-    ref_ndofs = np.zeros([ntrial])
-    sol_errs  = np.zeros([ntrial])
-    intg_errs = np.zeros([ntrial])
+    trial_sol_errs  = np.zeros([ntrial])
+    trial_intg_errs = np.zeros([ntrial])
     for trial in range(0, ntrial):
         perf_trial_0 = perf_counter()
         print_msg('[Trial {}] Starting...'.format(trial))
@@ -109,9 +108,6 @@ def test_0(dir_name = 'test_amr'):
         )
         print_msg(msg)
 
-        # Get number of DOFs
-        ref_ndofs[trial] = np.size(f_vec)
-
         # Calculate the maximum error of the solution
         anl_sol_proj = Projection(mesh, anl_sol)
         anl_sol_vec  = anl_sol_proj.to_vector()
@@ -122,56 +118,16 @@ def test_0(dir_name = 'test_amr'):
         )
         print_msg(msg)
 
-        sol_errs[trial] = max_err
-
         # Calculate the error of angular integration
         max_err      = 0.
-        proj_col_items = sorted(u_proj.cols.items())
-        for col_key, proj_col in proj_col_items:
-            if proj_col.is_lf:
-                col_intg_th = intg_col_bdry_th(mesh, u_proj, col_key)
+        col_jump_errs = col_jump_err(mesh, u_proj)
+        print(col_jump_errs)
 
-                [x0, y0, xf, yf] = proj_col.pos[:]
-                [dx, dy]         = [xf - x0, yf - y0]
-                [ndof_x, ndof_y] = proj_col.ndofs[:]
-
-                [xxb, _, yyb, _, _, _] = qd.quad_xyth(nnodes_x = ndof_x,
-                                                      nnodes_y = ndof_y)
-
-                xxf = push_forward(x0, xf, xxb)
-                yyf = push_forward(y0, yf, yyb)
-
-                for F in range(0, 4):
-                    if (F%2 == 0):
-                        if (F == 0):
-                            x_idx = ndof_x - 1
-                        elif (F == 2):
-                            x_idx = 0
-
-                        x_i = xxf[x_idx]
-                        for jj in range(0, ndof_y):
-                            y_j = yyf[jj]
-                            err = np.abs(col_intg_th[F][jj] - anl_sol_intg_th(x_i, y_j))
-                            max_err = max(max_err, err)
-                    
-                    else:
-                        if (F == 1):
-                            y_idx = ndof_y - 1
-                        elif (F == 3):
-                            y_idx = 0
-
-                        y_j = yyf[y_idx]
-                        for ii in range(0, ndof_x):
-                            x_i = xxf[ii]
-                            err = np.abs(col_intg_th[F][ii] - anl_sol_intg_th(x_i, y_j))
-                            max_err = max(max_err, err)
-
-        msg = (
-            '[Trial {}] Max integration error: {} '.format(trial, max_err)
-        )
-        print_msg(msg)
+        #msg = (
+        #    '[Trial {}] Max integration error: {} '.format(trial, max_err)
+        #)
+        #print_msg(msg)
         
-        intg_errs[trial] = max_err
         
         # Refine the mesh for the next trial
         if ref_type == 'sin':
@@ -190,72 +146,3 @@ def test_0(dir_name = 'test_amr'):
         )
         print_msg(msg)
         
-    # Plot errors
-    fig, ax = plt.subplots()
-    
-    ax.plot(ref_ndofs, sol_errs,
-            label     = 'L$^{\infty}$ Error',
-            color     = 'k',
-            linestyle = '-')
-
-    ax.set_xscale('log', base = 2)
-    ax.set_yscale('log', base = 2)
-
-    if np.log2(max(sol_errs)) - np.log2(min(sol_errs)) < 1:
-        ymin = 2**(np.floor(np.log2(min(sol_errs))))
-        ymax = 2**(np.ceil(np.log2(max(sol_errs))))
-        ax.set_ylim([ymin, ymax])
-    
-    ax.set_xlabel('Total Degrees of Freedom')
-    ax.set_ylabel('L$^{\infty}$ Error')
-
-
-    ref_str = ''
-    if ref_type == 'sin':
-        ref_str = 'Single Column'
-    elif ref_type == 'uni':
-        ref_str = 'Uniform'
-    elif ref_type == 'amr':
-        ref_str = 'Adaptive'
-    title_str = '{} $h$-Refinement Solution Convergence Rate'.format(ref_str)
-    ax.set_title(title_str)
-    
-    file_name = 'h-sol-convergence.png'
-    fig.set_size_inches(6.5, 6.5)
-    plt.savefig(os.path.join(test_dir, file_name), dpi = 300)
-    plt.close(fig)
-
-
-    # Plot errors
-    fig, ax = plt.subplots()
-    
-    ax.plot(ref_ndofs, intg_errs,
-            label     = 'L$^{\infty}$ Error',
-            color     = 'k',
-            linestyle = '-')
-
-    ax.set_xscale('log', base = 2)
-    ax.set_yscale('log', base = 2)
-
-    if np.log2(max(intg_errs)) - np.log2(min(intg_errs)) < 1:
-        ymin = 2**(np.floor(np.log2(min(intg_errs))))
-        ymax = 2**(np.ceil(np.log2(max(intg_errs))))
-        ax.set_ylim([ymin, ymax])
-    
-    ax.set_xlabel('Total Degrees of Freedom')
-    ax.set_ylabel('L$^{\infty}$ Error')
-
-    ref_str = ''
-    if ref_type == 'sin':
-        ref_str = 'Single Column'
-    elif ref_type == 'uni':
-        ref_str = 'Uniform'
-    elif ref_type == 'amr':
-        ref_str = 'Adaptive'
-    title_str = '{} $h$-Refinement Angular-Integral Convergence Rate'.format(ref_str)
-    ax.set_title(title_str)
-    
-    file_name = 'h-intg-convergence.png'
-    fig.set_size_inches(6.5, 6.5)
-    plt.savefig(os.path.join(test_dir, file_name), dpi = 300)
-    plt.close(fig)

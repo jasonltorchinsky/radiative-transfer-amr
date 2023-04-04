@@ -12,7 +12,7 @@ from .calc_bcs_vec import calc_bcs_vec
 from utils import print_msg
 
 sys.path.append('../src')
-from dg.matrix import get_intr_mask, split_matrix
+from dg.matrix import get_intr_mask, split_matrix, merge_vectors
 from dg.projection import push_forward, to_projection
 
 def rtdg(mesh, kappa, sigma, Phi, bcs, f = None):
@@ -26,7 +26,8 @@ def rtdg(mesh, kappa, sigma, Phi, bcs, f = None):
     M_bdry_conv = calc_bdry_conv_matrix(mesh)
     
     M = (M_bdry_conv - M_intr_conv) + M_mass - M_scat
-    [M_intr, M_bdry] = split_matrix(mesh, M)
+    intr_mask = get_intr_mask(mesh)
+    [M_intr, M_bdry] = split_matrix(mesh, M, intr_mask)
     
     if f is None:
         def forcing(x, y, th):
@@ -37,14 +38,13 @@ def rtdg(mesh, kappa, sigma, Phi, bcs, f = None):
     
     bcs_vec = calc_bcs_vec(mesh, bcs)
     
-    intr_mask = get_intr_mask(mesh)
     bdry_mask = np.invert(intr_mask)
     
     f_vec = calc_forcing_vec(mesh, forcing)
     f_intr_vec = f_vec[intr_mask]
     
     u_intr_vec = spsolve(M_intr, f_intr_vec - M_bdry @ bcs_vec)
-    u_vec  = merge_vecs(intr_mask, u_intr_vec, bcs_vec)
+    u_vec  = merge_vectors(u_intr_vec, bcs_vec, intr_mask)
     u_proj = to_projection(mesh, u_vec)
 
     return u_proj

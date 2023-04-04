@@ -19,9 +19,8 @@ def extract_cols_csc(mat, mask):
         raise ValueError("works only for CSC format -- use .tocsc() first")
     return mat[:, mask]
 
-def split_matrix(mesh, mat):
+def split_matrix(mesh, mat, intr_mask):
 
-    intr_mask = get_intr_mask(mesh)
     bdry_mask = np.invert(intr_mask)
     
     mtx = mat.tocsr()
@@ -33,3 +32,23 @@ def split_matrix(mesh, mat):
     bdry_mtx  = extract_cols_csc(mrows_mtx, bdry_mask)
 
     return [intr_mtx, bdry_mtx]
+
+def merge_vectors(intr_vec, bdry_vec, intr_mask):
+    
+    ndof = np.size(intr_mask)
+
+    vec = np.zeros(ndof)
+    intr_idx = 0
+    bdry_idx = 0
+
+    for ii in range(0, ndof):
+        if intr_mask[ii]:
+            vec[ii] = intr_vec[intr_idx]
+
+            intr_idx += 1
+        else:
+            vec[ii] = bdry_vec[bdry_idx]
+            
+            bdry_idx += 1
+
+    return vec

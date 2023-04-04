@@ -11,7 +11,7 @@ from .get_cons_soln      import get_cons_soln
 
 sys.path.append('../../src')
 from dg.mesh.utils import plot_mesh
-from dg.matrix import get_intr_mask, split_matrix
+from dg.matrix import get_intr_mask, split_matrix, merge_vectors
 from dg.projection import push_forward, to_projection
 from dg.projection.utils import plot_projection
 import dg.quadrature as qd
@@ -169,7 +169,7 @@ def test_5(dir_name = 'test_rt'):
         print_msg('[Trial {}] Solving manufactured problem...'.format(trial))
         
         M = (M_bdry_conv - M_intr_conv) + M_mass - M_scat
-        [M_intr, M_bdry] = split_matrix(mesh, M)
+        [M_intr, M_bdry] = split_matrix(mesh, M, intr_mask)
         
         apr_sol_vec_intr = spsolve(M_intr, f_vec_intr - M_bdry @ bcs_vec)
         
@@ -184,7 +184,7 @@ def test_5(dir_name = 'test_rt'):
         # Plot the difference in solutions
         diff_vec_intr = apr_sol_vec_intr - anl_sol_vec_intr
         zero_bcs_vec  = 0. * bcs_vec
-        diff_vec      = merge_vecs(intr_mask, diff_vec_intr, zero_bcs_vec)
+        diff_vec      = merge_vectors(diff_vec_intr, zero_bcs_vec, intr_mask)
         diff_proj     = to_projection(mesh, diff_vec)
         
         file_name = os.path.join(trial_dir, 'diff.png')
@@ -316,23 +316,3 @@ def test_5(dir_name = 'test_rt'):
     fig.set_size_inches(6.5, 6.5)
     plt.savefig(os.path.join(test_dir, file_name), dpi = 300)
     plt.close(fig)
-
-def merge_vecs(intr_mask, intr_vec, bdry_vec):
-    
-    ndof = np.size(intr_mask)
-
-    vec = np.zeros(ndof)
-    intr_idx = 0
-    bdry_idx = 0
-
-    for ii in range(0, ndof):
-        if intr_mask[ii]:
-            vec[ii] = intr_vec[intr_idx]
-
-            intr_idx += 1
-        else:
-            vec[ii] = bdry_vec[bdry_idx]
-            
-            bdry_idx += 1
-
-    return vec
