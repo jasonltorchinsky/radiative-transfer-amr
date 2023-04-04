@@ -7,7 +7,7 @@ sys.path.append('../../src')
 import dg.quadrature as qd
 from dg.projection import push_forward, pull_back
 
-def test_0(dir_name = 'test_rtdg'):
+def test_0(dir_name = 'test_rt'):
     """
     Test the push-forward, pull-back maps.
     """

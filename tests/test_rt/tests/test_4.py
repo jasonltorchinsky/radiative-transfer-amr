@@ -19,7 +19,7 @@ from rt import calc_intr_conv_matrix, calc_bdry_conv_matrix
 
 from utils import print_msg
 
-def test_4(dir_name = 'test_rtdg'):
+def test_4(dir_name = 'test_rt'):
     """
     Creates various visualizations of the convection matrix and solves a 
     manufactured problem.
@@ -45,7 +45,7 @@ def test_4(dir_name = 'test_rtdg'):
                     has_th = has_th)
     
     [anl_sol, _, _, _, f] = get_cons_soln(prob_name = 'conv',
-                                          sol_num   = 0)
+                                          sol_num   = 2)
     
     # Solve simplified problem over several trials
     ref_ndofs = np.zeros([ntrial])

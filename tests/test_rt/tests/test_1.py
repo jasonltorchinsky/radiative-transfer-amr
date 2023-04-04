@@ -7,7 +7,7 @@ from .gen_mesh import gen_mesh
 sys.path.append('../../src')
 from dg.matrix import get_intr_mask
 
-def test_1(dir_name = 'test_rtdg'):
+def test_1(dir_name = 'test_rt'):
     """
     Creates a plots of the boundary mask to extract the interior and boundary
     entries of a matrix.

@@ -18,7 +18,7 @@ from rt import calc_mass_matrix, calc_scat_matrix
 
 from utils import print_msg
 
-def test_3(dir_name = 'test_rtdg'):
+def test_3(dir_name = 'test_rt'):
     """
     Creates various visualizations of the scattering matrix and solves a 
     manufactured problem.
@@ -38,7 +38,7 @@ def test_3(dir_name = 'test_rtdg'):
                     has_th = has_th)
     
     [anl_sol, kappa, sigma, Phi, f] = get_cons_soln(prob_name = 'scat',
-                                                    sol_num   = 0)
+                                                    sol_num   = 2)
     
     # Solve simplified problem over several trials
     ntrial    = 3

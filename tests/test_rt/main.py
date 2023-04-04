@@ -13,7 +13,7 @@ def main():
 
     parser_desc = 'Determine which tests to run and where to put output.'
     parser = argparse.ArgumentParser(description = parser_desc)
-    parser.add_argument('--dir', nargs = 1, default = 'test_rtdg',
+    parser.add_argument('--dir', nargs = 1, default = 'test_rt',
                         required = False, help = 'Subdirectory to store output')
     parser.add_argument('--test_all', nargs = 1, default = [0],
                         type = int, choices = [0, 1], required = False,

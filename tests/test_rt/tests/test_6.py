@@ -12,11 +12,12 @@ from dg.mesh.utils import plot_mesh
 from dg.projection import Projection
 from dg.projection.utils import plot_projection
 from rt import rtdg
+from amr import col_jump_err
 
 from utils import print_msg
 
 
-def test_6(dir_name = 'test_rtdg'):
+def test_6(dir_name = 'test_rt'):
     """
     Solves a test problem of the full system.
     """
@@ -33,7 +34,7 @@ def test_6(dir_name = 'test_rtdg'):
     # Get the base mesh, test_problem
     [Lx, Ly]                   = [3., 2.]
     pbcs                       = [True, False]
-    [ndof_x, ndof_y, ndof_th]  = [4, 4, 4]
+    [ndof_x, ndof_y, ndof_th]  = [2, 2, 2]
     has_th                     = True
     mesh = gen_mesh(Ls     = [Lx, Ly],
                     pbcs   = pbcs,
