@@ -18,9 +18,3 @@ class Projection_Column:
                )
 
         return msg
-
-    def add_cell(self, cell):
-        self.cells[cell.key] = cell
-
-    def del_cell(self, cell_key):
-        del self.cells[cell_key]

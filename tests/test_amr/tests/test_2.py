@@ -17,25 +17,25 @@ from dg.projection.utils import plot_projection
 import dg.quadrature as qd
 from rt import calc_mass_matrix, calc_scat_matrix, \
     calc_intr_conv_matrix, calc_bdry_conv_matrix
-from amr import col_jump_err
+from amr import anl_err, col_jump_err, ref_by_ind
 from amr.utils import plot_error_indicator
 
 from utils import print_msg
 
 
-def test_1(dir_name = 'test_amr'):
+def test_2(dir_name = 'test_amr'):
     """
     Tests the jump error calculation.
     """
     
-    test_dir = os.path.join(dir_name, 'test_1')
+    test_dir = os.path.join(dir_name, 'test_2')
     os.makedirs(test_dir, exist_ok = True)
 
     # Set the refinement type: 'sin' - single column
     #                        : 'uni' - uniform
     #                        : 'amr' - adaptive
-    ref_type = 'uni'
-    ntrial   = 3
+    ref_type = 'amr'
+    ntrial   = 6
     
     # Get the base mesh, test_problem
     [Lx, Ly]                   = [3., 2.]
@@ -47,8 +47,8 @@ def test_1(dir_name = 'test_amr'):
                     ndofs  = [ndof_x, ndof_y, ndof_th],
                     has_th = has_th)
     
-    [anl_sol, kappa, sigma, Phi, f, anl_sol_intg_th] = get_cons_soln(prob_name = 'comp',
-                                                                     sol_num   = 0)
+    [anl_sol, kappa, sigma, Phi, f, _] = get_cons_soln(prob_name = 'comp',
+                                                       sol_num   = 1)
     
     # Solve simplified problem over several trials
     ref_ndofs = np.zeros([ntrial])
@@ -112,7 +112,7 @@ def test_1(dir_name = 'test_amr'):
 
         # Get number of DOFs
         ref_ndofs[trial] = np.size(f_vec)
-
+        
         # Calculate the maximum error of the solution
         anl_sol_proj = Projection(mesh, anl_sol)
         anl_sol_vec  = anl_sol_proj.to_vector()
@@ -121,9 +121,22 @@ def test_1(dir_name = 'test_amr'):
 
         sol_errs[trial] = max_err
 
-        # Calculate the jump errors between columns
-        max_err      = 0.
+        # Plot the solution
+        file_name = os.path.join(trial_dir, 'soln.png')
+        angles = np.linspace(0, 1.75, 8) * np.pi
+        plot_projection(u_proj, file_name = file_name, angles = angles)
+
+        # Plot the jump error indicator
         col_jump_err_ind = col_jump_err(mesh, u_proj)
+        file_name = os.path.join(trial_dir, 'col_jump_errs.png')
+        plot_error_indicator(mesh, col_jump_err_ind, file_name = file_name,
+                             name = 'Inter-Column Jump')
+
+        anl_err_ind = anl_err(mesh, u_proj, anl_sol)
+        file_name = os.path.join(trial_dir, 'anl_errs.png')
+        plot_error_indicator(mesh, anl_err_ind, file_name = file_name,
+                             name = 'Analytic Max-Norm Column')
+
         col_jump_err_ind_dict = {}
         col_items = sorted(mesh.cols.items())
         for col_key, col in col_items:
@@ -162,10 +175,6 @@ def test_1(dir_name = 'test_amr'):
         fig.set_size_inches(6.5, 6.5)
         plt.savefig(os.path.join(trial_dir, file_name), dpi = 300)
         plt.close(fig)
-
-        file_name = os.path.join(trial_dir, 'col_jump_errs.png')
-        plot_error_indicator(mesh, col_jump_err_ind, file_name = file_name)
-        
         
         # Refine the mesh for the next trial
         if ref_type == 'sin':
@@ -175,6 +184,8 @@ def test_1(dir_name = 'test_amr'):
         elif ref_type == 'uni':
             ## Refine the mesh uniformly
             mesh.ref_mesh(kind = 'spt')
+        elif ref_type == 'amr':
+            mesh = ref_by_ind(mesh, col_jump_err_ind, 0.9)
             
         perf_trial_f    = perf_counter()
         perf_trial_diff = perf_trial_f - perf_trial_0
@@ -184,7 +195,7 @@ def test_1(dir_name = 'test_amr'):
         )
         print_msg(msg)
         
-    # Plot errors
+        # Plot errors
     fig, ax = plt.subplots()
     
     ax.plot(ref_ndofs, sol_errs,
@@ -198,7 +209,7 @@ def test_1(dir_name = 'test_amr'):
             linestyle = '-')
 
     ax.legend()
-    
+
     ax.set_xscale('log', base = 2)
     ax.set_yscale('log', base = 2)
 

@@ -9,28 +9,32 @@ sys.path.append('../..')
 from dg.quadrature import quad_xyth, lag_eval
 from dg.projection import push_forward, pull_back
 
-def plot_projection(projection, file_name = None, **kwargs):
+def plot_error_indicator(mesh, err_ind, file_name = None, **kwargs):
     
-    default_kwargs = {'angles' : [0, np.pi/2, np.pi, 3*np.pi/2]}
+    default_kwargs = {'angles' : [0, np.pi/2, np.pi, 3*np.pi/2],
+                      'cmap' : 'Reds',
+                      'name' : None}
     kwargs = {**default_kwargs, **kwargs}
 
-    if not projection.has_th:
-        [fig, ax] = plot_projection_2d(projection,
-                                       file_name = file_name,
-                                       **kwargs)
-    else:
-        [fig, ax] = plot_projection_3d(projection,
-                                       file_name = file_name,
-                                       **kwargs)
+    if err_ind.by_col:
+        [fig, ax] = plot_error_indicator_by_column(mesh,
+                                                   err_ind,
+                                                   file_name = file_name,
+                                                   **kwargs)
+    if err_ind.by_cell:
+        [fig, ax] = plot_error_indicator_by_cell(mesh,
+                                                 err_ind,
+                                                 file_name = file_name,
+                                                 **kwargs)
         
     return [fig, ax]
 
-def plot_projection_2d(projection, file_name = None, **kwargs):
+def plot_error_indicator_by_column(mesh, err_ind, file_name = None, **kwargs):
 
     default_kwargs = {}
     kwargs = {**default_kwargs, **kwargs}
     
-    [Lx, Ly] = projection.Ls[:]
+    [Lx, Ly] = mesh.Ls[:]
     
     fig, ax = plt.subplots()
     
@@ -38,33 +42,25 @@ def plot_projection_2d(projection, file_name = None, **kwargs):
     ax.set_ylim([0, Ly])
 
     # Get colorbar min/max
-    [vmin, vmax] = [0., 0.]
-    col_items = sorted(projection.cols.items())
-    for col_key, col in col_items:  
-        # There should only be one cell, so this should be okay
-        cell_items = sorted(col.cells.items())
-        for cell_key, cell in cell_items:
-            vmin = min(vmin, np.amin(cell.vals))
-            vmax = max(vmax, np.amax(cell.vals))
+    [vmin, vmax] = [10.**10, -10.**10]
+    col_items = sorted(mesh.cols.items())
+    for col_key, col in col_items:
+        if col.is_lf:
+            vmin = min(vmin, err_ind.cols[col_key].err_ind)
+            vmax = max(vmax, err_ind.cols[col_key].err_ind)
     
     for col_key, col in col_items:
-        # Plot column
-        [x0, y0, x1, y1] = col.pos
-        [ndof_x, ndof_y] = col.ndofs
-        
-        [xxb, _, yyb, _, _, _] = quad_xyth(nnodes_x = ndof_x,
-                                           nnodes_y = ndof_y)
-        
-        xxf = push_forward(x0, x1, xxb)
-        yyf = push_forward(y0, y1, yyb)
-        
-        # There should only be one cell, so this should be okay
-        cell_items = sorted(col.cells.items())
-        for cell_key, cell in cell_items:
-            vals = cell.vals[:, :, 0]
+        if col.is_lf:
+            # Plot column err indicator
+            [x0, y0, x1, y1] = col.pos
+            [ndof_x, ndof_y] = col.ndofs
+            col_err_ind = err_ind.cols[col_key].err_ind
             
-            pc = ax.pcolormesh(xxf, yyf, vals.transpose(), shading = 'auto',
-                               vmin = vmin, vmax = vmax)
+            xx = np.asarray([x0, x1])
+            yy = np.asarray([y0, y1])
+            pc = ax.pcolormesh(xx, yy, [[col_err_ind]], shading = 'flat',
+                               vmin = vmin, vmax = vmax,
+                               cmap = kwargs['cmap'])
         
 
     for col_key, col in col_items:
@@ -74,6 +70,9 @@ def plot_projection_2d(projection, file_name = None, **kwargs):
         
         rect = Rectangle((x0, y0), dx, dy, fill = False)
         ax.add_patch(rect)
+
+    title_str = kwargs['name'] + ' Error Indicator'
+    ax.set_title(title_str)
                 
     fig.colorbar(pc)
     
@@ -84,12 +83,12 @@ def plot_projection_2d(projection, file_name = None, **kwargs):
 
     return [fig, ax]
 
-def plot_projection_3d(projection, file_name = None, **kwargs):
+def plot_error_indicator_by_cell(mesh, err_ind, file_name = None, **kwargs):
 
     default_kwargs = {'angles' : [0, np.pi/2, np.pi, 3*np.pi/2]}
     kwargs = {**default_kwargs, **kwargs}
     
-    [Lx, Ly] = projection.Ls[:]
+    [Lx, Ly] = mesh.Ls[:]
     Lz       = 2 * np.pi
     angles   = kwargs['angles']
     nangles  = np.shape(angles)[0]
@@ -104,7 +103,7 @@ def plot_projection_3d(projection, file_name = None, **kwargs):
     
     # Get colorbar min/max
     [vmin, vmax] = [10.**10, -10.**10]
-    col_items = sorted(projection.cols.items())
+    col_items = sorted(mesh.cols.items())
     for col_key, col in col_items:  
         # There should only be one cell, so this should be okay
         cell_items = sorted(col.cells.items())

@@ -1,5 +1,7 @@
 import numpy as np
 
+from .Error_Indicator import Error_Indicator
+
 import dg.quadrature as qd
 from dg.projection import push_forward, pull_back
 
@@ -9,7 +11,7 @@ def col_jump_err(mesh, proj):
     ncols = len(col_items)
 
     # Array to store column jump errors
-    col_errs = {}
+    err_ind = Error_Indicator(mesh, by_col = True, by_cell = False)
     col_intg_ths = {}
     
     # Begin by integrating each column with respect to theta
@@ -106,9 +108,9 @@ def col_jump_err(mesh, proj):
             perim = 2. * dx_0 + 2. * dy_0
             col_err = np.sqrt((1. / perim) * col_err)
             
-            col_errs[col_key_0] = col_err
+            err_ind.cols[col_key_0].err_ind = col_err
 
-    return col_errs
+    return err_ind
 
 def intg_col_bdry_th(mesh, proj, col_key):
     '''

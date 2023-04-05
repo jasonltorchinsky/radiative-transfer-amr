@@ -117,11 +117,7 @@ def test_0(dir_name = 'test_amr'):
         anl_sol_vec  = anl_sol_proj.to_vector()
         diff_vec     = np.abs(u_vec - anl_sol_vec)
         max_err      = np.amax(diff_vec)
-        msg = (
-            '[Trial {}] Max solution error: {} '.format(trial, max_err)
-        )
-        print_msg(msg)
-
+        
         sol_errs[trial] = max_err
 
         # Calculate the error of angular integration
@@ -190,7 +186,7 @@ def test_0(dir_name = 'test_amr'):
         )
         print_msg(msg)
         
-    # Plot errors
+    # Plot solution errors
     fig, ax = plt.subplots()
     
     ax.plot(ref_ndofs, sol_errs,
@@ -226,7 +222,7 @@ def test_0(dir_name = 'test_amr'):
     plt.close(fig)
 
 
-    # Plot errors
+    # Plot integration errors
     fig, ax = plt.subplots()
     
     ax.plot(ref_ndofs, intg_errs,
