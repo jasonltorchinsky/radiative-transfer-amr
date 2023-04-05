@@ -1,5 +1,4 @@
 import numpy as np
-from numpy.linalg import inv
 
 from .calc_proj_mtx_1d import calc_proj_mtx_1d
 

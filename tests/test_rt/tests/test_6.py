@@ -29,10 +29,10 @@ def test_6(dir_name = 'test_rt'):
     #                        : 'uni' - uniform
     #                        : 'amr' - adaptive
     ref_type = 'uni'
-    ntrial   = 3
+    ntrial   = 1
     
     # Get the base mesh, test_problem
-    [Lx, Ly]                   = [3., 2.]
+    [Lx, Ly]                   = [1., 5.]
     pbcs                       = [True, False]
     [ndof_x, ndof_y, ndof_th]  = [2, 2, 2]
     has_th                     = True
@@ -40,8 +40,9 @@ def test_6(dir_name = 'test_rt'):
                     pbcs   = pbcs,
                     ndofs  = [ndof_x, ndof_y, ndof_th],
                     has_th = has_th)
+    mesh.ref_mesh(kind = 'spt')
     
-    [kappa, sigma, Phi, bcs, f] = get_test_prob(prob_num = 0)
+    [kappa, sigma, Phi, [bcs, dirac], f] = get_test_prob(prob_num = 0, mesh = mesh)
     
     # Solve simplified problem over several trials
     for trial in range(0, ntrial):
@@ -74,12 +75,22 @@ def test_6(dir_name = 'test_rt'):
         sigma_proj = Projection(mesh_2d, sigma)
         file_name = os.path.join(trial_dir, 'sigma.png')
         plot_projection(sigma_proj, file_name = file_name)
+
+        file_name = os.path.join(trial_dir, 'scat.png')
+        fig, ax = plt.subplots(subplot_kw = {'projection' : 'polar'})
+        phi = np.linspace(0, 2 * np.pi, 120)
+        r = Phi(0, phi)
+        ax.plot(phi, r, 'k-')
+        ax.set_yticks(np.around(np.linspace(0, np.amax(r), 3), 2))
+        fig.set_size_inches(6.5, 6.5)
+        plt.savefig(file_name, dpi = 300)
+        plt.close(fig)
         
         # Construct solve the test problem
         perf_cons_0 = perf_counter()
         print_msg('[Trial {}] Solving the test problem...'.format(trial))
         
-        u_proj = rtdg(mesh, kappa, sigma, Phi, bcs, f)
+        u_proj = rtdg(mesh, kappa, sigma, Phi, [bcs, dirac], f)
         
         perf_cons_f    = perf_counter()
         perf_cons_diff = perf_cons_f - perf_cons_0
@@ -107,7 +118,7 @@ def test_6(dir_name = 'test_rt'):
         perf_trial_diff = perf_trial_f - perf_trial_0
         msg = (
             '[Trial {}] Trial completed! '.format(trial) +
-            'Time Elapsed: {:08.3f} [s]'.format(perf_trial_diff)
+            'Time Elapsed: {:08.3f} [s]\n'.format(perf_trial_diff)
         )
         print_msg(msg)
         

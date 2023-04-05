@@ -36,7 +36,7 @@ def test_5(dir_name = 'test_rt'):
     ntrial   = 4
     
     # Get the base mesh, manufactured solution
-    [Lx, Ly]                   = [3., 2.]
+    [Lx, Ly]                   = [1., 5.]
     pbcs                       = [False, False]
     [ndof_x, ndof_y, ndof_th]  = [4, 4, 4]
     has_th                     = True

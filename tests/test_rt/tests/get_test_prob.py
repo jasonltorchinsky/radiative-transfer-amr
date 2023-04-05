@@ -5,7 +5,7 @@ import sys
 sys.path.append('../../src')
 from utils import print_msg
 
-def get_test_prob(prob_num):
+def get_test_prob(prob_num, mesh):
     """
     Generates the functions needed for a test_problem
     """
@@ -16,12 +16,12 @@ def get_test_prob(prob_num):
         """
                 
         def kappa(x, y):
-            return 1.0
+            return 1.1
         
         def sigma(x, y):
-            return 0.1 * kappa(x, y)
+            return 1.0
 
-        g = 0.8
+        g = 0.1
         def Phi_HG(th, phi):
             return (1. - g**2) / (1. + g**2 - 2. * g * np.cos(th - phi))**(3./2.)
         
@@ -34,20 +34,23 @@ def get_test_prob(prob_num):
             return (1. / coeff) * Phi_HG(th, phi)
         
         def bcs(x, y, th):
+            [x_bot, y_bot] = [0.0, 0.0]
+            [x_top, y_top] = mesh.Ls
+            
             ang_min = 3.0 * np.pi / 2.0 - 0.1
             ang_max = 3.0 * np.pi / 2.0 + 0.1
-            if (y == 2.0) and (ang_min <= th) and (th <= ang_max):
+            if (y == y_top) and (ang_min <= th) and (th <= ang_max):
                 return 10.0
             else:
                 return 0.0
+
+        dirac = False
         
         def f(x, y):
             return 0
-
-        
 
     else:
         print_msg('Problem number {} unsupported.'.format(prob_num))
         quit()
         
-    return [kappa, sigma, Phi, bcs, f]
+    return [kappa, sigma, Phi, [bcs, dirac], f]

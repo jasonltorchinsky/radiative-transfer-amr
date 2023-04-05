@@ -15,7 +15,7 @@ sys.path.append('../src')
 from dg.matrix import get_intr_mask, split_matrix, merge_vectors
 from dg.projection import push_forward, to_projection
 
-def rtdg(mesh, kappa, sigma, Phi, bcs, f = None):
+def rtdg(mesh, kappa, sigma, Phi, bcs_dirac, f = None):
     """
     Solve the RT problem.
     """
@@ -36,7 +36,7 @@ def rtdg(mesh, kappa, sigma, Phi, bcs, f = None):
         def forcing(x, y, th):
             return f(x, y)
     
-    bcs_vec = calc_bcs_vec(mesh, bcs)
+    bcs_vec = calc_bcs_vec(mesh, bcs_dirac)
     
     bdry_mask = np.invert(intr_mask)
     

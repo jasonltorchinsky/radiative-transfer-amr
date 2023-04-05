@@ -39,7 +39,7 @@ def test_2(dir_name = 'test_amr'):
     
     # Get the base mesh, test_problem
     [Lx, Ly]                   = [3., 2.]
-    pbcs                       = [True, False]
+    pbcs                       = [False, False]
     [ndof_x, ndof_y, ndof_th]  = [2, 2, 2]
     has_th                     = True
     mesh = gen_mesh(Ls     = [Lx, Ly],
@@ -48,7 +48,7 @@ def test_2(dir_name = 'test_amr'):
                     has_th = has_th)
     
     [anl_sol, kappa, sigma, Phi, f, _] = get_cons_soln(prob_name = 'comp',
-                                                       sol_num   = 1)
+                                                       sol_num   = 0)
     
     # Solve simplified problem over several trials
     ref_ndofs = np.zeros([ntrial])
@@ -132,11 +132,6 @@ def test_2(dir_name = 'test_amr'):
         plot_error_indicator(mesh, col_jump_err_ind, file_name = file_name,
                              name = 'Inter-Column Jump')
 
-        anl_err_ind = anl_err(mesh, u_proj, anl_sol)
-        file_name = os.path.join(trial_dir, 'anl_errs.png')
-        plot_error_indicator(mesh, anl_err_ind, file_name = file_name,
-                             name = 'Analytic Max-Norm Column')
-
         col_jump_err_ind_dict = {}
         col_items = sorted(mesh.cols.items())
         for col_key, col in col_items:
@@ -161,10 +156,9 @@ def test_2(dir_name = 'test_amr'):
         
         ax.set_xscale('log', base = 2)
         
-        if np.log2(max(col_jump_err_vals)) - np.log2(min(col_jump_err_vals)) < 1:
-            xmin = 2**(np.floor(np.log2(min(col_jump_err_vals))))
-            xmax = 2**(np.ceil(np.log2(max(col_jump_err_vals))))
-            ax.set_xlim([xmin, xmax])
+        xmin = 2**(np.floor(np.log2(min(col_jump_err_vals))))
+        xmax = 2**(np.ceil(np.log2(max(col_jump_err_vals))))
+        ax.set_xlim([xmin, xmax])
             
         ax.set_xlabel('Inter-Column Jump Error')
 
@@ -172,6 +166,48 @@ def test_2(dir_name = 'test_amr'):
         ax.plot(col_jump_err_vals, yy, 'k.', alpha = 0.8)
             
         file_name = 'col_jump_errs_dist.png'
+        fig.set_size_inches(6.5, 6.5)
+        plt.savefig(os.path.join(trial_dir, file_name), dpi = 300)
+        plt.close(fig)
+
+        # Plot the analytic error indicator
+        anl_err_ind = anl_err(mesh, u_proj, anl_sol)
+        file_name = os.path.join(trial_dir, 'anl_errs.png')
+        plot_error_indicator(mesh, anl_err_ind, file_name = file_name,
+                             name = 'Analytic Max-Norm Column')
+
+        anl_err_ind_dict = {}
+        col_items = sorted(mesh.cols.items())
+        for col_key, col in col_items:
+            if col.is_lf:
+                anl_err_ind_dict[col_key] = anl_err_ind.cols[col_key].err_ind
+        anl_err_vals = list(anl_err_ind_dict.values())
+        
+        fig, ax = plt.subplots()
+    
+        ax.boxplot(anl_err_vals,
+                   vert = False,
+                   whis = [0, 90])
+
+        ax.tick_params(
+            axis      = 'y',         # changes apply to the y-axis
+            which     = 'both',      # both major and minor ticks are affected
+            left      = False,      # ticks along the bottom edge are off
+            right     = False,         # ticks along the top edge are off
+            labelleft = False) # labels along the bottom edge are off
+        
+        ax.set_xscale('log', base = 2)
+        
+        xmin = 2**(np.floor(np.log2(min(anl_err_vals))))
+        xmax = 2**(np.ceil(np.log2(max(anl_err_vals))))
+        ax.set_xlim([xmin, xmax])
+            
+        ax.set_xlabel('Analytic Column Error')
+
+        yy = np.random.normal(1, 0.04, size = len(anl_err_vals))
+        ax.plot(anl_err_vals, yy, 'k.', alpha = 0.8)
+            
+        file_name = 'anl_errs_dist.png'
         fig.set_size_inches(6.5, 6.5)
         plt.savefig(os.path.join(trial_dir, file_name), dpi = 300)
         plt.close(fig)
@@ -185,7 +221,7 @@ def test_2(dir_name = 'test_amr'):
             ## Refine the mesh uniformly
             mesh.ref_mesh(kind = 'spt')
         elif ref_type == 'amr':
-            mesh = ref_by_ind(mesh, col_jump_err_ind, 0.9)
+            mesh = ref_by_ind(mesh, col_jump_err_ind, 0.95)
             
         perf_trial_f    = perf_counter()
         perf_trial_diff = perf_trial_f - perf_trial_0

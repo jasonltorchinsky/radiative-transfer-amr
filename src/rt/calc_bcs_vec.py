@@ -6,7 +6,7 @@ from dg.matrix import get_idx_map, get_col_idxs, get_cell_idxs, get_intr_mask
 from dg.projection import push_forward
 import dg.quadrature as qd
 
-def calc_bcs_vec(mesh, bcs):
+def calc_bcs_vec(mesh, bcs_dirac):
     """
     Create the global vector corresponding to the boundary conditions.
 
@@ -14,6 +14,8 @@ def calc_bcs_vec(mesh, bcs):
     having the BCs function handle having the correct values on the boundary.
     """
 
+    [bcs, dirac] = bcs_dirac
+    
     intr_mask = get_intr_mask(mesh)
     bdry_mask = np.invert(intr_mask)
     
@@ -57,14 +59,19 @@ def calc_bcs_vec(mesh, bcs):
                     # List of entries, values for constructing the cell mask
                     cell_ndof  = ndof_x * ndof_y * ndof_th
                     bcs_cell_vec = np.zeros([cell_ndof])
-                    for ii in range(0, ndof_x):
-                        for jj in range(0, ndof_y):
-                            for aa in range(0, ndof_th):
-                                bcs_ija = bcs(xxf[ii], yyf[jj], thf[aa])
-                                
-                                beta_idx = beta(ii, jj, aa)
-                                
-                                bcs_cell_vec[beta_idx] = bcs_ija
+
+                    # If the BCs are a dirac-delta function, we handle
+                    # them differently
+                    if not dirac:
+                        for ii in range(0, ndof_x):
+                            for jj in range(0, ndof_y):
+                                for aa in range(0, ndof_th):
+                                    bcs_ija = bcs(xxf[ii], yyf[jj], thf[aa])
+                                    
+                                    beta_idx = beta(ii, jj, aa)
+                                    
+                                    bcs_cell_vec[beta_idx] = bcs_ija
+                    
                                 
                     bcs_cell_vecs[cell_idx] = bcs_cell_vec
                     

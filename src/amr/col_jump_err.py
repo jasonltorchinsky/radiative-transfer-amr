@@ -56,6 +56,11 @@ def col_jump_err(mesh, proj):
 
                             # Project from the smaller ndof to the larger
                             if (F%2 == 0):
+                                dcoeff = dy_0 / 2.
+                            else:
+                                dcoeff = dx_0 / 2.
+                            
+                            if (F%2 == 0):
                                 if (ndof_y_0 >= ndof_y_1):
                                     col_intg_th_1 = np.zeros([ndof_y_0])
                                     yyb_0_1 = pull_back(y0_1, yf_1, yyf_0)
@@ -65,7 +70,7 @@ def col_jump_err(mesh, proj):
                                             col_intg_th_1[jj] += \
                                                 col_intg_ths[col_key_1][(F+2)%4][qq] \
                                                 * qd.lag_eval(yyb_1, qq, yyb_0_1[jj])
-                                        col_err += (dy_0 / 2.) * wy_0[jj] \
+                                        col_err += dcoeff * wy_0[jj] \
                                             * (col_intg_ths[col_key_0][F][jj] - col_intg_th_1[jj])**2
                                         
                                 else:
@@ -77,7 +82,7 @@ def col_jump_err(mesh, proj):
                                             col_intg_th_0[qq] += \
                                                 col_intg_ths[col_key_0][F][jj] \
                                                 * qd.lag_eval(yyb_0, jj, yyb_1_0[qq])
-                                        col_err += (dy_0 / 2.) * wy_1[qq] \
+                                        col_err += dcoeff * wy_1[qq] \
                                             * (col_intg_th_0[qq] - col_intg_ths[col_key_1][(F+2)%4][qq])**2
                                         
                             else:
@@ -90,7 +95,7 @@ def col_jump_err(mesh, proj):
                                             col_intg_th_1[ii] += \
                                                 col_intg_ths[col_key_1][(F+2)%4][pp] \
                                                 * qd.lag_eval(xxb_1, pp, xxb_0_1[ii])
-                                        col_err += (dx_0 / 2.) * wx_0[ii] \
+                                        col_err += dcoeff * wx_0[ii] \
                                             * (col_intg_ths[col_key_0][F][ii] - col_intg_th_1[ii])**2
                                         
                                 else:
@@ -102,7 +107,7 @@ def col_jump_err(mesh, proj):
                                             col_intg_th_0[pp] += \
                                                 col_intg_ths[col_key_0][F][ii] \
                                                 * qd.lag_eval(xxb_0, ii, xxb_1_0[pp])
-                                        col_err += (dx_0 / 2.) * wx_1[pp] \
+                                        col_err += dcoeff * wx_1[pp] \
                                             * (col_intg_th_0[pp] - col_intg_ths[col_key_1][(F+2)%4][pp])**2
                                         
             perim = 2. * dx_0 + 2. * dy_0

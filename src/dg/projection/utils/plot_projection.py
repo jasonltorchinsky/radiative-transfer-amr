@@ -11,7 +11,8 @@ from dg.projection import push_forward, pull_back
 
 def plot_projection(projection, file_name = None, **kwargs):
     
-    default_kwargs = {'angles' : [0, np.pi/2, np.pi, 3*np.pi/2]}
+    default_kwargs = {'angles' : [0, np.pi/2, np.pi, 3*np.pi/2],
+                      'cmap' : 'hot'}
     kwargs = {**default_kwargs, **kwargs}
 
     if not projection.has_th:
@@ -64,7 +65,8 @@ def plot_projection_2d(projection, file_name = None, **kwargs):
             vals = cell.vals[:, :, 0]
             
             pc = ax.pcolormesh(xxf, yyf, vals.transpose(), shading = 'auto',
-                               vmin = vmin, vmax = vmax)
+                               vmin = vmin, vmax = vmax,
+                               cmap = kwargs['cmap'])
         
 
     for col_key, col in col_items:
@@ -153,7 +155,8 @@ def plot_projection_3d(projection, file_name = None, **kwargs):
                     
                     pc = ax.pcolormesh(xxf, yyf, vals_xy.transpose(),
                                        shading = 'auto',
-                                       vmin = vmin, vmax = vmax)
+                                       vmin = vmin, vmax = vmax,
+                                       cmap = kwargs['cmap'])
                     
                     break
     
