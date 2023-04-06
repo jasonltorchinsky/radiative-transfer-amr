@@ -1,58 +1,57 @@
+import copy
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.sparse.linalg import spsolve, eigs
+from scipy.sparse.linalg import spsolve
 from time import perf_counter
 import os, sys
 
 from .gen_mesh           import gen_mesh
 from .get_forcing_vec    import get_forcing_vec
 from .get_projection_vec import get_projection_vec
-from .get_cons_soln      import get_cons_soln
+from .get_test_prob      import get_test_prob
 
 sys.path.append('../../src')
 from dg.mesh.utils import plot_mesh
 from dg.matrix import get_intr_mask, split_matrix, merge_vectors
 from dg.projection import Projection, push_forward, to_projection
-from dg.projection.utils import plot_projection
+from dg.projection.utils import plot_projection, plot_angular_dists
 import dg.quadrature as qd
-from rt import calc_mass_matrix, calc_scat_matrix, \
-    calc_intr_conv_matrix, calc_bdry_conv_matrix
-from amr import anl_err, col_jump_err, ref_by_ind
+from rt import rtdg
+from amr import col_jump_err, cell_jump_err, ref_by_ind
 from amr.utils import plot_error_indicator
 
 from utils import print_msg
 
 
-def test_2(dir_name = 'test_amr'):
+def test_3(dir_name = 'test_amr'):
     """
-    Tests the jump error calculation.
+    Test inter-column jump error AMR
     """
     
-    test_dir = os.path.join(dir_name, 'test_2')
+    test_dir = os.path.join(dir_name, 'test_3')
     os.makedirs(test_dir, exist_ok = True)
 
     # Set the refinement type: 'sin' - single column
     #                        : 'uni' - uniform
     #                        : 'amr' - adaptive
     ref_type = 'amr'
-    ntrial   = 8
+    ntrial   = 6
     
     # Get the base mesh, test_problem
-    [Lx, Ly]                   = [3., 2.]
+    [Lx, Ly]                   = [2., 3.]
     pbcs                       = [False, False]
-    [ndof_x, ndof_y, ndof_th]  = [2, 2, 2]
+    [ndof_x, ndof_y, ndof_th]  = [2, 2, 4]
     has_th                     = True
     mesh = gen_mesh(Ls     = [Lx, Ly],
                     pbcs   = pbcs,
                     ndofs  = [ndof_x, ndof_y, ndof_th],
                     has_th = has_th)
     
-    [anl_sol, kappa, sigma, Phi, f, _] = get_cons_soln(prob_name = 'comp',
-                                                       sol_num   = 1)
+    [kappa, sigma, Phi, [bcs, dirac], f] = get_test_prob(prob_num = 1,
+                                                         mesh = mesh)
     
     # Solve simplified problem over several trials
     ref_ndofs = np.zeros([ntrial])
-    sol_errs  = np.zeros([ntrial])
     jump_errs = np.zeros([ntrial])
     for trial in range(0, ntrial):
         perf_trial_0 = perf_counter()
@@ -72,35 +71,34 @@ def test_2(dir_name = 'test_amr'):
                   file_name   = file_name,
                   plot_dim    = 2,
                   label_cells = (trial <= 3))
-
-        # Plot the coefficient functions
         
-        # Construct solve the test problem
+        # Plot the coefficient functions
+        mesh_2d = copy.deepcopy(mesh)
+        mesh_2d.has_th = False
+        
+        kappa_proj = Projection(mesh_2d, kappa)
+        file_name = os.path.join(trial_dir, 'kappa.png')
+        plot_projection(kappa_proj, file_name = file_name)
+        
+        sigma_proj = Projection(mesh_2d, sigma)
+        file_name = os.path.join(trial_dir, 'sigma.png')
+        plot_projection(sigma_proj, file_name = file_name)
+
+        file_name = os.path.join(trial_dir, 'scat.png')
+        fig, ax = plt.subplots(subplot_kw = {'projection' : 'polar'})
+        phi = np.linspace(0, 2 * np.pi, 120)
+        r = Phi(0, phi)
+        ax.plot(phi, r, 'k-')
+        ax.set_yticks(np.around(np.linspace(0, np.amax(r), 3), 2))
+        fig.set_size_inches(6.5, 6.5)
+        plt.savefig(file_name, dpi = 300)
+        plt.close(fig)
+        
+        # Solve the test problem
         perf_cons_0 = perf_counter()
         print_msg('[Trial {}] Solving the test problem...'.format(trial))
-
-        # Use the analytic solution for boundary conditions
-        M_mass = calc_mass_matrix(mesh, kappa)
-        M_scat = calc_scat_matrix(mesh, sigma, Phi)
-        M_intr_conv = calc_intr_conv_matrix(mesh)
-        M_bdry_conv = calc_bdry_conv_matrix(mesh)
-
-
-        f_vec       = get_forcing_vec(mesh, f)
-        anl_sol_vec = get_projection_vec(mesh, anl_sol)
         
-        intr_mask        = get_intr_mask(mesh)
-        bdry_mask        = np.invert(intr_mask)
-        f_vec_intr       = f_vec[intr_mask]
-        anl_sol_vec_intr = anl_sol_vec[intr_mask]
-        bcs_vec          = anl_sol_vec[bdry_mask]
-        
-        M = (M_bdry_conv - M_intr_conv) + M_mass - M_scat
-        [M_intr, M_bdry] = split_matrix(mesh, M, intr_mask)
-        
-        u_vec_intr = spsolve(M_intr, f_vec_intr - M_bdry @ bcs_vec)
-        u_vec      = merge_vectors(u_vec_intr, bcs_vec, intr_mask)
-        u_proj     = to_projection(mesh, u_vec)
+        u_proj = rtdg(mesh, kappa, sigma, Phi, [bcs, dirac], f)
         
         perf_cons_f    = perf_counter()
         perf_cons_diff = perf_cons_f - perf_cons_0
@@ -111,20 +109,16 @@ def test_2(dir_name = 'test_amr'):
         print_msg(msg)
 
         # Get number of DOFs
-        ref_ndofs[trial] = np.size(f_vec)
-        
-        # Calculate the maximum error of the solution
-        anl_sol_proj = Projection(mesh, anl_sol)
-        anl_sol_vec  = anl_sol_proj.to_vector()
-        diff_vec     = np.abs(u_vec - anl_sol_vec)
-        max_err      = np.amax(diff_vec)
-
-        sol_errs[trial] = max_err
+        u_vec = u_proj.to_vector()
+        ref_ndofs[trial] = np.size(u_vec)
 
         # Plot the solution
         file_name = os.path.join(trial_dir, 'soln.png')
         angles = np.linspace(0, 1.75, 8) * np.pi
         plot_projection(u_proj, file_name = file_name, angles = angles)
+
+        file_name = os.path.join(trial_dir, 'soln_slices.png')
+        plot_angular_dists(mesh, u_proj, file_name = file_name)
 
         # Plot the jump error indicator
         col_jump_err_ind = col_jump_err(mesh, u_proj)
@@ -156,9 +150,9 @@ def test_2(dir_name = 'test_amr'):
         
         ax.set_xscale('log', base = 2)
         
-        xmin = 2**(np.floor(np.log2(min(col_jump_err_vals))))
-        xmax = 2**(np.ceil(np.log2(max(col_jump_err_vals))))
-        ax.set_xlim([xmin, xmax])
+        #xmin = 2**(np.floor(np.log2(min(col_jump_err_vals))))
+        #xmax = 2**(np.ceil(np.log2(max(col_jump_err_vals))))
+        #ax.set_xlim([xmin, xmax])
             
         ax.set_xlabel('Inter-Column Jump Error')
 
@@ -166,48 +160,6 @@ def test_2(dir_name = 'test_amr'):
         ax.plot(col_jump_err_vals, yy, 'k.', alpha = 0.8)
             
         file_name = 'col_jump_errs_dist.png'
-        fig.set_size_inches(6.5, 6.5)
-        plt.savefig(os.path.join(trial_dir, file_name), dpi = 300)
-        plt.close(fig)
-
-        # Plot the analytic error indicator
-        anl_err_ind = anl_err(mesh, u_proj, anl_sol)
-        file_name = os.path.join(trial_dir, 'anl_errs.png')
-        plot_error_indicator(mesh, anl_err_ind, file_name = file_name,
-                             name = 'Analytic Max-Norm Column')
-
-        anl_err_ind_dict = {}
-        col_items = sorted(mesh.cols.items())
-        for col_key, col in col_items:
-            if col.is_lf:
-                anl_err_ind_dict[col_key] = anl_err_ind.cols[col_key].err_ind
-        anl_err_vals = list(anl_err_ind_dict.values())
-        
-        fig, ax = plt.subplots()
-    
-        ax.boxplot(anl_err_vals,
-                   vert = False,
-                   whis = [0, 90])
-
-        ax.tick_params(
-            axis      = 'y',         # changes apply to the y-axis
-            which     = 'both',      # both major and minor ticks are affected
-            left      = False,      # ticks along the bottom edge are off
-            right     = False,         # ticks along the top edge are off
-            labelleft = False) # labels along the bottom edge are off
-        
-        ax.set_xscale('log', base = 2)
-        
-        xmin = 2**(np.floor(np.log2(min(anl_err_vals))))
-        xmax = 2**(np.ceil(np.log2(max(anl_err_vals))))
-        ax.set_xlim([xmin, xmax])
-            
-        ax.set_xlabel('Analytic Column Error')
-
-        yy = np.random.normal(1, 0.04, size = len(anl_err_vals))
-        ax.plot(anl_err_vals, yy, 'k.', alpha = 0.8)
-            
-        file_name = 'anl_errs_dist.png'
         fig.set_size_inches(6.5, 6.5)
         plt.savefig(os.path.join(trial_dir, file_name), dpi = 300)
         plt.close(fig)
@@ -221,7 +173,8 @@ def test_2(dir_name = 'test_amr'):
             ## Refine the mesh uniformly
             mesh.ref_mesh(kind = 'spt')
         elif ref_type == 'amr':
-            mesh = ref_by_ind(mesh, col_jump_err_ind, 0.95)
+            cell_jump_err_ind = cell_jump_err(mesh, u_proj)
+            mesh = ref_by_ind(mesh, cell_jump_err_ind, 0.90)
             
         perf_trial_f    = perf_counter()
         perf_trial_diff = perf_trial_f - perf_trial_0
@@ -231,13 +184,8 @@ def test_2(dir_name = 'test_amr'):
         )
         print_msg(msg)
         
-        # Plot errors
+    # Plot errors
     fig, ax = plt.subplots()
-    
-    ax.plot(ref_ndofs, sol_errs,
-            label     = 'L$^{\infty}$ Error',
-            color     = 'k',
-            linestyle = '-')
 
     ax.plot(ref_ndofs, jump_errs,
             label     = 'Inter-Column Jump Error',
@@ -249,8 +197,8 @@ def test_2(dir_name = 'test_amr'):
     ax.set_xscale('log', base = 2)
     ax.set_yscale('log', base = 2)
 
-    max_err = max([max(jump_errs[1:]), max(sol_errs)])
-    min_err = min([min(jump_errs[1:]), min(sol_errs)])
+    max_err = max(jump_errs[1:])
+    min_err = min(jump_errs[1:])
     ymin = 2**(np.floor(np.log2(min_err)))
     ymax = 2**(np.ceil(np.log2(max_err)))
     ax.set_ylim([ymin, ymax])

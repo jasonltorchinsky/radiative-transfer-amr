@@ -98,6 +98,15 @@ def plot_angular_dists(mesh, proj, file_name = None, **kwargs):
                 color = 'black',
                 linestyle = '-',
                 linewidth = 1)
+
+        nth_ticks = 9
+        th_ticks = np.linspace(0, 2, nth_ticks) * np.pi
+        th_tick_labels = [None] * nth_ticks
+        for aa in range(0, nth_ticks):
+            th_rad = th_ticks[aa] / np.pi
+            th_tick_labels[aa] = '{:.2f}\u03C0'.format(th_rad)
+        ax.set_xticks(th_ticks)
+        ax.set_xticklabels(th_tick_labels)
     
     if file_name:
         width  = (ncols / nrows) * 12

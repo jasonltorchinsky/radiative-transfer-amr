@@ -13,7 +13,7 @@ def plot_error_indicator(mesh, err_ind, file_name = None, **kwargs):
     
     default_kwargs = {'angles' : [0, np.pi/2, np.pi, 3*np.pi/2],
                       'cmap' : 'Reds',
-                      'name' : None}
+                      'name' : ''}
     kwargs = {**default_kwargs, **kwargs}
 
     if err_ind.by_col:

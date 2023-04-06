@@ -28,13 +28,13 @@ def test_6(dir_name = 'test_rt'):
     # Set the refinement type: 'sin' - single column
     #                        : 'uni' - uniform
     #                        : 'amr' - adaptive
-    ref_type = 'uni'
+    ref_type = 'amr'
     ntrial   = 3
     
     # Get the base mesh, test_problem
     [Lx, Ly]                   = [2., 3.]
     pbcs                       = [True, False]
-    [ndof_x, ndof_y, ndof_th]  = [4, 4, 4]
+    [ndof_x, ndof_y, ndof_th]  = [1, 1, 1]
     has_th                     = True
     mesh = gen_mesh(Ls     = [Lx, Ly],
                     pbcs   = pbcs,
@@ -42,7 +42,7 @@ def test_6(dir_name = 'test_rt'):
                     has_th = has_th)
     mesh.ref_mesh(kind = 'spt')
     
-    [kappa, sigma, Phi, [bcs, dirac], f] = get_test_prob(prob_num = 0,
+    [kappa, sigma, Phi, [bcs, dirac], f] = get_test_prob(prob_num = 2,
                                                          mesh = mesh)
     
     # Solve simplified problem over several trials
@@ -87,7 +87,7 @@ def test_6(dir_name = 'test_rt'):
         plt.savefig(file_name, dpi = 300)
         plt.close(fig)
         
-        # Construct solve the test problem
+        # Solve the test problem
         perf_cons_0 = perf_counter()
         print_msg('[Trial {}] Solving the test problem...'.format(trial))
         

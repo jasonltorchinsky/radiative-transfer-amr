@@ -58,7 +58,7 @@ def get_test_prob(prob_num, mesh):
         def sigma(x, y):
             return 1.0
 
-        g = 0.8
+        g = 0.1
         def Phi_HG(th, phi):
             return (1. - g**2) / (1. + g**2 - 2. * g * np.cos(th - phi))**(3./2.)
         
@@ -79,6 +79,43 @@ def get_test_prob(prob_num, mesh):
                 return 0.0
 
         dirac = [None, y_top, th_star]
+        
+        def f(x, y):
+            return 0
+
+    elif prob_num == 2:
+        """
+        HG scattering, dirac-delta in angle and x at top of domain.
+        """
+                
+        def kappa(x, y):
+            return 1.1
+        
+        def sigma(x, y):
+            return 1.0
+
+        g = 0.1
+        def Phi_HG(th, phi):
+            return (1. - g**2) / (1. + g**2 - 2. * g * np.cos(th - phi))**(3./2.)
+        
+        [coeff, err] = integrate.quad(lambda phi: Phi_HG(2. * np.pi, phi),
+                                      0., 2. * np.pi)
+        
+        def Phi(th, phi):
+            return (1. / coeff) * Phi_HG(th, phi)
+        
+        [x_bot, y_bot] = [0.0, 0.0]
+        [x_top, y_top] = mesh.Ls
+        x_star = (3. * x_bot + x_top) / 4.
+        th_star = 7. * np.pi / 4.
+        
+        def bcs(x, y, th):
+            if (x == x_star) and (y == y_top) and (th == th_star):
+                return 1.0
+            else:
+                return 0.0
+
+        dirac = [x_star, y_top, th_star]
         
         def f(x, y):
             return 0

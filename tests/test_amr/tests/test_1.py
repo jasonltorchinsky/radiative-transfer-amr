@@ -38,7 +38,7 @@ def test_1(dir_name = 'test_amr'):
     ntrial   = 3
     
     # Get the base mesh, test_problem
-    [Lx, Ly]                   = [3., 2.]
+    [Lx, Ly]                   = [2., 3.]
     pbcs                       = [True, False]
     [ndof_x, ndof_y, ndof_th]  = [2, 2, 2]
     has_th                     = True
@@ -164,7 +164,8 @@ def test_1(dir_name = 'test_amr'):
         plt.close(fig)
 
         file_name = os.path.join(trial_dir, 'col_jump_errs.png')
-        plot_error_indicator(mesh, col_jump_err_ind, file_name = file_name)
+        plot_error_indicator(mesh, col_jump_err_ind, file_name = file_name,
+                             name = 'Inter-Column Jump Error')
         
         
         # Refine the mesh for the next trial

@@ -89,7 +89,7 @@ def calc_bcs_vec(mesh, bcs_dirac):
                             for ii in range(0, ndof_x):
                                 if ((dirac[0] is not None)
                                     and in_cell[0]):
-                                    phi_i = qd.lag_eval(xxb, ii, xs_b)
+                                    phi_i = max(0.0, qd.lag_eval(xxb, ii, xs_b))
                                     x_i   = xs_f
                                 else:
                                     phi_i = 1.
@@ -98,7 +98,7 @@ def calc_bcs_vec(mesh, bcs_dirac):
                                 for jj in range(0, ndof_y):
                                     if ((dirac[1] is not None)
                                         and in_cell[1]):
-                                        psi_j = qd.lag_eval(yyb, jj, ys_b)
+                                        psi_j = max(0.0, qd.lag_eval(yyb, jj, ys_b))
                                         y_j   = ys_f
                                     else:
                                         psi_j = 1.
@@ -107,7 +107,7 @@ def calc_bcs_vec(mesh, bcs_dirac):
                                     for aa in range(0, ndof_y):
                                         if ((dirac[2] is not None)
                                             and in_cell[2]):
-                                            xsi_a = qd.lag_eval(thb, aa, ths_b)
+                                            xsi_a = max(0.0, qd.lag_eval(thb, aa, ths_b))
                                             th_a  = ths_f
                                         else:
                                             xsi_a = 1.
