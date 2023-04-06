@@ -1,8 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
-from mpl_toolkits.mplot3d import Axes3D
-from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import sys
 
 sys.path.append('../..')
@@ -64,7 +62,8 @@ def plot_projection_2d(projection, file_name = None, **kwargs):
         for cell_key, cell in cell_items:
             vals = cell.vals[:, :, 0]
             
-            pc = ax.pcolormesh(xxf, yyf, vals.transpose(), shading = 'auto',
+            pc = ax.pcolormesh(xxf, yyf, vals.transpose(),
+                               shading = 'gouraud',
                                vmin = vmin, vmax = vmax,
                                cmap = kwargs['cmap'])
         
@@ -154,7 +153,7 @@ def plot_projection_3d(projection, file_name = None, **kwargs):
                                     * lag_eval(thb, aa, th_pb)
                     
                     pc = ax.pcolormesh(xxf, yyf, vals_xy.transpose(),
-                                       shading = 'auto',
+                                       shading = 'gouraud',
                                        vmin = vmin, vmax = vmax,
                                        cmap = kwargs['cmap'])
                     

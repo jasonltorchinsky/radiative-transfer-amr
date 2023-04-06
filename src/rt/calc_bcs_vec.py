@@ -3,7 +3,7 @@ import sys
 
 sys.path.append('../src')
 from dg.matrix import get_idx_map, get_col_idxs, get_cell_idxs, get_intr_mask
-from dg.projection import push_forward
+from dg.projection import push_forward, pull_back
 import dg.quadrature as qd
 
 def calc_bcs_vec(mesh, bcs_dirac):
@@ -62,7 +62,66 @@ def calc_bcs_vec(mesh, bcs_dirac):
 
                     # If the BCs are a dirac-delta function, we handle
                     # them differently
-                    if not dirac:
+                    if any(dirac):
+                        in_cell = [True, True, True]
+                        if dirac[0] is not None:
+                            xs_f  = dirac[0]
+                            if (xs_f < x0) or (x1 < xs_f):
+                                in_cell[0] = False
+                            else:
+                                xs_b = pull_back(x0, x1, xs_f)
+
+                        if dirac[1] is not None:
+                            ys_f  = dirac[1]
+                            if (ys_f < y0) or (y1 < ys_f):
+                                in_cell[1] = False
+                            else:
+                                ys_b = pull_back(y0, y1, ys_f)
+
+                        if dirac[2] is not None:
+                            ths_f = dirac[2]
+                            if (ths_f < th0) or (th1 < ths_f):
+                                in_cell[2] = False
+                            else:
+                                ths_b = pull_back(th0, th1, ths_f)
+                        
+                        if any(in_cell):
+                            for ii in range(0, ndof_x):
+                                if ((dirac[0] is not None)
+                                    and in_cell[0]):
+                                    phi_i = qd.lag_eval(xxb, ii, xs_b)
+                                    x_i   = xs_f
+                                else:
+                                    phi_i = 1.
+                                    x_i   = xxf[ii]
+
+                                for jj in range(0, ndof_y):
+                                    if ((dirac[1] is not None)
+                                        and in_cell[1]):
+                                        psi_j = qd.lag_eval(yyb, jj, ys_b)
+                                        y_j   = ys_f
+                                    else:
+                                        psi_j = 1.
+                                        y_j   = yyf[jj]
+
+                                    for aa in range(0, ndof_y):
+                                        if ((dirac[2] is not None)
+                                            and in_cell[2]):
+                                            xsi_a = qd.lag_eval(thb, aa, ths_b)
+                                            th_a  = ths_f
+                                        else:
+                                            xsi_a = 1.
+                                            th_a  = thf[aa]
+                                        
+                                        bcs_ija = bcs(x_i, y_j, th_a)
+                                        
+                                        beta_idx = beta(ii, jj, aa)
+                                        
+                                        bcs_cell_vec[beta_idx] = bcs_ija \
+                                            * phi_i * psi_j * xsi_a
+
+                        
+                    else:
                         for ii in range(0, ndof_x):
                             for jj in range(0, ndof_y):
                                 for aa in range(0, ndof_th):

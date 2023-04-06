@@ -10,7 +10,7 @@ from .get_test_prob      import get_test_prob
 sys.path.append('../../src')
 from dg.mesh.utils import plot_mesh
 from dg.projection import Projection
-from dg.projection.utils import plot_projection
+from dg.projection.utils import plot_projection, plot_angular_dists
 from rt import rtdg
 from amr import col_jump_err
 
@@ -29,12 +29,12 @@ def test_6(dir_name = 'test_rt'):
     #                        : 'uni' - uniform
     #                        : 'amr' - adaptive
     ref_type = 'uni'
-    ntrial   = 1
+    ntrial   = 3
     
     # Get the base mesh, test_problem
-    [Lx, Ly]                   = [1., 5.]
+    [Lx, Ly]                   = [2., 3.]
     pbcs                       = [True, False]
-    [ndof_x, ndof_y, ndof_th]  = [2, 2, 2]
+    [ndof_x, ndof_y, ndof_th]  = [4, 4, 4]
     has_th                     = True
     mesh = gen_mesh(Ls     = [Lx, Ly],
                     pbcs   = pbcs,
@@ -42,7 +42,8 @@ def test_6(dir_name = 'test_rt'):
                     has_th = has_th)
     mesh.ref_mesh(kind = 'spt')
     
-    [kappa, sigma, Phi, [bcs, dirac], f] = get_test_prob(prob_num = 0, mesh = mesh)
+    [kappa, sigma, Phi, [bcs, dirac], f] = get_test_prob(prob_num = 0,
+                                                         mesh = mesh)
     
     # Solve simplified problem over several trials
     for trial in range(0, ntrial):
@@ -104,6 +105,9 @@ def test_6(dir_name = 'test_rt'):
         file_name = os.path.join(trial_dir, 'soln.png')
         angles = np.linspace(0, 1.75, 8) * np.pi
         plot_projection(u_proj, file_name = file_name, angles = angles)
+
+        file_name = os.path.join(trial_dir, 'soln_slices.png')
+        plot_angular_dists(mesh, u_proj, file_name = file_name)
         
         # Refine the mesh for the next trial
         if ref_type == 'sin':

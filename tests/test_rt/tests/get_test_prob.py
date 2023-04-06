@@ -12,7 +12,7 @@ def get_test_prob(prob_num, mesh):
     
     if prob_num == 0:
         """
-        Smooth-ish in space and angle
+        HG scattering, sep function in angle at top of domain.
         """
                 
         def kappa(x, y):
@@ -29,14 +29,12 @@ def get_test_prob(prob_num, mesh):
                                       0., 2. * np.pi)
         
         def Phi(th, phi):
-            cosTh = np.cos(th - phi)
-            
             return (1. / coeff) * Phi_HG(th, phi)
         
+        [x_bot, y_bot] = [0.0, 0.0]
+        [x_top, y_top] = mesh.Ls
+        
         def bcs(x, y, th):
-            [x_bot, y_bot] = [0.0, 0.0]
-            [x_top, y_top] = mesh.Ls
-            
             ang_min = 3.0 * np.pi / 2.0 - 0.1
             ang_max = 3.0 * np.pi / 2.0 + 0.1
             if (y == y_top) and (ang_min <= th) and (th <= ang_max):
@@ -44,7 +42,43 @@ def get_test_prob(prob_num, mesh):
             else:
                 return 0.0
 
-        dirac = False
+        dirac = [None, y_top, None]
+        
+        def f(x, y):
+            return 0
+
+    elif prob_num == 1:
+        """
+        HG scattering, dirac-delta in angle at top of domain.
+        """
+                
+        def kappa(x, y):
+            return 1.1
+        
+        def sigma(x, y):
+            return 1.0
+
+        g = 0.8
+        def Phi_HG(th, phi):
+            return (1. - g**2) / (1. + g**2 - 2. * g * np.cos(th - phi))**(3./2.)
+        
+        [coeff, err] = integrate.quad(lambda phi: Phi_HG(2. * np.pi, phi),
+                                      0., 2. * np.pi)
+        
+        def Phi(th, phi):
+            return (1. / coeff) * Phi_HG(th, phi)
+        
+        [x_bot, y_bot] = [0.0, 0.0]
+        [x_top, y_top] = mesh.Ls
+        th_star = 3. * np.pi / 2.
+        
+        def bcs(x, y, th):
+            if (y == y_top) and (th == th_star):
+                return 1.0
+            else:
+                return 0.0
+
+        dirac = [None, y_top, th_star]
         
         def f(x, y):
             return 0
