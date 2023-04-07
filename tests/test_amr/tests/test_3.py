@@ -34,8 +34,9 @@ def test_3(dir_name = 'test_amr'):
     # Set the refinement type: 'sin' - single column
     #                        : 'uni' - uniform
     #                        : 'amr' - adaptive
-    ref_type = 'uni'
-    ntrial   = 4
+    ref_type = 'amr'
+    ntrial   = 16
+    tol      = 0.8
     
     # Get the base mesh, test_problem
     [Lx, Ly]                   = [2., 3.]
@@ -139,7 +140,7 @@ def test_3(dir_name = 'test_amr'):
     
         ax.boxplot(col_jump_err_vals,
                    vert = False,
-                   whis = [0, 90])
+                   whis = [0, 100 * tol])
 
         ax.tick_params(
             axis      = 'y',         # changes apply to the y-axis
@@ -173,8 +174,11 @@ def test_3(dir_name = 'test_amr'):
             ## Refine the mesh uniformly
             mesh.ref_mesh(kind = 'ang')
         elif ref_type == 'amr':
-            #cell_jump_err_ind = cell_jump_err(mesh, u_proj)
-            mesh = ref_by_ind(mesh, col_jump_err_ind, 0.90)
+            if (trial%2 == 0):
+                cell_jump_err_ind = cell_jump_err(mesh, u_proj)
+                mesh = ref_by_ind(mesh, cell_jump_err_ind, tol)
+            else:
+                mesh = ref_by_ind(mesh, col_jump_err_ind, tol)
             
         perf_trial_f    = perf_counter()
         perf_trial_diff = perf_trial_f - perf_trial_0

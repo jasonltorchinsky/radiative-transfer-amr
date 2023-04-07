@@ -27,12 +27,14 @@ def ref_by_ind(mesh, err_ind, ref_ratio):
     if by_cell:
         col_keys = sorted(mesh.cols.keys())
         for col_key in col_keys:
-            if col_key in mesh.cols.keys(): # There's a chance we refine a column
+            curr_col_keys = sorted(mesh.cols.keys())
+            if col_key in curr_col_keys: # There's a chance we refine a column
                 # and delete it from the mesh
                 col = mesh.cols[col_key]
                 cell_keys = sorted(col.cells.keys())
                 for cell_key in cell_keys:
-                    if cell_key in col.cells.keys():
+                    curr_cell_keys = sorted(col.cells.keys())
+                    if cell_key in curr_cell_keys:
                         cell = col.cells[cell_key]
                         if cell.is_lf:
                             cell_err_ind = err_ind.cols[col_key].cells[cell_key].err_ind

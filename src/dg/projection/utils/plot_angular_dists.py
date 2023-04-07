@@ -72,7 +72,7 @@ def plot_angular_dists(mesh, proj, file_name = None, **kwargs):
                             th = np.concatenate([th, thf])
                             u = np.concatenate([u, u_cell])
 
-                            ax.axvline(thf[-1],
+                            ax.axvline(th1,
                                        color = 'gray',
                                        linestyle = '--',
                                        linewidth = 0.2)

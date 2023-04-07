@@ -105,7 +105,7 @@ def get_test_prob(prob_num, mesh):
             return (1. / coeff) * Phi_HG(th, phi)
         
         [x_bot, y_bot] = [0.0, 0.0]
-        [x_top, y_top] = mesh.Ls
+        [x_top, y_top] = mesh.Ls[:]
         x_star = (3. * x_bot + x_top) / 4.
         th_star = 5. * np.pi / 3.
         

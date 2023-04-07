@@ -37,7 +37,7 @@ def cell_jump_err(mesh, proj):
                     cell_err = 0.
                     
                     for F in range(0, 2):
-                        cell_key_1 = cell.nhbr_keys[F]
+                        cell_key_1 = cell_0.nhbr_keys[F]
                         
                         cell_intg_xy_0 = cell_intg_xys[(col_key, cell_key_0)][F]
                         cell_intg_xy_1 = cell_intg_xys[(col_key, cell_key_1)][(F+1)%2]
