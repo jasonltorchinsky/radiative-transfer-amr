@@ -58,7 +58,7 @@ def get_test_prob(prob_num, mesh):
         def sigma(x, y):
             return 1.0
 
-        g = 0.1
+        g = 0.8
         def Phi_HG(th, phi):
             return (1. - g**2) / (1. + g**2 - 2. * g * np.cos(th - phi))**(3./2.)
         
@@ -69,8 +69,8 @@ def get_test_prob(prob_num, mesh):
             return (1. / coeff) * Phi_HG(th, phi)
         
         [x_bot, y_bot] = [0.0, 0.0]
-        [x_top, y_top] = mesh.Ls
-        th_star = 3. * np.pi / 2.
+        [x_top, y_top] = mesh.Ls[:]
+        th_star = 3. * np.pi / 2. + 0.1
         
         def bcs(x, y, th):
             if (y == y_top) and (th == th_star):
@@ -107,7 +107,7 @@ def get_test_prob(prob_num, mesh):
         [x_bot, y_bot] = [0.0, 0.0]
         [x_top, y_top] = mesh.Ls
         x_star = (3. * x_bot + x_top) / 4.
-        th_star = 7. * np.pi / 4.
+        th_star = 5. * np.pi / 3.
         
         def bcs(x, y, th):
             if (x == x_star) and (y == y_top) and (th == th_star):
