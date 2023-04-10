@@ -4,8 +4,10 @@ from .Projection_Column import Projection_Column
 from .Projection_Cell import Projection_Cell
 
 from .push_pull import push_forward, pull_back
+from .intg_col_th import intg_col_th
 
 from ..matrix import get_idx_inv_map, get_col_idxs, get_cell_idxs
+from ..mesh import get_hasnt_th
 from ..quadrature import quad_xyth
 
 class Projection():
@@ -125,3 +127,27 @@ def to_projection(mesh, vec):
                     g_idx += cell_ndof
 
     return proj
+
+def intg_th(mesh, proj):
+
+    if mesh.has_th:
+        mesh_2d = get_hasnt_th(mesh)
+        proj_intg_th = Projection(mesh_2d, zero)
+        
+        col_items = sorted(mesh.cols.items())
+        for col_key, col in col_items:
+            if col.is_lf:
+                col_intg_th = intg_col_th(mesh, proj, col_key)
+                
+                cell_key = list(proj_intg_th.cols[col_key].cells.keys())[0]
+                # There is only one cell per column
+
+                proj_intg_th.cols[col_key].cells[cell_key].values = col_intg_th
+                
+        return proj_intg_th
+
+    else:
+        return None
+
+def zero(x, y):
+    return 0.

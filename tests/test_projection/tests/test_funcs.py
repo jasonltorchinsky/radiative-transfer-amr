@@ -10,8 +10,8 @@ def func_2D_1(x, y):
 
 def func_3D_0(x, y, th):
 
-    return func_2D_0(x, y) * np.abs(np.cos(th))
+    return func_2D_0(x, y) * (np.cos(th))**2 / np.pi
 
 def func_3D_1(x, y, th):
 
-    return func_2D_1(x, y) * np.abs(np.cos(th))
+    return func_2D_1(x, y) * (np.cos(th))**2 / np.pi

@@ -1,14 +1,13 @@
 import copy
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.sparse.linalg import spsolve
 from time import perf_counter
 import os, sys
 
-from .gen_mesh           import gen_mesh
-from .get_forcing_vec    import get_forcing_vec
-from .get_projection_vec import get_projection_vec
-from .get_test_prob      import get_test_prob
+from .gen_mesh    import gen_mesh
+
+sys.path.append('../../tests')
+from test_cases import get_test_prob
 
 sys.path.append('../../src')
 from dg.mesh.utils import plot_mesh
@@ -17,7 +16,7 @@ from dg.projection import Projection, push_forward, to_projection
 from dg.projection.utils import plot_projection, plot_angular_dists
 import dg.quadrature as qd
 from rt import rtdg
-from amr import col_jump_err, cell_jump_err, ref_by_ind
+from amr import anl_err, col_jump_err, cell_jump_err, ref_by_ind
 from amr.utils import plot_error_indicator
 
 from utils import print_msg
@@ -34,8 +33,8 @@ def test_3(dir_name = 'test_amr'):
     # Set the refinement type: 'sin' - single column
     #                        : 'uni' - uniform
     #                        : 'amr' - adaptive
-    ref_type = 'amr'
-    ntrial   = 16
+    ref_type = 'uni'
+    ntrial   = 4
     tol      = 0.8
     
     # Get the base mesh, test_problem
@@ -79,11 +78,11 @@ def test_3(dir_name = 'test_amr'):
         
         kappa_proj = Projection(mesh_2d, kappa)
         file_name = os.path.join(trial_dir, 'kappa.png')
-        plot_projection(kappa_proj, file_name = file_name)
+        plot_projection(mesh_2d, kappa_proj, file_name = file_name)
         
         sigma_proj = Projection(mesh_2d, sigma)
         file_name = os.path.join(trial_dir, 'sigma.png')
-        plot_projection(sigma_proj, file_name = file_name)
+        plot_projection(mesh_2d, sigma_proj, file_name = file_name)
 
         file_name = os.path.join(trial_dir, 'scat.png')
         fig, ax = plt.subplots(subplot_kw = {'projection' : 'polar'})
@@ -99,7 +98,7 @@ def test_3(dir_name = 'test_amr'):
         perf_cons_0 = perf_counter()
         print_msg('[Trial {}] Solving the test problem...'.format(trial))
         
-        u_proj = rtdg(mesh, kappa, sigma, Phi, [bcs, dirac], f)
+        uh_proj = rtdg(mesh, kappa, sigma, Phi, [bcs, dirac], f)
         
         perf_cons_f    = perf_counter()
         perf_cons_diff = perf_cons_f - perf_cons_0
@@ -110,19 +109,19 @@ def test_3(dir_name = 'test_amr'):
         print_msg(msg)
 
         # Get number of DOFs
-        u_vec = u_proj.to_vector()
-        ref_ndofs[trial] = np.size(u_vec)
+        uh_vec = uh_proj.to_vector()
+        ref_ndofs[trial] = np.size(uh_vec)
 
         # Plot the solution
-        file_name = os.path.join(trial_dir, 'soln.png')
+        file_name = os.path.join(trial_dir, 'uh.png')
         angles = np.linspace(0, 1.75, 8) * np.pi
-        plot_projection(u_proj, file_name = file_name, angles = angles)
+        plot_projection(mesh, uh_proj, file_name = file_name, angles = angles)
 
-        file_name = os.path.join(trial_dir, 'soln_slices.png')
-        plot_angular_dists(mesh, u_proj, file_name = file_name)
+        file_name = os.path.join(trial_dir, 'uh_slices.png')
+        plot_angular_dists(mesh, uh_proj, file_name = file_name)
 
         # Plot the jump error indicator
-        col_jump_err_ind = col_jump_err(mesh, u_proj)
+        col_jump_err_ind = col_jump_err(mesh, uh_proj)
         file_name = os.path.join(trial_dir, 'col_jump_errs.png')
         plot_error_indicator(mesh, col_jump_err_ind, file_name = file_name,
                              name = 'Inter-Column Jump')
@@ -143,11 +142,11 @@ def test_3(dir_name = 'test_amr'):
                    whis = [0, 100 * tol])
 
         ax.tick_params(
-            axis      = 'y',         # changes apply to the y-axis
-            which     = 'both',      # both major and minor ticks are affected
-            left      = False,      # ticks along the bottom edge are off
-            right     = False,         # ticks along the top edge are off
-            labelleft = False) # labels along the bottom edge are off
+            axis      = 'y',    # changes apply to the y-axis
+            which     = 'both', # both major and minor ticks are affected
+            left      = False,  # ticks along the bottom edge are off
+            right     = False,  # ticks along the top edge are off
+            labelleft = False)  # labels along the bottom edge are off
         
         ax.set_xscale('log', base = 2)
         
@@ -174,11 +173,11 @@ def test_3(dir_name = 'test_amr'):
             ## Refine the mesh uniformly
             mesh.ref_mesh(kind = 'ang')
         elif ref_type == 'amr':
-            if (trial%2 == 0):
-                cell_jump_err_ind = cell_jump_err(mesh, u_proj)
-                mesh = ref_by_ind(mesh, cell_jump_err_ind, tol)
-            else:
+            if (trial%3 == 0):
                 mesh = ref_by_ind(mesh, col_jump_err_ind, tol)
+            else:
+                cell_jump_err_ind = cell_jump_err(mesh, uh_proj)
+                mesh = ref_by_ind(mesh, cell_jump_err_ind, tol)
             
         perf_trial_f    = perf_counter()
         perf_trial_diff = perf_trial_f - perf_trial_0
