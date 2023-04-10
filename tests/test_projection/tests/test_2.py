@@ -26,6 +26,9 @@ def test_2(dir_name = 'test_mesh'):
     
     proj_dir  = os.path.join(test_dir, 'proj')
     os.makedirs(proj_dir, exist_ok = True)
+
+    intg_dir = os.path.join(test_dir, 'intg')
+    os.makedirs(intg_dir, exist_ok = True)
     
     # Create the original 2-D mesh
     [Lx, Ly] = [3., 2.]
@@ -52,12 +55,19 @@ def test_2(dir_name = 'test_mesh'):
     ndofs = np.zeros([nref])
     errs = np.zeros([nref])
     for ref in range(0, nref):
+        mesh_2d = get_hasnt_th(mesh)
+        
         proj_intg_th = intg_th(mesh, proj)
         vec_intg_th  = proj_intg_th.to_vector()
 
-        mesh_2d = get_hasnt_th(mesh)
+        file_name = os.path.join(intg_dir, 'intg_th_num_{}.png'.format(ref + 1))
+        plot_projection(mesh_2d, proj_intg_th, file_name = file_name)
+        
         proj_intg_th_anl = Projection(mesh_2d, test_func_2D)
         vec_intg_th_anl = proj_intg_th_anl.to_vector()
+
+        file_name = os.path.join(intg_dir, 'intg_th_anl_{}.png'.format(ref + 1))
+        plot_projection(mesh_2d, proj_intg_th_anl, file_name = file_name)
         
         ndofs[ref] = np.size(vec_intg_th)
         errs[ref] = np.amax(np.abs(vec_intg_th - vec_intg_th_anl))

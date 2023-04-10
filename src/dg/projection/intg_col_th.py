@@ -19,7 +19,7 @@ def intg_col_th(mesh, proj, col_key):
             if cell.is_lf:
                 [th0, thf] = cell.pos[:]
                 dth        = thf - th0
-                [ndof_th]  = cell.ndofs[:]
+                [ndof_th]  = cell.ndofs
                 
                 [_, _, _, _, _, w_th] = qd.quad_xyth(nnodes_th = ndof_th)
                 dcoeff = dth / 2.
