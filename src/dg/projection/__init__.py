@@ -137,12 +137,13 @@ def intg_th(mesh, proj):
         col_items = sorted(mesh.cols.items())
         for col_key, col in col_items:
             if col.is_lf:
+                [ndof_x, ndof_y] = col.ndofs[:]
                 col_intg_th = intg_col_th(mesh, proj, col_key)
                 
                 cell_key = list(proj_intg_th.cols[col_key].cells.keys())[0]
                 # There is only one cell per column
 
-                proj_intg_th.cols[col_key].cells[cell_key].values = col_intg_th
+                proj_intg_th.cols[col_key].cells[cell_key].vals = np.reshape(col_intg_th, [ndof_x, ndof_y, 1])
                 
         return proj_intg_th
 

@@ -2,7 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os, sys
 
-from .test_funcs import func_3D_1 as test_func
+sys.path.append('../')
+from test_cases import get_test_funcs
 
 sys.path.append('../../src')
 import dg.mesh as ji_mesh
@@ -25,6 +26,10 @@ def test_1(dir_name = 'test_mesh'):
     
     proj_dir  = os.path.join(dir_name, 'proj')
     os.makedirs(proj_dir, exist_ok = True)
+
+    # Select test problem
+    func_num = 0
+    [_, test_func] = get_test_funcs(func_num)
     
     # Create the original 2-D mesh
     [Lx, Ly] = [3., 2.]

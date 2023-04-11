@@ -10,9 +10,10 @@ sys.path.append('../../tests')
 from test_cases import get_test_prob
 
 sys.path.append('../../src')
+from dg.mesh import get_hasnt_th
 from dg.mesh.utils import plot_mesh
 from dg.matrix import get_intr_mask, split_matrix, merge_vectors
-from dg.projection import Projection, push_forward, to_projection
+from dg.projection import Projection, push_forward, to_projection, intg_th
 from dg.projection.utils import plot_projection, plot_angular_dists
 import dg.quadrature as qd
 from rt import rtdg
@@ -33,13 +34,13 @@ def test_3(dir_name = 'test_amr'):
     # Set the refinement type: 'sin' - single column
     #                        : 'uni' - uniform
     #                        : 'amr' - adaptive
-    ref_type = 'uni'
-    ntrial   = 4
+    ref_type = 'amr'
+    ntrial   = 9
     tol      = 0.8
     
     # Get the base mesh, test_problem
     [Lx, Ly]                   = [2., 3.]
-    pbcs                       = [False, False]
+    pbcs                       = [True, False]
     [ndof_x, ndof_y, ndof_th]  = [2, 2, 4]
     has_th                     = True
     mesh = gen_mesh(Ls     = [Lx, Ly],
@@ -73,8 +74,7 @@ def test_3(dir_name = 'test_amr'):
                   label_cells = (trial <= 3))
         
         # Plot the coefficient functions
-        mesh_2d = copy.deepcopy(mesh)
-        mesh_2d.has_th = False
+        mesh_2d = get_hasnt_th(mesh)
         
         kappa_proj = Projection(mesh_2d, kappa)
         file_name = os.path.join(trial_dir, 'kappa.png')
@@ -119,6 +119,10 @@ def test_3(dir_name = 'test_amr'):
 
         file_name = os.path.join(trial_dir, 'uh_slices.png')
         plot_angular_dists(mesh, uh_proj, file_name = file_name)
+
+        mean_uh = intg_th(mesh, uh_proj)
+        file_name = os.path.join(trial_dir, 'mean_uh.png')
+        plot_projection(mesh_2d, mean_uh, file_name = file_name)
 
         # Plot the jump error indicator
         col_jump_err_ind = col_jump_err(mesh, uh_proj)
@@ -171,7 +175,7 @@ def test_3(dir_name = 'test_amr'):
             mesh.ref_col(col_keys[-4], kind = 'all')
         elif ref_type == 'uni':
             ## Refine the mesh uniformly
-            mesh.ref_mesh(kind = 'ang')
+            mesh.ref_mesh(kind = 'all')
         elif ref_type == 'amr':
             if (trial%3 == 0):
                 mesh = ref_by_ind(mesh, col_jump_err_ind, tol)
