@@ -27,7 +27,7 @@ def test_8(quad_type = 'lg', dir_name = 'test_quad'):
         quit()
 
     # Set parameters, variables for test
-    nnodes = 2**np.arange(4, 11, 1)
+    nnodes = 2**np.arange(4, 10, 2)
     ntrial = np.size(nnodes)
     xstar  = 0.25
     errors = np.zeros(ntrial)
@@ -38,6 +38,9 @@ def test_8(quad_type = 'lg', dir_name = 'test_quad'):
     ncolor = len(colors)
     
     # Set up plot of Dirac-delta approximation so we plot each approximation
+    nhres = 2*np.amax(nnodes) + 1
+    hres_pts = np.linspace(-1, 1, nhres)
+    
     fig, ax = plt.subplots()
     [ymin, ymax] = [10.**10, -10.**10]
         
@@ -62,9 +65,14 @@ def test_8(quad_type = 'lg', dir_name = 'test_quad'):
             #aprx_coeffs[ii] = dirac_aprx(xstar, 0.1, nodes[ii])
             #aprx_coeffs[ii] = step_func(xstar - dx, xstar + dx, nodes[ii])
             aprx_coeffs[ii] = np.amax([0.0, qd.lag_eval(nodes, ii, xstar)])
+
+        aprx = np.zeros([nhres])
+        for jj in range(0, nhres):
+            for ii in range(0, nnode):
+                aprx[jj] += aprx_coeffs[ii] * qd.lag_eval(nodes, ii, hres_pts[jj])
         
         # Plot the approximation
-        ax.plot(nodes, aprx_coeffs, color = colors[trial%ncolor], linestyle = '-',
+        ax.plot(hres_pts, aprx, color = colors[trial%ncolor], linestyle = '-',
                 label = '{}'.format(nnode))
 
         # Calculate the error of the integral

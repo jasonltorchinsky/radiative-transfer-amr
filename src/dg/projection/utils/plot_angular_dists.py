@@ -69,7 +69,7 @@ def plot_angular_dists(mesh, proj, file_name = None, **kwargs):
                                         u_cell[aa] += (dx / 2.) * wx_i \
                                             * vals_xyth[ii, jj, aa]  * psi_j
                             
-                            th = np.concatenate([th, thf])
+                            th = np.concatenate([th, np.around(thf, decimals = 6)])
                             u = np.concatenate([u, u_cell])
 
                             ax.axvline(th1,

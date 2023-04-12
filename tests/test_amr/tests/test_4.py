@@ -41,12 +41,13 @@ def test_4(dir_name = 'test_amr'):
     
     ref_types = ['uni-spt', 'uni-ang', 'uni-all',
                  'amr-spt', 'amr-ang', 'amr-all']
+    ref_types = ['amr-ang']
     nref_type = len(ref_types)
-    max_ndof = 2**10
+    max_ndof = 2**12
     tol      = 0.8
 
     [anl_sol, kappa, sigma, Phi, f, _] = get_cons_prob(prob_name = 'comp',
-                                                       prob_num  = 1)
+                                                       prob_num  = 2)
     
     # Set up arrays to store error
     ref_ndofs = {}
