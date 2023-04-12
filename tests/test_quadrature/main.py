@@ -4,7 +4,8 @@ import numpy as np
 from time import perf_counter
 import os
 
-from tests import test_0, test_1, test_2, test_3, test_4, test_5, test_6, test_7
+from tests import test_0, test_1, test_2, test_3, test_4, test_5, test_6, \
+    test_7, test_8
 
 def main():
 
@@ -40,15 +41,21 @@ def main():
                         type = int, choices = [0, 1], required = False,
                         help = 'Do not run (0) or run (1) Test 7 - LG/LGL 1D Function Integration')
 
+    help_str = 'Do not run (0) or run (1) Test 8 - LG/LGL Dirac Delta Approximation'
+    parser.add_argument('--test_8', nargs = 1, default = [0],
+                        type = int, choices = [0, 1], required = False,
+                        help = help_str)
+
     args = parser.parse_args()
-    ntests = 8
+    ntests = 9
     if args.test_all[0]:
         run_tests = [True] * ntests
     else:
         run_tests = [args.test_0[0], args.test_1[0],
                      args.test_2[0], args.test_3[0],
                      args.test_4[0], args.test_5[0],
-                     args.test_6[0], args.test_7[0]]
+                     args.test_6[0], args.test_7[0],
+                     args.test_8[0]]
 
     dir_name = args.dir
     os.makedirs(dir_name, exist_ok = True)
@@ -57,7 +64,7 @@ def main():
         perf_0 = perf_counter()
         now = datetime.now()
         current_time = now.strftime("%H:%M:%S")
-        msg = '[{}]: Starting Test 0...'.format(current_time)
+        msg = '[{}]: Starting Test 0...\n'.format(current_time)
         print(msg)
 
         test_0(nnodes = 5, quad_type = 'lg', dir_name = dir_name)
@@ -68,14 +75,14 @@ def main():
         now = datetime.now()
         current_time = now.strftime("%H:%M:%S")
         msg = ('[{}]: Completed Test 0! ' +
-               'Time Elapsed: {:06.3f} [s]').format(current_time, perf_diff)
+               'Time Elapsed: {:06.3f} [s]\n').format(current_time, perf_diff)
         print(msg)
         
     if run_tests[1]:
         perf_0 = perf_counter()
         now = datetime.now()
         current_time = now.strftime("%H:%M:%S")
-        msg = '[{}]: Starting Test 1...'.format(current_time)
+        msg = '[{}]: Starting Test 1...\n'.format(current_time)
         print(msg)
         
         test_1(func = f, src_nnodes = 41, trgt_nnodes = 10,
@@ -93,14 +100,14 @@ def main():
         now = datetime.now()
         current_time = now.strftime("%H:%M:%S")
         msg = ('[{}]: Completed Test 1! ' +
-               'Time Elapsed: {:06.3f} [s]').format(current_time, perf_diff)
+               'Time Elapsed: {:06.3f} [s]\n').format(current_time, perf_diff)
         print(msg)
 
     if run_tests[2]:
         perf_0 = perf_counter()
         now = datetime.now()
         current_time = now.strftime("%H:%M:%S")
-        msg = '[{}]: Starting Test 2...'.format(current_time)
+        msg = '[{}]: Starting Test 2...\n'.format(current_time)
         print(msg)
         
         test_2(func = f, quad_type = 'lg', dir_name = dir_name)
@@ -111,14 +118,14 @@ def main():
         now = datetime.now()
         current_time = now.strftime("%H:%M:%S")
         msg = ('[{}]: Completed Test 2! ' +
-               'Time Elapsed: {:06.3f} [s]').format(current_time, perf_diff)
+               'Time Elapsed: {:06.3f} [s]\n').format(current_time, perf_diff)
         print(msg)
 
     if run_tests[3]:
         perf_0 = perf_counter()
         now = datetime.now()
         current_time = now.strftime("%H:%M:%S")
-        msg = '[{}]: Starting Test 3...'.format(current_time)
+        msg = '[{}]: Starting Test 3...\n'.format(current_time)
         print(msg)
         
         test_3(func = f, quad_type = 'lg', dir_name = dir_name)
@@ -129,14 +136,14 @@ def main():
         now = datetime.now()
         current_time = now.strftime("%H:%M:%S")
         msg = ('[{}]: Completed Test 3! ' +
-               'Time Elapsed: {:06.3f} [s]').format(current_time, perf_diff)
+               'Time Elapsed: {:06.3f} [s]\n').format(current_time, perf_diff)
         print(msg)
 
     if run_tests[4]:
         perf_0 = perf_counter()
         now = datetime.now()
         current_time = now.strftime("%H:%M:%S")
-        msg = '[{}]: Starting Test 4...'.format(current_time)
+        msg = '[{}]: Starting Test 4...\n'.format(current_time)
         print(msg)
         
         test_4(func = f, func_ddx = dfdx, quad_type = 'lg', dir_name = dir_name)
@@ -147,14 +154,14 @@ def main():
         now = datetime.now()
         current_time = now.strftime("%H:%M:%S")
         msg = ('[{}]: Completed Test 4! ' +
-               'Time Elapsed: {:06.3f} [s]').format(current_time, perf_diff)
+               'Time Elapsed: {:06.3f} [s]\n').format(current_time, perf_diff)
         print(msg)
 
     if run_tests[5]:
         perf_0 = perf_counter()
         now = datetime.now()
         current_time = now.strftime("%H:%M:%S")
-        msg = '[{}]: Starting Test 5...'.format(current_time)
+        msg = '[{}]: Starting Test 5...\n'.format(current_time)
         print(msg)
         
         test_5(func = f, func_ddx = dfdx, quad_type = 'lg', dir_name = dir_name)
@@ -165,14 +172,14 @@ def main():
         now = datetime.now()
         current_time = now.strftime("%H:%M:%S")
         msg = ('[{}]: Completed Test 5! ' +
-               'Time Elapsed: {:06.3f} [s]').format(current_time, perf_diff)
+               'Time Elapsed: {:06.3f} [s]\n').format(current_time, perf_diff)
         print(msg)
 
     if run_tests[6]:
         perf_0 = perf_counter()
         now = datetime.now()
         current_time = now.strftime("%H:%M:%S")
-        msg = '[{}]: Starting Test 6...'.format(current_time)
+        msg = '[{}]: Starting Test 6...\n'.format(current_time)
         print(msg)
         
         test_6(func = f, Func = F, quad_type = 'lg', dir_name = dir_name)
@@ -183,14 +190,14 @@ def main():
         now = datetime.now()
         current_time = now.strftime("%H:%M:%S")
         msg = ('[{}]: Completed Test 6! ' +
-               'Time Elapsed: {:06.3f} [s]').format(current_time, perf_diff)
+               'Time Elapsed: {:06.3f} [s]\n').format(current_time, perf_diff)
         print(msg)
 
     if run_tests[7]:
         perf_0 = perf_counter()
         now = datetime.now()
         current_time = now.strftime("%H:%M:%S")
-        msg = '[{}]: Starting Test 7...'.format(current_time)
+        msg = '[{}]: Starting Test 7...\n'.format(current_time)
         print(msg)
         
         test_7(func = f, Func = F, quad_type = 'lg', dir_name = dir_name)
@@ -201,7 +208,25 @@ def main():
         now = datetime.now()
         current_time = now.strftime("%H:%M:%S")
         msg = ('[{}]: Completed Test 7! ' +
-               'Time Elapsed: {:06.3f} [s]').format(current_time, perf_diff)
+               'Time Elapsed: {:06.3f} [s]\n').format(current_time, perf_diff)
+        print(msg)
+
+    if run_tests[8]:
+        perf_0 = perf_counter()
+        now = datetime.now()
+        current_time = now.strftime("%H:%M:%S")
+        msg = '[{}]: Starting Test 8...\n'.format(current_time)
+        print(msg)
+        
+        test_8(quad_type = 'lg', dir_name = dir_name)
+        test_8(quad_type = 'lgl', dir_name = dir_name)
+
+        perf_f = perf_counter()
+        perf_diff = perf_f - perf_0
+        now = datetime.now()
+        current_time = now.strftime("%H:%M:%S")
+        msg = ('[{}]: Completed Test 8! ' +
+               'Time Elapsed: {:06.3f} [s]\n').format(current_time, perf_diff)
         print(msg)
     
 def f(x):

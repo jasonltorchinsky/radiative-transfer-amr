@@ -4,7 +4,7 @@ from scipy.sparse.linalg import spsolve
 from time import perf_counter
 import os, sys
 
-from .gen_mesh    import gen_mesh
+from .gen_mesh  import gen_mesh
 
 sys.path.append('../../tests')
 from test_cases import get_cons_prob
@@ -35,8 +35,8 @@ def test_2(dir_name = 'test_amr'):
     # Set the refinement type: 'sin' - single column
     #                        : 'uni' - uniform
     #                        : 'amr' - adaptive
-    ref_type = 'uni'
-    ntrial   = 4
+    ref_type = 'amr'
+    ntrial   = 5
     tol      = 0.8
     
     # Get the base mesh, test_problem
@@ -50,7 +50,7 @@ def test_2(dir_name = 'test_amr'):
                     has_th = has_th)
     
     [anl_sol, kappa, sigma, Phi, f, _] = get_cons_prob(prob_name = 'comp',
-                                                       prob_num   = 1)
+                                                       prob_num  = 2)
     
     # Solve simplified problem over several trials
     ref_ndofs = np.zeros([ntrial])
@@ -233,11 +233,9 @@ def test_2(dir_name = 'test_amr'):
             ## Refine the mesh uniformly
             mesh.ref_mesh(kind = 'spt')
         elif ref_type == 'amr':
-            if (trial%2 == 2):
-                mesh = ref_by_ind(mesh, col_jump_err_ind, tol)
-            else:
-                cell_jump_err_ind = cell_jump_err(mesh, uh_proj)
-                mesh = ref_by_ind(mesh, cell_jump_err_ind, tol)
+            cell_jump_err_ind = cell_jump_err(mesh, uh_proj)
+            mesh = ref_by_ind(mesh, cell_jump_err_ind, tol)
+            mesh = ref_by_ind(mesh, col_jump_err_ind, tol)
             
         perf_trial_f    = perf_counter()
         perf_trial_diff = perf_trial_f - perf_trial_0

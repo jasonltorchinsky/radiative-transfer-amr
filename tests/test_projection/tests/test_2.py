@@ -32,10 +32,6 @@ def test_2(dir_name = 'test_mesh'):
 
     intg_dir = os.path.join(test_dir, 'intg')
     os.makedirs(intg_dir, exist_ok = True)
-
-    # Select test problem
-    func_num = 2
-    [test_func_2d, test_func_3d] = get_test_funcs(func_num)
     
     # Create the original 2-D mesh
     [Lx, Ly] = [3., 2.]
@@ -46,6 +42,10 @@ def test_2(dir_name = 'test_mesh'):
     mesh.ref_mesh(kind = 'ang')
     mesh.ref_mesh(kind = 'ang')
     mesh.ref_mesh(kind = 'spt')
+
+    # Select test problem
+    func_num = 2
+    [_, _, test_func_2d, test_func_3d] = get_test_funcs(func_num, mesh)
     
     proj = Projection(mesh, test_func_3d)
     

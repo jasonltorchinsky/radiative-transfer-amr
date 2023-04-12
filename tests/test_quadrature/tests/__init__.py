@@ -6,3 +6,4 @@ from .test_4 import test_4
 from .test_5 import test_5
 from .test_6 import test_6
 from .test_7 import test_7
+from .test_8 import test_8

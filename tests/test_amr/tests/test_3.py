@@ -34,8 +34,8 @@ def test_3(dir_name = 'test_amr'):
     # Set the refinement type: 'sin' - single column
     #                        : 'uni' - uniform
     #                        : 'amr' - adaptive
-    ref_type = 'amr'
-    ntrial   = 9
+    ref_type = 'uni'
+    ntrial   = 3
     tol      = 0.8
     
     # Get the base mesh, test_problem
@@ -177,11 +177,16 @@ def test_3(dir_name = 'test_amr'):
             ## Refine the mesh uniformly
             mesh.ref_mesh(kind = 'all')
         elif ref_type == 'amr':
+            '''
             if (trial%3 == 0):
                 mesh = ref_by_ind(mesh, col_jump_err_ind, tol)
             else:
                 cell_jump_err_ind = cell_jump_err(mesh, uh_proj)
-                mesh = ref_by_ind(mesh, cell_jump_err_ind, tol)
+                mesh = ref_by_ind(mesh, cell_jump_err_ind, tol))
+            '''
+            cell_jump_err_ind = cell_jump_err(mesh, uh_proj)
+            mesh = ref_by_ind(mesh, cell_jump_err_ind, tol)
+            mesh = ref_by_ind(mesh, col_jump_err_ind, tol)
             
         perf_trial_f    = perf_counter()
         perf_trial_diff = perf_trial_f - perf_trial_0

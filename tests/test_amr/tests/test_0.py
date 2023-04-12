@@ -4,10 +4,10 @@ from scipy.sparse.linalg import spsolve, eigs
 from time import perf_counter
 import os, sys
 
-from .gen_mesh           import gen_mesh
-from .get_forcing_vec    import get_forcing_vec
-from .get_projection_vec import get_projection_vec
-from .get_cons_soln      import get_cons_soln
+from .gen_mesh import gen_mesh
+
+sys.path.append('../../tests')
+from test_cases import get_cons_prob
 
 sys.path.append('../../src')
 from dg.mesh.utils import plot_mesh
@@ -16,7 +16,8 @@ from dg.projection import Projection, push_forward, to_projection
 from dg.projection.utils import plot_projection
 import dg.quadrature as qd
 from rt import calc_mass_matrix, calc_scat_matrix, \
-    calc_intr_conv_matrix, calc_bdry_conv_matrix
+    calc_intr_conv_matrix, calc_bdry_conv_matrix, \
+    calc_forcing_vec
 from amr import intg_col_bdry_th
 
 from utils import print_msg

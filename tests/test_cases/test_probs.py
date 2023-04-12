@@ -12,7 +12,7 @@ def get_test_prob(prob_num, mesh):
     
     if prob_num == 0:
         """
-        HG scattering, sep function in angle at top of domain.
+        HG scattering, step function in angle at top of domain.
         """
                 
         def kappa(x, y):
