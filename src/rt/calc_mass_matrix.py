@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.sparse import coo_matrix, csr_matrix, block_diag, bmat
+from scipy.sparse import coo_matrix, csr_matrix, block_diag, bmat, diags
 
 from dg.matrix import get_idx_map, get_col_idxs, get_cell_idxs
 from dg.projection import push_forward
@@ -16,16 +16,21 @@ def calc_mass_matrix(mesh, kappa):
         if col.is_lf:
             # Get column information, quadrature weights
             col_idx = col_idxs[col_key]
-            [x0, y0, x1, y1] = col.pos
-            dx = x1 - x0
-            dy = y1 - y0
-            [ndof_x, ndof_y] = col.ndofs
+            [x0, y0, x1, y1] = col.pos[:]
+            [dx, dy] = [x1 - x0, y1 - y0]
+            [ndof_x, ndof_y] = col.ndofs[:]
             
             [xxb, w_x, yyb, w_y, _, _] = qd.quad_xyth(nnodes_x = ndof_x,
                                                       nnodes_y = ndof_y)
+            
+            # We reshape array to leverage vectorized operations of numpy
+            w_x = w_x.reshape(ndof_x, 1, 1)
+            w_y = w_y.reshape(1, ndof_y, 1)
+            
+            xxf = push_forward(x0, x1, xxb).reshape(ndof_x, 1)
+            yyf = push_forward(y0, y1, yyb).reshape(1, ndof_y)
 
-            xxf = push_forward(x0, x1, xxb)
-            yyf = push_forward(y0, y1, yyb)
+            kappa_col = kappa(xxf, yyf).reshape(ndof_x, ndof_y, 1)
             
             # Create cell indexing for constructing column mass matrix
             [ncells, cell_idxs] = get_cell_idxs(mesh, col_key)
@@ -43,6 +48,16 @@ def calc_mass_matrix(mesh, kappa):
 
                     [_, _, _, _, _, w_th] = qd.quad_xyth(nnodes_th = ndof_th)
 
+                    w_th = w_th.reshape(1, 1, ndof_th)
+                    
+                    kappa_cell = np.tile(kappa_col, (1, 1, ndof_th))
+                    
+                    dcoeff = dx * dy * dth / 8
+                    
+                    diagonal = (dcoeff * w_x * w_y * w_th * kappa_cell).flatten()
+                    cell_mtxs[cell_idx] = diags(diagonal)
+                    
+                    """
                     # List of coordinates, values for constructing cell matrices
                     # NOTE: alpha and beta indices are the same since cell
                     # mass matrices are diagonal, so we will only calculate the
@@ -75,8 +90,9 @@ def calc_mass_matrix(mesh, kappa):
                                 vlist[idx] = dcoeff * wx_i * wy_j * wth_a * kappa_ij
                                 
                                 idx += 1
-                                
+                    
                     cell_mtxs[cell_idx] = coo_matrix((vlist, (betalist, betalist)))
+                    """
                     
             col_mtxs[col_idx] = block_diag(cell_mtxs, format = 'csr')
 

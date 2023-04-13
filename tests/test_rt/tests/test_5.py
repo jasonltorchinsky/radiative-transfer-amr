@@ -37,7 +37,7 @@ def test_5(dir_name = 'test_rt'):
     #                        : 'uni' - uniform
     #                        : 'amr' - adaptive
     ref_type = 'uni'
-    ntrial   = 3
+    ntrial   = 4
     
     # Get the base mesh, manufactured solution
     [Lx, Ly]                   = [2., 3.]

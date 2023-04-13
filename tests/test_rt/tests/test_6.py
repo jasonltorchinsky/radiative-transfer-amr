@@ -4,8 +4,10 @@ import matplotlib.pyplot as plt
 from time import perf_counter
 import os, sys
 
-from .gen_mesh           import gen_mesh
-from .get_test_prob      import get_test_prob
+from .gen_mesh import gen_mesh
+
+sys.path.append('../../tests')
+from test_cases import get_cons_prob
 
 sys.path.append('../../src')
 from dg.mesh.utils import plot_mesh

@@ -75,7 +75,7 @@ def test_4(dir_name = 'test_amr'):
         errs[ref_type] = []
         ndof = 0
         trial = 0
-        while ndof < max_ndof:
+        while ndof < max_ndof and trial <= 16:
             perf_trial_0 = perf_counter()
             print_msg('[Trial {}] Starting...'.format(trial))
             
