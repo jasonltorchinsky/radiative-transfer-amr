@@ -4,19 +4,23 @@ from scipy.sparse.linalg import spsolve, eigs
 from time import perf_counter
 import os, sys
 
-from .gen_mesh           import gen_mesh
-from .get_forcing_vec    import get_forcing_vec
-from .get_projection_vec import get_projection_vec
-from .get_cons_soln      import get_cons_soln
+from .gen_mesh import gen_mesh
+
+sys.path.append('../../tests')
+from test_cases import get_cons_prob
 
 sys.path.append('../../src')
+from dg.mesh import get_hasnt_th
 from dg.mesh.utils import plot_mesh
 from dg.matrix import get_intr_mask, split_matrix, merge_vectors
-from dg.projection import push_forward, to_projection
-from dg.projection.utils import plot_projection
+from dg.projection import Projection, push_forward, to_projection, intg_th
+from dg.projection.utils import plot_projection, plot_angular_dists
 import dg.quadrature as qd
 from rt import calc_mass_matrix, calc_scat_matrix, \
-    calc_intr_conv_matrix, calc_bdry_conv_matrix
+    calc_intr_conv_matrix, calc_bdry_conv_matrix, \
+    calc_forcing_vec
+from amr import anl_err, ref_by_ind
+from amr.utils import plot_error_indicator
 
 from utils import print_msg
 
@@ -32,11 +36,11 @@ def test_5(dir_name = 'test_rt'):
     # Set the refinement type: 'sin' - single column
     #                        : 'uni' - uniform
     #                        : 'amr' - adaptive
-    ref_type = 'amr'
-    ntrial   = 4
+    ref_type = 'uni'
+    ntrial   = 3
     
     # Get the base mesh, manufactured solution
-    [Lx, Ly]                   = [1., 5.]
+    [Lx, Ly]                   = [2., 3.]
     pbcs                       = [False, False]
     [ndof_x, ndof_y, ndof_th]  = [4, 4, 4]
     has_th                     = True
@@ -45,15 +49,16 @@ def test_5(dir_name = 'test_rt'):
                     ndofs  = [ndof_x, ndof_y, ndof_th],
                     has_th = has_th)
     
-    [anl_sol, kappa, sigma, Phi, f] = get_cons_soln(prob_name = 'comp',
-                                                    sol_num   = 2)
+    [u, kappa, sigma, Phi, f, _] = get_cons_prob(prob_name = 'comp',
+                                                 prob_num  = 2,
+                                                 mesh      = mesh)
     
     # Solve simplified problem over several trials
     ref_ndofs = np.zeros([ntrial])
     inf_errs  = np.zeros([ntrial])
     for trial in range(0, ntrial):
         perf_trial_0 = perf_counter()
-        print_msg('[Trial {}] Starting...'.format(trial))
+        print_msg('[Trial {}] Starting...\n'.format(trial))
             
         # Set up output directories
         trial_dir = os.path.join(test_dir, 'trial_{}'.format(trial))
@@ -155,14 +160,15 @@ def test_5(dir_name = 'test_rt'):
         print_msg(msg)
 
         ## Forcing vector, analytic solution, interior DOFs mask
-        f_vec       = get_forcing_vec(mesh, f)
-        anl_sol_vec = get_projection_vec(mesh, anl_sol)
+        f_vec  = calc_forcing_vec(mesh, f)
+        u_proj = Projection(mesh, u)
+        u_vec  = u_proj.to_vector()
         
-        intr_mask        = get_intr_mask(mesh)
-        bdry_mask        = np.invert(intr_mask)
-        f_vec_intr       = f_vec[intr_mask]
-        anl_sol_vec_intr = anl_sol_vec[intr_mask]
-        bcs_vec          = anl_sol_vec[bdry_mask]
+        intr_mask  = get_intr_mask(mesh)
+        bdry_mask  = np.invert(intr_mask)
+        f_vec_intr = f_vec[intr_mask]
+        u_vec_intr = u_vec[intr_mask]
+        bcs_vec    = u_vec[bdry_mask]
         
         ## Solve manufactured problem
         perf_soln_0 = perf_counter()
@@ -171,7 +177,7 @@ def test_5(dir_name = 'test_rt'):
         M = (M_bdry_conv - M_intr_conv) + M_mass - M_scat
         [M_intr, M_bdry] = split_matrix(mesh, M, intr_mask)
         
-        apr_sol_vec_intr = spsolve(M_intr, f_vec_intr - M_bdry @ bcs_vec)
+        uh_vec_intr = spsolve(M_intr, f_vec_intr - M_bdry @ bcs_vec)
         
         perf_soln_f    = perf_counter()
         perf_soln_diff = perf_soln_f - perf_soln_0
@@ -181,8 +187,36 @@ def test_5(dir_name = 'test_rt'):
         )
         print_msg(msg)
 
+        # Plot the analytic, approximate solutions
+        uh_vec = merge_vectors(uh_vec_intr, bcs_vec, intr_mask)
+        uh_proj = to_projection(mesh, uh_vec)
+        file_name = os.path.join(trial_dir, 'uh_proj.png')
+        angles = [0, np.pi/3, 2 * np.pi / 3, np.pi,
+                  4 * np.pi / 3, 5 * np.pi / 3]
+        plot_projection(mesh, uh_proj, file_name = file_name, angles = angles)
+        
+        file_name = os.path.join(trial_dir, 'uh_ang_dist.png')
+        plot_angular_dists(mesh, uh_proj, file_name = file_name)
+        
+        mesh_2d = get_hasnt_th(mesh)
+        mean_uh = intg_th(mesh, uh_proj)
+        file_name = os.path.join(trial_dir, 'uh_mean.png')
+        plot_projection(mesh_2d, mean_uh, file_name = file_name)
+
+        file_name = os.path.join(trial_dir, 'u_proj.png')
+        angles = [0, np.pi/3, 2 * np.pi / 3, np.pi,
+                  4 * np.pi / 3, 5 * np.pi / 3]
+        plot_projection(mesh, u_proj, file_name = file_name, angles = angles)
+        
+        file_name = os.path.join(trial_dir, 'u_ang_dist.png')
+        plot_angular_dists(mesh, u_proj, file_name = file_name)
+        
+        mean_u = intg_th(mesh, u_proj)
+        file_name = os.path.join(trial_dir, 'u_mean.png')
+        plot_projection(mesh_2d, mean_u, file_name = file_name)
+        
         # Plot the difference in solutions
-        diff_vec_intr = apr_sol_vec_intr - anl_sol_vec_intr
+        diff_vec_intr = uh_vec_intr - u_vec_intr
         zero_bcs_vec  = 0. * bcs_vec
         diff_vec      = merge_vectors(diff_vec_intr, zero_bcs_vec, intr_mask)
         diff_proj     = to_projection(mesh, diff_vec)
@@ -190,7 +224,13 @@ def test_5(dir_name = 'test_rt'):
         file_name = os.path.join(trial_dir, 'diff.png')
         angles = [0, np.pi/3, 2 * np.pi / 3, np.pi,
                   4 * np.pi / 3, 5 * np.pi / 3]
-        plot_projection(diff_proj, file_name = file_name, angles = angles)
+        plot_projection(mesh, diff_proj, file_name = file_name, angles = angles)
+
+        # Plot the analytic error indicator
+        anl_err_ind = anl_err(mesh, uh_proj, u)
+        file_name = os.path.join(trial_dir, 'anl_errs.png')
+        plot_error_indicator(mesh, anl_err_ind, file_name = file_name,
+                             name = 'Analytic Max-Norm Column')
 
         
         # Plot global matrix
@@ -214,16 +254,15 @@ def test_5(dir_name = 'test_rt'):
         fig.set_size_inches(6.5, 6.5)
         plt.savefig(os.path.join(trial_dir, file_name), dpi = 300)
         plt.close(fig)
-
         
         # Plot solutions
         fig, ax = plt.subplots()
 
-        ax.plot(anl_sol_vec_intr,
+        ax.plot(u_vec_intr,
                 label = 'Analytic Solution',
                 color = 'r',
                 drawstyle = 'steps-post')
-        ax.plot(apr_sol_vec_intr,
+        ax.plot(uh_vec_intr,
                 label = 'Approximate Solution',
                 color = 'k', linestyle = ':',
                 drawstyle = 'steps-post')
@@ -238,7 +277,7 @@ def test_5(dir_name = 'test_rt'):
         plt.close(fig)
         
         # Caluclate error
-        inf_errs[trial] = np.amax(np.abs(anl_sol_vec_intr - apr_sol_vec_intr))
+        inf_errs[trial] = np.amax(np.abs(u_vec_intr - uh_vec_intr))
 
         # Refine the mesh for the next trial
         if ref_type == 'sin':
@@ -247,38 +286,16 @@ def test_5(dir_name = 'test_rt'):
             mesh.ref_col(col_keys[-4], kind = 'all')
         elif ref_type == 'uni':
             ## Refine the mesh uniformly
-            mesh.ref_mesh(kind = 'spt')
+            mesh.ref_mesh(kind = 'ang')
         elif ref_type == 'amr':
             ## Refine the column spatially with the biggest "error"
-            max_err = 0
-            col_errs = {}
-            diff_proj_col_items = sorted(diff_proj.cols.items())
-            for col_key, col in diff_proj_col_items:
-                if col.is_lf:
-                    col_err = 0
-                    cell_items = sorted(col.cells.items())
-                    for cell_key, cell in cell_items:
-                        if cell.is_lf:
-                            cell_err = np.amax(np.abs(cell.vals))
-                            col_err = max(col_err, cell_err)
-                            
-                    col_errs[col_key] = col_err
-                    max_err = max(max_err, col_err)
-                    
-            col_keys = sorted(mesh.cols.keys())
-            for col_key in col_keys:
-                if col_key in mesh.cols.keys():
-                    col = mesh.cols[col_key]
-                    if col.is_lf:
-                        col_err = col_errs[col_key]
-                        if col_err > 0.9 * max_err:
-                            mesh.ref_col(col_key, kind = 'spt')
+            mesh = ref_by_ind(mesh, anl_err_ind, 0.9)
 
         perf_trial_f    = perf_counter()
         perf_trial_diff = perf_trial_f - perf_trial_0
         msg = (
             '[Trial {}] Trial completed! '.format(trial) +
-            'Time Elapsed: {:08.3f} [s]'.format(perf_trial_diff)
+            'Time Elapsed: {:08.3f} [s]\n'.format(perf_trial_diff)
         )
         print_msg(msg)
         

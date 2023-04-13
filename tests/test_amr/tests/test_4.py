@@ -41,13 +41,10 @@ def test_4(dir_name = 'test_amr'):
     
     ref_types = ['uni-spt', 'uni-ang', 'uni-all',
                  'amr-spt', 'amr-ang', 'amr-all']
-    ref_types = ['amr-ang']
+    #ref_types = ['uni-all', 'amr-all']
     nref_type = len(ref_types)
-    max_ndof = 2**12
-    tol      = 0.8
-
-    [anl_sol, kappa, sigma, Phi, f, _] = get_cons_prob(prob_name = 'comp',
-                                                       prob_num  = 2)
+    max_ndof = 2**13
+    tol      = 0.9
     
     # Set up arrays to store error
     ref_ndofs = {}
@@ -61,18 +58,22 @@ def test_4(dir_name = 'test_amr'):
         os.makedirs(test_dir, exist_ok = True)
         
         # Get the base mesh
-        [Lx, Ly]                   = [3., 2.]
-        pbcs                       = [False, False]
-        [ndof_x, ndof_y, ndof_th]  = [2, 2, 2]
-        has_th                     = True
+        [Lx, Ly]                  = [2., 3.]
+        pbcs                      = [False, False]
+        [ndof_x, ndof_y, ndof_th] = [2, 2, 2]
+        has_th                    = True
         mesh = gen_mesh(Ls     = [Lx, Ly],
                         pbcs   = pbcs,
                         ndofs  = [ndof_x, ndof_y, ndof_th],
                         has_th = has_th)
 
+        [u, kappa, sigma, Phi, f, _] = get_cons_prob(prob_name = 'comp',
+                                                     prob_num  = 3,
+                                                     mesh      = mesh)
+
         ref_ndofs[ref_type] = []
         errs[ref_type] = []
-        ndof = 0.
+        ndof = 0
         trial = 0
         while ndof < max_ndof:
             perf_trial_0 = perf_counter()
@@ -105,7 +106,7 @@ def test_4(dir_name = 'test_amr'):
             
             f_vec       = calc_forcing_vec(mesh, f)
             
-            u_proj = Projection(mesh, anl_sol)
+            u_proj = Projection(mesh, u)
             u_vec  = u_proj.to_vector()
             
             intr_mask  = get_intr_mask(mesh)
@@ -165,7 +166,7 @@ def test_4(dir_name = 'test_amr'):
             plot_projection(mesh_2d, mean_u, file_name = file_name)
             
             # Plot the analytic error indicator
-            anl_err_ind = anl_err(mesh, uh_proj, anl_sol)
+            anl_err_ind = anl_err(mesh, uh_proj, u)
             file_name = os.path.join(trial_dir, 'anl_errs.png')
             plot_error_indicator(mesh, anl_err_ind, file_name = file_name,
                                  name = 'Analytic Max-Norm Column')

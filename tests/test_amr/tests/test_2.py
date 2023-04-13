@@ -10,9 +10,10 @@ sys.path.append('../../tests')
 from test_cases import get_cons_prob
 
 sys.path.append('../../src')
+from dg.mesh import get_hasnt_th
 from dg.mesh.utils import plot_mesh
 from dg.matrix import get_intr_mask, split_matrix, merge_vectors
-from dg.projection import Projection, push_forward, to_projection
+from dg.projection import Projection, push_forward, to_projection, intg_th
 from dg.projection.utils import plot_projection, plot_angular_dists
 import dg.quadrature as qd
 from rt import calc_mass_matrix, calc_scat_matrix, \
@@ -35,12 +36,12 @@ def test_2(dir_name = 'test_amr'):
     # Set the refinement type: 'sin' - single column
     #                        : 'uni' - uniform
     #                        : 'amr' - adaptive
-    ref_type = 'amr'
-    ntrial   = 5
+    ref_type = 'uni'
+    ntrial   = 3
     tol      = 0.8
     
     # Get the base mesh, test_problem
-    [Lx, Ly]                   = [3., 2.]
+    [Lx, Ly]                   = [2., 2.]
     pbcs                       = [False, False]
     [ndof_x, ndof_y, ndof_th]  = [2, 2, 2]
     has_th                     = True
@@ -49,8 +50,9 @@ def test_2(dir_name = 'test_amr'):
                     ndofs  = [ndof_x, ndof_y, ndof_th],
                     has_th = has_th)
     
-    [anl_sol, kappa, sigma, Phi, f, _] = get_cons_prob(prob_name = 'comp',
-                                                       prob_num  = 2)
+    [u, kappa, sigma, Phi, f, _] = get_cons_prob(prob_name = 'comp',
+                                                 prob_num  = 3,
+                                                 mesh      = mesh)
     
     # Solve simplified problem over several trials
     ref_ndofs = np.zeros([ntrial])
@@ -74,8 +76,6 @@ def test_2(dir_name = 'test_amr'):
                   file_name   = file_name,
                   plot_dim    = 2,
                   label_cells = (trial <= 3))
-
-        # Plot the coefficient functions
         
         # Construct solve the test problem
         perf_cons_0 = perf_counter()
@@ -89,7 +89,7 @@ def test_2(dir_name = 'test_amr'):
 
         f_vec       = calc_forcing_vec(mesh, f)
 
-        u_proj = Projection(mesh, anl_sol)
+        u_proj = Projection(mesh, u)
         u_vec  = u_proj.to_vector()
         
         intr_mask  = get_intr_mask(mesh)
@@ -127,6 +127,11 @@ def test_2(dir_name = 'test_amr'):
         angles = np.linspace(0, 1.75, 8) * np.pi
         plot_projection(mesh, uh_proj, file_name = file_name, angles = angles)
 
+        mesh_2d = get_hasnt_th(mesh)
+        mean_uh = intg_th(mesh, uh_proj)
+        file_name = os.path.join(trial_dir, 'uh_mean.png')
+        plot_projection(mesh_2d, mean_uh, file_name = file_name)
+        
         file_name = os.path.join(trial_dir, 'uh_slices.png')
         plot_angular_dists(mesh, uh_proj, file_name = file_name)
 
@@ -137,6 +142,10 @@ def test_2(dir_name = 'test_amr'):
 
         file_name = os.path.join(trial_dir, 'u_slices.png')
         plot_angular_dists(mesh, u_proj, file_name = file_name)
+
+        mean_u = intg_th(mesh, u_proj)
+        file_name = os.path.join(trial_dir, 'u_mean.png')
+        plot_projection(mesh_2d, mean_u, file_name = file_name)
 
         # Plot the jump error indicator
         col_jump_err_ind = col_jump_err(mesh, uh_proj)
@@ -183,7 +192,7 @@ def test_2(dir_name = 'test_amr'):
         plt.close(fig)
 
         # Plot the analytic error indicator
-        anl_err_ind = anl_err(mesh, uh_proj, anl_sol)
+        anl_err_ind = anl_err(mesh, uh_proj, u)
         file_name = os.path.join(trial_dir, 'anl_errs.png')
         plot_error_indicator(mesh, anl_err_ind, file_name = file_name,
                              name = 'Analytic Max-Norm Column')
@@ -231,7 +240,7 @@ def test_2(dir_name = 'test_amr'):
             mesh.ref_col(col_keys[-4], kind = 'all')
         elif ref_type == 'uni':
             ## Refine the mesh uniformly
-            mesh.ref_mesh(kind = 'spt')
+            mesh.ref_mesh(kind = 'all')
         elif ref_type == 'amr':
             cell_jump_err_ind = cell_jump_err(mesh, uh_proj)
             mesh = ref_by_ind(mesh, cell_jump_err_ind, tol)

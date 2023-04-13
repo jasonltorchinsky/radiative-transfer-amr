@@ -22,8 +22,32 @@ def plot_angular_dists(mesh, proj, file_name = None, **kwargs):
     ys = np.linspace(0., Ly, ny)
     [nrows, ncols] = get_closest_factors(ny)
 
+    # Create theta array based on the level of refinement of the cells
+    max_ndof_th = 0
+    max_lv = 0
+    for col_key, col in col_items:
+        if col.is_lf:
+            cell_items = sorted(col.cells.items())
+            for cell_key, cell in cell_items:
+                if cell.is_lf:
+                    max_lv = max(max_lv, cell.lv)
+                    max_ndof_th = max(max_ndof_th, cell.ndofs[0])
+
+    min_dth    = 2. * np.pi / (2. * max_lv)
+    coarse_th  = np.arange(0, 2. * np.pi + min_dth, min_dth)
+    ncoarse_th = np.size(coarse_th)
     th = np.empty(0)
-    u  = np.empty(0)
+    for aa in range(0, ncoarse_th - 1):
+        th0 = coarse_th[aa]
+        th1 = coarse_th[aa + 1]
+        [_, _, _, _, thb, _] = quad_xyth(nnodes_th = max_ndof_th)
+
+        thf = push_forward(th0, th1, thb)
+
+        th = np.concatenate([th, thf])
+
+    nth = np.size(th)
+    u  = np.zeros([nth])
     
     fig, axs = plt.subplots(nrows, ncols, sharex = True, sharey = True)
     
@@ -43,7 +67,7 @@ def plot_angular_dists(mesh, proj, file_name = None, **kwargs):
                     [dx, dy]         = [x1 - x0, y1 - y0]
                     [ndof_x, ndof_y] = col.ndofs[:]
                     [xxb, w_x, yyb, _, _, _] = quad_xyth(nnodes_x = ndof_x,
-                                                       nnodes_y = ndof_y)
+                                                         nnodes_y = ndof_y)
                     
                     y_pb = pull_back(y0, y1, y)
                     
@@ -52,46 +76,32 @@ def plot_angular_dists(mesh, proj, file_name = None, **kwargs):
                     for cell_key, cell in cell_items:
                         if cell.is_lf:
                             [th0, th1] = cell.pos[:]
-                            [ndof_th]  = cell.ndofs
-                            
-                            [_, _, _, _, thb, _] = quad_xyth(nnodes_th = ndof_th)
-                            thf = push_forward(th0, th1, thb)
-                            
-                            proj_cell = proj_col.cells[cell_key]
-                            vals_xyth = proj_cell.vals
-                            u_cell = np.zeros([ndof_th])
-                            
-                            for ii in range(0, ndof_x):
-                                wx_i = w_x[ii]
-                                for jj in range(0, ndof_y):
-                                    psi_j = lag_eval(yyb, jj, y_pb)
-                                    for aa in range(0, ndof_th):
-                                        u_cell[aa] += (dx / 2.) * wx_i \
-                                            * vals_xyth[ii, jj, aa]  * psi_j
-                            
-                            th = np.concatenate([th, np.around(thf, decimals = 6)])
-                            u = np.concatenate([u, u_cell])
+                            for th_idx in range(0, nth):
+                                th_star = th[th_idx]
+                                if (th0 <= th_star) and (th_star <= th1):
+                                    [ndof_th]  = cell.ndofs
+
+                                    [_, _, _, _, thb, _] = quad_xyth(nnodes_th = ndof_th)
+                                    
+                                    th_starb = pull_back(th0, th1, th_star)
+                                    
+                                    proj_cell = proj_col.cells[cell_key]
+                                    vals_xyth = proj_cell.vals
+                                    
+                                    for ii in range(0, ndof_x):
+                                        wx_i = w_x[ii]
+                                        for jj in range(0, ndof_y):
+                                            psi_j = lag_eval(yyb, jj, y_pb)
+                                            for aa in range(0, ndof_th):
+                                                xsi_a = lag_eval(thb, aa, th_starb)
+                                                u[th_idx] += (dx / 2.) * wx_i \
+                                                    * vals_xyth[ii, jj, aa]  * psi_j * xsi_a
 
                             ax.axvline(th1,
                                        color = 'gray',
                                        linestyle = '--',
                                        linewidth = 0.2)
         
-        th_unq = np.unique(th)
-        ths = {}
-        for th_star in th_unq:
-            ths[th_star] = 0.
-        nth = np.size(th)
-        for th_idx in range(0, nth):
-            th_star = th[th_idx]
-            ths[th_star] += u[th_idx]
-
-        th = np.asarray(tuple(ths.keys()))
-        u = np.asarray(tuple(ths.values()))
-        
-        sort = np.argsort(th)
-        th = th[sort]
-        u = u[sort]
         ax.plot(th, u,
                 color = 'black',
                 linestyle = '-',
