@@ -31,6 +31,7 @@ def calc_mass_matrix(mesh, kappa):
             yyf = push_forward(y0, y1, yyb).reshape(1, ndof_y)
 
             kappa_col = kappa(xxf, yyf).reshape(ndof_x, ndof_y, 1)
+            wx_wy_kappa_col = w_x * w_y * kappa_col
             
             # Create cell indexing for constructing column mass matrix
             [ncells, cell_idxs] = get_cell_idxs(mesh, col_key)
@@ -50,11 +51,11 @@ def calc_mass_matrix(mesh, kappa):
 
                     w_th = w_th.reshape(1, 1, ndof_th)
                     
-                    kappa_cell = np.tile(kappa_col, (1, 1, ndof_th))
+                    wx_wy_kappa_cell = np.tile(wx_wy_kappa_col, (1, 1, ndof_th))
                     
                     dcoeff = dx * dy * dth / 8
                     
-                    diagonal = (dcoeff * w_x * w_y * w_th * kappa_cell).flatten()
+                    diagonal = (dcoeff * w_th * wx_wy_kappa_cell).flatten()
                     cell_mtxs[cell_idx] = diags(diagonal)
                     
                     """
