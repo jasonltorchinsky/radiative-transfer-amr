@@ -42,7 +42,7 @@ def test_5(dir_name = 'test_rt'):
     # Get the base mesh, manufactured solution
     [Lx, Ly]                   = [2., 3.]
     pbcs                       = [False, False]
-    [ndof_x, ndof_y, ndof_th]  = [4, 4, 4]
+    [ndof_x, ndof_y, ndof_th]  = [2, 2, 2]
     has_th                     = True
     mesh = gen_mesh(Ls     = [Lx, Ly],
                     pbcs   = pbcs,
@@ -277,7 +277,8 @@ def test_5(dir_name = 'test_rt'):
         plt.close(fig)
         
         # Caluclate error
-        inf_errs[trial] = np.amax(np.abs(u_vec_intr - uh_vec_intr))
+        inf_errs[trial] = np.amax(np.abs(u_vec_intr - uh_vec_intr)) \
+            / np.amax(np.abs(u_vec_intr))
 
         # Refine the mesh for the next trial
         if ref_type == 'sin':

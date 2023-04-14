@@ -53,6 +53,7 @@ def test_2(dir_name = 'test_rt'):
         trial_dir = os.path.join(test_dir, 'trial_{}'.format(trial))
         os.makedirs(trial_dir, exist_ok = True)
 
+        """
         # Plot the mesh
         file_name = os.path.join(trial_dir, 'mesh_3d.png')
         plot_mesh(mesh,
@@ -63,7 +64,8 @@ def test_2(dir_name = 'test_rt'):
                   file_name   = file_name,
                   plot_dim    = 2,
                   label_cells = True)
-
+        """
+        
         # Get the ending indices for the column matrices, number of DOFs in mesh
         col_items = sorted(mesh.cols.items())
         ncol      = 0
@@ -150,7 +152,8 @@ def test_2(dir_name = 'test_rt'):
         )
         print_msg(msg)
         '''
-        
+
+        """
         # Plot global mass matrix
         fig, ax = plt.subplots()
         for idx in range(0, ncol - 1):
@@ -172,6 +175,7 @@ def test_2(dir_name = 'test_rt'):
         fig.set_size_inches(6.5, 6.5)
         plt.savefig(os.path.join(trial_dir, file_name), dpi = 300)
         plt.close(fig)
+        """
         
         # Plot eigenvalues of interior scattering matrix
         '''
@@ -194,7 +198,8 @@ def test_2(dir_name = 'test_rt'):
         plt.savefig(os.path.join(trial_dir, file_name), dpi = 300)
         plt.close(fig)
         '''
-        
+
+        """
         # Plot solutions
         fig, ax = plt.subplots()
 
@@ -215,6 +220,7 @@ def test_2(dir_name = 'test_rt'):
         fig.set_size_inches(6.5, 6.5)
         plt.savefig(os.path.join(trial_dir, file_name), dpi = 300)
         plt.close(fig)
+        """
         
         # Caluclate error
         inf_errs[trial] = np.amax(np.abs(u_vec_intr - uh_vec_intr))

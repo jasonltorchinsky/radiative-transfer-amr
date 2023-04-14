@@ -41,7 +41,6 @@ def test_4(dir_name = 'test_amr'):
     
     ref_types = ['uni-spt', 'uni-ang', 'uni-all',
                  'amr-spt', 'amr-ang', 'amr-all']
-    #ref_types = ['uni-all', 'amr-all']
     nref_type = len(ref_types)
     max_ndof = 2**13
     tol      = 0.9
@@ -60,17 +59,17 @@ def test_4(dir_name = 'test_amr'):
         # Get the base mesh
         [Lx, Ly]                  = [2., 3.]
         pbcs                      = [False, False]
-        [ndof_x, ndof_y, ndof_th] = [2, 2, 2]
+        [ndof_x, ndof_y, ndof_th] = [4, 4, 2]
         has_th                    = True
         mesh = gen_mesh(Ls     = [Lx, Ly],
                         pbcs   = pbcs,
                         ndofs  = [ndof_x, ndof_y, ndof_th],
                         has_th = has_th)
-
+        
         [u, kappa, sigma, Phi, f, _] = get_cons_prob(prob_name = 'comp',
                                                      prob_num  = 3,
                                                      mesh      = mesh)
-
+        
         ref_ndofs[ref_type] = []
         errs[ref_type] = []
         ndof = 0
@@ -104,7 +103,7 @@ def test_4(dir_name = 'test_amr'):
             M_intr_conv = calc_intr_conv_matrix(mesh)
             M_bdry_conv = calc_bdry_conv_matrix(mesh)
             
-            f_vec       = calc_forcing_vec(mesh, f)
+            f_vec  = calc_forcing_vec(mesh, f)
             
             u_proj = Projection(mesh, u)
             u_vec  = u_proj.to_vector()
@@ -133,6 +132,12 @@ def test_4(dir_name = 'test_amr'):
             # Get number of DOFs
             ndof = np.size(f_vec)
             ref_ndofs[ref_type].append(ndof)
+
+            msg = (
+                '[Trial {}] Number of DOFs:'.format(trial) +
+                ' {} of {}!'.format(ndof, max_ndof)
+            )
+            print_msg(msg)
             
             # Calculate the maximum error of the solution
             diff_vec = np.abs(uh_vec - u_vec)
