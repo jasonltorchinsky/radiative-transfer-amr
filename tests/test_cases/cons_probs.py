@@ -49,7 +49,8 @@ def get_cons_prob(prob_name, prob_num, mesh):
         """
         
         def anl_sol(x, y, th):
-            return (np.cos(th))**2 * np.exp(-((x - Lx/2.)**4 + (y - Ly/2.)**4))
+            return (np.cos(th))**2 * np.exp(-(8. * (x - Lx/3.)**2
+                                              + (1. / 8.) * (y - Ly/2.)**2))
         
         def kappa(x, y):
             return np.exp(-((x - Lx/2.)**2 + (y - Ly/2.)**2)) + 1.
@@ -64,15 +65,16 @@ def get_cons_prob(prob_name, prob_num, mesh):
             return kappa(x, y) * anl_sol(x, y, th)
 
         def f_scat(x, y, th): # *JUST* sigma * int_0^2pi Phi(th, th') * u(x, y, th') dth'
-            return sigma(x, y) * np.exp(-((x - Lx/2.)**4 + (y - Ly/2.)**4)) \
-                * (1. / 12.) * (6. + np.cos(2. * th))
+            return sigma(x, y) * (1. / 12.) * (6. + np.cos(2. * th)) \
+                * np.exp(-(8. * (x - Lx/3.)**2 + (1. / 8.) * (y - Ly/2.)**2))
 
         def f_conv(x, y, th): # *JUST* s.grad(u)
-            return -4. * anl_sol(x, y, th) \
-                * ((x - Lx/2.)**3 * np.cos(th) + (y - Ly/2.)**3 * np.sin(th))
+            return anl_sol(x, y, th) * (-16. * (x - Lx/3.) * np.cos(th)
+                                        + (1. / 4.) * (y - Ly/2.) * np.sin(th))
 
         def anl_sol_intg_th(x, y):
-            return np.pi * np.exp(-((x - Lx/2.)**4 + (y - Ly/2.)**4))
+            return np.pi * np.exp(-(8. * (x - Lx/3.)**2
+                                    + (1. / 8.) * (y - Ly/2.)**2))
 
     elif prob_num == 2:
         """

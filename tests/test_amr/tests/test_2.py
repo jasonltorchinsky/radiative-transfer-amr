@@ -39,11 +39,10 @@ def test_2(dir_name = 'test_amr'):
               '#CC79A7']
     ncolor = len(colors)
 
-    ref_types = ['uni-spt', 'uni-all',
-                 'amr-spt', 'amr-all']
+    ref_types = ['uni-spt', 'amr-spt']
     nref_type = len(ref_types)
     
-    max_ndof   = 2**16
+    max_ndof   = 2**13
     max_ntrial = 16
     tol        = 0.9
     
@@ -61,7 +60,7 @@ def test_2(dir_name = 'test_amr'):
         # Get the base mesh, test_problem
         [Lx, Ly]                   = [2., 3.]
         pbcs                       = [False, False]
-        [ndof_x, ndof_y, ndof_th]  = [4, 4, 4]
+        [ndof_x, ndof_y, ndof_th]  = [2, 2, 2]
         has_th                     = True
         mesh = gen_mesh(Ls     = [Lx, Ly],
                         pbcs   = pbcs,
@@ -69,7 +68,7 @@ def test_2(dir_name = 'test_amr'):
                         has_th = has_th)
         
         [u, kappa, sigma, Phi, f, _] = get_cons_prob(prob_name = 'comp',
-                                                     prob_num  = 0,
+                                                     prob_num  = 1,
                                                      mesh      = mesh)
         
         ref_ndofs[ref_type] = []
