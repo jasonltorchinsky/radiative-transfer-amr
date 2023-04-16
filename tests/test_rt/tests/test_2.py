@@ -252,7 +252,7 @@ def test_2(dir_name = 'test_rt'):
     ax.set_xlabel('Total Degrees of Freedom')
     ax.set_ylabel('L$^{\infty}$ Error')
     
-    ax.set_title('Uniform $h$-Refinement Convergence Rate - Mass Problem')
+    ax.set_title('Uniform Spatial $h$-Refinement Convergence Rate - Mass Problem')
     
     file_name = 'h-convergence-mass.png'
     fig.set_size_inches(6.5, 6.5)

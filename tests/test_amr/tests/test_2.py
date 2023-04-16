@@ -19,7 +19,7 @@ import dg.quadrature as qd
 from rt import calc_mass_matrix, calc_scat_matrix, \
     calc_intr_conv_matrix, calc_bdry_conv_matrix, \
     calc_forcing_vec
-from amr import anl_err, col_jump_err, cell_jump_err, ref_by_ind
+from amr import anl_err, anl_err_spt, col_jump_err, ref_by_ind
 from amr.utils import plot_error_indicator, plot_error_indicator_dist
 
 from utils import print_msg
@@ -39,7 +39,7 @@ def test_2(dir_name = 'test_amr'):
               '#CC79A7']
     ncolor = len(colors)
 
-    ref_types = ['uni-spt', 'amr-spt']
+    ref_types = ['uni-spt', 'amr-anl', 'amr-anl-spt']
     nref_type = len(ref_types)
     
     max_ndof   = 2**13
@@ -67,7 +67,7 @@ def test_2(dir_name = 'test_amr'):
                         ndofs  = [ndof_x, ndof_y, ndof_th],
                         has_th = has_th)
         
-        [u, kappa, sigma, Phi, f, _] = get_cons_prob(prob_name = 'comp',
+        [u, kappa, sigma, Phi, f, u_intg_th] = get_cons_prob(prob_name = 'comp',
                                                      prob_num  = 1,
                                                      mesh      = mesh)
         
@@ -173,35 +173,45 @@ def test_2(dir_name = 'test_amr'):
             
             # Plot the jump error indicator
             col_jump_err_ind = col_jump_err(mesh, uh_proj)
-            file_name = os.path.join(trial_dir, 'col_jump_errs.png')
+            file_name = os.path.join(trial_dir, 'col_jump_err.png')
             plot_error_indicator(mesh, col_jump_err_ind, file_name = file_name,
                                  name = 'Inter-Column Jump')
             
-            file_name = os.path.join(trial_dir, 'col_jump_errs_dist.png')
+            file_name = os.path.join(trial_dir, 'col_jump_err_dist.png')
             plot_error_indicator_dist(mesh, col_jump_err_ind, file_name = file_name,
                                       name = 'Inter-Column Jump')
             
             # Plot the analytic error indicator
             anl_err_ind = anl_err(mesh, uh_proj, u)
-            file_name = os.path.join(trial_dir, 'anl_errs.png')
+            file_name = os.path.join(trial_dir, 'anl_err.png')
             plot_error_indicator(mesh, anl_err_ind, file_name = file_name,
                                  name = 'Analytic Max-Norm Column')
 
-            file_name = os.path.join(trial_dir, 'anl_errs_dist.png')
+            file_name = os.path.join(trial_dir, 'anl_err_dist.png')
+            plot_error_indicator_dist(mesh, anl_err_ind, file_name = file_name,
+                                      name = 'Analytic Max-Norm Column')
+
+            # Plot the analytic error (spatial) indicator
+            anl_err_spt_ind = anl_err_spt(mesh, uh_proj, u_intg_th)
+            file_name = os.path.join(trial_dir, 'anl_err_spt.png')
+            plot_error_indicator(mesh, anl_err_spt_ind, file_name = file_name,
+                                 name = 'Analytic Max-Norm Column')
+
+            file_name = os.path.join(trial_dir, 'anl_err_dist.png')
             plot_error_indicator_dist(mesh, anl_err_ind, file_name = file_name,
                                       name = 'Analytic Max-Norm Column')
             
             # Refine the mesh for the next trial
             if ref_type == 'uni-spt':
                 mesh.ref_mesh(kind = 'spt')
-            elif ref_type == 'uni-all':
-                mesh.ref_mesh(kind = 'all')
-            elif ref_type == 'amr-spt':
+            elif ref_type == 'amr-anl':
+                anl_err_ind = anl_err(mesh, uh_proj, u)
+                mesh = ref_by_ind(mesh, anl_err_ind, tol)
+            elif ref_type == 'amr-anl-spt':
+                anl_err_spt_ind = anl_err_spt(mesh, uh_proj, u_intg_th)
+                mesh = ref_by_ind(mesh, anl_err_spt_ind, tol)
+            elif ref_type == 'amr-jmp':
                 col_jump_err_ind = col_jump_err(mesh, uh_proj)
-                mesh = ref_by_ind(mesh, col_jump_err_ind, tol)
-            elif ref_type == 'amr-all':
-                col_jump_err_ind = col_jump_err(mesh, uh_proj)
-                mesh.ref_mesh(kind = 'ang')
                 mesh = ref_by_ind(mesh, col_jump_err_ind, tol)
                 
             perf_trial_f    = perf_counter()
@@ -230,17 +240,13 @@ def test_2(dir_name = 'test_amr'):
         ref_type = ref_types[rr]
         if ref_type == 'uni-spt':
             label = 'Uniform - Spatial'
-        elif ref_type == 'uni-ang':
-            label = 'Uniform - Angular'
-        elif ref_type == 'uni-all':
-            label = 'Uniform - Spatio-Angular'
-        elif ref_type == 'amr-spt':
-            label = 'Adaptive - Spatial'
-        elif ref_type == 'amr-ang':
-            label = 'Adaptive - Angular'
-        elif ref_type == 'amr-all':
-            label = 'Adaptive - Spatio-Angular'
-
+        elif ref_type == 'amr-anl':
+            label = 'Adaptive (Analytic) - Spatial'
+        elif ref_type == 'amr-anl-spatial':
+            label = 'Adaptive (Analytic - Spatial) - Spatial'
+        elif ref_type == 'amr-jmp':
+            label = 'Adaptive (Inter-Column Jump) - Spatial'
+            
         min_err = min([min_err, min(errs[ref_type])])
         max_err = max([max_err, max(errs[ref_type])])
         
@@ -248,20 +254,20 @@ def test_2(dir_name = 'test_amr'):
                 label     = label,
                 color     = colors[rr],
                 linestyle = '-')
-
+        
     ax.legend()
-
+    
     ax.set_xscale('log', base = 2)
     ax.set_yscale('log', base = 2)
-
+    
     ymin = 2**(np.floor(np.log2(min_err)))
     ymax = 2**(np.ceil(np.log2(max_err)))
     ax.set_ylim([ymin, ymax])
     
     ax.set_xlabel('Total Degrees of Freedom')
     ax.set_ylabel('L$^{\infty}$ Error')
-
-    title_str = '$h$-Refinement Solution Convergence Rate'
+    
+    title_str = 'Spatial $h$-Refinement Solution Convergence Rate'
     ax.set_title(title_str)
     
     file_name = 'h-ref-conv.png'

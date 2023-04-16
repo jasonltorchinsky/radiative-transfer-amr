@@ -37,11 +37,12 @@ def test_3(dir_name = 'test_rt'):
                     ndofs  = [ndof_x, ndof_y, ndof_th],
                     has_th = has_th)
     
-    [anl_sol, kappa, sigma, Phi, f] = get_cons_soln(prob_name = 'scat',
-                                                    sol_num   = 2)
+    [u, kappa, sigma, Phi, f, _] = get_cons_prob(prob_name = 'scat',
+                                                 prob_num  = 2,
+                                                 mesh      = mesh)
     
     # Solve simplified problem over several trials
-    ntrial    = 3
+    ntrial    = 6
     ref_ndofs = np.zeros([ntrial])
     inf_errs  = np.zeros([ntrial])
     for trial in range(0, ntrial):
@@ -52,6 +53,7 @@ def test_3(dir_name = 'test_rt'):
         trial_dir = os.path.join(test_dir, 'trial_{}'.format(trial))
         os.makedirs(trial_dir, exist_ok = True)
 
+        """
         # Plot the mesh
         plot_mesh(mesh,
                   file_name = os.path.join(trial_dir, 'mesh_3d.png'),
@@ -60,6 +62,7 @@ def test_3(dir_name = 'test_rt'):
                   file_name   = os.path.join(trial_dir, 'mesh_2d.png'),
                   plot_dim    = 2,
                   label_cells = True)
+        """
 
         # Get the ending indices for the column matrices, number of DOFs in mesh
         col_items = sorted(mesh.cols.items())
@@ -120,13 +123,14 @@ def test_3(dir_name = 'test_rt'):
         print_msg(msg)
 
         ## Forcing vector, analytic solution, interior DOFs mask
-        f_vec       = get_forcing_vec(mesh, f)
-        anl_sol_vec = get_projection_vec(mesh, anl_sol)
+        f_vec  = calc_forcing_vec(mesh, f)
+        u_proj = Projection(mesh, u)
+        u_vec  = u_proj.to_vector()
         
-        intr_mask        = get_intr_mask(mesh)
-        f_vec_intr       = f_vec[intr_mask]
-        anl_sol_vec_intr = anl_sol_vec[intr_mask]
-        bcs_vec          = anl_sol_vec[np.invert(intr_mask)]
+        intr_mask  = get_intr_mask(mesh)
+        f_vec_intr = f_vec[intr_mask]
+        u_vec_intr = u_vec[intr_mask]
+        bcs_vec    = u_vec[np.invert(intr_mask)]
         
         ## Solve manufactured problem
         perf_soln_0 = perf_counter()
@@ -134,7 +138,7 @@ def test_3(dir_name = 'test_rt'):
 
         [M_intr, M_bdry] = split_matrix(mesh, M_mass - M_scat, intr_mask)
 
-        apr_sol_vec_intr = spsolve(M_intr, f_vec_intr - M_bdry @ bcs_vec)
+        uh_vec_intr = spsolve(M_intr, f_vec_intr - M_bdry @ bcs_vec)
         
         perf_soln_f    = perf_counter()
         perf_soln_diff = perf_soln_f - perf_soln_0
@@ -160,7 +164,8 @@ def test_3(dir_name = 'test_rt'):
         )
         print_msg(msg)
         '''
-        
+
+        """
         # Plot global scattering matrix
         fig, ax = plt.subplots()
         for idx in range(0, ncol - 1):
@@ -182,6 +187,7 @@ def test_3(dir_name = 'test_rt'):
         fig.set_size_inches(6.5, 6.5)
         plt.savefig(os.path.join(trial_dir, file_name), dpi = 300)
         plt.close(fig)
+        """
         
         # Plot eigenvalues of interior scattering matrix
         '''
@@ -204,15 +210,16 @@ def test_3(dir_name = 'test_rt'):
         plt.savefig(os.path.join(trial_dir, file_name), dpi = 300)
         plt.close(fig)
         '''
-        
+
+        """
         # Plot solutions
         fig, ax = plt.subplots()
 
-        ax.plot(anl_sol_vec_intr,
+        ax.plot(u_vec_intr,
                 label = 'Analytic Solution',
                 color = 'r',
                 drawstyle = 'steps-post')
-        ax.plot(apr_sol_vec_intr,
+        ax.plot(uh_vec_intr,
                 label = 'Approximate Solution',
                 color = 'k', linestyle = ':',
                 drawstyle = 'steps-post')
@@ -225,9 +232,10 @@ def test_3(dir_name = 'test_rt'):
         fig.set_size_inches(6.5, 6.5)
         plt.savefig(os.path.join(trial_dir, file_name), dpi = 300)
         plt.close(fig)
+        """
         
         # Caluclate error
-        inf_errs[trial] = np.amax(np.abs(anl_sol_vec_intr - apr_sol_vec_intr))
+        inf_errs[trial] = np.amax(np.abs(u_vec_intr - uh_vec_intr))
         
         # Refine the mesh for the next trial
         #col_keys = sorted(mesh.cols.keys())
@@ -256,7 +264,7 @@ def test_3(dir_name = 'test_rt'):
     ax.set_xlabel('Total Degrees of Freedom')
     ax.set_ylabel('L$^{\infty}$ Error')
     
-    ax.set_title('Uniform $h$-Refinement Convergence Rate - Scattering Problem')
+    ax.set_title('Uniform Angular $h$-Refinement Convergence Rate - Scattering Problem')
     
     file_name = 'h-convergence-scatttering.png'
     fig.set_size_inches(6.5, 6.5)

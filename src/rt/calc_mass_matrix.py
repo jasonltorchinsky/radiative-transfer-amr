@@ -23,8 +23,13 @@ def calc_mass_matrix(mesh, kappa):
             [xxb, w_x, yyb, w_y, _, _] = qd.quad_xyth(nnodes_x = ndof_x,
                                                       nnodes_y = ndof_y)
             
-            xxf = push_forward(x0, x1, xxb)
-            yyf = push_forward(y0, y1, yyb)
+            xxf = push_forward(x0, x1, xxb).reshape([ndof_x, 1])
+            yyf = push_forward(y0, y1, yyb).reshape([1, ndof_y])
+
+            w_x = w_x.reshape([ndof_x, 1])
+            w_y = w_y.reshape([1, ndof_y])
+            kappa_col = kappa(xxf, yyf)
+            wx_wy_kappa_col = w_x * w_y * kappa_col
             
             # Create cell indexing for constructing column mass matrix
             [ncells, cell_idxs] = get_cell_idxs(mesh, col_key)
@@ -40,14 +45,8 @@ def calc_mass_matrix(mesh, kappa):
                     dth        = th1 - th0
                     [ndof_th]  = cell.ndofs
                     
-                    ang_mtxs = [None] * ndof_th
-                    
                     [_, _, _, _, _, w_th] = qd.quad_xyth(nnodes_th = ndof_th)
                     
-                    # List of coordinates, values for constructing cell matrices
-                    # NOTE: alpha and beta indices are the same since cell
-                    # mass matrices are diagonal, so we will only calculate the
-                    # beta index
                     cell_ndof = ndof_x * ndof_y * ndof_th
                     betalist  = np.zeros([cell_ndof], dtype = np.int32) # beta index
                     vlist     = np.zeros([cell_ndof]) # Entry value
@@ -63,20 +62,18 @@ def calc_mass_matrix(mesh, kappa):
                     # Construct cell matrix
                     idx = 0
                     for ii in range(0, ndof_x):
-                        wx_i = w_x[ii]
                         for jj in range(0, ndof_y):
-                            wy_j = w_y[jj]
-                            kappa_ij = kappa(xxf[ii], yyf[jj])
+                            wx_wy_kappa_ij = wx_wy_kappa_col[ii, jj]
                             for aa in range(0, ndof_th):
                                 wth_a = w_th[aa]
 
                                 # Calculate entry index, value
                                 betalist[idx] = beta(ii, jj, aa)
                                 
-                                vlist[idx] = dcoeff * wx_i * wy_j * wth_a * kappa_ij
+                                vlist[idx] = dcoeff * wth_a * wx_wy_kappa_ij
                                 
                                 idx += 1
-                    
+                                
                     cell_mtxs[cell_idx] = coo_matrix((vlist, (betalist, betalist)))
                     
             col_mtxs[col_idx] = block_diag(cell_mtxs, format = 'csr')
