@@ -17,7 +17,7 @@ def get_cons_prob(prob_name, prob_num, mesh):
         """
         Smooth-ish in space and angle
         """
-        def anl_sol(x, y, th):
+        def u(x, y, th):
             return np.sin(th)**2 * np.exp(-((x - Lx/2.)**2 + (y - Ly/2.)**2))
         
         def kappa(x, y):
@@ -30,25 +30,30 @@ def get_cons_prob(prob_name, prob_num, mesh):
             return (1.0 / (3.0 * np.pi)) * (1 + (np.cos(th - phi))**2)
         
         def f_mass(x, y, th): # *JUST* kappa * u
-            return kappa(x, y) * anl_sol(x, y, th)
+            return kappa(x, y) * u(x, y, th)
 
         def f_scat(x, y, th): # *JUST* sigma * int_0^2pi Phi(th, th') * u(x, y, th') dth'
             return sigma(x, y) * np.exp(-((x - Lx/2.)**2 + (y - Ly/2.)**2)) \
                 * (1. / 12.) * (6. - np.cos(2. * th))
 
         def f_conv(x, y, th): # *JUST* s.grad(u)
-            return -2. * anl_sol(x, y, th) \
+            return -2. * u(x, y, th) \
                 * ((x - Lx/2) * np.cos(th) + (y - Ly/2.) * np.sin(th))
 
-        def anl_sol_intg_th(x, y):
+        def u_intg_th(x, y):
             return np.pi * np.exp(-((x - Lx/2.)**2 + (y - Ly/2.)**2))
+
+        erfx = erf(Lx/2.)
+        erfy = erf(Ly/2.)
+        def u_intg_xy(th):
+            return np.pi * erfx * erfy * (np.sin(th))**2
 
     elif prob_num == 1:
         """
         Smooth-ish in angle, steep gradient in space.
         """
         
-        def anl_sol(x, y, th):
+        def u(x, y, th):
             return (np.cos(th))**2 * np.exp(-(8. * (x - Lx/3.)**2
                                               + (1. / 8.) * (y - Ly/2.)**2))
         
@@ -62,26 +67,31 @@ def get_cons_prob(prob_name, prob_num, mesh):
             return (1.0 / (3.0 * np.pi)) * (1 + (np.cos(th - phi))**2)
         
         def f_mass(x, y, th): # *JUST* kappa * u
-            return kappa(x, y) * anl_sol(x, y, th)
+            return kappa(x, y) * u(x, y, th)
 
         def f_scat(x, y, th): # *JUST* sigma * int_0^2pi Phi(th, th') * u(x, y, th') dth'
             return sigma(x, y) * (1. / 12.) * (6. + np.cos(2. * th)) \
                 * np.exp(-(8. * (x - Lx/3.)**2 + (1. / 8.) * (y - Ly/2.)**2))
 
         def f_conv(x, y, th): # *JUST* s.grad(u)
-            return anl_sol(x, y, th) * (-16. * (x - Lx/3.) * np.cos(th)
+            return u(x, y, th) * (-16. * (x - Lx/3.) * np.cos(th)
                                         + (1. / 4.) * (y - Ly/2.) * np.sin(th))
 
-        def anl_sol_intg_th(x, y):
+        def u_intg_th(x, y):
             return np.pi * np.exp(-(8. * (x - Lx/3.)**2
                                     + (1. / 8.) * (y - Ly/2.)**2))
+        
+        erfx = erf(2. * np.sqrt(2) * Lx/3.) + erf(4. * np.sqrt(2) * Lx/3.)
+        erfy = erf(Ly/(4. * np.sqrt(2)))
+        def u_intg_xy(th):
+            return (np.pi / 2.) * erfx * erfy * (np.cos(th))**2
 
     elif prob_num == 2:
         """
         Flat in space, steep gradient in angle.
         """
 
-        def anl_sol(x, y, th):
+        def u(x, y, th):
             return np.exp(-30. * (th - 7. * np.pi / 5.)**2)
         
         def kappa(x, y):
@@ -94,7 +104,7 @@ def get_cons_prob(prob_name, prob_num, mesh):
             return (1.0 / (3.0 * np.pi)) * (1 + (np.cos(th - phi))**2)
         
         def f_mass(x, y, th): # *JUST* kappa * u
-            return kappa(x, y) * anl_sol(x, y, th)
+            return kappa(x, y) * u(x, y, th)
 
         # Calculate the error function terms outside of the function evaluation
         erf0 = erf(3. * np.sqrt(6. / 5.) * np.pi)
@@ -115,15 +125,18 @@ def get_cons_prob(prob_name, prob_num, mesh):
         def f_conv(x, y, th): # *JUST* s.grad(u)
             return 0.
 
-        def anl_sol_intg_th(x, y):
+        def u_intg_th(x, y):
             return 0.5 * np.sqrt(np.pi / 30.) * (erf0 + erf1)
+
+        def u_intg_xy(th):
+            return Lx * Ly * np.exp(-30. * (th - 7. * np.pi / 5.)**2)
     
     elif prob_num == 3:
         """
         Steep gradient in space and angle.
         """
 
-        def anl_sol(x, y, th):
+        def u(x, y, th):
             return np.exp(-30. * (th - 7. * np.pi / 5.)**2) \
                 * np.exp(-(8. * (x - Lx / 3.)**2
                            + (x - Lx / 3.) * (y - Ly) \
@@ -139,7 +152,7 @@ def get_cons_prob(prob_name, prob_num, mesh):
             return (1.0 / (3.0 * np.pi)) * (1 + (np.cos(th - phi))**2)
         
         def f_mass(x, y, th): # *JUST* kappa * u
-            return kappa(x, y) * anl_sol(x, y, th)
+            return kappa(x, y) * u(x, y, th)
 
         # Calculate the error function terms outside of the function evaluation
         erf0 = erf(3. * np.sqrt(6. / 5.) * np.pi)
@@ -167,18 +180,21 @@ def get_cons_prob(prob_name, prob_num, mesh):
                 * (((Ly - y) - 16. * (x - Lx/3.)) * np.cos(th) \
                    + ((Lx/3. - x) + (Ly - y) / 4.) * np.sin(th))
 
-        def anl_sol_intg_th(x, y):
+        def u_intg_th(x, y):
             return 0.5 * np.sqrt(np.pi / 30.) * (erf0 + erf1) \
                 * np.exp(-(8. * (x - Lx / 3.)**2
                            + (x - Lx / 3.) * (y - Ly) \
                            + (1. / 8.) * (y - Ly)**2))
+        def u_intg_xy(th):
+            return  np.exp(-30. * (th - 7. * np.pi / 5.)**2)
+        
 
     elif prob_num == 4:
         """
         Flat in space, gentle in angle.
         """
         
-        def anl_sol(x, y, th):
+        def u(x, y, th):
             return (1. / 2.) * (np.sin(th / 2.))**2
         
         def kappa(x, y):
@@ -191,7 +207,7 @@ def get_cons_prob(prob_name, prob_num, mesh):
             return (1.0 / (3.0 * np.pi)) * (1 + (np.cos(th - phi))**2)
         
         def f_mass(x, y, th): # *JUST* kappa * u
-            return kappa(x, y) * anl_sol(x, y, th)
+            return kappa(x, y) * u(x, y, th)
 
         def f_scat(x, y, th): # *JUST* sigma * int_0^2pi Phi(th, th') * u(x, y, th') dth'
             return sigma(x, y) * (1. / 4.)
@@ -199,7 +215,7 @@ def get_cons_prob(prob_name, prob_num, mesh):
         def f_conv(x, y, th): # *JUST* s.grad(u)
             return 0
 
-        def anl_sol_intg_th(x, y):
+        def u_intg_th(x, y):
             return np.pi / 2
             
     else:
@@ -229,4 +245,4 @@ def get_cons_prob(prob_name, prob_num, mesh):
         print_msg(msg)
         quit()
         
-    return [anl_sol, kappa, sigma, Phi, f, anl_sol_intg_th]
+    return [u, kappa, sigma, Phi, f, u_intg_th]
