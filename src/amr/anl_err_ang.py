@@ -20,15 +20,15 @@ def anl_err_ang(mesh, proj, anl_sol_intg_xy):
         if col.is_lf:
             col_err = 0.
             
-            [x0, y0, xf, yf] = col.pos[:]
+            [x0, y0, x1, y1] = col.pos[:]
             [dx, dy] = [x1 - x0, y1 - y0]
             [ndof_x, ndof_y] = col.ndofs[:]
             
             [xxb, w_x, yyb, w_y, _, _] = qd.quad_xyth(nnodes_x = ndof_x,
                                                       nnodes_y = ndof_y)
             
-            xxf = push_forward(x0, xf, xxb).reshape(ndof_x, 1, 1)
-            yyf = push_forward(y0, yf, yyb).reshape(1, ndof_y, 1)
+            xxf = push_forward(x0, x1, xxb).reshape(ndof_x, 1, 1)
+            yyf = push_forward(y0, y1, yyb).reshape(1, ndof_y, 1)
             
             w_x = w_x.reshape(ndof_x, 1, 1)
             w_y = w_y.reshape(1, ndof_y, 1)
@@ -41,16 +41,18 @@ def anl_err_ang(mesh, proj, anl_sol_intg_xy):
                     [th0, thf] = cell.pos[:]
                     [ndof_th]  = cell.ndofs[:]
                     
-                    [_, _, _, _, thb] = qd.quad_xyth(nnodes_th = ndof_th)
+                    [_, _, _, _, thb, _] = qd.quad_xyth(nnodes_th = ndof_th)
                     
                     thf = push_forward(th0, thf, thb).reshape(1, 1, ndof_th)
                     
                     uh_cell = proj.cols[col_key].cells[cell_key].vals
-                    uh_cell_intg_xy = np.sum(dcoeff * w_th * uh_cell, axis = (0, 1))
+                    uh_cell_intg_xy = np.sum(dcoeff * w_x * w_y * uh_cell, axis = (0, 1))
                     
                     u_cell_intg_xy = anl_sol_intg_xy(thf)
                     
                     cell_err = np.amax(np.abs(u_cell_intg_xy - uh_cell_intg_xy))
+                    err_ind.cols[col_key].cells[cell_key].err_ind = cell_err
+                    
                     max_u_intg_xy = max(max_u_intg_xy, np.amax(np.abs(u_cell_intg_xy)))
             
     # Weight to be relative error

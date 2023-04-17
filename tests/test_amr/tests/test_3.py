@@ -19,7 +19,7 @@ import dg.quadrature as qd
 from rt import calc_mass_matrix, calc_scat_matrix, \
     calc_intr_conv_matrix, calc_bdry_conv_matrix, \
     calc_forcing_vec
-from amr import cell_jump_err, ref_by_ind
+from amr import anl_err_ang, cell_jump_err, ref_by_ind
 from amr.utils import plot_error_indicator, plot_error_indicator_dist, plot_cell_jumps
 
 from utils import print_msg
@@ -39,7 +39,7 @@ def test_3(dir_name = 'test_amr'):
               '#CC79A7']
     ncolor = len(colors)
 
-    ref_types = ['uni-ang', 'amr-jmp']
+    ref_types = ['uni-ang', 'amr-anl-ang', 'amr-jmp']
     nref_type = len(ref_types)
     
     max_ndof   = 2**13
@@ -60,16 +60,16 @@ def test_3(dir_name = 'test_amr'):
         # Get the base mesh, test_problem
         [Lx, Ly]                   = [2., 3.]
         pbcs                       = [False, False]
-        [ndof_x, ndof_y, ndof_th]  = [2, 2, 2]
+        [ndof_x, ndof_y, ndof_th]  = [5, 5, 2]
         has_th                     = True
         mesh = gen_mesh(Ls     = [Lx, Ly],
                         pbcs   = pbcs,
                         ndofs  = [ndof_x, ndof_y, ndof_th],
                         has_th = has_th)
         
-        [u, kappa, sigma, Phi, f, _] = get_cons_prob(prob_name = 'comp',
-                                                     prob_num  = 2,
-                                                     mesh      = mesh)
+        [u, kappa, sigma, Phi, f, _, u_intg_xy] = get_cons_prob(prob_name = 'comp',
+                                                                prob_num  = 2,
+                                                                mesh      = mesh)
         
         ref_ndofs[ref_type] = []
         errs[ref_type] = []
@@ -146,7 +146,7 @@ def test_3(dir_name = 'test_amr'):
             max_err  = np.amax(np.abs(u_vec - uh_vec)) / np.amax(np.abs(u_vec))
             errs[ref_type].append(max_err)
             
-            # Plot the numerial solution
+            # Plot the numerical solution
             file_name = os.path.join(trial_dir, 'uh.png')
             angles = np.linspace(0, 1.75, 8) * np.pi
             plot_projection(mesh, uh_proj, file_name = file_name, angles = angles)
@@ -186,11 +186,23 @@ def test_3(dir_name = 'test_amr'):
             file_name = os.path.join(trial_dir, 'cell_jump_err_dist.png')
             plot_error_indicator_dist(mesh, cell_jump_err_ind, file_name = file_name,
                                       name = 'Inter-Cell Jump')
-            
+
+            # Plot the analytic error (angular) indicator
+            anl_err_ang_ind = anl_err_ang(mesh, uh_proj, u_intg_xy)
+            file_name = os.path.join(trial_dir, 'anl_err_ang.png')
+            plot_error_indicator(mesh, anl_err_ang_ind, file_name = file_name,
+                                 name = 'Analytic (Angular) Max-Norm Column')
+
+            file_name = os.path.join(trial_dir, 'anl_err_ang_dist.png')
+            plot_error_indicator_dist(mesh, anl_err_ang_ind, file_name = file_name,
+                                      name = 'Analytic (Angular) Max-Norm Column')
             
             # Refine the mesh for the next trial
             if ref_type == 'uni-ang':
                 mesh.ref_mesh(kind = 'ang')
+            elif ref_type == 'amr-anl-ang':
+                anl_err_ang_ind = anl_err_ang(mesh, uh_proj, u_intg_xy)
+                mesh = ref_by_ind(mesh, anl_err_ang_ind, tol)
             elif ref_type == 'amr-jmp':
                 cell_jump_err_ind = cell_jump_err(mesh, uh_proj)
                 mesh = ref_by_ind(mesh, cell_jump_err_ind, tol)
@@ -221,6 +233,8 @@ def test_3(dir_name = 'test_amr'):
         ref_type = ref_types[rr]
         if ref_type == 'uni-ang':
             label = 'Uniform - Angular'
+        elif ref_type == 'amr-anl-ang':
+            label = 'Adaptive (Analytic - Angular) - Angular'
         elif ref_type == 'amr-jmp':
             label = 'Adaptive (Inter-Cell Jump) - Angular'
             

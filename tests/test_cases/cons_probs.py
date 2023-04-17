@@ -186,7 +186,7 @@ def get_cons_prob(prob_name, prob_num, mesh):
                            + (x - Lx / 3.) * (y - Ly) \
                            + (1. / 8.) * (y - Ly)**2))
         def u_intg_xy(th):
-            return  np.exp(-30. * (th - 7. * np.pi / 5.)**2)
+            return  None
         
 
     elif prob_num == 4:
@@ -217,6 +217,9 @@ def get_cons_prob(prob_name, prob_num, mesh):
 
         def u_intg_th(x, y):
             return np.pi / 2
+        
+        def u_intg_xy(th):
+            return (1. / 2.) * (np.sin(th / 2.))**2
             
     else:
         msg = 'ERROR: Solution number {} is unsupported.'.format(sol_num)
@@ -245,4 +248,4 @@ def get_cons_prob(prob_name, prob_num, mesh):
         print_msg(msg)
         quit()
         
-    return [u, kappa, sigma, Phi, f, u_intg_th]
+    return [u, kappa, sigma, Phi, f, u_intg_th, u_intg_xy]

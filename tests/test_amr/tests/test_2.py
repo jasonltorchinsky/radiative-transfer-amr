@@ -39,11 +39,11 @@ def test_2(dir_name = 'test_amr'):
               '#CC79A7']
     ncolor = len(colors)
 
-    ref_types = ['uni-spt', 'amr-anl', 'amr-anl-spt']
+    ref_types = ['uni-spt', 'amr-anl-spt', 'amr-jmp']
     nref_type = len(ref_types)
     
     max_ndof   = 2**13
-    max_ntrial = 16
+    max_ntrial = 9
     tol        = 0.9
     
     # Set up arrays to store error
@@ -60,16 +60,16 @@ def test_2(dir_name = 'test_amr'):
         # Get the base mesh, test_problem
         [Lx, Ly]                   = [2., 3.]
         pbcs                       = [False, False]
-        [ndof_x, ndof_y, ndof_th]  = [2, 2, 2]
+        [ndof_x, ndof_y, ndof_th]  = [2, 2, 4]
         has_th                     = True
         mesh = gen_mesh(Ls     = [Lx, Ly],
                         pbcs   = pbcs,
                         ndofs  = [ndof_x, ndof_y, ndof_th],
                         has_th = has_th)
         
-        [u, kappa, sigma, Phi, f, u_intg_th] = get_cons_prob(prob_name = 'comp',
-                                                             prob_num  = 1,
-                                                             mesh      = mesh)
+        [u, kappa, sigma, Phi, f, u_intg_th, _] = get_cons_prob(prob_name = 'comp',
+                                                                prob_num  = 1,
+                                                                mesh      = mesh)
         
         ref_ndofs[ref_type] = []
         errs[ref_type] = []
@@ -181,32 +181,19 @@ def test_2(dir_name = 'test_amr'):
             plot_error_indicator_dist(mesh, col_jump_err_ind, file_name = file_name,
                                       name = 'Inter-Column Jump')
             
-            # Plot the analytic error indicator
-            anl_err_ind = anl_err(mesh, uh_proj, u)
-            file_name = os.path.join(trial_dir, 'anl_err.png')
-            plot_error_indicator(mesh, anl_err_ind, file_name = file_name,
-                                 name = 'Analytic Max-Norm Column')
-
-            file_name = os.path.join(trial_dir, 'anl_err_dist.png')
-            plot_error_indicator_dist(mesh, anl_err_ind, file_name = file_name,
-                                      name = 'Analytic Max-Norm Column')
-
             # Plot the analytic error (spatial) indicator
             anl_err_spt_ind = anl_err_spt(mesh, uh_proj, u_intg_th)
             file_name = os.path.join(trial_dir, 'anl_err_spt.png')
             plot_error_indicator(mesh, anl_err_spt_ind, file_name = file_name,
-                                 name = 'Analytic Max-Norm Column')
-
-            file_name = os.path.join(trial_dir, 'anl_err_dist.png')
-            plot_error_indicator_dist(mesh, anl_err_ind, file_name = file_name,
-                                      name = 'Analytic Max-Norm Column')
+                                 name = 'Analytic (Spatial) Max-Norm Column')
+            
+            file_name = os.path.join(trial_dir, 'anl_err_spt_dist.png')
+            plot_error_indicator_dist(mesh, anl_err_spt_ind, file_name = file_name,
+                                      name = 'Analytic (Spatial) Max-Norm Column')
             
             # Refine the mesh for the next trial
             if ref_type == 'uni-spt':
                 mesh.ref_mesh(kind = 'spt')
-            elif ref_type == 'amr-anl':
-                anl_err_ind = anl_err(mesh, uh_proj, u)
-                mesh = ref_by_ind(mesh, anl_err_ind, tol)
             elif ref_type == 'amr-anl-spt':
                 anl_err_spt_ind = anl_err_spt(mesh, uh_proj, u_intg_th)
                 mesh = ref_by_ind(mesh, anl_err_spt_ind, tol)
@@ -242,7 +229,7 @@ def test_2(dir_name = 'test_amr'):
             label = 'Uniform - Spatial'
         elif ref_type == 'amr-anl':
             label = 'Adaptive (Analytic) - Spatial'
-        elif ref_type == 'amr-anl-spatial':
+        elif ref_type == 'amr-anl-spt':
             label = 'Adaptive (Analytic - Spatial) - Spatial'
         elif ref_type == 'amr-jmp':
             label = 'Adaptive (Inter-Column Jump) - Spatial'
