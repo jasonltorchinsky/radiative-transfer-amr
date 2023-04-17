@@ -20,7 +20,7 @@ from rt import calc_mass_matrix, calc_scat_matrix, \
     calc_intr_conv_matrix, calc_bdry_conv_matrix, \
     calc_forcing_vec
 from amr import anl_err, ref_by_ind
-from amr.utils import plot_error_indicator
+from amr.utils import plot_error_indicator, plot_cell_jumps
 
 from utils import print_msg
 
@@ -187,7 +187,7 @@ def test_5(dir_name = 'test_rt'):
         )
         print_msg(msg)
 
-        # Plot the analytic, approximate solutions
+        # Plot the numerical solution
         uh_vec = merge_vectors(uh_vec_intr, bcs_vec, intr_mask)
         uh_proj = to_projection(mesh, uh_vec)
         file_name = os.path.join(trial_dir, 'uh_proj.png')
@@ -203,6 +203,10 @@ def test_5(dir_name = 'test_rt'):
         file_name = os.path.join(trial_dir, 'uh_mean.png')
         plot_projection(mesh_2d, mean_uh, file_name = file_name)
 
+        file_name = os.path.join(trial_dir, 'uh_cell_jumps.png')
+        plot_cell_jumps(mesh, uh_proj, file_name)
+
+        # Plot the analytic solution
         file_name = os.path.join(trial_dir, 'u_proj.png')
         angles = [0, np.pi/3, 2 * np.pi / 3, np.pi,
                   4 * np.pi / 3, 5 * np.pi / 3]
@@ -214,6 +218,9 @@ def test_5(dir_name = 'test_rt'):
         mean_u = intg_th(mesh, u_proj)
         file_name = os.path.join(trial_dir, 'u_mean.png')
         plot_projection(mesh_2d, mean_u, file_name = file_name)
+
+        file_name = os.path.join(trial_dir, 'u_cell_jumps.png')
+        plot_cell_jumps(mesh, u_proj, file_name)
         
         # Plot the difference in solutions
         diff_vec_intr = uh_vec_intr - u_vec_intr

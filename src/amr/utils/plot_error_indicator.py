@@ -93,97 +93,62 @@ def plot_error_indicator_by_cell(mesh, err_ind, file_name = None, **kwargs):
     angles   = kwargs['angles']
     nangles  = np.shape(angles)[0]
 
-    # Set up the subplots
-    [nrows, ncols] = get_closest_factors(nangles)
+    # Get number of Columns in mesh to get number of colums, rows in subplots
+    ncol = len(mesh.cols.values())
+    [nrow, ncol] = get_closest_factors(ncol)
 
-    fig, axs = plt.subplots(nrows, ncols, sharex = True, sharey = True)
-    for ax in axs.flatten():
-        ax.set_xlim([0, Lx])
-        ax.set_ylim([0, Ly])
+    fig, axs = plt.subplots(nrow, ncol, sharex = True, sharey = True)
     
-    # Get colorbar min/max
-    [vmin, vmax] = [10.**10, -10.**10]
     col_items = sorted(mesh.cols.items())
-    for col_key, col in col_items:  
-        # There should only be one cell, so this should be okay
-        cell_items = sorted(col.cells.items())
-        for cell_key, cell in cell_items:
-            vmin = min(vmin, np.amin(cell.vals))
-            vmax = max(vmax, np.amax(cell.vals))
-
-    for th_idx in range(0, nangles):
-        th = angles[th_idx]
-        ax_x_idx = int(np.mod(th_idx, ncols))
-        ax_y_idx = int(np.floor(th_idx / ncols))
-
-        ax = axs[ax_y_idx, ax_x_idx]
-
-        # Title
-        th_rads = th / np.pi
-        ax.set_title('{:.2f}\u03C0 Radians'.format(th_rads))
-        
-        for col_key, col in col_items:
-            # Plot column
-            [x0, y0, x1, y1] = col.pos
-            [ndof_x, ndof_y] = col.ndofs
+    ax_idx = 0
+    for col_key, col in col_items:
+        if col.is_lf:
+            ax_col_idx = int(np.mod(ax_idx, ncol))
+            ax_row_idx = int(np.floor(ax_idx / ncol))
             
-            [xxb, _, yyb, _, _, _] = quad_xyth(nnodes_x = ndof_x,
-                                               nnodes_y = ndof_y)
+            ax = axs[ax_row_idx, ax_col_idx]
             
-            xxf = push_forward(x0, x1, xxb)
-            yyf = push_forward(y0, y1, yyb)
-            
-            # There should only be one cell, so this should be okay
             cell_items = sorted(col.cells.items())
             for cell_key, cell in cell_items:
-                [th0, th1] = cell.pos
-                [ndof_th]  = cell.ndofs
-                if (th0 <= th) and (th <= th1):
-                    [_, _, _, _, thb, _] = quad_xyth(nnodes_th = ndof_th)
-                    th_pb = pull_back(th0, th1, th)
+                if cell.is_lf:
+                    [th0, th1] = cell.pos[:]
                     
-                    vals_xyth = cell.vals[:,:,:]
-                    vals_xy = np.zeros([ndof_x, ndof_y])
-                    for ii in range(0, ndof_x):
-                        for jj in range(0, ndof_y):
-                            for aa in range(0, ndof_th):
-                                vals_xy[ii, jj] += vals_xyth[ii, jj, aa] \
-                                    * lag_eval(thb, aa, th_pb)
+                    cell_err_ind = err_ind.cols[col_key].cells[cell_key].err_ind
                     
-                    pc = ax.pcolormesh(xxf, yyf, vals_xy.transpose(),
-                                       shading = 'auto',
-                                       vmin = vmin, vmax = vmax)
+                    th = np.asarray([th0, th1])
+                    errs = cell_err_ind * np.ones_like(th)
                     
-                    break
-    
-    for th_idx in range(0, nangles):
-        th = angles[th_idx]
-        ax_x_idx = int(np.mod(th_idx, ncols))
-        ax_y_idx = int(np.floor(th_idx / ncols))
-
-        ax = axs[ax_y_idx, ax_x_idx]
-
-        # Title
-        th_rads = th / np.pi
-        ax.set_title('{:.2f}\u03C0 Radians'.format(th_rads))
-        
-        for col_key, col in col_items:
-            # Plot column
-            [x0, y0, x1, y1] = col.pos
-            [dx, dy] = [x1 - x0, y1 - y0]
+                    ax.plot(th, errs,
+                            color     = 'black',
+                            linestyle = '-',
+                            linewidth = 0.8)
+                    
+                    ax.axvline(x = th1,
+                               color     = 'gray',
+                               linestyle = '--',
+                               linewidth = 0.2)           
             
-            rect = Rectangle((x0, y0), dx, dy, fill = False)
-            ax.add_patch(rect)
+            title_str = 'Column {}'.format(col_key)
+            ax.set_title(title_str)
+
+            nth_ticks = 9
+            th_ticks = np.linspace(0, 2, nth_ticks) * np.pi
+            th_tick_labels = [None] * nth_ticks
+            for aa in range(0, nth_ticks):
+                th_rad = th_ticks[aa] / np.pi
+                th_tick_labels[aa] = '{:.2f}\u03C0'.format(th_rad)
+            ax.set_xticks(th_ticks)
+            ax.set_xticklabels(th_tick_labels)
             
-    fig.colorbar(pc, ax = axs, location = 'right')
-    
+            ax_idx += 1
+            
     if file_name:
-        width  = (ncols / nrows) * 12
-        height = (nrows / ncols) * 12
+        width  = (ncol / nrow) * 12
+        height = (nrow / ncol) * 12
         fig.set_size_inches(width, height)
         plt.savefig(file_name, dpi = 300)
         plt.close(fig)
-        
+
     return [fig, ax]
 
 

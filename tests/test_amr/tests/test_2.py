@@ -27,7 +27,7 @@ from utils import print_msg
 
 def test_2(dir_name = 'test_amr'):
     """
-    Compare the inter-column jump error estimator against the analtyic error
+    Compare the inter-column jump error estimator against the analytic error
     estimator.
     """
     
@@ -68,8 +68,8 @@ def test_2(dir_name = 'test_amr'):
                         has_th = has_th)
         
         [u, kappa, sigma, Phi, f, u_intg_th] = get_cons_prob(prob_name = 'comp',
-                                                     prob_num  = 1,
-                                                     mesh      = mesh)
+                                                             prob_num  = 1,
+                                                             mesh      = mesh)
         
         ref_ndofs[ref_type] = []
         errs[ref_type] = []
