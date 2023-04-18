@@ -84,7 +84,7 @@ def get_cons_prob(prob_name, prob_num, mesh):
         erfx = erf(4. * np.sqrt(2) * Lx/3.) + erf(8. * np.sqrt(2) * Lx/3.)
         erfy = erf(2. * Ly)
         def u_intg_xy(th):
-            return (np.pi / (32. * np.sqrt(2.)) * erfx * erfy * (np.cos(th))**2
+            return (np.pi / (32. * np.sqrt(2.))) * erfx * erfy * (np.cos(th))**2
 
     elif prob_num == 2:
         """
