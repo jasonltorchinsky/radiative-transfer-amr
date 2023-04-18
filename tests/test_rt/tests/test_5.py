@@ -37,12 +37,12 @@ def test_5(dir_name = 'test_rt'):
     #                        : 'uni' - uniform
     #                        : 'amr' - adaptive
     ref_type = 'uni'
-    ntrial   = 4
+    ntrial   = 3
     
     # Get the base mesh, manufactured solution
     [Lx, Ly]                   = [2., 3.]
     pbcs                       = [False, False]
-    [ndof_x, ndof_y, ndof_th]  = [2, 2, 2]
+    [ndof_x, ndof_y, ndof_th]  = [4, 4, 4]
     has_th                     = True
     mesh = gen_mesh(Ls     = [Lx, Ly],
                     pbcs   = pbcs,
@@ -50,7 +50,7 @@ def test_5(dir_name = 'test_rt'):
                     has_th = has_th)
     
     [u, kappa, sigma, Phi, f, _, _] = get_cons_prob(prob_name = 'comp',
-                                                    prob_num  = 3,
+                                                    prob_num  = 0,
                                                     mesh      = mesh)
     
     # Solve simplified problem over several trials

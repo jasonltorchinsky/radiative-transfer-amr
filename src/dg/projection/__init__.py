@@ -5,6 +5,7 @@ from .Projection_Cell import Projection_Cell
 
 from .push_pull import push_forward, pull_back
 from .intg_col_th import intg_col_th
+from .get_f2f_matrix import get_f2f_matrix
 
 from ..matrix import get_idx_inv_map, get_col_idxs, get_cell_idxs
 from ..mesh import get_hasnt_th

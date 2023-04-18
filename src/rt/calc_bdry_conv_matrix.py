@@ -1,13 +1,16 @@
 import numpy as np
 from scipy.sparse import coo_matrix, csr_matrix, block_diag, bmat
 
+from .get_Ex  import get_Ex
+from .get_Ey  import get_Ey
+from .get_Eth import get_Eth
+
 from dg.matrix import get_idx_map, get_col_idxs, get_cell_idxs
 import dg.mesh as ji_mesh
 from dg.projection import push_forward, pull_back
 import dg.quadrature as qd
 
 from utils import print_msg
-
 
 def calc_bdry_conv_matrix(mesh):
     
@@ -83,7 +86,15 @@ def calc_col_matrix(mesh, col_key_0, col_key_1, F):
     """
     Create the column interaction matrix between col_0, col_1.
     """
-
+    
+    if (F%2 == 0): # Construct E^K'K,y_jq
+        E_x = None
+        E_y = get_Ey(mesh, col_key_0, col_key_1)
+                        
+    else: # F%2 == 1, construct E^K'K,x_ip
+        E_x = get_Ex(mesh, col_key_0, col_key_1)
+        E_y = None
+    
     col_0 = mesh.cols[col_key_0]
     col_1 = mesh.cols[col_key_1]
     
@@ -150,7 +161,7 @@ def calc_col_matrix(mesh, col_key_0, col_key_1, F):
                                      cell_key_0,
                                      col_key_0,
                                      cell_key_0,
-                                     F)
+                                     F, E_x, E_y)
             else:
                 nhbr_cell_keys = ji_mesh.get_cell_nhbr_in_col(mesh,
                                                               col_key_0,
@@ -161,21 +172,22 @@ def calc_col_matrix(mesh, col_key_0, col_key_1, F):
                         cell_1 = col_1.cells[cell_key_1]
                         if cell_1.is_lf:
                             cell_idx_1 = cell_idxs_1[cell_key_1]
-
+                            
                             cell_mtxs_01[cell_idx_0][cell_idx_1] += \
                                 calc_cell_matrix(mesh,
                                                  col_key_0,
                                                  cell_key_0,
                                                  col_key_1,
                                                  cell_key_1,
-                                                 F)
+                                                 F, E_x, E_y)
                     
     col_mtx_00 = block_diag(cell_mtxs_00, format = 'csr')
     col_mtx_01 = bmat(      cell_mtxs_01, format = 'csr')
 
     return [col_mtx_00, col_mtx_01]
 
-def calc_cell_matrix(mesh, col_key_0, cell_key_0, col_key_1, cell_key_1, F):
+def calc_cell_matrix(mesh, col_key_0, cell_key_0, col_key_1, cell_key_1, F,
+                     E_x, E_y):
     """
     Create the column interaction matrix between col_0, col_1.
     """
@@ -199,9 +211,9 @@ def calc_cell_matrix(mesh, col_key_0, cell_key_0, col_key_1, cell_key_1, F):
     # _0 => Cell K in equations (in column C)
     # **b => Pull back coordinates (in [-1, 1])
     # w* => Quadrature weights
-    [x0_0, y0_0, x1_0, y1_0]         = col_0.pos
-    [dx_0, dy_0]                     = [x1_0 - x0_0, y1_0 - y0_0]
-    [ndof_x_0, ndof_y_0]             = col_0.ndofs
+    [x0_0, y0_0, x1_0, y1_0] = col_0.pos
+    [dx_0, dy_0]             = [x1_0 - x0_0, y1_0 - y0_0]
+    [ndof_x_0, ndof_y_0]     = col_0.ndofs
     
     [th0_0, th1_0] = cell_0.pos
     dth_0          = th1_0 - th0_0
@@ -212,7 +224,6 @@ def calc_cell_matrix(mesh, col_key_0, cell_key_0, col_key_1, cell_key_1, F):
                      nnodes_th = ndof_th_0)
     
     cell_ndof_0    = ndof_x_0 * ndof_y_0 * ndof_th_0
-    
     
     # Set array to store cell matrices for inter-column matrices
     # Certainly not block diagonal, but set sizes later once we get number of
@@ -239,10 +250,6 @@ def calc_cell_matrix(mesh, col_key_0, cell_key_0, col_key_1, cell_key_1, F):
         cell_mtx = coo_matrix((cell_ndof_0, cell_ndof_1))
         return cell_mtx
 
-    # Theta^F function
-    def Theta_F_func(theta):
-        return np.cos(theta - F * np.pi / 2)
-
     # Set up non-Delta theta part of dcoeff
     if (F == 0) or (F == 2):
         dcoeff = (dy_0 * dth_0) / 4.
@@ -253,79 +260,10 @@ def calc_cell_matrix(mesh, col_key_0, cell_key_0, col_key_1, cell_key_1, F):
     # alpha is number of rows, beta is the number of columns
     alpha = get_idx_map(ndof_x_0, ndof_y_0, ndof_th_0)
     beta  = get_idx_map(ndof_x_1, ndof_y_1, ndof_th_1)
-                    
-    if (F%2 == 0): # Construct E^K'K,y_jq
-        E_y = np.zeros([ndof_y_1, ndof_y_0])
-        if ndof_y_0 > ndof_y_1:
-            yyf_0   = push_forward(y0_0, y1_0, yyb_0)
-            yyb_0_1 = pull_back(   y0_1, y1_1, yyf_0)
-            
-            for jj in range(0, ndof_y_1):
-                for qq in range(0, ndof_y_0):
-                    wy_0_q = wy_0[qq]
-                    psi_j  = qd.lag_eval(yyb_1, jj, yyb_0_1[qq])
-                    E_y[jj, qq] = wy_0_q * psi_j
-                    
-        else: # ndof_y_0 < ndof_y_1
-            yyf_1_0   = push_forward(y0_0, y1_0, yyb_1  )
-            yyb_1_0_1 = pull_back(   y0_1, y1_1, yyf_1_0)
-            
-            for jj in range(0, ndof_y_1):
-                for qq in range(0, ndof_y_0):
-                    for jjp in range(0, ndof_y_1):
-                        psi_j = qd.lag_eval(yyb_1, jj, yyb_1_0_1[jjp])
-                        psi_q = qd.lag_eval(yyb_0, qq, yyb_1[jjp]    )
-                        E_y[jj, qq] += wy_1[jjp] * psi_j * psi_q
-                                
-    else: # F%2 == 1, construct E^K'K,x_ip
-        E_x = np.zeros([ndof_x_1, ndof_x_0])
-        if ndof_x_0 > ndof_x_1:
-            xxf_0   = push_forward(x0_0, x1_0, xxb_0)
-            xxb_0_1 = pull_back(   x0_1, x1_1, xxf_0)
-            
-            for ii in range(0, ndof_x_1):
-                for pp in range(0, ndof_x_0):
-                    wx_0_p = wx_0[pp]
-                    phi_i  = qd.lag_eval(xxb_1, ii, xxb_0_1[pp])
-                    E_x[ii, pp] = wx_0_p * phi_i
-                    
-        else: # if ndof_x_0 < ndof_x_1
-            xxf_1_0   = push_forward(x0_0, x1_0, xxb_1  )
-            xxb_1_0_1 = pull_back(   x0_1, x1_1, xxf_1_0)
-            
-            for ii in range(0, ndof_x_1):
-                for pp in range(0, ndof_x_0):
-                    for iip in range(0, ndof_x_1):
-                        phi_i = qd.lag_eval(xxb_1, ii, xxb_1_0_1[iip])
-                        phi_p = qd.lag_eval(xxb_0, pp, xxb_1[iip]    )
-                        E_x[ii, pp] += wx_1[iip] * phi_i * phi_p
+
                         
-    E_th = np.zeros([ndof_th_1, ndof_th_0])
-    if ndof_th_0 >= ndof_th_1:
-        thf_0   = push_forward(th0_0, th1_0, thb_0)
-        Theta_F = Theta_F_func(thf_0)
-        
-        thb_0_1 = pull_back(th0_1, th1_1, thf_0)
-        
-        for aa in range(0, ndof_th_1):
-            for rr in range(0, ndof_th_0):
-                wth_0_r   = wth_0[rr]
-                Theta_F_r = Theta_F[rr]
-                xi_a      = qd.lag_eval(thb_1, aa, thb_0_1[rr])
-                E_th[aa, rr] = wth_0_r * Theta_F_r * xi_a
-                
-    else: # ndof_th_0 < ndof_th_1
-        thf_1_0 = push_forward(th0_0, th1_0, thb_1)
-        Theta_F = Theta_F_func(thf_1_0)
-        
-        thb_1_0_1 = pull_back(th0_1, th1_1, thf_1_0)
-        
-        for aa in range(0, ndof_th_1):
-            for rr in range(0, ndof_th_0):
-                for aap in range(0, ndof_th_1):
-                    xi_a = qd.lag_eval(thb_1, aa, thb_1_0_1[aap])
-                    xi_r = qd.lag_eval(thb_0, rr, thb_1[aap]    )
-                    E_th[aa, rr] += wth_1[aap] * Theta_F[aap] * xi_a * xi_r
+    E_th = get_Eth(mesh, col_key_0, cell_key_0,
+                   col_key_1, cell_key_1, F)
                     
     # Many quantities are actually dependent only on
     # the parity of F not F itself, so we can 

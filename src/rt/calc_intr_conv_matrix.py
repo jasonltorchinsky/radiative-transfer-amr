@@ -7,7 +7,7 @@ import dg.quadrature as qd
 
 def calc_intr_conv_matrix(mesh):
 
-    # Create column indexing for constructing global mass matrix
+    # Create column indexing for constructing global interior convection  matrix
     [ncols, col_idxs] = get_col_idxs(mesh)
     col_mtxs = [None] * ncols # Global interior convection matrix is block-diagonal,
                               # and so there are only ncol non-zero column mass matrices
@@ -22,6 +22,11 @@ def calc_intr_conv_matrix(mesh):
             
             [xxb, w_x, yyb, w_y, _, _] = qd.quad_xyth(nnodes_x = ndof_x,
                                                       nnodes_y = ndof_y)
+
+            w_x = w_x.reshape([ndof_x, 1])
+            w_y = w_y.reshape([1, ndof_y])
+
+            wx_wy = w_x * w_y
             
             # Create cell indexing for constructing column mass matrix
             [ncells, cell_idxs] = get_cell_idxs(mesh, col_key)
@@ -41,6 +46,9 @@ def calc_intr_conv_matrix(mesh):
                     [_, _, _, _, thb, w_th] = qd.quad_xyth(nnodes_th = ndof_th)
                     
                     thf = push_forward(th0, th1, thb)
+
+                    wth_sinth = w_th * np.sin(thf)
+                    wth_costh = w_th * np.cos(thf)
 
                     # Indexing from i, j, a to beta
                     # Same formula for p, q, r to alpha, but we define alpha
@@ -62,20 +70,18 @@ def calc_intr_conv_matrix(mesh):
                     dcoeff = dx * dth / 4.
                     idx = 0
                     for ii in range(0, ndof_x):
-                        wx_i = w_x[ii]
                         for jj in range(0, ndof_y):
-                            wy_j = w_y[jj]
+                            wxi_wyj = wx_wy[ii, jj]
                             for aa in range(0, ndof_th):
-                                wth_a = w_th[aa]
-                                sin_a = np.sin(thf[aa])
+                                wth_sinth_a = wth_sinth[aa]
                                 for qq in range(0, ndof_y):
                                     ddy_psi_qj = qd.lag_ddx_eval(yyb, qq, yyb[jj])
 
                                     alphalist_ipar[idx] = alpha(ii, qq, aa)
                                     betalist_ipar[idx]  = beta( ii, jj, aa)
                                     
-                                    vlist_ipar[idx] = dcoeff * wx_i * wy_j * wth_a \
-                                        * ddy_psi_qj * sin_a
+                                    vlist_ipar[idx] = dcoeff * wxi_wyj * wth_sinth_a \
+                                        * ddy_psi_qj
                                     
                                     idx += 1
                                     
@@ -97,20 +103,18 @@ def calc_intr_conv_matrix(mesh):
                     dcoeff = dy * dth / 4.
                     idx = 0
                     for ii in range(0, ndof_x):
-                        wx_i = w_x[ii]
                         for jj in range(0, ndof_y):
-                            wy_j = w_y[jj]
+                            wxi_wyj = wx_wy[ii, jj]
                             for aa in range(0, ndof_th):
-                                wth_a = w_th[aa]
-                                cos_a = np.cos(thf[aa])
+                                wth_costh_a = wth_costh[aa]
                                 for pp in range(0, ndof_x):
                                     ddx_phi_pi = qd.lag_ddx_eval(xxb, pp, xxb[ii])
                                     
                                     alphalist_jqar[idx] = alpha(pp, jj, aa)
                                     betalist_jqar[idx]  = beta( ii, jj, aa)
                                     
-                                    vlist_jqar[idx] = dcoeff * wx_i * wy_j * wth_a \
-                                        * ddx_phi_pi * cos_a
+                                    vlist_jqar[idx] = dcoeff * wxi_wyj * wth_costh_a \
+                                        * ddx_phi_pi
                                     
                                     idx += 1
                     
