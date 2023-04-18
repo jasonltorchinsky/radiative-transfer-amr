@@ -37,9 +37,9 @@ def test_2(dir_name = 'test_rt'):
                     ndofs  = [ndof_x, ndof_y, ndof_th],
                     has_th = has_th)
     
-    [u, kappa, _, _, f, _] = get_cons_prob(prob_name = 'mass',
-                                           prob_num  = 0,
-                                           mesh      = mesh)
+    [u, kappa, _, _, f, _, _] = get_cons_prob(prob_name = 'mass',
+                                              prob_num  = 3,
+                                              mesh      = mesh)
     
     # Solve simplified problem over several trials
     ntrial    = 6

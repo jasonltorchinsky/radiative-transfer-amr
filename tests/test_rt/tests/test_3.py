@@ -30,7 +30,7 @@ def test_3(dir_name = 'test_rt'):
     # Get the base mesh, manufactured solution
     [Lx, Ly]                   = [3., 2.]
     pbcs                       = [False, False]
-    [ndof_x, ndof_y, ndof_th]  = [2, 2, 2]
+    [ndof_x, ndof_y, ndof_th]  = [2, 2, 4]
     has_th                     = True
     mesh = gen_mesh(Ls     = [Lx, Ly],
                     pbcs   = pbcs,
@@ -38,8 +38,8 @@ def test_3(dir_name = 'test_rt'):
                     has_th = has_th)
     
     [u, kappa, sigma, Phi, f, _, _] = get_cons_prob(prob_name = 'scat',
-                                                 prob_num  = 2,
-                                                 mesh      = mesh)
+                                                    prob_num  = 3,
+                                                    mesh      = mesh)
     
     # Solve simplified problem over several trials
     ntrial    = 6

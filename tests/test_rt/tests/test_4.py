@@ -45,7 +45,7 @@ def test_4(dir_name = 'test_rt'):
                     has_th = has_th)
     
     [u, _, _, _, f, _, _] = get_cons_prob(prob_name  = 'conv',
-                                          prob_num   = 0,
+                                          prob_num   = 3,
                                           mesh       = mesh)
     
     # Solve simplified problem over several trials

@@ -119,7 +119,7 @@ def get_cons_prob(prob_name, prob_num, mesh):
                 * np.exp(-(1. / 30.) - 2.j * th)
             term0 = 6. * np.exp((1. / 30.) + 2.j * th) * (erf0 + erf1)
             term1 = np.exp((4. * np.pi / 5.) * 1.j) * (-erf2 + erf3)
-            term2 = np.exp((7. * np.pi / 10.) * 1.j) * (-erfi0 + erfi1)
+            term2 = np.exp(((7. * np.pi / 10.) + 4. * th) * 1.j) * (-erfi0 + erfi1)
             return sigma(x, y) * np.real(coeff0 * (term0 + term1 + term2))
 
         def f_conv(x, y, th): # *JUST* s.grad(u)
@@ -165,13 +165,13 @@ def get_cons_prob(prob_name, prob_num, mesh):
                 * np.exp(-(1. / 30.) - 2.j * th)
             term0 = 6. * np.exp((1. / 30.) + 2.j * th) * (erf0 + erf1)
             term1 = np.exp((4. * np.pi / 5.) * 1.j) * (-erf2 + erf3)
-            term2 = np.exp((7. * np.pi / 10.) * 1.j) * (-erfi0 + erfi1)
+            term2 = np.exp(((7. * np.pi / 10.) + 4. * th) * 1.j) * (-erfi0 + erfi1)
             return sigma(x, y) * np.real(coeff0 * (term0 + term1 + term2)) \
                 * np.exp(-(32. * (x - Lx/3.)**2 + 16. * (y - Ly/2.)**2))
 
         def f_conv(x, y, th): # *JUST* s.grad(u)
-            return u(x, y, th) \
-                * (-64. * (x - Lx/3.) * np.cos(th) + 32. * (y - Ly/2.) * np.sin(th))
+            return -1. * u(x, y, th) \
+                * (64. * (x - Lx/3.) * np.cos(th) + 32. * (y - Ly/2.) * np.sin(th))
 
         def u_intg_th(x, y):
             return 0.5 * np.sqrt(np.pi / 30.) * (erf0 + erf1) \

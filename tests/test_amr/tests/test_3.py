@@ -27,7 +27,7 @@ from utils import print_msg
 
 def test_3(dir_name = 'test_amr'):
     """
-    Compare the inter-column jump error estimator against the analytic error
+    Compare the inter-cell jump error estimator against the analytic error
     estimator.
     """
     

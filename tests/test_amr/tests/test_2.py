@@ -19,7 +19,7 @@ import dg.quadrature as qd
 from rt import calc_mass_matrix, calc_scat_matrix, \
     calc_intr_conv_matrix, calc_bdry_conv_matrix, \
     calc_forcing_vec
-from amr import anl_err, anl_err_spt, col_jump_err, ref_by_ind
+from amr import anl_err_spt, col_jump_err, ref_by_ind
 from amr.utils import plot_error_indicator, plot_error_indicator_dist
 
 from utils import print_msg
