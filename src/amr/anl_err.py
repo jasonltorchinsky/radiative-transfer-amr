@@ -59,6 +59,6 @@ def anl_err(mesh, proj, anl_sol):
             cell_items = sorted(col.cells.items())
             for cell_key, cell in cell_items:
                 if cell.is_lf:
-                    err_ind.cols[col_key].cells[cell_key] /= max_u
+                    err_ind.cols[col_key].cells[cell_key].err_ind /= max_u
 
     return err_ind

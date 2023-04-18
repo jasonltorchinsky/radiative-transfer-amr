@@ -44,8 +44,9 @@ def test_4(dir_name = 'test_rt'):
                     ndofs  = [ndof_x, ndof_y, ndof_th],
                     has_th = has_th)
     
-    [anl_sol, _, _, _, f] = get_cons_soln(prob_name = 'conv',
-                                          sol_num   = 2)
+    [u, _, _, _, f, _, _] = get_cons_prob(prob_name  = 'conv',
+                                          prob_num   = 0,
+                                          mesh       = mesh)
     
     # Solve simplified problem over several trials
     ref_ndofs = np.zeros([ntrial])
@@ -126,14 +127,15 @@ def test_4(dir_name = 'test_rt'):
         print_msg(msg)
 
         ## Forcing vector, analytic solution, interior DOFs mask
-        f_vec       = get_forcing_vec(mesh, f)
-        anl_sol_vec = get_projection_vec(mesh, anl_sol)
+        f_vec  = calc_forcing_vec(mesh, f)
+        u_proj = Projection(mesh, u)
+        u_vec  = u_proj.to_vector()
         
-        intr_mask        = get_intr_mask(mesh)
-        bdry_mask        = np.invert(intr_mask)
-        f_vec_intr       = f_vec[intr_mask]
-        anl_sol_vec_intr = anl_sol_vec[intr_mask]
-        bcs_vec          = anl_sol_vec[bdry_mask]
+        intr_mask  = get_intr_mask(mesh)
+        bdry_mask  = np.invert(intr_mask)
+        f_vec_intr = f_vec[intr_mask]
+        u_vec_intr = u_vec[intr_mask]
+        bcs_vec    = u_vec[bdry_mask]
         
         ## Solve manufactured problem
         perf_soln_0 = perf_counter()
@@ -142,7 +144,7 @@ def test_4(dir_name = 'test_rt'):
         M_conv = M_bdry_conv - M_intr_conv
         [M_intr, M_bdry] = split_matrix(mesh, M_conv, intr_mask)
         
-        apr_sol_vec_intr = spsolve(M_intr, f_vec_intr - M_bdry @ bcs_vec)
+        uh_vec_intr = spsolve(M_intr, f_vec_intr - M_bdry @ bcs_vec)
         
         perf_soln_f    = perf_counter()
         perf_soln_diff = perf_soln_f - perf_soln_0
@@ -153,7 +155,7 @@ def test_4(dir_name = 'test_rt'):
         print_msg(msg)
 
         # Plot the difference in solutions
-        diff_vec_intr = apr_sol_vec_intr - anl_sol_vec_intr
+        diff_vec_intr = uh_vec_intr - u_vec_intr
         zero_bcs_vec  = 0. * bcs_vec
         diff_vec      = merge_vectors(diff_vec_intr, zero_bcs_vec, intr_mask)
         diff_proj     = to_projection(mesh, diff_vec)
@@ -161,7 +163,7 @@ def test_4(dir_name = 'test_rt'):
         file_name = os.path.join(trial_dir, 'diff.png')
         angles = [0, np.pi/3, 2 * np.pi / 3, np.pi,
                   4 * np.pi / 3, 5 * np.pi / 3]
-        plot_projection(diff_proj, file_name = file_name, angles = angles)
+        plot_projection(mesh, diff_proj, file_name = file_name, angles = angles)
 
         # Calculate eigenvalues of interior convection matrix
         '''
@@ -230,11 +232,11 @@ def test_4(dir_name = 'test_rt'):
         # Plot solutions
         fig, ax = plt.subplots()
 
-        ax.plot(anl_sol_vec_intr,
+        ax.plot(u_vec_intr,
                 label = 'Analytic Solution',
                 color = 'r',
                 drawstyle = 'steps-post')
-        ax.plot(apr_sol_vec_intr,
+        ax.plot(uh_vec_intr,
                 label = 'Approximate Solution',
                 color = 'k', linestyle = ':',
                 drawstyle = 'steps-post')
@@ -249,7 +251,7 @@ def test_4(dir_name = 'test_rt'):
         plt.close(fig)
         
         # Caluclate error
-        inf_errs[trial] = np.amax(np.abs(anl_sol_vec_intr - apr_sol_vec_intr))
+        inf_errs[trial] = np.amax(np.abs(u_vec_intr - uh_vec_intr))
 
         # Refine the mesh for the next trial
         if ref_type == 'sin':

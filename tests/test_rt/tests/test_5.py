@@ -49,9 +49,9 @@ def test_5(dir_name = 'test_rt'):
                     ndofs  = [ndof_x, ndof_y, ndof_th],
                     has_th = has_th)
     
-    [u, kappa, sigma, Phi, f, _] = get_cons_prob(prob_name = 'comp',
-                                                 prob_num  = 2,
-                                                 mesh      = mesh)
+    [u, kappa, sigma, Phi, f, _, _] = get_cons_prob(prob_name = 'comp',
+                                                    prob_num  = 3,
+                                                    mesh      = mesh)
     
     # Solve simplified problem over several trials
     ref_ndofs = np.zeros([ntrial])
@@ -64,6 +64,7 @@ def test_5(dir_name = 'test_rt'):
         trial_dir = os.path.join(test_dir, 'trial_{}'.format(trial))
         os.makedirs(trial_dir, exist_ok = True)
 
+        """
         # Plot the mesh
         plot_mesh(mesh,
                   file_name = os.path.join(trial_dir, 'mesh_3d.png'),
@@ -72,7 +73,8 @@ def test_5(dir_name = 'test_rt'):
                   file_name   = os.path.join(trial_dir, 'mesh_2d.png'),
                   plot_dim    = 2,
                   label_cells = (trial <= 3))
-
+        """
+        """
         # Get the ending indices for the column matrices, number of DOFs in mesh
         col_items = sorted(mesh.cols.items())
         ncol      = 0
@@ -101,6 +103,7 @@ def test_5(dir_name = 'test_rt'):
                 idx += 1
                 
         ref_ndofs[trial] = mesh_ndof
+        """
         
         # Construct matrices to solve manufactured problem
         ## Mass matrix
@@ -190,6 +193,7 @@ def test_5(dir_name = 'test_rt'):
         # Plot the numerical solution
         uh_vec = merge_vectors(uh_vec_intr, bcs_vec, intr_mask)
         uh_proj = to_projection(mesh, uh_vec)
+        """
         file_name = os.path.join(trial_dir, 'uh_proj.png')
         angles = [0, np.pi/3, 2 * np.pi / 3, np.pi,
                   4 * np.pi / 3, 5 * np.pi / 3]
@@ -197,16 +201,20 @@ def test_5(dir_name = 'test_rt'):
         
         file_name = os.path.join(trial_dir, 'uh_ang_dist.png')
         plot_angular_dists(mesh, uh_proj, file_name = file_name)
+        """
         
         mesh_2d = get_hasnt_th(mesh)
         mean_uh = intg_th(mesh, uh_proj)
         file_name = os.path.join(trial_dir, 'uh_mean.png')
         plot_projection(mesh_2d, mean_uh, file_name = file_name)
 
+        """
         file_name = os.path.join(trial_dir, 'uh_cell_jumps.png')
         plot_cell_jumps(mesh, uh_proj, file_name)
+        """
 
         # Plot the analytic solution
+        """
         file_name = os.path.join(trial_dir, 'u_proj.png')
         angles = [0, np.pi/3, 2 * np.pi / 3, np.pi,
                   4 * np.pi / 3, 5 * np.pi / 3]
@@ -214,32 +222,39 @@ def test_5(dir_name = 'test_rt'):
         
         file_name = os.path.join(trial_dir, 'u_ang_dist.png')
         plot_angular_dists(mesh, u_proj, file_name = file_name)
+        """
         
         mean_u = intg_th(mesh, u_proj)
         file_name = os.path.join(trial_dir, 'u_mean.png')
         plot_projection(mesh_2d, mean_u, file_name = file_name)
 
+        """
         file_name = os.path.join(trial_dir, 'u_cell_jumps.png')
         plot_cell_jumps(mesh, u_proj, file_name)
+        """
         
         # Plot the difference in solutions
         diff_vec_intr = uh_vec_intr - u_vec_intr
         zero_bcs_vec  = 0. * bcs_vec
         diff_vec      = merge_vectors(diff_vec_intr, zero_bcs_vec, intr_mask)
         diff_proj     = to_projection(mesh, diff_vec)
-        
+
+        """
         file_name = os.path.join(trial_dir, 'diff.png')
         angles = [0, np.pi/3, 2 * np.pi / 3, np.pi,
                   4 * np.pi / 3, 5 * np.pi / 3]
         plot_projection(mesh, diff_proj, file_name = file_name, angles = angles)
+        """
 
+        """
         # Plot the analytic error indicator
         anl_err_ind = anl_err(mesh, uh_proj, u)
         file_name = os.path.join(trial_dir, 'anl_errs.png')
         plot_error_indicator(mesh, anl_err_ind, file_name = file_name,
                              name = 'Analytic Max-Norm Column')
+        """
 
-        
+        """
         # Plot global matrix
         fig, ax = plt.subplots()
         for idx in range(0, ncol - 1):
@@ -261,6 +276,7 @@ def test_5(dir_name = 'test_rt'):
         fig.set_size_inches(6.5, 6.5)
         plt.savefig(os.path.join(trial_dir, file_name), dpi = 300)
         plt.close(fig)
+        """
         
         # Plot solutions
         fig, ax = plt.subplots()
@@ -284,6 +300,7 @@ def test_5(dir_name = 'test_rt'):
         plt.close(fig)
         
         # Caluclate error
+        ref_ndofs[trial] = np.size(u_vec)
         inf_errs[trial] = np.amax(np.abs(u_vec_intr - uh_vec_intr)) \
             / np.amax(np.abs(u_vec_intr))
 
@@ -294,7 +311,7 @@ def test_5(dir_name = 'test_rt'):
             mesh.ref_col(col_keys[-4], kind = 'all')
         elif ref_type == 'uni':
             ## Refine the mesh uniformly
-            mesh.ref_mesh(kind = 'ang')
+            mesh.ref_mesh(kind = 'all')
         elif ref_type == 'amr':
             ## Refine the column spatially with the biggest "error"
             mesh = ref_by_ind(mesh, anl_err_ind, 0.9)

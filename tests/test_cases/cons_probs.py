@@ -138,12 +138,10 @@ def get_cons_prob(prob_name, prob_num, mesh):
 
         def u(x, y, th):
             return np.exp(-30. * (th - 7. * np.pi / 5.)**2) \
-                * np.exp(-(8. * (x - Lx / 3.)**2
-                           + (x - Lx / 3.) * (y - Ly) \
-                           + (1. / 8.) * (y - Ly)**2))
+                * np.exp(-(32. * (x - Lx/3.)**2 + 16. * (y - Ly/2.)**2))
         
         def kappa(x, y):
-            return 1.1
+            return np.exp(-((x - Lx/2.)**2 + (y - Ly/2.)**2)) + 1.
         
         def sigma(x, y):
             return 0.9 * kappa(x, y)
@@ -169,24 +167,21 @@ def get_cons_prob(prob_name, prob_num, mesh):
             term1 = np.exp((4. * np.pi / 5.) * 1.j) * (-erf2 + erf3)
             term2 = np.exp((7. * np.pi / 10.) * 1.j) * (-erfi0 + erfi1)
             return sigma(x, y) * np.real(coeff0 * (term0 + term1 + term2)) \
-                * np.exp(-(8. * (x - Lx / 3.)**2
-                           + (x - Lx / 3.) * (y - Ly) \
-                           + (1. / 8.) * (y - Ly)**2))
+                * np.exp(-(32. * (x - Lx/3.)**2 + 16. * (y - Ly/2.)**2))
 
         def f_conv(x, y, th): # *JUST* s.grad(u)
-            return  np.exp(-(8. * (x - Lx / 3.)**2
-                             + (x - Lx / 3.) * (y - Ly) \
-                             + (1. / 8.) * (y - Ly)**2)) \
-                * (((Ly - y) - 16. * (x - Lx/3.)) * np.cos(th) \
-                   + ((Lx/3. - x) + (Ly - y) / 4.) * np.sin(th))
+            return u(x, y, th) \
+                * (-64. * (x - Lx/3.) * np.cos(th) + 32. * (y - Ly/2.) * np.sin(th))
 
         def u_intg_th(x, y):
             return 0.5 * np.sqrt(np.pi / 30.) * (erf0 + erf1) \
-                * np.exp(-(8. * (x - Lx / 3.)**2
-                           + (x - Lx / 3.) * (y - Ly) \
-                           + (1. / 8.) * (y - Ly)**2))
+                * np.exp(-(32. * (x - Lx/3.)**2 + 16. * (y - Ly/2.)**2))
+
+        erfx = erf(4. * np.sqrt(2) * Lx/3.) + erf(8. * np.sqrt(2) * Lx/3.)
+        erfy = erf(2. * Ly)
         def u_intg_xy(th):
-            return  None
+            return (np.pi / (32. * np.sqrt(2.))) * erfx * erfy \
+                * np.exp(-30. * (th - 7. * np.pi / 5.)**2)
         
 
     elif prob_num == 4:

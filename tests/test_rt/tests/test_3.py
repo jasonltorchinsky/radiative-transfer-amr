@@ -37,7 +37,7 @@ def test_3(dir_name = 'test_rt'):
                     ndofs  = [ndof_x, ndof_y, ndof_th],
                     has_th = has_th)
     
-    [u, kappa, sigma, Phi, f, _] = get_cons_prob(prob_name = 'scat',
+    [u, kappa, sigma, Phi, f, _, _] = get_cons_prob(prob_name = 'scat',
                                                  prob_num  = 2,
                                                  mesh      = mesh)
     

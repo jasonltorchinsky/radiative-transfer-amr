@@ -24,8 +24,13 @@ def calc_scat_matrix(mesh, sigma, Phi):
             [xxb, w_x, yyb, w_y, _, _] = qd.quad_xyth(nnodes_x = ndof_x,
                                                       nnodes_y = ndof_y)
             
-            xxf = push_forward(x0, x1, xxb)
-            yyf = push_forward(y0, y1, yyb)
+            xxf = push_forward(x0, x1, xxb).reshape(ndof_x, 1)
+            yyf = push_forward(y0, y1, yyb).reshape(1, ndof_y)
+
+            w_x = w_x.reshape(ndof_x, 1)
+            w_y = w_y.reshape(1, ndof_y)
+
+            wx_wy_sigma_col = w_x * w_y * sigma(xxf, yyf)
             
             # Create cell indexing for constructing column mass matrix
             [ncells, cell_idxs] = get_cell_idxs(mesh, col_key)
@@ -44,7 +49,8 @@ def calc_scat_matrix(mesh, sigma, Phi):
                     [ndof_th_0]    = cell_0.ndofs
                     
                     [_, _, _, _, thb_0, w_th_0] = qd.quad_xyth(nnodes_th = ndof_th_0)
-                    thf_0 = push_forward(th0_0, th1_0, thb_0)
+                    thf_0 = push_forward(th0_0, th1_0, thb_0).reshape(1, ndof_th_0)
+                    w_th_0 = w_th_0.reshape(1, ndof_th_0)
                     
                     # Indexing from p, q, r to alpha
                     alpha = get_idx_map(ndof_x, ndof_y, ndof_th_0)
@@ -61,7 +67,12 @@ def calc_scat_matrix(mesh, sigma, Phi):
                             [ndof_th_1]    = cell_1.ndofs
                             
                             [_, _, _, _, thb_1, w_th_1] = qd.quad_xyth(nnodes_th = ndof_th_1)
-                            thf_1 = push_forward(th0_1, th1_1, thb_1)
+                            thf_1 = push_forward(th0_1, th1_1, thb_1).reshape(ndof_th_1, 1)
+                            w_th_1 = w_th_1.reshape(ndof_th_1, 1)
+                            
+                            Phi_cell = Phi(thf_0, thf_1)
+
+                            wth0_wth1_Phi_cell = w_th_0 * w_th_1 * Phi_cell
                             
                             # List of coordinates, values for constructing cell matrices
                             cell_ndof = ndof_th_0 * ndof_th_1 * ndof_x * ndof_y
@@ -75,24 +86,18 @@ def calc_scat_matrix(mesh, sigma, Phi):
                             # Construct cell matrix
                             idx = 0
                             for ii in range(0, ndof_x):
-                                wx_i = w_x[ii]
                                 for jj in range(0, ndof_y):
-                                    wy_j = w_y[jj]
-                                    sigma_ij = sigma(xxf[ii], yyf[jj])
+                                    wx_wy_sigma_ij = wx_wy_sigma_col[ii, jj]
                                     for rr in range(0, ndof_th_0):
-                                        wth_r_0 = w_th_0[rr]
-                                        for aa in range(0, ndof_th_1):
-                                            wth_a_1 = w_th_1[aa]
-                                            
-                                            Phi_ra = Phi(thf_0[rr], thf_1[aa])
+                                        for aa in range(0, ndof_th_1):                 
+                                            wth0_wth1_Phi_ra = wth0_wth1_Phi_cell[rr, aa]
                                             
                                             # Index of entry
                                             alphalist[idx] = alpha(ii, jj, rr)
                                             betalist[idx]  = beta( ii, jj, aa)
                                             
                                             vlist[idx] = dcoeff * (dth_1 / 2.0) \
-                                                * wx_i * wy_j * wth_r_0 * wth_a_1 \
-                                                * sigma_ij * Phi_ra
+                                                * wx_wy_sigma_ij * wth0_wth1_Phi_ra
                                             idx += 1
                                         
                             cell_mtxs[cell_idx_0][cell_idx_1] = coo_matrix((vlist, (alphalist, betalist)),
