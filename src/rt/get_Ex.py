@@ -23,20 +23,20 @@ def get_Ex(mesh, col_key_0, col_key_1):
         
         if lv_0 == lv_1:
             pos_str = 's'
-        elif lv_1 - lv_0 == 1:
-            if mid_0 > mid_1:
-                pos_str = 'l'
-            else:
-                pos_str = 'u'
         elif lv_1 - lv_0 == -1:
-            if mid_0 > mid_1:
+            if mid_1 > mid_0:
+                pos_str = 'l'
+            else: # mid_0 > mid_1
                 pos_str = 'u'
-            else:
+        elif lv_1 - lv_0 == 1:
+            if mid_1 > mid_0:
+                pos_str = 'u'
+            else: # mid_0 > mid_1
                 pos_str = 'l'
         
         phi_ip_matrix = get_f2f_matrix(dim_str  = 'x',
-                                       nbasis   = ndof_x_0,
-                                       nnode    = ndof_x_1,
+                                       nbasis   = ndof_x_1,
+                                       nnode    = ndof_x_0,
                                        nhbr_rel = (lv_1 - lv_0, pos_str)
                                        )
 
@@ -45,19 +45,34 @@ def get_Ex(mesh, col_key_0, col_key_1):
     else:
         [_, wx_1, _, _, _, _] = quad_xyth(nnodes_x = ndof_x_1)
         
-        phi_ip_matrix = get_f2f_matrix(dim_str  = 'x',
+        phi_pi_matrix = get_f2f_matrix(dim_str  = 'x',
                                        nbasis   = ndof_x_0,
                                        nnode    = ndof_x_1,
                                        nhbr_rel = (0, 's')
                                        )
-
+        tr_phi_pi_matrix = np.transpose(phi_pi_matrix)
+        
+        if lv_0 == lv_1:
+            pos_str = 's'
+        elif lv_1 - lv_0 == -1:
+            if mid_1 > mid_0:
+                pos_str = 'l'
+            else: # mid_0 > mid_1
+                pos_str = 'u'
+        elif lv_1 - lv_0 == 1:
+            if mid_1 > mid_0:
+                pos_str = 'u'
+            else: # mid_0 > mid_1
+                pos_str = 'l'
+        
         phi_ii_matrix = get_f2f_matrix(dim_str  = 'x',
                                        nbasis   = ndof_x_1,
                                        nnode    = ndof_x_1,
-                                       nhbr_rel = (0, 's')
+                                       nhbr_rel = (lv_1 - lv_0, pos_str)
                                        )
+        
         E_x = np.zeros([ndof_x_1, ndof_x_0])
         for iip in range(0, ndof_x_1):
-            E_x += wx_1[iip] * phi_ii_matrix[:, iip] @ phi_ip_matrix[iip, :]
+            E_x += wx_1[iip] * phi_ii_matrix[:, iip] @ tr_phi_pi_matrix[iip, :]
 
     return E_x

@@ -31,7 +31,7 @@ def test_4(dir_name = 'test_rt'):
     # Set the refinement type: 'sin' - single column
     #                        : 'uni' - uniform
     #                        : 'amr' - adaptive
-    ref_type = 'uni'
+    ref_type = 'sin'
     ntrial   = 4
     
     # Get the base mesh, manufactured solution
@@ -257,7 +257,7 @@ def test_4(dir_name = 'test_rt'):
         if ref_type == 'sin':
             ## Refine a given column spatially
             col_keys = sorted(mesh.cols.keys())
-            mesh.ref_col(col_keys[-4], kind = 'spt')
+            mesh.ref_col(col_keys[-4], kind = 'all')
         elif ref_type == 'uni':
             ## Refine the mesh uniformly spatially
             mesh.ref_mesh(kind = 'spt')

@@ -66,9 +66,10 @@ def test_4(dir_name = 'test_amr'):
                         ndofs  = [ndof_x, ndof_y, ndof_th],
                         has_th = has_th)
         
-        [u, kappa, sigma, Phi, f, u_intg_th, u_intg_xy] = get_cons_prob(prob_name = 'comp',
-                                                                        prob_num  = 2,
-                                                                        mesh      = mesh)
+        [u, kappa, sigma, Phi, f, u_intg_th, u_intg_xy] \
+            = get_cons_prob(prob_name = 'comp',
+                            prob_num  = 0,
+                            mesh      = mesh)
         
         ref_ndofs[ref_type] = []
         errs[ref_type] = []

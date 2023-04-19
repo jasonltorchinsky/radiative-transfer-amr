@@ -86,15 +86,21 @@ def calc_col_matrix(mesh, col_key_0, col_key_1, F):
     """
     Create the column interaction matrix between col_0, col_1.
     """
-    
+
     if (F%2 == 0): # Construct E^K'K,y_jq
-        E_x = None
-        E_y = get_Ey(mesh, col_key_0, col_key_1)
-                        
+        E_x_00 = None
+        E_y_00 = get_Ey(mesh, col_key_0, col_key_0)
+        
+        E_x_01 = None
+        E_y_01 = get_Ey(mesh, col_key_0, col_key_1)
+        
     else: # F%2 == 1, construct E^K'K,x_ip
-        E_x = get_Ex(mesh, col_key_0, col_key_1)
-        E_y = None
-    
+        E_x_00 = get_Ex(mesh, col_key_0, col_key_0)
+        E_y_00 = None
+        
+        E_x_01 = get_Ex(mesh, col_key_0, col_key_1)
+        E_y_01 = None
+ 
     col_0 = mesh.cols[col_key_0]
     col_1 = mesh.cols[col_key_1]
     
@@ -161,7 +167,7 @@ def calc_col_matrix(mesh, col_key_0, col_key_1, F):
                                      cell_key_0,
                                      col_key_0,
                                      cell_key_0,
-                                     F, E_x, E_y)
+                                     F, E_x_00, E_y_00)
             else:
                 nhbr_cell_keys = ji_mesh.get_cell_nhbr_in_col(mesh,
                                                               col_key_0,
@@ -179,7 +185,7 @@ def calc_col_matrix(mesh, col_key_0, col_key_1, F):
                                                  cell_key_0,
                                                  col_key_1,
                                                  cell_key_1,
-                                                 F, E_x, E_y)
+                                                 F, E_x_01, E_y_01)
                     
     col_mtx_00 = block_diag(cell_mtxs_00, format = 'csr')
     col_mtx_01 = bmat(      cell_mtxs_01, format = 'csr')
@@ -260,15 +266,13 @@ def calc_cell_matrix(mesh, col_key_0, cell_key_0, col_key_1, cell_key_1, F,
     # alpha is number of rows, beta is the number of columns
     alpha = get_idx_map(ndof_x_0, ndof_y_0, ndof_th_0)
     beta  = get_idx_map(ndof_x_1, ndof_y_1, ndof_th_1)
-
-                        
+    
     E_th = get_Eth(mesh, col_key_0, cell_key_0,
                    col_key_1, cell_key_1, F)
-                    
+
     # Many quantities are actually dependent only on
     # the parity of F not F itself, so we can 
     # separate primarily into two cases
-    
     
     if (F%2 == 0):
         # Number of *NON-ZERO* DoFs
@@ -317,7 +321,7 @@ def calc_cell_matrix(mesh, col_key_0, cell_key_0, col_key_1, cell_key_1, F,
                             vlist[idx]     = val
                             
                             idx += 1
-                        
+            
     elif (F%2 == 1):                            
         # Number of *NON-ZERO* DoFs
         ndof_0  = ndof_x_0 * ndof_th_0
