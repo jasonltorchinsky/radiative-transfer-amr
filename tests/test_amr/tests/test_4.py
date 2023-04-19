@@ -238,7 +238,7 @@ def test_4(dir_name = 'test_amr'):
     ax.set_xlabel('Total Degrees of Freedom')
     ax.set_ylabel('L$^{\infty}$ Error')
     
-    title_str = 'Angular $h$-Refinement Solution Convergence Rate'
+    title_str = 'Spatio-Angular $h$-Refinement Solution Convergence Rate'
     ax.set_title(title_str)
     
     file_name = 'h-ref-conv.png'
