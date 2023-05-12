@@ -6,7 +6,45 @@ from .Column import Column
 from .calc_key import calc_col_key
 
 # Refine a column spatially
-def ref_col_spt(self, col_key):
+
+def ref_col_spt(self, col_key, form = 'h'):
+    if form == 'h':
+        ref_col_spt_h(self, col_key)
+    elif form == 'p':
+        ref_col_spt_p(self, col_key)
+    else:
+        msg = ( 'ERROR IN REFINING COLUMN, ' +
+                    'UNSUPPORTED REFINEMENT FORM - {}').format(form)
+        print(msg)
+        sys.exit(0)
+            
+def ref_col_spt_p(self, col_key):
+    col = self.cols[col_key]
+    
+    if col.is_lf:
+        col.ndofs[0] += 1
+        col.ndofs[1] += 1
+        
+        # Check if neighbors need to be refined.
+        for F in range(0, 4):
+            unique_nhbr_keys = list(set(col.nhbr_keys[F]))
+            for nhbr_key in unique_nhbr_keys:
+                if nhbr_key is not None:
+                    nhbr = self.cols[nhbr_key]
+                    if nhbr.is_lf:
+                        # If nhbr has matching neighbor flags, then it shares
+                        # a lower-level neighbor and must be refined as well.
+                        for Fp in range(0, 4):
+                            if col.nhbr_keys[Fp] != [None, None]:
+                                if col.nhbr_keys[Fp] == nhbr.nhbr_keys[Fp]:
+                                    if ((nhbr.ndofs[0] != col.ndofs[0]) and
+                                        (nhbr.ndofs[1] != col.ndofs[1])):
+                                        ref_col_spt_p(self, nhbr_key)
+
+    
+
+
+def ref_col_spt_h(self, col_key):
     col = self.cols[col_key]
     
     if col.is_lf:

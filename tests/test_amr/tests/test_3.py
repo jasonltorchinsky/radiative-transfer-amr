@@ -39,7 +39,8 @@ def test_3(dir_name = 'test_amr'):
               '#CC79A7']
     ncolor = len(colors)
 
-    ref_types = ['uni-ang', 'amr-anl-ang', 'amr-jmp']
+    ref_types = ['h-uni-ang', 'h-amr-anl-ang', 'h-amr-jmp',
+                 'p-uni-ang', 'p-amr-anl-ang', 'p-amr-jmp']
     nref_type = len(ref_types)
     
     max_ndof   = 2**13
@@ -198,14 +199,22 @@ def test_3(dir_name = 'test_amr'):
                                       name = 'Analytic (Angular) Max-Norm Column')
             
             # Refine the mesh for the next trial
-            if ref_type == 'uni-ang':
-                mesh.ref_mesh(kind = 'ang')
-            elif ref_type == 'amr-anl-ang':
+            if ref_type == 'h-uni-ang':
+                mesh.ref_mesh(kind = 'ang', form = 'h')
+            elif ref_type == 'h-amr-anl-ang':
                 anl_err_ang_ind = anl_err_ang(mesh, uh_proj, u_intg_xy)
-                mesh = ref_by_ind(mesh, anl_err_ang_ind, tol)
-            elif ref_type == 'amr-jmp':
+                mesh = ref_by_ind(mesh, anl_err_ang_ind, tol, form = 'h')
+            elif ref_type == 'h-amr-jmp':
                 cell_jump_err_ind = cell_jump_err(mesh, uh_proj)
-                mesh = ref_by_ind(mesh, cell_jump_err_ind, tol)
+                mesh = ref_by_ind(mesh, cell_jump_err_ind, tol, form = 'h')
+            elif ref_type == 'p-uni-ang':
+                mesh.ref_mesh(kind = 'ang', form = 'p')
+            elif ref_type == 'p-amr-anl-ang':
+                anl_err_ang_ind = anl_err_ang(mesh, uh_proj, u_intg_xy)
+                mesh = ref_by_ind(mesh, anl_err_ang_ind, tol, form = 'p')
+            elif ref_type == 'p-amr-jmp':
+                cell_jump_err_ind = cell_jump_err(mesh, uh_proj)
+                mesh = ref_by_ind(mesh, cell_jump_err_ind, tol, form = 'p')
                 
             perf_trial_f    = perf_counter()
             perf_trial_diff = perf_trial_f - perf_trial_0

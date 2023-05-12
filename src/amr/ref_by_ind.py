@@ -1,6 +1,6 @@
 import numpy as np
 
-def ref_by_ind(mesh, err_ind, ref_ratio):
+def ref_by_ind(mesh, err_ind, ref_ratio, form = 'h'):
     """
     Refine the mesh by some error indicator (err_ind).
     """
@@ -27,7 +27,7 @@ def ref_by_ind(mesh, err_ind, ref_ratio):
                     if cell.is_lf:
                         cell_err_ind = err_ind.cols[col_key].cells[cell_key].err_ind
                         if cell_err_ind >= ref_ratio * max_cell_err:
-                            mesh.ref_cell(col_key, cell_key)
+                            mesh.ref_cell(col_key, cell_key, form = form)
                             
     if by_col:
         col_keys = sorted(mesh.cols.keys())
@@ -38,7 +38,7 @@ def ref_by_ind(mesh, err_ind, ref_ratio):
                 if col.is_lf:
                     col_err_ind = err_ind.cols[col_key].err_ind
                     if col_err_ind >= ref_ratio * max_col_err:
-                        mesh.ref_col(col_key, kind = 'spt')
+                        mesh.ref_col(col_key, kind = 'spt', form = form)
     
     return mesh
 

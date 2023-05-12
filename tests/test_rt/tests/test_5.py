@@ -37,7 +37,10 @@ def test_5(dir_name = 'test_rt'):
     #                        : 'uni' - uniform
     #                        : 'amr' - adaptive
     ref_type = 'uni'
-    ntrial   = 3
+    form     = 'h'
+
+    max_ndof = 2**16
+    max_ntrial = 9
     
     # Get the base mesh, manufactured solution
     [Lx, Ly]                   = [2., 3.]
@@ -50,13 +53,16 @@ def test_5(dir_name = 'test_rt'):
                     has_th = has_th)
     
     [u, kappa, sigma, Phi, f, _, _] = get_cons_prob(prob_name = 'comp',
-                                                    prob_num  = 3,
+                                                    prob_num  = 0,
                                                     mesh      = mesh)
     
     # Solve simplified problem over several trials
-    ref_ndofs = np.zeros([ntrial])
-    inf_errs  = np.zeros([ntrial])
-    for trial in range(0, ntrial):
+    ref_ndofs = []
+    inf_errs  = []
+
+    ndof = 0
+    trial = 0
+    while (ndof < max_ndof) and (trial <= max_ntrial):
         perf_trial_0 = perf_counter()
         print_msg('[Trial {}] Starting...\n'.format(trial))
             
@@ -300,21 +306,23 @@ def test_5(dir_name = 'test_rt'):
         plt.close(fig)
         
         # Caluclate error
-        ref_ndofs[trial] = np.size(u_vec)
-        inf_errs[trial] = np.amax(np.abs(u_vec_intr - uh_vec_intr)) \
+        ndof = np.size(u_vec)
+        ref_ndofs += [ndof]
+        inf_err = np.amax(np.abs(u_vec_intr - uh_vec_intr)) \
             / np.amax(np.abs(u_vec_intr))
+        inf_errs += [inf_err]
 
         # Refine the mesh for the next trial
         if ref_type == 'sin':
             ## Refine a given column
             col_keys = sorted(mesh.cols.keys())
-            mesh.ref_col(col_keys[-4], kind = 'all')
+            mesh.ref_col(col_keys[-4], kind = 'all', form = form)
         elif ref_type == 'uni':
             ## Refine the mesh uniformly
-            mesh.ref_mesh(kind = 'all')
+            mesh.ref_mesh(kind = 'all', form = form)
         elif ref_type == 'amr':
             ## Refine the column spatially with the biggest "error"
-            mesh = ref_by_ind(mesh, anl_err_ind, 0.9)
+            mesh = ref_by_ind(mesh, anl_err_ind, 0.9, form = form)
 
         perf_trial_f    = perf_counter()
         perf_trial_diff = perf_trial_f - perf_trial_0
@@ -323,6 +331,8 @@ def test_5(dir_name = 'test_rt'):
             'Time Elapsed: {:08.3f} [s]\n'.format(perf_trial_diff)
         )
         print_msg(msg)
+
+        trial += 1
         
     # Plot errors
     fig, ax = plt.subplots()
@@ -351,10 +361,10 @@ def test_5(dir_name = 'test_rt'):
         ref_str = 'Uniform'
     elif ref_type == 'amr':
         ref_str = 'Adaptive'
-    title_str = '{} $h$-Refinement Convergence Rate - Complete Problem'.format(ref_str)
+    title_str = '{} ${}$-Refinement Convergence Rate - Complete Problem'.format(ref_str, form)
     ax.set_title(title_str)
     
-    file_name = 'h-convergence-complete.png'
+    file_name = form + '-convergence-complete.png'
     fig.set_size_inches(6.5, 6.5)
     plt.savefig(os.path.join(test_dir, file_name), dpi = 300)
     plt.close(fig)

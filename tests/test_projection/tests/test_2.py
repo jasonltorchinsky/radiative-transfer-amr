@@ -34,8 +34,8 @@ def test_2(dir_name = 'test_mesh'):
     os.makedirs(intg_dir, exist_ok = True)
     
     # Create the original 2-D mesh
-    [Lx, Ly] = [3., 2.]
-    ndofs    = [2, 2, 6]
+    [Lx, Ly] = [2., 3.]
+    ndofs    = [4, 4, 4]
     pbcs     = [False, False]
     
     mesh = Mesh([Lx, Ly], pbcs, ndofs, has_th = True)
@@ -43,8 +43,11 @@ def test_2(dir_name = 'test_mesh'):
     mesh.ref_mesh(kind = 'ang')
     mesh.ref_mesh(kind = 'spt')
 
+    for _ in range(0, 3):
+        mesh.ref_mesh(kind = 'all')
+
     # Select test problem
-    func_num = 2
+    func_num = 3
     [_, _, test_func_2d, test_func_3d] = get_test_funcs(func_num, mesh)
     
     proj = Projection(mesh, test_func_3d)
@@ -58,7 +61,7 @@ def test_2(dir_name = 'test_mesh'):
     plot_projection(mesh, proj, file_name = file_name,
                     angles = angles)
     
-    ntrial = 3
+    ntrial = 1
     ndofs = np.zeros([ntrial])
     errs = np.zeros([ntrial])
     for trial in range(0, ntrial):
