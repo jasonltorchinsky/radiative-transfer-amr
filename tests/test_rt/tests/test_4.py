@@ -10,9 +10,10 @@ sys.path.append('../../tests')
 from test_cases import get_cons_prob
 
 sys.path.append('../../src')
+from dg.mesh import get_hasnt_th
 from dg.mesh.utils import plot_mesh
 from dg.matrix import get_intr_mask, split_matrix, merge_vectors
-from dg.projection import Projection, push_forward, to_projection
+from dg.projection import Projection, push_forward, to_projection, intg_th
 from dg.projection.utils import plot_projection
 import dg.quadrature as qd
 from rt import calc_intr_conv_matrix, calc_bdry_conv_matrix, calc_forcing_vec
@@ -31,13 +32,18 @@ def test_4(dir_name = 'test_rt'):
     # Set the refinement type: 'sin' - single column
     #                        : 'uni' - uniform
     #                        : 'amr' - adaptive
-    ref_type = 'sin'
-    ntrial   = 4
+    ref_type = 'uni'
+    kind     = 'ang'
+    form     = 'h'
+
+    prob_num = 2
+    max_ndof = 2**16
+    max_ntrial = 5
     
     # Get the base mesh, manufactured solution
     [Lx, Ly]                   = [3., 2.]
     pbcs                       = [False, False]
-    [ndof_x, ndof_y, ndof_th]  = [4, 4, 4]
+    [ndof_x, ndof_y, ndof_th]  = [2, 2, 2]
     has_th                     = True
     mesh = gen_mesh(Ls     = [Lx, Ly],
                     pbcs   = pbcs,
@@ -45,13 +51,16 @@ def test_4(dir_name = 'test_rt'):
                     has_th = has_th)
     
     [u, _, _, _, f, _, _] = get_cons_prob(prob_name  = 'conv',
-                                          prob_num   = 3,
+                                          prob_num   = prob_num,
                                           mesh       = mesh)
     
     # Solve simplified problem over several trials
-    ref_ndofs = np.zeros([ntrial])
-    inf_errs  = np.zeros([ntrial])
-    for trial in range(0, ntrial):
+    ref_ndofs = []
+    inf_errs  = []
+
+    ndof = 0
+    trial = 0
+    while (ndof < max_ndof) and (trial <= max_ntrial):
         perf_trial_0 = perf_counter()
         print_msg('[Trial {}] Starting...'.format(trial))
             
@@ -59,6 +68,7 @@ def test_4(dir_name = 'test_rt'):
         trial_dir = os.path.join(test_dir, 'trial_{}'.format(trial))
         os.makedirs(trial_dir, exist_ok = True)
 
+        """
         # Plot the mesh
         plot_mesh(mesh,
                   file_name = os.path.join(trial_dir, 'mesh_3d.png'),
@@ -67,7 +77,8 @@ def test_4(dir_name = 'test_rt'):
                   file_name   = os.path.join(trial_dir, 'mesh_2d.png'),
                   plot_dim    = 2,
                   label_cells = (trial <= 3))
-
+        """
+        """
         # Get the ending indices for the column matrices, number of DOFs in mesh
         col_items = sorted(mesh.cols.items())
         ncol      = 0
@@ -94,8 +105,7 @@ def test_4(dir_name = 'test_rt'):
                 col_end_idxs[idx] = mesh_ndof
                 
                 idx += 1
-                
-        ref_ndofs[trial] = mesh_ndof
+        """
         
         # Construct matrices to solve manufactured problem
         ## Interior convection matrix
@@ -154,16 +164,61 @@ def test_4(dir_name = 'test_rt'):
         )
         print_msg(msg)
 
+        # Plot the numerical solution
+        uh_vec = merge_vectors(uh_vec_intr, bcs_vec, intr_mask)
+        uh_proj = to_projection(mesh, uh_vec)
+        """
+        file_name = os.path.join(trial_dir, 'uh_proj.png')
+        angles = [0, np.pi/3, 2 * np.pi / 3, np.pi,
+                  4 * np.pi / 3, 5 * np.pi / 3]
+        plot_projection(mesh, uh_proj, file_name = file_name, angles = angles)
+        
+        file_name = os.path.join(trial_dir, 'uh_ang_dist.png')
+        plot_angular_dists(mesh, uh_proj, file_name = file_name)
+        """
+        
+        mesh_2d = get_hasnt_th(mesh)
+        mean_uh = intg_th(mesh, uh_proj)
+        file_name = os.path.join(trial_dir, 'uh_mean.png')
+        plot_projection(mesh_2d, mean_uh, file_name = file_name)
+
+        """
+        file_name = os.path.join(trial_dir, 'uh_cell_jumps.png')
+        plot_cell_jumps(mesh, uh_proj, file_name)
+        """
+
+        # Plot the analytic solution
+        """
+        file_name = os.path.join(trial_dir, 'u_proj.png')
+        angles = [0, np.pi/3, 2 * np.pi / 3, np.pi,
+                  4 * np.pi / 3, 5 * np.pi / 3]
+        plot_projection(mesh, u_proj, file_name = file_name, angles = angles)
+        
+        file_name = os.path.join(trial_dir, 'u_ang_dist.png')
+        plot_angular_dists(mesh, u_proj, file_name = file_name)
+        """
+        
+        mean_u = intg_th(mesh, u_proj)
+        file_name = os.path.join(trial_dir, 'u_mean.png')
+        plot_projection(mesh_2d, mean_u, file_name = file_name)
+
+        """
+        file_name = os.path.join(trial_dir, 'u_cell_jumps.png')
+        plot_cell_jumps(mesh, u_proj, file_name)
+        """
+        
         # Plot the difference in solutions
         diff_vec_intr = uh_vec_intr - u_vec_intr
         zero_bcs_vec  = 0. * bcs_vec
         diff_vec      = merge_vectors(diff_vec_intr, zero_bcs_vec, intr_mask)
         diff_proj     = to_projection(mesh, diff_vec)
-        
+
+        """
         file_name = os.path.join(trial_dir, 'diff.png')
         angles = [0, np.pi/3, 2 * np.pi / 3, np.pi,
                   4 * np.pi / 3, 5 * np.pi / 3]
         plot_projection(mesh, diff_proj, file_name = file_name, angles = angles)
+        """
 
         # Calculate eigenvalues of interior convection matrix
         '''
@@ -181,7 +236,8 @@ def test_4(dir_name = 'test_rt'):
         )
         print_msg(msg)
         '''
-        
+
+        """
         # Plot global convection matrix
         fig, ax = plt.subplots()
         for idx in range(0, ncol - 1):
@@ -203,6 +259,7 @@ def test_4(dir_name = 'test_rt'):
         fig.set_size_inches(6.5, 6.5)
         plt.savefig(os.path.join(trial_dir, file_name), dpi = 300)
         plt.close(fig)
+        """
 
         #file_name = 'conv_matrix.csv'
         #np.savetxt(os.path.join(trial_dir, file_name), M_conv.toarray(), delimiter = ',')
@@ -251,18 +308,22 @@ def test_4(dir_name = 'test_rt'):
         plt.close(fig)
         
         # Caluclate error
-        inf_errs[trial] = np.amax(np.abs(u_vec_intr - uh_vec_intr))
+        ndof = np.size(u_vec)
+        ref_ndofs += [ndof]
+        inf_err = np.amax(np.abs(u_vec_intr - uh_vec_intr)) \
+            / np.amax(np.abs(u_vec_intr))
+        inf_errs += [inf_err]
 
         # Refine the mesh for the next trial
         if ref_type == 'sin':
             ## Refine a given column spatially
             col_keys = sorted(mesh.cols.keys())
-            mesh.ref_col(col_keys[-4], kind = 'all')
+            mesh.ref_col(col_keys[-4], kind = kind, form = form)
         elif ref_type == 'uni':
             ## Refine the mesh uniformly spatially
-            mesh.ref_mesh(kind = 'spt')
+            mesh.ref_mesh(kind = kind, form = form)
         elif ref_type == 'amr':
-            ## Refine the column spatially with the biggest "error"
+            ## Refine the column with the biggest "error"
             max_err = 0
             col_errs = {}
             diff_proj_col_items = sorted(diff_proj.cols.items())
@@ -285,7 +346,7 @@ def test_4(dir_name = 'test_rt'):
                     if col.is_lf:
                         col_err = col_errs[col_key]
                         if col_err > 0.9 * max_err:
-                            mesh.ref_col(col_key, kind = 'spt')
+                            mesh.ref_col(col_key, kind = kind, form = form)
             
         perf_trial_f    = perf_counter()
         perf_trial_diff = perf_trial_f - perf_trial_0
@@ -294,6 +355,8 @@ def test_4(dir_name = 'test_rt'):
             'Time Elapsed: {:08.3f} [s]\n'.format(perf_trial_diff)
         )
         print_msg(msg)
+
+        trial += 1
         
     # Plot errors
     fig, ax = plt.subplots()
@@ -321,10 +384,19 @@ def test_4(dir_name = 'test_rt'):
         ref_str = 'Uniform'
     elif ref_type == 'amr':
         ref_str = 'Adaptive'
-    title_str = '{} Spatial $h$-Refinement Convergence Rate - Convection Problem'.format(ref_str)
+
+    kind_str = ''
+    if kind == 'spt':
+        kind_str = 'Spatial'
+    elif kind == 'ang':
+        kind_str = 'Angular'
+    elif kind == 'all':
+        kind_str = 'Spatio-Angular'
+    
+    title_str = '{} {} ${}$-Refinement Convergence Rate - Convection Problem'.format(ref_str, kind_str, form)
     ax.set_title(title_str)
     
-    file_name = 'h-convergence-convection.png'
+    file_name = '{}-convergence-convection.png'.format(form)
     fig.set_size_inches(6.5, 6.5)
     plt.savefig(os.path.join(test_dir, file_name), dpi = 300)
     plt.close(fig)

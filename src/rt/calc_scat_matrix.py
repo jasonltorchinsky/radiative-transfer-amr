@@ -49,8 +49,8 @@ def calc_scat_matrix(mesh, sigma, Phi):
                     [ndof_th_0]    = cell_0.ndofs
                     
                     [_, _, _, _, thb_0, w_th_0] = qd.quad_xyth(nnodes_th = ndof_th_0)
-                    thf_0 = push_forward(th0_0, th1_0, thb_0).reshape(1, ndof_th_0)
-                    w_th_0 = w_th_0.reshape(1, ndof_th_0)
+                    thf_0 = push_forward(th0_0, th1_0, thb_0).reshape(ndof_th_0, 1)
+                    w_th_0 = w_th_0.reshape(ndof_th_0, 1)
                     
                     # Indexing from p, q, r to alpha
                     alpha = get_idx_map(ndof_x, ndof_y, ndof_th_0)
@@ -67,8 +67,8 @@ def calc_scat_matrix(mesh, sigma, Phi):
                             [ndof_th_1]    = cell_1.ndofs
                             
                             [_, _, _, _, thb_1, w_th_1] = qd.quad_xyth(nnodes_th = ndof_th_1)
-                            thf_1 = push_forward(th0_1, th1_1, thb_1).reshape(ndof_th_1, 1)
-                            w_th_1 = w_th_1.reshape(ndof_th_1, 1)
+                            thf_1 = push_forward(th0_1, th1_1, thb_1).reshape(1, ndof_th_1)
+                            w_th_1 = w_th_1.reshape(1, ndof_th_1)
                             
                             Phi_cell = Phi(thf_0, thf_1)
 

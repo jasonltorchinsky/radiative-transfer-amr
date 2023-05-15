@@ -68,18 +68,9 @@ def plot_projection_2d(mesh, proj, file_name = None, **kwargs):
                     pc = ax.pcolormesh(xxf, yyf, vals.transpose(),
                                        shading = 'gouraud',
                                        vmin = vmin, vmax = vmax,
-                                       cmap = kwargs['cmap'])
-                    
-                    
-    for col_key, col in col_items:
-        if col.is_lf:
-            # Plot column boundary
-            [x0, y0, x1, y1] = col.pos[:]
-            [dx, dy]         = [x1 - x0, y1 - y0]
-            
-            rect = Rectangle((x0, y0), dx, dy, fill = False)
-            ax.add_patch(rect)
-            
+                                       cmap = kwargs['cmap'],
+                                       edgecolors = 'black')
+    
     fig.colorbar(pc)
     
     if file_name:
@@ -163,7 +154,8 @@ def plot_projection_3d(mesh, proj, file_name = None, **kwargs):
                             pc = ax.pcolormesh(xxf, yyf, vals_xy.transpose(),
                                                shading = 'gouraud',
                                                vmin = vmin, vmax = vmax,
-                                               cmap = kwargs['cmap'])
+                                               cmap = kwargs['cmap'],
+                                               edgecolors = 'black')
                             
                             break
     
@@ -177,15 +169,6 @@ def plot_projection_3d(mesh, proj, file_name = None, **kwargs):
         # Title
         th_rads = th / np.pi
         ax.set_title('{:.2f}\u03C0 Radians'.format(th_rads))
-        
-        for col_key, col in col_items:
-            if col.is_lf:
-                # Plot column
-                [x0, y0, x1, y1] = col.pos[:]
-                [dx, dy]         = [x1 - x0, y1 - y0]
-                
-                rect = Rectangle((x0, y0), dx, dy, fill = False)
-                ax.add_patch(rect)
             
     fig.colorbar(pc, ax = axs, location = 'right')
     

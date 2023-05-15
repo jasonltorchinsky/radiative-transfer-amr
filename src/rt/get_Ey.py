@@ -51,8 +51,6 @@ def get_Ey(mesh, col_key_0, col_key_1):
                                        nhbr_rel = (0, 's')
                                        )
         
-        tr_psi_qj_matrix= np.transpose(psi_qj_matrix)
-        
         if lv_0 == lv_1:
             pos_str = 's'
         elif lv_1 - lv_0 == -1:
@@ -73,7 +71,10 @@ def get_Ey(mesh, col_key_0, col_key_1):
                                        )
 
         E_y = np.zeros([ndof_y_1, ndof_y_0])
-        for jjp in range(0, ndof_y_1):
-            E_y += wy_1[jjp] * psi_jj_matrix[:, jjp] @ tr_psi_qj_matrix[jjp, :]
+        for jj in range(0, ndof_y_1):
+            for qq in range(0, ndof_y_0):
+                for jjp in range(0, ndof_y_1):
+                    E_y[jj, qq] += wy_1[jjp] \
+                        * psi_jj_matrix[jj, jjp] * psi_qj_matrix[qq, jjp]
 
     return E_y

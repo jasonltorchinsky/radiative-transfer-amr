@@ -51,16 +51,14 @@ def get_Eth(mesh, col_key_0, cell_key_0, col_key_1, cell_key_1, F):
     else:
         [_, _, _, _, thb_1, wth_1] = quad_xyth(nnodes_th = ndof_th_1)
 
-        thf_0 = push_forward(th0_0, th1_0, thb_0)
-        Theta_F = Theta_F_func(thf_0, F)
+        thf_1_0 = push_forward(th0_0, th1_0, thb_1)
+        Theta_F = Theta_F_func(thf_1_0, F)
         
         xsi_ra_matrix = get_f2f_matrix(dim_str  = 'th',
                                        nbasis   = ndof_th_0,
                                        nnode    = ndof_th_1,
                                        nhbr_rel = (0, 's')
                                        )
-        
-        tr_xsi_ar_matrix = np.transpose(xsi_ar_matrix)
         
         if lv_0 == lv_1:
             pos_str = 's'
@@ -82,9 +80,11 @@ def get_Eth(mesh, col_key_0, cell_key_0, col_key_1, cell_key_1, F):
                                        )
 
         E_th = np.zeros([ndof_th_1, ndof_th_0])
-        for aap in range(0, ndof_th_1):
-            E_th += wth_1[aap] * Theta_F[aap] \
-                * xsi_aa_matrix[:, aap] @ tr_xsi_ra_matrix[aap, :]
+        for aa in range(0, ndof_th_1):
+            for rr in range(0, ndof_th_0):
+                for aap in range(0, ndof_th_1):
+                    E_th[aa, rr] += wth_1[aap] * Theta_F[aap] \
+                        * xsi_aa_matrix[aa, aap] * xsi_ra_matrix[rr, aap]
 
     return E_th
 

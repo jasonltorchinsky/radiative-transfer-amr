@@ -60,16 +60,8 @@ def plot_error_indicator_by_column(mesh, err_ind, file_name = None, **kwargs):
             yy = np.asarray([y0, y1])
             pc = ax.pcolormesh(xx, yy, [[col_err_ind]], shading = 'flat',
                                vmin = vmin, vmax = vmax,
-                               cmap = kwargs['cmap'])
-        
-
-    for col_key, col in col_items:
-        # Plot column
-        [x0, y0, x1, y1] = col.pos
-        [dx, dy] = [x1 - x0, y1 - y0]
-        
-        rect = Rectangle((x0, y0), dx, dy, fill = False)
-        ax.add_patch(rect)
+                               cmap = kwargs['cmap'],
+                               edgecolors = 'black')
 
     title_str = kwargs['name'] + ' Error Indicator'
     ax.set_title(title_str)

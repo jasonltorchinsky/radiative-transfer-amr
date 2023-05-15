@@ -5,3 +5,4 @@ from .test_3 import test_3
 from .test_4 import test_4
 from .test_5 import test_5
 from .test_6 import test_6
+from .test_star import test_star

@@ -50,7 +50,6 @@ def get_Ex(mesh, col_key_0, col_key_1):
                                        nnode    = ndof_x_1,
                                        nhbr_rel = (0, 's')
                                        )
-        tr_phi_pi_matrix = np.transpose(phi_pi_matrix)
         
         if lv_0 == lv_1:
             pos_str = 's'
@@ -72,7 +71,10 @@ def get_Ex(mesh, col_key_0, col_key_1):
                                        )
         
         E_x = np.zeros([ndof_x_1, ndof_x_0])
-        for iip in range(0, ndof_x_1):
-            E_x += wx_1[iip] * phi_ii_matrix[:, iip] @ tr_phi_pi_matrix[iip, :]
+        for ii in range(0, ndof_x_1):
+            for pp in range(0, ndof_x_0):
+                for iip in range(0, ndof_x_1):
+                    E_x[ii, pp] += wx_1[iip] \
+                        * phi_ii_matrix[ii, iip] * phi_pi_matrix[pp, iip]
 
     return E_x
