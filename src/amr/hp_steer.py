@@ -56,6 +56,8 @@ def hp_steer_col(mesh, uh, col_key):
             ref_form = 'h'
         else:
             ref_form = 'p'
+        
+        print('spt ref form: {}'.format(ref_form))
             
         return ref_form
 
@@ -91,5 +93,7 @@ def hp_steer_cell(mesh, uh, col_key, cell_key):
                 ref_form = 'h'
             else:
                 ref_form = 'p'
+
+            print('ang ref form: {}'.format(ref_form))
             
             return ref_form
