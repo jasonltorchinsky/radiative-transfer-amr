@@ -72,10 +72,9 @@ def hp_steer_cell(mesh, uh, col_key, cell_key):
             [ndof_th]  = cell.ndofs[:]
             
             [_, _, _, _, thb, wth] = qd.quad_xyth(nnodes_th = ndof_th)
-
+            
             thb = thb.reshape([1, ndof_th])
             wth = wth.reshape([1, ndof_th])
-            
             
             # uh_hat is the numerical solution integrated in space
             uh_hat = intg_cell_xy(mesh, uh, col_key, cell_key).reshape([1, ndof_th])
@@ -94,6 +93,6 @@ def hp_steer_cell(mesh, uh, col_key, cell_key):
             else:
                 ref_form = 'p'
 
-            print('ang ref form: {}'.format(ref_form))
+            print('ang ref form: {}, {:05.2f} >?< {}'.format(ref_form, lp - 0.5, ndof_th + 1))
             
             return ref_form
