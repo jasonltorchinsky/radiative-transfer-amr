@@ -49,7 +49,13 @@ def test_2(dir_name = 'test_rt'):
     # Maximum number of DOFs
     max_ndof = 2**12
     # Maximum number of trials
-    max_ntrial = 32
+    max_ntrial = 6
+    # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
+    combos = [[],
+              [],
+              []
+              ]
+    
 
     # Test Output Parameters
     do_plot_mesh        = True
@@ -68,8 +74,8 @@ def test_2(dir_name = 'test_rt'):
         combo_ndofs = {}
         combo_errs = {}
         
-        for ref_kind in ['spt', 'ang', 'all']:
-            for ref_form in ['h', 'p', 'hp']:
+        for ref_kind in ['all']:
+            for ref_form in ['hp']:
                 combo_str = '{}-{}-{}'.format(ref_form, ref_type, ref_kind)
                 combo_dir = os.path.join(prob_dir, combo_str)
                 os.makedirs(combo_dir, exist_ok = True)
