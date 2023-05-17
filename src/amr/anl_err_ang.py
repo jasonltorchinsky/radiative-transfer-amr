@@ -1,6 +1,8 @@
 import numpy as np
 
 from .Error_Indicator import Error_Indicator
+from .hp_steer import hp_steer_cell
+
 
 import dg.quadrature as qd
 from dg.projection import push_forward, pull_back
@@ -52,6 +54,8 @@ def anl_err_ang(mesh, proj, anl_sol_intg_xy):
                     
                     cell_err = np.amax(np.abs(u_cell_intg_xy - uh_cell_intg_xy))
                     err_ind.cols[col_key].cells[cell_key].err_ind = cell_err
+                    
+                    err_ind.cols[col_key].cells[cell_key].ref_form = hp_steer_cell(mesh, proj, col_key, cell_key)
                     
                     max_u_intg_xy = max(max_u_intg_xy, np.amax(np.abs(u_cell_intg_xy)))
             

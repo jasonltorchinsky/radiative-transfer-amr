@@ -51,6 +51,7 @@ def plot_projection_2d(mesh, proj, file_name = None, **kwargs):
     for col_key, col in col_items:
         if col.is_lf:
             [x0, y0, x1, y1] = col.pos[:]
+            [dx, dy]         = [x1 - x0, y1 - y0]
             [ndof_x, ndof_y] = col.ndofs[:]
             
             [xxb, _, yyb, _, _, _] = quad_xyth(nnodes_x = ndof_x,
@@ -66,10 +67,12 @@ def plot_projection_2d(mesh, proj, file_name = None, **kwargs):
                     vals = proj_cell.vals[:, :, 0]
                     
                     pc = ax.pcolormesh(xxf, yyf, vals.transpose(),
-                                       shading = 'gouraud',
-                                       vmin = vmin, vmax = vmax,
                                        cmap = kwargs['cmap'],
-                                       edgecolors = 'black')
+                                       vmin = vmin, vmax = vmax,
+                                       shading = 'gouraud')
+                    
+            rect = Rectangle((x0, y0), dx, dy, fill = False)
+            ax.add_patch(rect)
     
     fig.colorbar(pc)
     

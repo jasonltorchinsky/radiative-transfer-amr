@@ -1,6 +1,7 @@
 import numpy as np
 
 from .Error_Indicator import Error_Indicator
+from .hp_steer import hp_steer_cell
 
 import dg.quadrature as qd
 from dg.projection import push_forward, pull_back
@@ -48,6 +49,7 @@ def cell_jump_err(mesh, proj):
                     cell_err = np.sqrt((1. / dA) * cell_err)
                     
                     err_ind.cols[col_key].cells[cell_key_0].err_ind = cell_err
+                    err_ind.cols[col_key].cells[cell_key_0].ref_form = hp_steer_cell(mesh, proj, col_key, cell_key_0)
                     
     return err_ind
 

@@ -9,12 +9,12 @@ from .calc_key import calc_cell_key
 # Refine a cell angularly
 
 def ref_cell(self, col_key, cell_key, form = 'h'):
-    if form == 'h':
-        ref_cell_h(self, col_key, cell_key)
-    elif form == 'p':
+    if form in ['p', 'hp']:
         ref_cell_p(self, col_key, cell_key)
-    else:
-        msg = ( 'ERROR IN REFINING COLUMN, ' +
+    if form in ['h', 'hp']:
+        ref_cell_h(self, col_key, cell_key)
+    if form not in ['h', 'p', 'hp']:
+        msg = ( 'ERROR IN REFINING CELL, ' +
                     'UNSUPPORTED REFINEMENT FORM - {}').format(form)
         print(msg)
         sys.exit(0)

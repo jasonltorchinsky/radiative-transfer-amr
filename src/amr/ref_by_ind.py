@@ -1,8 +1,7 @@
 import numpy as np
 
-from .hp_steer import hp_steer_col
 
-def ref_by_ind(mesh, uh, err_ind, ref_ratio, form = 'h'):
+def ref_by_ind(mesh, err_ind, ref_ratio, form = 'h'):
     """
     Refine the mesh by some error indicator (err_ind).
     """
@@ -30,8 +29,7 @@ def ref_by_ind(mesh, uh, err_ind, ref_ratio, form = 'h'):
                         cell_err_ind = err_ind.cols[col_key].cells[cell_key].err_ind
                         if cell_err_ind >= ref_ratio * max_cell_err:
                             if form == 'hp':
-                                ref_form = 'h'
-                                print('WARNING - hp-AMR not supproted for cells, defaulting to h-AMR')
+                                ref_form = err_ind.cols[col_key].cells[cell_key].ref_form
                             else:
                                 ref_form = form
                             mesh.ref_cell(col_key, cell_key, form = ref_form)
@@ -46,7 +44,7 @@ def ref_by_ind(mesh, uh, err_ind, ref_ratio, form = 'h'):
                     col_err_ind = err_ind.cols[col_key].err_ind
                     if col_err_ind >= ref_ratio * max_col_err:
                         if form == 'hp':
-                            ref_form = hp_steer_col(mesh, uh, col_key)
+                            ref_form = err_ind.cols[col_key].ref_form
                         else:
                             ref_form = form
                         mesh.ref_col(col_key, kind = 'spt', form = ref_form)

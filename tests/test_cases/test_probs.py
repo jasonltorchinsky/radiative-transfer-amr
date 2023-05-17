@@ -35,8 +35,8 @@ def get_test_prob(prob_num, mesh):
         [x_top, y_top] = mesh.Ls
         
         def bcs(x, y, th):
-            ang_min = 3.0 * np.pi / 2.0 - 0.1
-            ang_max = 3.0 * np.pi / 2.0 + 0.1
+            ang_min = 3.0 * np.pi / 2.0 - 1.
+            ang_max = 3.0 * np.pi / 2.0 + 1.
             if (y == y_top) and (ang_min <= th) and (th <= ang_max):
                 return 10.0
             else:

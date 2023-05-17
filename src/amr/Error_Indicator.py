@@ -16,7 +16,7 @@ class Error_Indicator():
                     for cell_key, cell in cell_items:
                         if cell.is_lf:
                             self.cols[col_key].cells[cell_key] = Error_Indicator_Cell(by_col,
-                                                                             by_cell)
+                                                                                      by_cell)
         
     def __str__(self):
         msg = ( 'Hello world.'

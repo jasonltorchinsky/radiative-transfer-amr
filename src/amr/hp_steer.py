@@ -2,7 +2,7 @@ import numpy as np
 from scipy.special import legendre
 
 import dg.quadrature as qd
-from dg.projection import intg_col_th
+from dg.projection import intg_cell_xy, intg_col_th
 
 def hp_steer_col(mesh, uh, col_key):
     col = mesh.cols[col_key]
@@ -36,7 +36,7 @@ def hp_steer_col(mesh, uh, col_key):
         for qq in range(0, ndof_y):
             anq[qq] = (2. * ndof_x + 1.) * (2. * qq + 1.) / 4. \
                 * np.sum(wx * wy * uh_hat * Ln * Lq[qq, :])
-            anx_sq += anq[qq] + (2. / (2. * qq + 1))
+            anx_sq += (anq[qq])**2 * (2. / (2. * qq + 1))
 
         # Calculate a_q^K,y, a_ny^K,y
         dofs_x = np.arange(0, ndof_x)
@@ -54,15 +54,47 @@ def hp_steer_col(mesh, uh, col_key):
         for pp in range(0, ndof_x):
             apn[qq] = (2. * pp + 1.) * (2. * ndof_y + 1.) / 4. \
                 * np.sum(wx * wy * uh_hat * Ln[pp, :] * Lq)
-            any_sq += apn[pp] + (2. / (2. * pp + 1))
-            
+            any_sq += (apn[pp])**2 * (2. / (2. * pp + 1))
+
         term_0 = np.log((2. * ndof_x + 1.) / (2 * anx_sq)) / (2. * np.log(ndof_x))
         term_1 = np.log((2. * ndof_y + 1.) / (2 * any_sq)) / (2. * np.log(ndof_y))
         lp = 0.5 * (term_0 + term_1)
         
-        if lp - 0.5 > 0.5 * (ndof_x * ndof_y) + 1:
+        if lp - 0.5 >= 0.5 * (ndof_x * ndof_y) + 1.:
             ref_form = 'h'
         else:
             ref_form = 'p'
-            
+        
         return ref_form
+
+def hp_steer_cell(mesh, uh, col_key, cell_key):
+    col = mesh.cols[col_key]
+    
+    if col.is_lf:
+        cell = col.cells[cell_key]
+        if cell.is_lf:
+            [th0, th1] = cell.pos[:]
+            dth        = th1 - th0
+            [ndof_th]  = cell.ndofs[:]
+            
+            [_, _, _, _, thb, wth] = qd.quad_xyth(nnodes_th = ndof_th)
+            
+            
+            # uh_hat is the numerical solution integrated in space
+            uh_hat = intg_cell_xy(mesh, uh, col_key, cell_key)
+            
+            # Calculate a_p^K,th, a_nx^K,x
+            Lnth = np.zeros([ndof_th])
+            for aa in range(0, ndof_th):
+                Lnth[aa] = legendre(ndof_th)(thb[aa])
+            
+            anth_sq = (((2. * ndof_th + 1.) / 2.) * np.sum(uh_hat * wth * Lnth))**2
+            
+            lp = np.log((2. * ndof_th + 1.) / (2 * anth_sq)) / (2. * np.log(ndof_th))
+            
+            if lp - 0.5 >= ndof_th + 1.:
+                ref_form = 'h'
+            else:
+                ref_form = 'p'
+            
+            return ref_form

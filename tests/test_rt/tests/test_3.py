@@ -1,272 +1,195 @@
+import copy
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.sparse.linalg import spsolve, eigs
 from time import perf_counter
 import os, sys
 
 from .gen_mesh import gen_mesh
 
 sys.path.append('../../tests')
-from test_cases import get_cons_prob
+from test_cases import get_test_prob
 
 sys.path.append('../../src')
+from dg.mesh import get_hasnt_th
 from dg.mesh.utils import plot_mesh
-from dg.matrix import get_intr_mask, split_matrix
-from dg.projection import Projection, push_forward
-import dg.quadrature as qd
-from rt import calc_mass_matrix, calc_scat_matrix, calc_forcing_vec
+from dg.projection import Projection, intg_th
+from dg.projection.utils import plot_projection, plot_angular_dists
+from rt import rtdg
+from amr import cell_jump_err, col_jump_err, ref_by_ind
 
 from utils import print_msg
 
+
 def test_3(dir_name = 'test_rt'):
     """
-    Creates various visualizations of the scattering matrix and solves a 
-    manufactured problem.
+    Solves test problems, using the built-in RT solver.
     """
     
     test_dir = os.path.join(dir_name, 'test_3')
     os.makedirs(test_dir, exist_ok = True)
-    
-    # Get the base mesh, manufactured solution
-    [Lx, Ly]                   = [3., 2.]
-    pbcs                       = [False, False]
-    [ndof_x, ndof_y, ndof_th]  = [2, 2, 4]
-    has_th                     = True
-    mesh = gen_mesh(Ls     = [Lx, Ly],
-                    pbcs   = pbcs,
-                    ndofs  = [ndof_x, ndof_y, ndof_th],
-                    has_th = has_th)
-    
-    [u, kappa, sigma, Phi, f, _, _] = get_cons_prob(prob_name = 'scat',
-                                                    prob_num  = 3,
-                                                    mesh      = mesh)
-    
-    # Solve simplified problem over several trials
-    ntrial    = 6
-    ref_ndofs = np.zeros([ntrial])
-    inf_errs  = np.zeros([ntrial])
-    for trial in range(0, ntrial):
-        perf_trial_0 = perf_counter()
-        print_msg('[Trial {}] Starting...'.format(trial))
-            
-        # Set up output directories
-        trial_dir = os.path.join(test_dir, 'trial_{}'.format(trial))
-        os.makedirs(trial_dir, exist_ok = True)
 
-        """
-        # Plot the mesh
-        plot_mesh(mesh,
-                  file_name = os.path.join(trial_dir, 'mesh_3d.png'),
-                  plot_dim  = 3)
-        plot_mesh(mesh,
-                  file_name   = os.path.join(trial_dir, 'mesh_2d.png'),
-                  plot_dim    = 2,
-                  label_cells = True)
-        """
+    # Test parameters:
+    # Problem Number
+    prob_num  = 1
+    # Refinement Type: 'sin'gle column, 'uni'form, 'a'daptive 'm'esh 'r'efinement
+    ref_type = 'uni'
+    # Refinement Kind: 's'pa't'ia'l', 'ang'ular, 'all'
+    ref_kind = 'ang'
+    # Refinement Form: 'h', 'p'
+    ref_form = 'h'
+    # AMR Refinement Tolerance
+    tol = 0.9
+    # Maximum number of DOFs
+    max_ndof = 2**13
+    # Maximum number of trials
+    max_ntrial = 6
 
-        # Get the ending indices for the column matrices, number of DOFs in mesh
-        col_items = sorted(mesh.cols.items())
-        ncol      = 0
-        for col_key, col in col_items:
-            if col.is_lf:
-                ncol += 1
-        
-        col_end_idxs = [0] * ncol
-        mesh_ndof    = 0
-        idx          = 0
-        for col_key, col in col_items:
-            if col.is_lf:
-                col_ndof         = 0
-                [ndof_x, ndof_y] = col.ndofs
+    # Test Output Parameters
+    do_plot_mesh        = True
+    do_plot_coeff_funcs = False
+    do_plot_uh          = True
+    
+    for ref_type in ['amr']:
+        for ref_kind in ['spt']:
+            for ref_form in ['hp']:
+                msg = (
+                    'Staring combination {}, {}-{}.\n'.format(ref_kind,
+                                                              ref_form,
+                                                              ref_type)
+                    )
+                print_msg(msg)
                 
-                cell_items = sorted(col.cells.items())
-                for cell_key, cell in cell_items:
-                    if cell.is_lf:
-                        [ndof_th] = cell.ndofs
+                dir_name = '{}-{}-{}'.format(ref_kind, ref_form, ref_type)
+                combo_dir = os.path.join(test_dir, dir_name)
+                
+                # Get the base mesh, test problem
+                [Lx, Ly]                   = [2., 3.]
+                pbcs                       = [True, False]
+                [ndof_x, ndof_y, ndof_th]  = [2, 2, 6]
+                has_th                     = True
+                mesh = gen_mesh(Ls     = [Lx, Ly],
+                                pbcs   = pbcs,
+                                ndofs  = [ndof_x, ndof_y, ndof_th],
+                                has_th = has_th)
+                
+                [kappa, sigma, Phi, [bcs, dirac], f] = get_test_prob(
+                    prob_num = prob_num,
+                    mesh     = mesh)
+                
+                # Solve the manufactured problem over several trials
+                ref_ndofs = []
+                
+                ndof = 0
+                trial = 0
+                while (ndof < max_ndof) and (trial <= max_ntrial):
+                    perf_trial_0 = perf_counter()
+                    print_msg('[Trial {}] Starting...'.format(trial))
+                    
+                    # Set up output directories
+                    trial_dir = os.path.join(combo_dir, 'trial_{}'.format(trial))
+                    os.makedirs(trial_dir, exist_ok = True)
+                    
+                    # Solve the test problem
+                    perf_cons_0 = perf_counter()
+                    print_msg('[Trial {}] Solving the test problem...'.format(trial))
+                    
+                    uh_proj = rtdg(mesh, kappa, sigma, Phi, [bcs, dirac], f)
+                    
+                    perf_cons_f    = perf_counter()
+                    perf_cons_diff = perf_cons_f - perf_cons_0
+                    msg = (
+                        '[Trial {}] Test problem solved! '.format(trial) +
+                        'Time Elapsed: {:08.3f} [s]'.format(perf_cons_diff)
+                    )
+                    print_msg(msg)
+                    
+                    uh_vec = uh_proj.to_vector()
+                    ndof = np.size(uh_vec)
+                    ref_ndofs += [ndof]
+
+                    msg = (
+                        '[Trial {}] Number of DOFs: {} '.format(trial, ndof) +
+                        'of {}.'.format(max_ndof)
+                    )
+                    print_msg(msg)
+                    
+                    mesh_2d = get_hasnt_th(mesh)
+                    
+                    if do_plot_mesh:
+                        file_name = os.path.join(trial_dir, 'mesh_3d.png')
+                        plot_mesh(mesh      = mesh,
+                                  file_name = file_name,
+                                  plot_dim  = 3)
+                        file_name = os.path.join(trial_dir, 'mesh_2d.png')
+                        plot_mesh(mesh        = mesh,
+                                  file_name   = file_name,
+                                  plot_dim    = 2,
+                                  label_cells = (trial <= 3))
                         
-                        col_ndof  += ndof_x * ndof_y * ndof_th
-                
-                mesh_ndof += col_ndof
-                col_end_idxs[idx] = mesh_ndof
-                
-                idx += 1
-                
-        ref_ndofs[trial] = mesh_ndof
-        
-        # Construct matrices to solve manufactured problem
-        ## Scattering matrix
-        perf_cons_0 = perf_counter()
-        print_msg('[Trial {}] Constructing scattering matrix...'.format(trial))
-        
-        M_scat = calc_scat_matrix(mesh, sigma, Phi)
-        
-        perf_cons_f    = perf_counter()
-        perf_cons_diff = perf_cons_f - perf_cons_0
-        msg = (
-            '[Trial {}] Scattering matrix constructed! '.format(trial) +
-            'Time Elapsed: {:08.3f} [s]'.format(perf_cons_diff)
-        )
-        print_msg(msg)
-        
-        ## Mass matrix
-        perf_cons_0 = perf_counter()
-        print_msg('[Trial {}] Constructing mass matrix...'.format(trial))
-        
-        M_mass = calc_mass_matrix(mesh, kappa)
-        
-        perf_cons_f    = perf_counter()
-        perf_cons_diff = perf_cons_f - perf_cons_0
-        msg = (
-            '[Trial {}] Mass matrix constructed! '.format(trial) +
-            'Time Elapsed: {:08.3f} [s]'.format(perf_cons_diff)
-        )
-        print_msg(msg)
-
-        ## Forcing vector, analytic solution, interior DOFs mask
-        f_vec  = calc_forcing_vec(mesh, f)
-        u_proj = Projection(mesh, u)
-        u_vec  = u_proj.to_vector()
-        
-        intr_mask  = get_intr_mask(mesh)
-        f_vec_intr = f_vec[intr_mask]
-        u_vec_intr = u_vec[intr_mask]
-        bcs_vec    = u_vec[np.invert(intr_mask)]
-        
-        ## Solve manufactured problem
-        perf_soln_0 = perf_counter()
-        print_msg('[Trial {}] Solving manufactured problem...'.format(trial))
-
-        [M_intr, M_bdry] = split_matrix(mesh, M_mass - M_scat, intr_mask)
-
-        uh_vec_intr = spsolve(M_intr, f_vec_intr - M_bdry @ bcs_vec)
-        
-        perf_soln_f    = perf_counter()
-        perf_soln_diff = perf_soln_f - perf_soln_0
-        msg = (
-            '[Trial {}] Manufactured problem solved! '.format(trial) +
-            'Time Elapsed: {:08.3f} [s]'.format(perf_cons_diff)
-        )
-        print_msg(msg)
-
-        # Calculate eigenvalues of interior scattering matrix
-        '''
-        perf_evals_0 = perf_counter()
-        print_msg('[Trial {}] Calculating eigenvalues...'.format(trial))
-        
-        M_intr_evals = np.linalg.eig(M_intr.toarray())[0]
-        M_intr_evals = sorted(np.real(M_intr_evals), reverse = True)
-        
-        perf_evals_f    = perf_counter()
-        perf_evals_diff = perf_evals_f - perf_evals_0
-        msg = (
-            '[Trial {}] Eigenvalues calculated! '.format(trial) +
-            'Time Elapsed: {:08.3f} [s]'.format(perf_evals_diff)
-        )
-        print_msg(msg)
-        '''
-
-        """
-        # Plot global scattering matrix
-        fig, ax = plt.subplots()
-        for idx in range(0, ncol - 1):
-            ax.axhline(y         = col_end_idxs[idx],
-                       color     = 'gray',
-                       linestyle = '--',
-                       linewidth = 0.2)
-            ax.axvline(x         = col_end_idxs[idx],
-                       color     = 'gray',
-                       linestyle = '--',
-                       linewidth = 0.2)
-        ax.spy(M_scat,
-               marker     = 's',
-               markersize = 0.2,
-               color      = 'k')
-        ax.set_title('Global Scattering Matrix')
-        
-        file_name = 'scat_matrix.png'
-        fig.set_size_inches(6.5, 6.5)
-        plt.savefig(os.path.join(trial_dir, file_name), dpi = 300)
-        plt.close(fig)
-        """
-        
-        # Plot eigenvalues of interior scattering matrix
-        '''
-        fig, ax      = plt.subplots()
-        ndof_intr    = np.shape(M_intr)[0]
-        xx           = np.arange(1, ndof_intr + 1)
-        
-        ax.axhline(y         = 0.0,
-                   color     = 'gray',
-                   linestyle = '--',
-                   linewidth = 0.1)
-        ax.scatter(xx, M_intr_evals,
-                   color = 'k',
-                   s     = 0.15)
-
-        ax.set_title('Interior Scattering Matrix - Eigenvalues (Real Part)')
-        
-        file_name = 'scat_matrix_evals.png'
-        fig.set_size_inches(6.5, 6.5)
-        plt.savefig(os.path.join(trial_dir, file_name), dpi = 300)
-        plt.close(fig)
-        '''
-
-        """
-        # Plot solutions
-        fig, ax = plt.subplots()
-
-        ax.plot(u_vec_intr,
-                label = 'Analytic Solution',
-                color = 'r',
-                drawstyle = 'steps-post')
-        ax.plot(uh_vec_intr,
-                label = 'Approximate Solution',
-                color = 'k', linestyle = ':',
-                drawstyle = 'steps-post')
-        
-        ax.legend()
-        
-        ax.set_title('Solution Comparison')
-        
-        file_name = 'soln_{}.png'.format(trial)
-        fig.set_size_inches(6.5, 6.5)
-        plt.savefig(os.path.join(trial_dir, file_name), dpi = 300)
-        plt.close(fig)
-        """
-        
-        # Caluclate error
-        inf_errs[trial] = np.amax(np.abs(u_vec_intr - uh_vec_intr))
-        
-        # Refine the mesh for the next trial
-        #col_keys = sorted(mesh.cols.keys())
-        #mesh.ref_col(col_keys[-1], kind = 'ang')
-        mesh.ref_mesh(kind = 'ang')
-
-        perf_trial_f    = perf_counter()
-        perf_trial_diff = perf_trial_f - perf_trial_0
-        msg = (
-            '[Trial {}] Completed! '.format(trial) +
-            'Time Elapsed: {:08.3f} [s]\n'.format(perf_trial_diff)
-        )
-        print_msg(msg)
-        
-    # Plot errors
-    fig, ax = plt.subplots()
-    
-    ax.plot(ref_ndofs, inf_errs,
-            label     = 'L$^{\infty}$ Error',
-            color     = 'k',
-            linestyle = '-')
-
-    ax.set_xscale('log', base = 2)
-    ax.set_yscale('log', base = 2)
-    
-    ax.set_xlabel('Total Degrees of Freedom')
-    ax.set_ylabel('L$^{\infty}$ Error')
-    
-    ax.set_title('Uniform Angular $h$-Refinement Convergence Rate - Scattering Problem')
-    
-    file_name = 'h-convergence-scatttering.png'
-    fig.set_size_inches(6.5, 6.5)
-    plt.savefig(os.path.join(test_dir, file_name), dpi = 300)
-    plt.close(fig)
+                    if do_plot_coeff_funcs:
+                        # Plot the coefficient functions
+                        kappa_proj = Projection(mesh_2d, kappa)
+                        file_name = os.path.join(trial_dir, 'kappa.png')
+                        plot_projection(mesh_2d, kappa_proj, file_name = file_name)
+                        
+                        sigma_proj = Projection(mesh_2d, sigma)
+                        file_name = os.path.join(trial_dir, 'sigma.png')
+                        plot_projection(mesh_2d, sigma_proj, file_name = file_name)
+                        
+                        file_name = os.path.join(trial_dir, 'scat.png')
+                        fig, ax = plt.subplots(subplot_kw = {'projection' : 'polar'})
+                        phi = np.linspace(0, 2 * np.pi, 120)
+                        r = Phi(0, phi)
+                        ax.plot(phi, r, 'k-')
+                        ax.set_yticks(np.around(np.linspace(0, np.amax(r), 3), 2))
+                        fig.set_size_inches(6.5, 6.5)
+                        plt.savefig(file_name, dpi = 300)
+                        plt.close(fig)
+                        
+                    if do_plot_uh:
+                        #file_name = os.path.join(trial_dir, 'uh_proj.png')
+                        #angles = [0, np.pi/3, 2 * np.pi / 3, np.pi,
+                        #          4 * np.pi / 3, 5 * np.pi / 3]
+                        #plot_projection(mesh, uh_proj, file_name = file_name, angles = angles)
+                        
+                        file_name = os.path.join(trial_dir, 'uh_ang_dist.png')
+                        plot_angular_dists(mesh, uh_proj, file_name = file_name)
+                        
+                        mean_uh = intg_th(mesh, uh_proj)
+                        file_name = os.path.join(trial_dir, 'uh_mean.png')
+                        plot_projection(mesh_2d, mean_uh, file_name = file_name)
+                        
+                        
+                    # Refine the mesh for the next trial
+                    if ref_type == 'sin':
+                        ## Refine a given column
+                        col_keys = sorted(mesh.cols.keys())
+                        mesh.ref_col(col_keys[-1], kind = ref_kind, form = ref_form)
+                    elif ref_type == 'uni':
+                        ## Refine the mesh uniformly
+                        mesh.ref_mesh(kind = ref_kind, form = ref_form)
+                    elif ref_type == 'amr':
+                        if ref_kind in ['ang', 'all']:
+                            cell_jump_err_ind = cell_jump_err(mesh, uh_proj)
+                        if ref_kind in ['spt', 'all']:
+                            col_jump_err_ind = col_jump_err(mesh, uh_proj)
+                            
+                        if ref_kind in ['ang', 'all']:
+                            mesh = ref_by_ind(mesh, cell_jump_err_ind,
+                                          ref_ratio = tol, form = ref_form)
+                        if ref_kind in ['spt', 'all']:
+                            mesh = ref_by_ind(mesh, col_jump_err_ind,
+                                          ref_ratio = tol, form = ref_form)
+                        
+                        
+                        
+                        
+                    perf_trial_f    = perf_counter()
+                    perf_trial_diff = perf_trial_f - perf_trial_0
+                    msg = (
+                        '[Trial {}] Trial completed! '.format(trial) +
+                        'Time Elapsed: {:08.3f} [s]\n'.format(perf_trial_diff)
+                    )
+                    print_msg(msg)
+                    
+                    trial += 1

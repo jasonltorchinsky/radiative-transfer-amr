@@ -8,11 +8,13 @@ from .calc_key import calc_col_key
 # Refine a column spatially
 
 def ref_col_spt(self, col_key, form = 'h'):
-    if form == 'h':
-        ref_col_spt_h(self, col_key)
-    elif form == 'p':
+    if (form == 'p') or (form == 'hp'):
         ref_col_spt_p(self, col_key)
-    else:
+        
+    if (form == 'h') or (form == 'hp'):
+        ref_col_spt_h(self, col_key)
+        
+    if form not in ['h', 'p', 'hp']:
         msg = ( 'ERROR IN REFINING COLUMN, ' +
                     'UNSUPPORTED REFINEMENT FORM - {}').format(form)
         print(msg)

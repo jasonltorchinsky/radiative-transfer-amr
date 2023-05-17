@@ -104,7 +104,7 @@ def calc_bcs_vec(mesh, bcs_dirac):
                                         psi_j = 1.
                                         y_j   = yyf[jj]
 
-                                    for aa in range(0, ndof_y):
+                                    for aa in range(0, ndof_th):
                                         if ((dirac[2] is not None)
                                             and in_cell[2]):
                                             xsi_a = max(0.0, qd.lag_eval(thb, aa, ths_b))

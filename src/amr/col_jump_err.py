@@ -1,6 +1,7 @@
 import numpy as np
 
 from .Error_Indicator import Error_Indicator
+from .hp_steer import hp_steer_col
 
 import dg.quadrature as qd
 from dg.projection import push_forward, pull_back
@@ -123,6 +124,7 @@ def col_jump_err(mesh, proj):
             col_err = np.sqrt((1. / perim) * col_err)
             
             err_ind.cols[col_key_0].err_ind = col_err
+            err_ind.cols[col_key_0].ref_form = hp_steer_col(mesh, proj, col_key_0)
 
     return err_ind
 

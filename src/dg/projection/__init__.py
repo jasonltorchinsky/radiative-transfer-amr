@@ -4,6 +4,7 @@ from .Projection_Column import Projection_Column
 from .Projection_Cell import Projection_Cell
 
 from .push_pull import push_forward, pull_back
+from .intg_cell_xy import intg_cell_xy
 from .intg_col_th import intg_col_th
 from .get_f2f_matrix import get_f2f_matrix
 
