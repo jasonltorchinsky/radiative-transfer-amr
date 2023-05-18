@@ -52,7 +52,7 @@ def test_5(dir_name = 'test_mesh'):
         ji_mesh.utils.plot_mesh(mesh, ax = None, file_name = file_name,
                                 label_cells = (nrefs <= 3), plot_dim = 2)
 
-    ncell_ref = 2
+    ncell_ref = 4
     for ref in range(0, ncell_ref):
         col_keys = sorted(list(mesh.cols.keys()))
         cell_keys = sorted(list(mesh.cols[col_keys[-1]].cells.keys()))
@@ -71,14 +71,14 @@ def test_5(dir_name = 'test_mesh'):
         mesh.ref_cell(col_keys[-1], cell_keys[-1], form = 'p')
         nrefs += 1
         
-        file_name = os.path.join(mesh_dir, 'mesh_2d_{}.png'.format(nrefs))
-        ji_mesh.utils.plot_mesh(mesh, ax = None, file_name = file_name,
-                                label_cells = (nrefs <= 3), plot_dim = 2)
-        
-        file_name = os.path.join(mesh_dir, 'mesh_3d_{}.png'.format(nrefs))
-        ji_mesh.utils.plot_mesh(mesh, ax = None, file_name = file_name,
-                                label_cells = (nrefs <= 3), plot_dim = 2)
+        file_name = os.path.join(mesh_dir, 'mesh_3d_p_{}.png'.format(nrefs))
+        ji_mesh.utils.plot_mesh_p(mesh, ax = None, file_name = file_name,
+                                  label_cells = (nrefs <= 3), plot_dim = 3)
 
     file_name = os.path.join(mesh_dir, 'mesh_2d_bdry.png')
     ji_mesh.utils.plot_mesh_bdry(mesh, file_name = file_name,
                                  label_cells = (nrefs <= 3), plot_dim = 2)
+
+    file_name = os.path.join(mesh_dir, 'mesh_3d_bdry.png')
+    ji_mesh.utils.plot_mesh_bdry(mesh, file_name = file_name,
+                                 label_cells = (nrefs <= 3), plot_dim = 3)

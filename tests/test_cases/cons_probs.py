@@ -18,13 +18,14 @@ def get_cons_prob(prob_name, prob_num, mesh):
         Smooth-ish in space and angle
         """
         def u(x, y, th):
-            return np.sin(th)**2 * np.exp(-((x - Lx/2.)**2 + (y - Ly/2.)**2))
+            return np.exp(-((th - 3. * np.pi / 2.)**2)) \
+                * np.exp(-((x - Lx/3.)**2 + (y - Ly/3.)**2))
         
         def kappa(x, y):
-            return (x + Lx/3.)**6 * (np.sin(18. * np.pi * y))**2 + 1.
+            return 1. + np.exp(-((x - Lx/2.)**2 + (y - Ly/2.)**2))
         
         def sigma(x, y):
-            return 0.1 * kappa(x, y)
+            return 0.9 * kappa(x, y)
         
         def Phi(th, phi):
             return (1.0 / (3.0 * np.pi)) * (1 + (np.cos(th - phi))**2)
@@ -32,21 +33,37 @@ def get_cons_prob(prob_name, prob_num, mesh):
         def f_mass(x, y, th): # *JUST* kappa * u
             return kappa(x, y) * u(x, y, th)
 
+        erf0 = erf(np.pi / 2)
+        erf1 = erf(3. * np.pi / 2.)
+        erfi0 = erfi(1. + 1.j * np.pi / 2.)
+        erfi1 = erfi(1. - 1.j * 3. * np.pi / 2.)
+        erfi2 = erfi(1. - 1.j * np.pi / 2.)
+        erfi3 = erfi(1. + 1.j * 3. * np.pi / 2.)
         def f_scat(x, y, th): # *JUST* sigma * int_0^2pi Phi(th, th') * u(x, y, th') dth'
-            return sigma(x, y) * np.exp(-((x - Lx/2.)**2 + (y - Ly/2.)**2)) \
-                * (1. / 12.) * (6. - np.cos(2. * th))
+            return sigma(x, y) * np.exp(-((x - Lx/3.)**2 + (y - Ly/3.)**2)) \
+                * np.real(
+                    ( (1. / (24. * np.sqrt(np.pi)))
+                      * ( 6. * (erf0 + erf1)
+                          + 1.j * np.exp(-1 - 2.j * th) * (erfi0 - erfi1)
+                          + np.exp(4.j * th) * (- erfi2 + erfi3) )
+                     )
+                    )
 
         def f_conv(x, y, th): # *JUST* s.grad(u)
             return -2. * u(x, y, th) \
-                * ((x - Lx/2) * np.cos(th) + (y - Ly/2.) * np.sin(th))
+                * ((x - Lx/3.) * np.cos(th) + (y - Ly/3.) * np.sin(th))
 
         def u_intg_th(x, y):
-            return np.pi * np.exp(-((x - Lx/2.)**2 + (y - Ly/2.)**2))
+            return 0.5 * np.sqrt(np.pi) * (erf0 + erf1) \
+                * np.exp(-((x - Lx/3.)**2 + (y - Ly/3.)**2))
 
-        erfx = erf(Lx/2.)
-        erfy = erf(Ly/2.)
+        erfx0 = erf(Lx / 3.)
+        erfx1 = erf(2. * Lx/3.)
+        erfy0 = erf(Ly / 3.)
+        erfy1 = erf(2. * Ly / 3.)
         def u_intg_xy(th):
-            return np.pi * erfx * erfy * (np.sin(th))**2
+            return 0.25 * np.pi * (erfx0 + erfx1) * (erfy0 + erfy1) \
+                * np.exp(-((th - 3. * np.pi / 2.)**2))
 
     elif prob_num == 1:
         """

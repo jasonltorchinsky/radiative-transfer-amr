@@ -13,7 +13,7 @@ def plot_cell_nhbrs(mesh, col, cell, file_name = None, **kwargs):
     kwargs = {**default_kwargs, **kwargs}
 
     [fig, ax] = plot_mesh(mesh, ax = None, file_name = None,
-                          plot_dim = 3, **kwargs)
+                          plot_dim = 3, plot_style = 'box', **kwargs)
 
     colors = ['#648FFF', '#DC267F', '#FE6100', '#FFB000']
     cols = list(mesh.cols.values())

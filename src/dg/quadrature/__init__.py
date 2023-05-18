@@ -5,6 +5,8 @@ from .lag_eval import lag_eval
 from .calc_proj_mtx_1d import calc_proj_mtx_1d
 from .proj_1d import proj_1d
 #from .gl_proj_2D import gl_proj_2D 
-from .lgl_quad import lgl_quad
 from .lg_quad import lg_quad
+from .lgr_quad import lgr_quad
+from .lgl_quad import lgl_quad
+from .uni_quad import uni_quad
 from .quad_xyth import quad_xyth

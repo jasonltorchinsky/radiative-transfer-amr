@@ -1,35 +1,26 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.patches import Rectangle
-from mpl_toolkits.mplot3d import Axes3D
-from mpl_toolkits.mplot3d.art3d import Poly3DCollection
-
-from .plot_mesh import plot_mesh, get_prism
+from matplotlib.patches import Rectangle, Wedge
 
 def plot_mesh_p(mesh, file_name = None, **kwargs):
     
     default_kwargs = {'label_cells' : False,
                       'plot_dim' : 2}
     kwargs = {**default_kwargs, **kwargs}
-
-    [fig, ax] = plot_mesh(mesh, ax = None, file_name = None, **kwargs)
     
     if kwargs['plot_dim'] == 2:
-        ax = plot_mesh_p_2d(mesh, ax = ax,
-                            file_name = file_name)
+        ax = plot_mesh_p_2d(mesh, file_name = file_name)
     elif kwargs['plot_dim'] == 3:
-        ax = plot_mesh_p_3d(mesh, ax = ax, col = col,
-                            file_name = file_name)
+        ax = plot_mesh_p_3d(mesh, file_name = file_name)
     else:
         print('Unable to plot mesh that is not 2D nor 3D')
         # TODO: Add more error handling
 
     return None
 
-def plot_mesh_p_2d(mesh, ax = None, file_name = None):
+def plot_mesh_p_2d(mesh, file_name = None):
     
-    if ax:
-        fig = plt.gcf()
+    fig, ax = plt.subplots()
 
     [Lx, Ly] = mesh.Ls
 
@@ -63,36 +54,47 @@ def plot_mesh_p_2d(mesh, ax = None, file_name = None):
                 
     return ax
 
-def plot_mesh_p_3d(mesh, ax = None, col = None, file_name = None):
-    if ax:
-        fig = plt.gcf()
+def plot_mesh_p_3d(mesh, file_name = None):
+
+    fig, ax = plt.subplots()
         
-    if col in list(mesh.cols.values()):
+    [Lx, Ly] = mesh.Ls[:]
+    ax.set_xlim([0, Lx])
+    ax.set_ylim([0, Ly])
+    
+    colors = ['red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet']
+    ncolors = len(colors)
+    col_items = sorted(mesh.cols.items())
+    for col_key, col in col_items:
         if col.is_lf:
             [x0, y0, x1, y1] = col.pos
-            prism = get_prism([x0, x1], [y0, y1], [0, 2 * np.pi], color = 'red')
-            for face in prism:
-                ax.add_collection3d(face)
-                
-            nhbr_locs = ['+', '-']
-            for axis in range(0, 2):
-                for nhbr_loc in nhbr_locs:
-                    [_, nhbr1, nhbr2] = \
-                        get_col_nhbr(mesh = mesh, col = col,
-                                     axis = axis, nhbr_loc = nhbr_loc)
-                    for nhbr in [nhbr1, nhbr2]:
-                        if nhbr != None:
-                            [x0, y0, x1, y1] = nhbr.pos
-                            
-                            prism = get_prism([x0, x1], [y0, y1],
-                                              [0, 2 * np.pi],
-                                              color = 'blue')
-                            for face in prism:
-                                ax.add_collection3d(face)
-                            
-            if file_name:
-                fig.set_size_inches(6.5, 6.5)
-                plt.savefig(file_name, dpi = 300)
-                plt.close(fig)
+            [dx, dy]  = [x1 - x0, y1 - y0]
+            [cx, cy] = [(x0 + x1) / 2., (y0 + y1) / 2.]
+
+            rect = Rectangle((x0, y0), dx, dy,
+                                     edgecolor = 'black',
+                                     fill = None)
+            ax.add_patch(rect)
+
+            cell_items = sorted(col.cells.items())
+            
+            for cell_key, cell in cell_items:
+                if cell.is_lf:
+                    [th0, th1] = cell.pos[:]
+                    [ndof_th]  = cell.ndofs[:]
+
+                    [deg0, deg1] = [th0 * 180. / np.pi, th1 * 180. / np.pi]
+                    
+                    wed = Wedge((cx, cy), min(dx, dy)/2, deg0, deg1,
+                                edgecolor = 'black',
+                                facecolor = colors[ndof_th%ncolors]
+                                )
+                    
+                    ax.add_patch(wed)
+            
+    if file_name:
+        fig.set_size_inches(6.5, 6.5 * (Ly / Lx))
+        plt.savefig(file_name, dpi = 300)
+        plt.close(fig)
                 
     return ax

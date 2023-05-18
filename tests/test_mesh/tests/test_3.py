@@ -68,15 +68,25 @@ def test_3(dir_name = 'test_mesh'):
         
         file_name = os.path.join(mesh_dir, 'mesh_3d_{}.png'.format(nrefs))
         ji_mesh.utils.plot_mesh(mesh, ax = None, file_name = file_name,
-                                label_cells = (nrefs <= 3), plot_dim = 3)
+                                label_cells = (nrefs <= 3), plot_dim = 3,
+                                plot_style = 'flat')
+
+        file_name = os.path.join(mesh_dir, 'mesh_3d`_flat_{}.png'.format(nrefs))
+        ji_mesh.utils.plot_mesh(mesh, ax = None, file_name = file_name,
+                                label_cells = (nrefs <= 3), plot_dim = 3,
+                                plot_style = 'box')
 
     file_name = os.path.join(mesh_dir, 'mesh_2d_bdry.png')
     ji_mesh.utils.plot_mesh_bdry(mesh, file_name = file_name,
                                  label_cells = (nrefs <= 3), plot_dim = 2)
+
+    file_name = os.path.join(mesh_dir, 'mesh_3d_bdry.png')
+    ji_mesh.utils.plot_mesh_bdry(mesh, file_name = file_name,
+                                 label_cells = (nrefs <= 3), plot_dim = 3)
         
     for col_key, col in sorted(mesh.cols.items()):
         if col.is_lf:
             for cell_key, cell in sorted(col.cells.items()):
                 file_str  = 'cell_{}_{}_nhbrs.png'.format(col_key, cell_key)
-                file_name = os.path.join(nhbrs_dir, file_str)
-                ji_mesh.utils.plot_cell_nhbrs(mesh, col, cell, file_name = file_name)
+                #file_name = os.path.join(nhbrs_dir, file_str)
+                #ji_mesh.utils.plot_cell_nhbrs(mesh, col, cell, file_name = file_name)

@@ -7,7 +7,7 @@ import os, sys
 sys.path.append('../../src')
 from utils import print_msg
 
-from tests import test_0, test_1, test_2, test_3, test_4
+from tests import test_0, test_1, test_2, test_3, test_4, test_5
 
 def main():
 

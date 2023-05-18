@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.patches import Rectangle
+from matplotlib.patches import Rectangle, Wedge
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import sys
@@ -8,13 +8,20 @@ import sys
 def plot_mesh(mesh, ax = None, file_name = None, **kwargs):
     
     default_kwargs = {'label_cells' : False,
-                      'plot_dim' : 2}
+                      'plot_dim'    : 2,
+                      'plot_style'  : 'flat'}
     kwargs = {**default_kwargs, **kwargs}
 
     if kwargs['plot_dim'] == 2:
         [fig, ax] = plot_mesh_2d(mesh, ax = ax, file_name = file_name, **kwargs)
-    elif kwargs['plot_dim'] == 3:
-        [fig, ax] = plot_mesh_3d(mesh, ax = ax, file_name = file_name, **kwargs)
+    elif kwargs['plot_dim'] == 3 and kwargs['plot_style'] == 'box':
+        [fig, ax] = plot_mesh_3d_box(mesh, ax = ax,
+                                     file_name = file_name,
+                                     **kwargs)
+    elif kwargs['plot_dim'] == 3 and kwargs['plot_style'] == 'flat':
+        [fig, ax] = plot_mesh_3d_flat(mesh, ax = ax,
+                                      file_name = file_name,
+                                      **kwargs)
     else:
         print('Unable to plot mesh that is not 2D nor 3D')
         # TODO: Add more error handling
@@ -66,7 +73,7 @@ def plot_mesh_2d(mesh, ax = None, file_name = None, **kwargs):
 
     return [fig, ax]
 
-def plot_mesh_3d(mesh, ax = None, file_name = None, **kwargs):
+def plot_mesh_3d_box(mesh, ax = None, file_name = None, **kwargs):
 
     default_kwargs = {'label_cells': False}
     kwargs = {**default_kwargs, **kwargs}
@@ -354,3 +361,50 @@ def get_closest_factors(x):
         a = int(a - 1)
 
     return [int(a), int(x / a)]
+
+def plot_mesh_3d_flat(mesh, ax = None,
+                      file_name = None, **kwargs):
+
+    default_kwargs = {'label_cells': False}
+    kwargs = {**default_kwargs, **kwargs}
+
+    if ax:
+        fig = plt.gcf()
+    else:
+        fig, ax = plt.subplots()
+
+    [Lx, Ly] = mesh.Ls[:]
+    ax.set_xlim([0, Lx])
+    ax.set_ylim([0, Ly])
+
+    col_items = sorted(mesh.cols.items())
+    for col_key, col in col_items:
+        if col.is_lf:
+            [x0, y0, x1, y1] = col.pos[:]
+            [dx, dy] = [x1 - x0, y1 - y0]
+            [cx, cy] = [(x0 + x1) / 2., (y0 + y1) / 2.]
+            
+            rect = Rectangle((x0, y0), dx, dy,
+                             fill = False,
+                             edgecolor = 'black')
+            ax.add_patch(rect)
+
+            cell_items = sorted(col.cells.items())
+            for cell_key, cell in cell_items:
+                if cell.is_lf:
+                    [th0, th1] = cell.pos[:]
+                    [deg0, deg1] = [th0 * 180. / np.pi, th1 * 180. / np.pi]
+
+                    wed = Wedge((cx, cy), min(dx, dy)/2, deg0, deg1,
+                                fill = False,
+                                edgecolor = 'black'
+                                )
+                    ax.add_patch(wed)
+                
+        
+    if file_name:
+        fig.set_size_inches(6.5, 6.5 * (Ly / Lx))
+        plt.savefig(file_name, dpi = 300)
+        plt.close(fig)
+
+    return [fig, ax]

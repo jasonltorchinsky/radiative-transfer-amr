@@ -27,30 +27,31 @@ def ref_cell_p(self, col_key, cell_key):
     if cell.is_lf:
         cell.ndofs[0] += 1
         # Check if angularly neighboring cells need to be refined
-        '''
+        
         for FC in range(0, 4):
             unique_nhbr_col_keys = list(set(col.nhbr_keys[FC]))
             for nhbr_col_key in unique_nhbr_col_keys:
-                nhbr_col = self.cols[nhbr_col_key]
-                if nhbr_col.is_lf:
-                    nhbr_col_nhbr_cells = get_cell_nhbr_in_col(self,
-                                                               col_key,
-                                                               cell_key,
-                                                               nhbr_col_key)
-                    for Fc in range(0, 2):
-                        nhbr_cell_key = cell.nhbr_keys[F]
-                        if nhbr_cell_key is not None:
-                            nhbr_cell = col.cells[nhbr_cell_key]
-                            if nhbr_cell.is_lf:
-                                nhbr_nhbr_col_nhbr_cells = \
-                                    get_cell_nhbr_in_col(self,
-                                                         col_key,
-                                                         nhbr_cell_key,
-                                                         nhbr_col_key)
-                                if nhbr_col_nhbr_cells == nhbr_nhbr_col_nhbr_cells:
-                                    if cell.ndofs[0] != nhbr_cell.ndofs[0]:
-                                        ref_cell_p(self, col_key, nhbr_cell_key)
-        '''
+                if nhbr_col_key is not None:
+                    nhbr_col = self.cols[nhbr_col_key]
+                    if nhbr_col.is_lf:
+                        nhbr_col_nhbr_cells = get_cell_nhbr_in_col(self,
+                                                                   col_key,
+                                                                   cell_key,
+                                                                   nhbr_col_key)
+                        for Fc in range(0, 2):
+                            nhbr_cell_key = cell.nhbr_keys[Fc]
+                            if nhbr_cell_key is not None:
+                                nhbr_cell = col.cells[nhbr_cell_key]
+                                if nhbr_cell.is_lf:
+                                    nhbr_nhbr_col_nhbr_cells = \
+                                        get_cell_nhbr_in_col(self,
+                                                             col_key,
+                                                             nhbr_cell_key,
+                                                             nhbr_col_key)
+                                    if nhbr_col_nhbr_cells == nhbr_nhbr_col_nhbr_cells:
+                                        if cell.ndofs[0] != nhbr_cell.ndofs[0]:
+                                            ref_cell_p(self, col_key, nhbr_cell_key)
+        
 
 def ref_cell_h(self, col_key, cell_key):
     col  = self.cols[col_key]

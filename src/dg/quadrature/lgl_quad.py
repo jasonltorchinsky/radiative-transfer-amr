@@ -21,7 +21,7 @@ def lgl_quad(nnodes = 5):
     vand = np.zeros([nnodes, nnodes])
     # Compute P_n using the recursion relation
     # Compute its first and second derivatives using Newton-Raphson
-    nodes_prev = nodes + 1
+    nodes_prev = np.copy(nodes) + 1.
     while np.amax(np.abs(nodes - nodes_prev)) > 2.3e-16:
         vand[:, 0] = 1
         vand[:, 1] = nodes
@@ -29,7 +29,7 @@ def lgl_quad(nnodes = 5):
             vand[:, kk + 1] = ( (2 * kk + 1) * nodes * vand[:, kk]
                                 - kk * vand[:, kk - 1] ) / (kk + 1)
 
-        nodes_prev = nodes
+        nodes_prev = np.copy(nodes)
         nodes = nodes_prev \
             - ( (nodes * vand[:, nnodes - 1] - vand[:, nnodes - 2]) 
                 / ((nnodes + 1) * vand[:, nnodes - 1]) )

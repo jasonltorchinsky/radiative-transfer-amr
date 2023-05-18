@@ -22,7 +22,7 @@ def main():
                         help = help_str)
 
     help_str = ('Do not run (0) or run (1) Test 0 - ' +
-                '2-D Prpjection Creation and Plotting')
+                '2-D Projection Creation and Plotting')
     parser.add_argument('--test_0', nargs = 1, default = [0],
                         type = int, choices = [0, 1], required = False,
                         help = help_str)

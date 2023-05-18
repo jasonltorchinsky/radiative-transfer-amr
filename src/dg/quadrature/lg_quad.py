@@ -26,7 +26,7 @@ def lg_quad(nnodes, intv = [-1, 1]):
     
     # Compute the zeros of the (n + 1) Legendre polynomial using
     # recursion relation and Newton-Raphson method
-    y_prev = y + 1
+    y_prev = np.copy(y) + 1.
     while np.amax(np.abs(y - y_prev)) > 2.3e-16:
         vand[:, 1] = y
 
@@ -38,7 +38,7 @@ def lg_quad(nnodes, intv = [-1, 1]):
         vand_p = (nnodes + 1) * (vand[:, nnodes-1] - y * vand[:, nnodes]) \
             / (1 - y**2)
 
-        y_prev = y
+        y_prev = np.copy(y)
         y = y_prev - vand[:, nnodes] / vand_p
 
     # Compute the nodes and weights

@@ -45,24 +45,26 @@ def test_2(dir_name = 'test_rt'):
     # Refinement Form: 'h', 'p'
     ref_form = ''
     # AMR Refinement Tolerance
-    tol = 0.8
+    tol_spt = 0.8
+    tol_ang = 0.75
     # Maximum number of DOFs
-    max_ndof = 2**12
+    max_ndof = 2**13
     # Maximum number of trials
     max_ntrial = 8
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combos = [
-              ['hp', 'amr', 'ang']
-              ]
+        ['h',  'amr', 'ang']
+    ]
     
 
     # Test Output Parameters
-    do_plot_mesh        = True
+    do_plot_mesh        = False
+    do_plot_mesh_p      = False
     do_plot_matrix      = False
     do_plot_uh          = True
     do_plot_u           = True
     do_plot_diff        = False
-    do_plot_anl_err_ind = False
+    do_plot_anl_err_ind = True
     do_plot_sol_vecs    = False
     do_plot_errs        = True
 
@@ -85,12 +87,13 @@ def test_2(dir_name = 'test_rt'):
             # Get the base mesh, manufactured solution
             [Lx, Ly]                   = [2., 3.]
             pbcs                       = [False, False]
-            [ndof_x, ndof_y, ndof_th]  = [2, 2, 2]
+            [ndof_x, ndof_y, ndof_th]  = [8, 8, 2]
             has_th                     = True
             mesh = gen_mesh(Ls     = [Lx, Ly],
                             pbcs   = pbcs,
                             ndofs  = [ndof_x, ndof_y, ndof_th],
                             has_th = has_th)
+            mesh.ref_mesh(kind = 'spt', form = 'h')
             
             [u, kappa, sigma, Phi, f,
              u_intg_th, u_intg_xy] = get_cons_prob(prob_name = prob_name,
@@ -249,12 +252,18 @@ def test_2(dir_name = 'test_rt'):
                               file_name   = file_name,
                               plot_dim    = 2,
                               label_cells = (trial <= 3))
-                    
-                    file_name = os.path.join(trial_dir, 'mesh_col_p.png')
+
+                if do_plot_mesh_p:
+                    file_name = os.path.join(trial_dir, 'mesh_2d_p.png')
                     plot_mesh_p(mesh        = mesh,
                                 file_name   = file_name,
                                 plot_dim    = 2,
                                 label_cells = (trial <= 3))
+
+                    file_name = os.path.join(trial_dir, 'mesh_3d_p.png')
+                    plot_mesh_p(mesh        = mesh,
+                                file_name   = file_name,
+                                plot_dim    = 3)
                     
                 if do_plot_matrix:
                     # Get the ending indices for the column matrices,
@@ -349,7 +358,17 @@ def test_2(dir_name = 'test_rt'):
                 if do_plot_anl_err_ind:
                     file_name = os.path.join(trial_dir, 'anl_errs.png')
                     plot_error_indicator(mesh, anl_err_ind, file_name = file_name,
-                                         name = 'Analytic Max-Norm Column')
+                                         name = 'Analytic Max-Norm')
+                    
+                    anl_err_ind_ang = anl_err_ang(mesh, uh_proj, u_intg_xy)
+                    file_name = os.path.join(trial_dir, 'anl_err_ang.png')
+                    plot_error_indicator(mesh, anl_err_ind_ang, file_name = file_name,
+                                         name = 'Analytic Max-Norm Angular')
+                    
+                    anl_err_ind_spt = anl_err_spt(mesh, uh_proj, u_intg_th)
+                    file_name = os.path.join(trial_dir, 'anl_err_spt.png')
+                    plot_error_indicator(mesh, anl_err_ind_spt, file_name = file_name,
+                                         name = 'Analytic Max-Norm Spatial')
                     
                 if do_plot_sol_vecs:
                     # Plot solutions
@@ -389,10 +408,10 @@ def test_2(dir_name = 'test_rt'):
                     
                     if ref_kind in ['ang', 'all']:
                         mesh = ref_by_ind(mesh, anl_err_ind_ang,
-                                          ref_ratio = tol, form = ref_form)
+                                          ref_ratio = tol_ang, form = ref_form)
                     if ref_kind in ['spt', 'all']:
                         mesh = ref_by_ind(mesh, anl_err_ind_spt,
-                                          ref_ratio = tol, form = ref_form)
+                                          ref_ratio = tol_spt, form = ref_form)
                                         
                 perf_trial_f    = perf_counter()
                 perf_trial_diff = perf_trial_f - perf_trial_0
