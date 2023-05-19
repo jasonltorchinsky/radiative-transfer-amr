@@ -4,7 +4,7 @@ import os, sys
 
 sys.path.append('../../src')
 import dg.mesh as ji_mesh
-import dg.mesh.utils
+from dg.mesh.utils import plot_mesh, plot_nhbrs
 
 def test_3(dir_name = 'test_mesh'):
     """
@@ -17,76 +17,45 @@ def test_3(dir_name = 'test_mesh'):
     mesh_dir  = os.path.join(dir_name, 'mesh')
     os.makedirs(mesh_dir, exist_ok = True)
     
-    nhbrs_dir = os.path.join(dir_name, 'nhbrs')
-    os.makedirs(nhbrs_dir, exist_ok = True)
+    col_nhbrs_dir = os.path.join(dir_name, 'col_nhbrs')
+    os.makedirs(col_nhbrs_dir, exist_ok = True)
+
+    cell_nhbrs_dir = os.path.join(dir_name, 'cell_nhbrs')
+    os.makedirs(cell_nhbrs_dir, exist_ok = True)
 
     # Create the original 2-D mesh
     [Lx, Ly] = [3, 2]
     pbcs     = [True, False]
 
     mesh = ji_mesh.Mesh([Lx, Ly], pbcs, has_th = True)
-    nang_refs = 2
-    for ref in range(0, nang_refs):
-        mesh.ref_mesh(kind = 'ang')
-    
-    # Refine the mesh some so we have a more interesting plot
-    nrefs = 0
-    
-    file_name = os.path.join(mesh_dir, 'mesh_2d_{}.png'.format(nrefs))
-    ji_mesh.utils.plot_mesh(mesh, ax = None, file_name = file_name,
-                            label_cells = (nrefs <= 3), plot_dim = 2)
-    
-    nuni_ref = 1
-    for ref in range(0, nuni_ref):
-        mesh.ref_mesh(kind = 'spt')
-        nrefs += 1
-        
-        file_name = os.path.join(mesh_dir, 'mesh_2d_{}.png'.format(nrefs))
-        ji_mesh.utils.plot_mesh(mesh, ax = None, file_name = file_name,
-                                label_cells = (nrefs <= 3), plot_dim = 2)
 
-    ncol_ref = 2
-    for ref in range(0, ncol_ref):
-        col_keys = sorted(list(mesh.cols.keys()))
-        mesh.ref_col(col_keys[-1], kind = 'spt')
-        nrefs += 1
+    # Randomly refine the mesh a whole bunch of times.
+    rng = np.random.default_rng()
+    nref_max = 8
+    for nref in range(1, nref_max + 1):
+        col_keys = list(mesh.cols.keys())
+        col_key = rng.choice(col_keys)
         
-        file_name = os.path.join(mesh_dir, 'mesh_2d_{}.png'.format(nrefs))
-        ji_mesh.utils.plot_mesh(mesh, ax = None, file_name = file_name,
-                                label_cells = (nrefs <= 3), plot_dim = 2)
-
-    ncell_ref = 2
-    for ref in range(0, ncell_ref):
-        col_keys = sorted(list(mesh.cols.keys()))
-        cell_keys = sorted(list(mesh.cols[col_keys[-1]].cells.keys()))
-        mesh.ref_cell(col_keys[-1], cell_keys[-1])
-        nrefs += 1
+        col = mesh.cols[col_key]
+        cell_keys = list(col.cells.keys())
+        cell_key = rng.choice(cell_keys)
         
-        file_name = os.path.join(mesh_dir, 'mesh_2d_{}.png'.format(nrefs))
-        ji_mesh.utils.plot_mesh(mesh, ax = None, file_name = file_name,
-                                label_cells = (nrefs <= 3), plot_dim = 2)
+        mesh.ref_cell(col_key, cell_key, form = 'h')
+        mesh.ref_col(col_key, kind = 'spt', form = 'h')
         
-        file_name = os.path.join(mesh_dir, 'mesh_3d_{}.png'.format(nrefs))
-        ji_mesh.utils.plot_mesh(mesh, ax = None, file_name = file_name,
-                                label_cells = (nrefs <= 3), plot_dim = 3,
-                                plot_style = 'flat')
+        file_name = os.path.join(mesh_dir, 'mesh_{}.png'.format(nref))
+        plot_mesh(mesh, ax = None, file_name = file_name,
+                  plot_dim = 3, plot_style = 'flat')
 
-        file_name = os.path.join(mesh_dir, 'mesh_3d`_flat_{}.png'.format(nrefs))
-        ji_mesh.utils.plot_mesh(mesh, ax = None, file_name = file_name,
-                                label_cells = (nrefs <= 3), plot_dim = 3,
-                                plot_style = 'box')
-
-    file_name = os.path.join(mesh_dir, 'mesh_2d_bdry.png')
-    ji_mesh.utils.plot_mesh_bdry(mesh, file_name = file_name,
-                                 label_cells = (nrefs <= 3), plot_dim = 2)
-
-    file_name = os.path.join(mesh_dir, 'mesh_3d_bdry.png')
-    ji_mesh.utils.plot_mesh_bdry(mesh, file_name = file_name,
-                                 label_cells = (nrefs <= 3), plot_dim = 3)
-        
-    for col_key, col in sorted(mesh.cols.items()):
+    col_items = sorted(mesh.cols.items())
+    for col_key, col in col_items:
         if col.is_lf:
-            for cell_key, cell in sorted(col.cells.items()):
+            file_str  = 'col_{}_nhbrs.png'.format(col_key)
+            file_name = os.path.join(col_nhbrs_dir, file_str)
+            plot_nhbrs(mesh, col_key, file_name = file_name)
+                
+            cell_items = sorted(col.cells.items())
+            for cell_key, cell in cell_items:
                 file_str  = 'cell_{}_{}_nhbrs.png'.format(col_key, cell_key)
-                #file_name = os.path.join(nhbrs_dir, file_str)
-                #ji_mesh.utils.plot_cell_nhbrs(mesh, col, cell, file_name = file_name)
+                file_name = os.path.join(cell_nhbrs_dir, file_str)
+                plot_nhbrs(mesh, col_key, cell_key, file_name = file_name)
