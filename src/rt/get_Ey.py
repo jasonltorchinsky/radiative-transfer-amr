@@ -19,19 +19,19 @@ def get_Ey(mesh, col_key_0, col_key_1):
     
     if ndof_y_0 >= ndof_y_1:
         [_, _, _, wy_0, _, _] = quad_xyth(nnodes_y = ndof_y_0)
-        wy_0 = wy_0.reshape(1, ndof_y_0)
+        wy_0 = wy_0.reshape([1, ndof_y_0])
         
         if lv_0 == lv_1:
             pos_str = 's'
         elif lv_1 - lv_0 == -1:
             if mid_1 > mid_0:
                 pos_str = 'l'
-            else: # mid_0 > mid_1
+            else: # mid_0 < mid_1
                 pos_str = 'u'
         elif lv_1 - lv_0 == 1:
             if mid_1 > mid_0:
                 pos_str = 'u'
-            else: # mid_0 > mid_1
+            else: # mid_0 < mid_1
                 pos_str = 'l'
                 
         psi_jq_matrix = get_f2f_matrix(dim_str  = 'y',

@@ -19,19 +19,22 @@ def get_Ex(mesh, col_key_0, col_key_1):
     
     if ndof_x_0 >= ndof_x_1:
         [_, wx_0, _, _, _, _] = quad_xyth(nnodes_x = ndof_x_0)
-        wx_0 = wx_0.reshape(1, ndof_x_0)
+        wx_0 = wx_0.reshape([1, ndof_x_0])
+
+        # Check the comments for get-f2f_matrix for which matrix is which.
+        # We get the basis functions from _1 and the nodes from _0.
         
         if lv_0 == lv_1:
             pos_str = 's'
         elif lv_1 - lv_0 == -1:
             if mid_1 > mid_0:
                 pos_str = 'l'
-            else: # mid_0 > mid_1
+            else: # mid_0 < mid_1
                 pos_str = 'u'
         elif lv_1 - lv_0 == 1:
             if mid_1 > mid_0:
                 pos_str = 'u'
-            else: # mid_0 > mid_1
+            else: # mid_0 < mid_1
                 pos_str = 'l'
         
         phi_ip_matrix = get_f2f_matrix(dim_str  = 'x',

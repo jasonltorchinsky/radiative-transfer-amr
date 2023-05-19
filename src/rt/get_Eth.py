@@ -22,22 +22,22 @@ def get_Eth(mesh, col_key_0, cell_key_0, col_key_1, cell_key_1, F):
     if ndof_th_0 >= ndof_th_1:
         [_, _, _, _, thb_0, wth_0] = quad_xyth(nnodes_th = ndof_th_0)
         
-        thf_0 = push_forward(th0_0, th1_0, thb_0).reshape(1, ndof_th_0)
+        thf_0 = push_forward(th0_0, th1_0, thb_0).reshape([1, ndof_th_0])
         Theta_F = Theta_F_func(thf_0, F)
         
-        wth_0 = wth_0.reshape(1, ndof_th_0)
+        wth_0 = wth_0.reshape([1, ndof_th_0])
         
         if lv_0 == lv_1:
             pos_str = 's'
         elif lv_1 - lv_0 == -1:
             if mid_1 > mid_0:
                 pos_str = 'l'
-            else: # mid_0 > mid_1
+            else: # mid_0 < mid_1
                 pos_str = 'u'
         elif lv_1 - lv_0 == 1:
             if mid_1 > mid_0:
                 pos_str = 'u'
-            else: # mid_0 > mid_1
+            else: # mid_0 < mid_1
                 pos_str = 'l'
         
         xsi_ar_matrix = get_f2f_matrix(dim_str  = 'th',

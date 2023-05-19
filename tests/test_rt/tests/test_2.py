@@ -19,7 +19,7 @@ import dg.quadrature as qd
 from rt import calc_mass_matrix, calc_scat_matrix, \
     calc_intr_conv_matrix, calc_bdry_conv_matrix, \
     calc_forcing_vec
-from amr import anl_err, anl_err_ang, anl_err_spt, hp_steer_col, ref_by_ind
+from amr import anl_err, anl_err_ang, anl_err_spt, rand_err, ref_by_ind
 from amr.utils import plot_error_indicator, plot_cell_jumps
 
 from utils import print_msg
@@ -38,28 +38,31 @@ def test_2(dir_name = 'test_rt'):
     prob_name = ''
     # Problem Number
     prob_num  = 0
-    # Refinement Type: 'sin'gle column, 'uni'form, 'a'daptive 'm'esh 'r'efinement
+    # Refinement Type: 'sin'gle column, 'uni'form, 'a'daptive 'm'esh 'r'efinement, random ('rng')
     ref_type = 'amr'
     # Refinement Kind: 's'pa't'ia'l', 'ang'ular, 'all'
     ref_kind = ''
     # Refinement Form: 'h', 'p'
     ref_form = ''
     # AMR Refinement Tolerance
-    tol_spt = 0.8
-    tol_ang = 0.75
+    tol_spt = 0.5
+    tol_ang = 0.5
     # Maximum number of DOFs
-    max_ndof = 2**13
+    max_ndof = 2**14
     # Maximum number of trials
-    max_ntrial = 8
+    max_ntrial = 5
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combos = [
-        ['h',  'amr', 'ang']
+        ['h',  'uni', 'ang'],
+        ['h',  'rng', 'ang'],
+        ['p',  'uni', 'ang'],
+        ['p',  'rng', 'ang']
     ]
     
 
     # Test Output Parameters
     do_plot_mesh        = False
-    do_plot_mesh_p      = False
+    do_plot_mesh_p      = True
     do_plot_matrix      = False
     do_plot_uh          = True
     do_plot_u           = True
@@ -68,9 +71,12 @@ def test_2(dir_name = 'test_rt'):
     do_plot_sol_vecs    = False
     do_plot_errs        = True
 
-    for prob_name in ['comp']:
+    for prob_name in ['mass', 'scat', 'conv']:
         prob_dir = os.path.join(test_dir, prob_name)
         os.makedirs(prob_dir, exist_ok = True)
+
+        msg = ( 'Starting problem {}...\n'.format(prob_name) )
+        print_msg(msg)
         
         combo_ndofs = {}
         combo_errs = {}
@@ -87,13 +93,12 @@ def test_2(dir_name = 'test_rt'):
             # Get the base mesh, manufactured solution
             [Lx, Ly]                   = [2., 3.]
             pbcs                       = [False, False]
-            [ndof_x, ndof_y, ndof_th]  = [8, 8, 2]
+            [ndof_x, ndof_y, ndof_th]  = [5, 5, 3]
             has_th                     = True
             mesh = gen_mesh(Ls     = [Lx, Ly],
                             pbcs   = pbcs,
                             ndofs  = [ndof_x, ndof_y, ndof_th],
                             has_th = has_th)
-            mesh.ref_mesh(kind = 'spt', form = 'h')
             
             [u, kappa, sigma, Phi, f,
              u_intg_th, u_intg_xy] = get_cons_prob(prob_name = prob_name,
@@ -412,7 +417,13 @@ def test_2(dir_name = 'test_rt'):
                     if ref_kind in ['spt', 'all']:
                         mesh = ref_by_ind(mesh, anl_err_ind_spt,
                                           ref_ratio = tol_spt, form = ref_form)
-                                        
+                elif ref_type == 'rng':
+                    rand_err_ind = rand_err(mesh, kind = ref_kind, form = ref_form)
+                    
+                    mesh = ref_by_ind(mesh, rand_err_ind,
+                                      ref_ratio = tol_spt,
+                                      form = ref_form)
+                
                 perf_trial_f    = perf_counter()
                 perf_trial_diff = perf_trial_f - perf_trial_0
                 msg = (

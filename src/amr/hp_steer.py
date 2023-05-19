@@ -25,12 +25,12 @@ def hp_steer_col(mesh, uh, col_key):
         wx_wy_uh_hat = wx * wy * uh_hat
         
         # Calculate a_p^K,x, a_nx^K,x
-        L_nxm = eval_legendre(ndof_x, xxb)
+        L_nxm = eval_legendre(ndof_x - 1, xxb)
         ndofs_y = np.arange(0, ndof_y).reshape([1, ndof_y])
         L_jn = eval_legendre(ndofs_y.transpose(), yyb)
         
-        a_nxj = (2. * ndof_x + 1.) * (2. * ndofs_y + 1.) / 4. \
-            * L_nxm @ wx_wy_uh_hat @ L_jn
+        a_nxj = (2. * ndof_x - 1.) * (2. * ndofs_y + 1.) / 4. \
+            * L_nxm @ wx_wy_uh_hat @ L_jn.transpose()
 
         ax_nx_sq = 0
         for jj in range(0, ndof_y):
@@ -39,27 +39,27 @@ def hp_steer_col(mesh, uh, col_key):
         # Calculate a_q^K,y, a_ny^K,y
         ndofs_x = np.arange(0, ndof_x).reshape([ndof_x, 1])
         L_im = eval_legendre(ndofs_x, xxb)
-        L_nyn = eval_legendre(ndof_y, yyb)
+        L_nyn = eval_legendre(ndof_y - 1, yyb)
         
-        a_iny = (2. * ndofs_x + 1.) * (2. * ndof_y + 1.) / 4. \
+        a_iny = (2. * ndofs_x + 1.) * (2. * ndof_y - 1.) / 4. \
             * L_im @ wx_wy_uh_hat @ L_nyn.transpose()
 
         ay_ny_sq = 0
         for ii in range(0, ndof_x):
             ay_ny_sq += (a_iny[ii, 0])**2 * (2. / (2. * ii + 1.))
 
-        term_0 = np.log((2. * ndof_x + 1.) / (2 * ax_nx_sq)) / (2. * np.log(ndof_x))
-        term_1 = np.log((2. * ndof_y + 1.) / (2 * ay_ny_sq)) / (2. * np.log(ndof_y))
+        term_0 = np.log((2. * ndof_x - 1.) / (2 * ax_nx_sq)) / (2. * np.log(ndof_x - 1.))
+        term_1 = np.log((2. * ndof_y - 1.) / (2 * ay_ny_sq)) / (2. * np.log(ndof_y - 1.))
         lp = 0.5 * (term_0 + term_1)
         
-        if lp - 0.5 >= 0.5 * (ndof_x + ndof_y) + 1.:
+        if lp - 0.5 >= 0.5 * (ndof_x + ndof_y):
             ref_form = 'h'
         else:
             ref_form = 'p'
         
-        print('spt ref form: {}, {:05.2f} >?< {}'.format(ref_form,
-                                                         lp - 0.5,
-                                                         0.5 * (ndof_x + ndof_y) + 1.))
+        #print('spt ref form: {}, {:05.2f} >?< {}'.format(ref_form,
+        #                                                 lp - 0.5,
+        #                                                 0.5 * (ndof_x + ndof_y)))
             
         return ref_form
 
@@ -82,21 +82,21 @@ def hp_steer_cell(mesh, uh, col_key, cell_key):
             uh_hat = intg_cell_xy(mesh, uh, col_key, cell_key).reshape([1, ndof_th])
             
             # Calculate a_p^K,th, a_nx^K,x
-            L_nthr = eval_legendre(ndof_th, thb)
-            a_nth = (2. * ndof_th + 1.) / 2. \
-                * L_nthr.transpose() @ (wth * uh_hat)
-            ath_nth_sq = (a_nth[0, 0])**2 * (2. / (2. * ndof_th + 1.))
+            L_nthr = eval_legendre(ndof_th - 1, thb)
+            a_nth = (2. * ndof_th - 1.) / 2. \
+                * (wth * uh_hat) @ L_nthr.transpose()
+            ath_nth_sq = (a_nth[0, 0])**2 * (2. / (2. * ndof_th - 1.))
             
-            lp = np.log((2. * ndof_th + 1.) / (2 * ath_nth_sq)) \
-                / (2. * np.log(ndof_th))
+            lp = np.log((2. * ndof_th - 1.) / (2 * ath_nth_sq)) \
+                / (2. * np.log(ndof_th - 1))
             
-            if lp - 0.5 >= ndof_th + 1.:
+            if lp - 0.5 >= ndof_th:
                 ref_form = 'h'
             else:
                 ref_form = 'p'
 
-            print('ang ref form: {}, {:05.2f} >?< {}'.format(ref_form,
-                                                             lp - 0.5,
-                                                             ndof_th + 1))
+            #print('ang ref form: {}, {:05.2f} >?< {}'.format(ref_form,
+            #                                                 lp - 0.5,
+            #                                                 ndof_th))
             
             return ref_form

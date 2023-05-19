@@ -38,15 +38,15 @@ def get_f2f_matrix(dim_str, nbasis, nnode, nhbr_rel):
     
     # Get push-forward endpoints of _1 in relation to normalized endpoints of _0
     if nhbr_rel == (1, 'u'):
-        [x0_1, x1_1] = [-3, 1]
-    elif nhbr_rel == (1, 'l'):
-        [x0_1, x1_1] = [-1, 3]
-    elif nhbr_rel == (-1, 'u'):
         [x0_1, x1_1] = [0, 1]
-    elif nhbr_rel == (-1, 'l'):
+    elif nhbr_rel == (1, 'l'):
         [x0_1, x1_1] = [-1, 0]
+    elif nhbr_rel == (-1, 'u'):
+        [x0_1, x1_1] = [-3, 1]
+    elif nhbr_rel == (-1, 'l'):
+        [x0_1, x1_1] = [-1, 3]
     elif nhbr_rel == (0, 's'):
-        [x0_1, x1_1] = [-1, -1]
+        [x0_1, x1_1] = [-1, 1]
     else:
         msg = 'ERROR - Invalid nhbr_rel in get_f2f_matrix: {}'.format(nhbr_rel)
         sys.exit(1)
@@ -62,7 +62,7 @@ def get_f2f_matrix(dim_str, nbasis, nnode, nhbr_rel):
     elif dim_str == 'th':
         [_, _, _, _, nodes_0, _] = qd.quad_xyth(nnodes_th = nbasis)
         [_, _, _, _, nodes_1, _] = qd.quad_xyth(nnodes_th = nnode)
-
+    
     nodes_1 = push_forward(x0_1, x1_1, nodes_1)
         
     f2f_matrix = np.zeros([nbasis, nnode])
