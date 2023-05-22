@@ -7,7 +7,7 @@ import os, sys
 sys.path.append('../../src')
 from utils import print_msg
 
-from tests import test_0, test_1, test_2
+from tests import test_0, test_1, test_2, test_3
 
 def main():
 
@@ -38,21 +38,33 @@ def main():
     parser.add_argument('--test_2', nargs = 1, default = [0],
                         type = int, choices = [0, 1], required = False,
                         help = help_str)
+
+    help_str = ('Do not run (0) or run (1) Test 3 - ' +
+                'Face-to-Face Projection Matrix Generation')
+    parser.add_argument('--test_3', nargs = 1, default = [0],
+                        type = int, choices = [0, 1], required = False,
+                        help = help_str)
+
+    # THIS IS A TEST OF RT, MOVE IT THERE
+    help_str = ('Do not run (0) or run (1) Test 4 - ' +
+                'Ex Matrix Generation')
+    parser.add_argument('--test_4', nargs = 1, default = [0],
+                        type = int, choices = [0, 1], required = False,
+                        help = help_str)
     
     args = parser.parse_args()
-    ntests = 3
+    ntests = 4
     if args.test_all[0]:
         run_tests = [True] * ntests
     else:
         run_tests = [args.test_0[0], args.test_1[0],
-                     args.test_2[0]
+                     args.test_2[0], args.test_3[0]
                      ]
 
     dir_name = args.dir
     os.makedirs(dir_name, exist_ok = True)
 
-
-    test_funcs = [test_0, test_1, test_2]
+    test_funcs = [test_0, test_1, test_2, test_3]
 
     for ntest, test_func in enumerate(test_funcs):
         if run_tests[ntest]:

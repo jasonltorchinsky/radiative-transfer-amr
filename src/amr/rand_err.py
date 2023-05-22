@@ -33,9 +33,9 @@ def rand_err(mesh, kind = 'all', form = 'hp'):
                 ref_form = rng.choice(forms)
             else:
                 ref_form = form
-                if by_col:
-                    err_ind.cols[col_key].err_ind = rng.uniform()
-                    err_ind.cols[col_key].ref_form = ref_form
+            if by_col:
+                err_ind.cols[col_key].err_ind = rng.uniform()
+                err_ind.cols[col_key].ref_form = ref_form
             
             cell_items = sorted(col.cells.items())
             for cell_key, cell in cell_items:

@@ -45,18 +45,15 @@ def test_2(dir_name = 'test_rt'):
     # Refinement Form: 'h', 'p'
     ref_form = ''
     # AMR Refinement Tolerance
-    tol_spt = 0.5
+    tol_spt = 0.75
     tol_ang = 0.5
     # Maximum number of DOFs
-    max_ndof = 2**14
+    max_ndof = 2**15
     # Maximum number of trials
     max_ntrial = 5
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combos = [
-        ['h',  'uni', 'ang'],
-        ['h',  'rng', 'ang'],
-        ['p',  'uni', 'ang'],
-        ['p',  'rng', 'ang']
+        ['h',  'rng', 'spt']
     ]
     
 
@@ -71,7 +68,7 @@ def test_2(dir_name = 'test_rt'):
     do_plot_sol_vecs    = False
     do_plot_errs        = True
 
-    for prob_name in ['mass', 'scat', 'conv']:
+    for prob_name in ['conv']:
         prob_dir = os.path.join(test_dir, prob_name)
         os.makedirs(prob_dir, exist_ok = True)
 
@@ -99,6 +96,14 @@ def test_2(dir_name = 'test_rt'):
                             pbcs   = pbcs,
                             ndofs  = [ndof_x, ndof_y, ndof_th],
                             has_th = has_th)
+
+            # Randomly refine to start
+            for _ in range(0, 0):
+                rand_err_ind = rand_err(mesh, kind = ref_kind, form = ref_form)
+                
+                mesh = ref_by_ind(mesh, rand_err_ind,
+                                  ref_ratio = tol_spt,
+                                  form = ref_form)
             
             [u, kappa, sigma, Phi, f,
              u_intg_th, u_intg_xy] = get_cons_prob(prob_name = prob_name,
@@ -256,7 +261,7 @@ def test_2(dir_name = 'test_rt'):
                     plot_mesh(mesh        = mesh,
                               file_name   = file_name,
                               plot_dim    = 2,
-                              label_cells = (trial <= 3))
+                              label_cells = (trial <= 2))
 
                 if do_plot_mesh_p:
                     file_name = os.path.join(trial_dir, 'mesh_2d_p.png')

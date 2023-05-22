@@ -9,7 +9,7 @@ def plot_mesh_p(mesh, file_name = None, **kwargs):
     kwargs = {**default_kwargs, **kwargs}
     
     if kwargs['plot_dim'] == 2:
-        ax = plot_mesh_p_2d(mesh, file_name = file_name)
+        ax = plot_mesh_p_2d(mesh, file_name = file_name, **kwargs)
     elif kwargs['plot_dim'] == 3:
         ax = plot_mesh_p_3d(mesh, file_name = file_name)
     else:
@@ -18,7 +18,10 @@ def plot_mesh_p(mesh, file_name = None, **kwargs):
 
     return None
 
-def plot_mesh_p_2d(mesh, file_name = None):
+def plot_mesh_p_2d(mesh, file_name = None, **kwargs):
+    
+    default_kwargs = {'label_cells': False}
+    kwargs = {**default_kwargs, **kwargs}
     
     fig, ax = plt.subplots()
 
@@ -44,6 +47,13 @@ def plot_mesh_p_2d(mesh, file_name = None):
                                shading = 'flat',
                                vmin = vmin, vmax = vmax,
                                cmap = cmap, edgecolors = 'black')
+
+            # Label each cell with idxs, lvs
+            if kwargs['label_cells']:
+                [x_mid, y_mid] = [(x0 + x1) / 2., (y0 + y1) / 2.]
+                label = '{}'.format(col.key)
+                ax.text(x_mid, y_mid, label,
+                        ha = 'center', va = 'center')
 
     fig.colorbar(pc)
     

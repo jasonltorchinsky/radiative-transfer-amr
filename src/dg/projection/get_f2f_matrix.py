@@ -52,24 +52,27 @@ def get_f2f_matrix(dim_str, nbasis, nnode, nhbr_rel):
         sys.exit(1)
         
     if dim_str == 'x':
-        [nodes_0, _, _, _, _, _] = qd.quad_xyth(nnodes_x = nbasis)
-        [nodes_1, _, _, _, _, _] = qd.quad_xyth(nnodes_x = nnode)
+        [nnb_0, _, _, _, _, _] = qd.quad_xyth(nnodes_x = nbasis)
+        [nnb_1, _, _, _, _, _] = qd.quad_xyth(nnodes_x = nnode)
         
     elif dim_str == 'y':
-        [_, _, nodes_0, _, _, _] = qd.quad_xyth(nnodes_y = nbasis)
-        [_, _, nodes_1, _, _, _] = qd.quad_xyth(nnodes_y = nnode)
+        [_, _, nnb_0, _, _, _] = qd.quad_xyth(nnodes_y = nbasis)
+        [_, _, nnb_1, _, _, _] = qd.quad_xyth(nnodes_y = nnode)
                 
     elif dim_str == 'th':
-        [_, _, _, _, nodes_0, _] = qd.quad_xyth(nnodes_th = nbasis)
-        [_, _, _, _, nodes_1, _] = qd.quad_xyth(nnodes_th = nnode)
+        [_, _, _, _, nnb_0, _] = qd.quad_xyth(nnodes_th = nbasis)
+        [_, _, _, _, nnb_1, _] = qd.quad_xyth(nnodes_th = nnode)
     
-    nodes_1 = push_forward(x0_1, x1_1, nodes_1)
-        
+    nnf_1 = push_forward(x0_1, x1_1, nnb_1)
+    nnb_1_0 = nnf_1[:]
+    
     f2f_matrix = np.zeros([nbasis, nnode])
         
     for nn_0 in range(0, nbasis):
         for nn_1 in range(0, nnode):
-            f2f_matrix[nn_0, nn_1] = qd.lag_eval(nodes_0, nn_0, nodes_1[nn_1])
+            phi_ip = qd.lag_eval(nnb_0, nn_0, nnb_1_0[nn_1])
+            if np.abs(phi_ip) >= 1.e-14:
+                f2f_matrix[nn_0, nn_1] = phi_ip
         
     f2f_matrices[key] = f2f_matrix
     return f2f_matrices[key]

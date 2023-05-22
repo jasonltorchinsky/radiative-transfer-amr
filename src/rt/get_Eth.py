@@ -19,7 +19,7 @@ def get_Eth(mesh, col_key_0, cell_key_0, col_key_1, cell_key_1, F):
     [th0_1, th1_1] = cell_1.pos[:]
     mid_1  = (th0_1 + th1_1) / 2.
     
-    if ndof_th_0 >= ndof_th_1:
+    if ndof_th_0 > ndof_th_1:
         [_, _, _, _, thb_0, wth_0] = quad_xyth(nnodes_th = ndof_th_0)
         
         thf_0 = push_forward(th0_0, th1_0, thb_0).reshape([1, ndof_th_0])
@@ -29,21 +29,23 @@ def get_Eth(mesh, col_key_0, cell_key_0, col_key_1, cell_key_1, F):
         
         if lv_0 == lv_1:
             pos_str = 's'
-        elif lv_1 - lv_0 == -1:
-            if mid_1 > mid_0:
+        elif lv_0 - lv_1 == -1:
+            if mid_1 < mid_0:
                 pos_str = 'l'
             else: # mid_0 < mid_1
                 pos_str = 'u'
-        elif lv_1 - lv_0 == 1:
-            if mid_1 > mid_0:
+        elif lv_0 - lv_1 == 1:
+            if mid_1 < mid_0:
                 pos_str = 'u'
             else: # mid_0 < mid_1
                 pos_str = 'l'
+
+        nhbr_rel = (lv_0 - lv_1, pos_str)
         
         xsi_ar_matrix = get_f2f_matrix(dim_str  = 'th',
                                        nbasis   = ndof_th_1,
                                        nnode    = ndof_th_0,
-                                       nhbr_rel = (lv_1 - lv_0, pos_str)
+                                       nhbr_rel = nhbr_rel
                                        )
 
         E_th = wth_0 * Theta_F * xsi_ar_matrix
@@ -62,21 +64,23 @@ def get_Eth(mesh, col_key_0, cell_key_0, col_key_1, cell_key_1, F):
         
         if lv_0 == lv_1:
             pos_str = 's'
-        elif lv_1 - lv_0 == -1:
-            if mid_1 > mid_0:
+        elif lv_0 - lv_1 == -1:
+            if mid_1 < mid_0:
                 pos_str = 'l'
-            else: # mid_0 > mid_1
+            else: # mid_0 < mid_1
                 pos_str = 'u'
-        elif lv_1 - lv_0 == 1:
-            if mid_1 > mid_0:
+        elif lv_0 - lv_1 == 1:
+            if mid_1 < mid_0:
                 pos_str = 'u'
-            else: # mid_0 > mid_1
+            else: # mid_0 < mid_1
                 pos_str = 'l'
+
+        nhbr_rel = (lv_0 - lv_1, pos_str)
         
         xsi_aa_matrix = get_f2f_matrix(dim_str  = 'th',
                                        nbasis   = ndof_th_1,
                                        nnode    = ndof_th_1,
-                                       nhbr_rel = (lv_1 - lv_0, pos_str)
+                                       nhbr_rel = nhbr_rel
                                        )
 
         E_th = np.zeros([ndof_th_1, ndof_th_0])

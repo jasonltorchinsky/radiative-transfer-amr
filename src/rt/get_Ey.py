@@ -17,27 +17,29 @@ def get_Ey(mesh, col_key_0, col_key_1):
     [_, y0_1, _, y1_1] = col_1.pos[:]
     mid_1    = (y0_1 + y1_1) / 2.
     
-    if ndof_y_0 >= ndof_y_1:
+    if ndof_y_0 > ndof_y_1:
         [_, _, _, wy_0, _, _] = quad_xyth(nnodes_y = ndof_y_0)
         wy_0 = wy_0.reshape([1, ndof_y_0])
         
         if lv_0 == lv_1:
             pos_str = 's'
-        elif lv_1 - lv_0 == -1:
-            if mid_1 > mid_0:
+        elif lv_0 - lv_1 == -1:
+            if mid_1 < mid_0:
                 pos_str = 'l'
             else: # mid_0 < mid_1
                 pos_str = 'u'
-        elif lv_1 - lv_0 == 1:
-            if mid_1 > mid_0:
+        elif lv_0 - lv_1 == 1:
+            if mid_1 < mid_0:
                 pos_str = 'u'
             else: # mid_0 < mid_1
                 pos_str = 'l'
+
+        nhbr_rel = (lv_1 - lv_0, pos_str)
                 
         psi_jq_matrix = get_f2f_matrix(dim_str  = 'y',
                                        nbasis   = ndof_y_1,
                                        nnode    = ndof_y_0,
-                                       nhbr_rel = (lv_1 - lv_0, pos_str)
+                                       nhbr_rel = nhbr_rel
                                        )
         
         E_y = wy_0 * psi_jq_matrix
@@ -53,21 +55,23 @@ def get_Ey(mesh, col_key_0, col_key_1):
         
         if lv_0 == lv_1:
             pos_str = 's'
-        elif lv_1 - lv_0 == -1:
-            if mid_1 > mid_0:
+        elif lv_0 - lv_1 == -1:
+            if mid_1 < mid_0:
                 pos_str = 'l'
-            else: # mid_0 > mid_1
+            else: # mid_0 < mid_1
                 pos_str = 'u'
-        elif lv_1 - lv_0 == 1:
-            if mid_1 > mid_0:
+        elif lv_0 - lv_1 == 1:
+            if mid_1 < mid_0:
                 pos_str = 'u'
-            else: # mid_0 > mid_1
+            else: # mid_0 < mid_1
                 pos_str = 'l'
+
+        nhbr_rel = (lv_0 - lv_1, pos_str)
                 
         psi_jj_matrix = get_f2f_matrix(dim_str  = 'y',
                                        nbasis   = ndof_y_1,
                                        nnode    = ndof_y_1,
-                                       nhbr_rel = (lv_1 - lv_0, pos_str)
+                                       nhbr_rel = nhbr_rel
                                        )
 
         E_y = np.zeros([ndof_y_1, ndof_y_0])

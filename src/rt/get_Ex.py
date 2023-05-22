@@ -17,7 +17,7 @@ def get_Ex(mesh, col_key_0, col_key_1):
     [x0_1, _, x1_1, _] = col_1.pos[:]
     mid_1    = (x0_1 + x1_1) / 2.
     
-    if ndof_x_0 >= ndof_x_1:
+    if ndof_x_0 > ndof_x_1:
         [_, wx_0, _, _, _, _] = quad_xyth(nnodes_x = ndof_x_0)
         wx_0 = wx_0.reshape([1, ndof_x_0])
 
@@ -26,21 +26,23 @@ def get_Ex(mesh, col_key_0, col_key_1):
         
         if lv_0 == lv_1:
             pos_str = 's'
-        elif lv_1 - lv_0 == -1:
-            if mid_1 > mid_0:
+        elif lv_0 - lv_1 == -1:
+            if mid_1 < mid_0:
                 pos_str = 'l'
             else: # mid_0 < mid_1
                 pos_str = 'u'
-        elif lv_1 - lv_0 == 1:
-            if mid_1 > mid_0:
+        elif lv_0 - lv_1 == 1:
+            if mid_1 < mid_0:
                 pos_str = 'u'
             else: # mid_0 < mid_1
                 pos_str = 'l'
+
+        nhbr_rel = (lv_1 - lv_0, pos_str)
         
         phi_ip_matrix = get_f2f_matrix(dim_str  = 'x',
                                        nbasis   = ndof_x_1,
                                        nnode    = ndof_x_0,
-                                       nhbr_rel = (lv_1 - lv_0, pos_str)
+                                       nhbr_rel = nhbr_rel
                                        )
 
         E_x = wx_0 * phi_ip_matrix
@@ -56,21 +58,23 @@ def get_Ex(mesh, col_key_0, col_key_1):
         
         if lv_0 == lv_1:
             pos_str = 's'
-        elif lv_1 - lv_0 == -1:
-            if mid_1 > mid_0:
+        elif lv_0 - lv_1 == -1:
+            if mid_1 < mid_0:
                 pos_str = 'l'
-            else: # mid_0 > mid_1
+            else: # mid_0 < mid_1
                 pos_str = 'u'
-        elif lv_1 - lv_0 == 1:
-            if mid_1 > mid_0:
+        elif lv_0 - lv_1 == 1:
+            if mid_1 < mid_0:
                 pos_str = 'u'
-            else: # mid_0 > mid_1
+            else: # mid_0 < mid_1
                 pos_str = 'l'
+
+        nhbr_rel = (lv_0 - lv_1, pos_str)
         
         phi_ii_matrix = get_f2f_matrix(dim_str  = 'x',
                                        nbasis   = ndof_x_1,
                                        nnode    = ndof_x_1,
-                                       nhbr_rel = (lv_1 - lv_0, pos_str)
+                                       nhbr_rel = nhbr_rel
                                        )
         
         E_x = np.zeros([ndof_x_1, ndof_x_0])
