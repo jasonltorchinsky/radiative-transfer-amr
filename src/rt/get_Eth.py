@@ -95,4 +95,4 @@ def get_Eth(mesh, col_key_0, cell_key_0, col_key_1, cell_key_1, F):
 
 # Theta^F function
 def Theta_F_func(theta, F):
-    return np.cos(theta - F * np.pi / 2)
+    return np.cos(theta - F * np.pi / 2.)

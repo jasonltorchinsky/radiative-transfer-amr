@@ -53,18 +53,19 @@ def test_2(dir_name = 'test_rt'):
     max_ntrial = 5
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combos = [
-        ['h',  'rng', 'spt']
+        ['h',  'rng', 'spt'],
+        ['h',  'uni', 'spt']
     ]
     
 
     # Test Output Parameters
-    do_plot_mesh        = False
-    do_plot_mesh_p      = True
+    do_plot_mesh        = True
+    do_plot_mesh_p      = False
     do_plot_matrix      = False
     do_plot_uh          = True
     do_plot_u           = True
     do_plot_diff        = False
-    do_plot_anl_err_ind = True
+    do_plot_anl_err_ind = False
     do_plot_sol_vecs    = False
     do_plot_errs        = True
 
@@ -90,7 +91,7 @@ def test_2(dir_name = 'test_rt'):
             # Get the base mesh, manufactured solution
             [Lx, Ly]                   = [2., 3.]
             pbcs                       = [False, False]
-            [ndof_x, ndof_y, ndof_th]  = [5, 5, 3]
+            [ndof_x, ndof_y, ndof_th]  = [3, 3, 3]
             has_th                     = True
             mesh = gen_mesh(Ls     = [Lx, Ly],
                             pbcs   = pbcs,
@@ -279,14 +280,13 @@ def test_2(dir_name = 'test_rt'):
                     # Get the ending indices for the column matrices,
                     # number of DOFs in mesh
                     col_items = sorted(mesh.cols.items())
+                    col_end_idxs = []
                     ncol      = 0
                     for col_key, col in col_items:
                         if col.is_lf:
                             ncol += 1
                             
-                            col_end_idxs = [0] * ncol
                             mesh_ndof    = 0
-                            idx          = 0
                             for col_key, col in col_items:
                                 if col.is_lf:
                                     col_ndof         = 0
@@ -299,10 +299,9 @@ def test_2(dir_name = 'test_rt'):
                                             
                                             col_ndof  += ndof_x * ndof_y * ndof_th
                                             
-                                            mesh_ndof += col_ndof
-                                            col_end_idxs[idx] = mesh_ndof
+                                    mesh_ndof += col_ndof
+                                    col_end_idxs += [mesh_ndof]
                                             
-                                            idx += 1
                                         
                     # Plot global matrix
                     fig, ax = plt.subplots()
@@ -327,7 +326,19 @@ def test_2(dir_name = 'test_rt'):
                     fig.set_size_inches(6.5, 6.5)
                     plt.savefig(os.path.join(trial_dir, file_name), dpi = 300)
                     plt.close(fig)
-                        
+
+
+                    # Plot eigenvalues
+                    ndof = int(M.get_shape()[0])
+                    [evals, _] = eigs(M, k = ndof - 2, which = 'LM')
+                    evals = sorted(np.abs(evals))
+                    fig, ax = plt.subplots()
+                    ax.plot(evals, 'b.')
+                    file_name = '{}_evals.png'.format(prob_name)
+                    fig.set_size_inches(6.5, 6.5)
+                    plt.savefig(os.path.join(trial_dir, file_name), dpi = 300)
+                    plt.close(fig)
+                    
                 if do_plot_uh:
                     #file_name = os.path.join(trial_dir, 'uh_proj.png')
                     #angles = [0, np.pi/3, 2 * np.pi / 3, np.pi,

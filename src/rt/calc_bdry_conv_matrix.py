@@ -38,108 +38,123 @@ def calc_bdry_conv_matrix(mesh):
 
             # Loop through the faces of C
             for F in range(0, 4):
-                if ((col_0.nhbr_keys[F][0] is None) and
-                    (col_0.nhbr_keys[F][1] is None)): # Spatial domain boundary
-                    [col_mtx_00, col_mtx_01] = calc_col_matrix(mesh,
-                                                               col_key_0,
-                                                               col_key_0,
-                                                               F)
-                    
-                    # The intra-column matrix may already exist. If so, add to it.
-                    if col_mtxs[col_idx_0][col_idx_0] is None:
-                        col_mtxs[col_idx_0][col_idx_0] = col_mtx_00 + col_mtx_01
-                    else:                        
-                        col_mtxs[col_idx_0][col_idx_0] += col_mtx_00 + col_mtx_01
-                        
-                else: #Column is not on the spatial domain boundary
-                    col_nhbr_keys_0 = list(set(col_0.nhbr_keys[F]))
-                    n_col_nhbr = len(col_nhbr_keys_0)
-                    
-                    for col_key_1 in col_nhbr_keys_0:
-                        if col_key_1 is not None:
-                            col_1 = mesh.cols[col_key_1]
-                            if col_1.is_lf:
-                                col_idx_1 = col_idxs[col_key_1]
-                                
-                                [col_mtx_00, col_mtx_01] = calc_col_matrix(mesh,
-                                                                           col_key_0,
-                                                                           col_key_1,
-                                                                           F)
-                                
-                                if col_mtxs[col_idx_0][col_idx_1] is None:
-                                    col_mtxs[col_idx_0][col_idx_1] = col_mtx_01
-                                else:
-                                    col_mtxs[col_idx_0][col_idx_1] += col_mtx_01
-                                    
-                                if col_mtxs[col_idx_0][col_idx_0] is None:
-                                    col_mtxs[col_idx_0][col_idx_0] = (1. / n_col_nhbr) * col_mtx_00
-                                else:                        
-                                    col_mtxs[col_idx_0][col_idx_0] += (1. / n_col_nhbr) * col_mtx_00
-                                    
+                [col_mtx_00, [col_key_1, col_mtx_01], [col_key_2, col_mtx_02]] = \
+                    calc_col_matrix(mesh, col_key_0, F)
+                
+                # The intra-column matrix may already exist. If so, add to it.
+                if col_mtxs[col_idx_0][col_idx_0] is None:
+                    col_mtxs[col_idx_0][col_idx_0] = col_mtx_00
+                else:                        
+                    col_mtxs[col_idx_0][col_idx_0] += col_mtx_00
+                
+                if col_key_1 is not None:
+                    col_idx_1 = col_idxs[col_key_1]
+                    col_mtxs[col_idx_0][col_idx_1] = col_mtx_01
+                if col_key_2 is not None:
+                    col_idx_2 = col_idxs[col_key_2]
+                    col_mtxs[col_idx_0][col_idx_2] = col_mtx_02
+                
     # Global boundary convection matrix is not block-diagonal
     # but we arranged the column matrices in the proper form
     bdry_conv_mtx = bmat(col_mtxs, format = 'csr')
-
+    
     return bdry_conv_mtx
 
-def calc_col_matrix(mesh, col_key_0, col_key_1, F):
+def calc_col_matrix(mesh, col_key_0, F):
     """
-    Create the column interaction matrix between col_0, col_1.
+    Create the column matrices corresponding to face F of column 0.
     """
 
-    if (F%2 == 0): # Construct E^K'K,y_jq
-        E_x_00 = None
-        E_y_00 = get_Ey(mesh, col_key_0, col_key_0)
-        
-        E_x_01 = None
-        E_y_01 = get_Ey(mesh, col_key_0, col_key_1)
-        
-    else: # F%2 == 1, construct E^K'K,x_ip
-        E_x_00 = get_Ex(mesh, col_key_0, col_key_0)
-        E_y_00 = None
-        
-        E_x_01 = get_Ex(mesh, col_key_0, col_key_1)
-        E_y_01 = None
- 
+    tol = 1.e-14 # Tolerance for non-zero values in matrices.
+
     col_0 = mesh.cols[col_key_0]
-    col_1 = mesh.cols[col_key_1]
-    
-    # Get information about column C
-    # _0 => Cell K in equations (in column C)
-    # **b => Pull back coordinates (in [-1, 1])
-    # w* => Quadrature weights
-    cell_items_0            = sorted(col_0.cells.items())
-    [ndof_x_0, ndof_y_0]    = col_0.ndofs
-    [ncells_0, cell_idxs_0] = get_cell_idxs(mesh, col_key_0)
-    cell_mtxs_00            = [None] * ncells_0
+    cell_items_0             = sorted(col_0.cells.items())
+    [x0_0, y0_0, x1_0, y1_0] = col_0.pos[:]
+    [dx_0, dy_0]             = [x1_0 - x0_0, y1_0 - y0_0]
+    [nx_0, ny_0]             = col_0.ndofs
+    [_, wx_0, _, wy_0, _, _] = qd.quad_xyth(nnodes_x = nx_0, nnodes_y = ny_0)
+    [nc_0, cell_idxs_0]      = get_cell_idxs(mesh, col_key_0)
+    cell_mtxs_00             = [None] * nc_0
 
-    # Set array to store cell matrices for inter-column matrices
-    # Certainly not block diagonal, but set sizes later once we get number of
-    # cells in neighboring columns
-    cell_items_1            = sorted(col_1.cells.items())
-    [ndof_x_1, ndof_y_1]    = col_1.ndofs
-    [ncells_1, cell_idxs_1] = get_cell_idxs(mesh, col_key_1)
-    cell_mtxs_01            = [[None] * ncells_1 for K in range(0, ncells_0)]
+    # Get neighboring columns along face F
+    [col_key_1, col_key_2] = col_0.nhbr_keys[F][:]
+    if col_key_1 is not None:
+        col_1 = mesh.cols[col_key_1]
+        cell_items_1             = sorted(col_1.cells.items())
+        [x0_1, y0_1, x1_1, y1_1] = col_1.pos[:]
+        [dx_1, dy_1]             = [x1_1 - x0_1, y1_1 - y0_1]
+        [nx_1, ny_1]             = col_1.ndofs
+        [nc_1, cell_idxs_1]      = get_cell_idxs(mesh, col_key_1)
+        cell_mtxs_01             = [[None] * nc_1 for K in range(0, nc_0)]
+        if (F%2 == 0): # Construct E^K'K,y_jq
+            E_x_01 = None
+            E_y_01 = get_Ey(mesh, col_key_0, col_key_1)
+        else: # F%2 == 1, construct E^K'K,x_ip
+            E_x_01 = get_Ex(mesh, col_key_0, col_key_1)
+            E_y_01 = None
+    else:
+        col_1               = None
+        cell_items_1        = None
+        [nx_1, ny_1]        = [None, None]
+        [nc_1, cell_idxs_1] = [None, None]
+        cell_mtxs_01        = None
+        E_x_01 = None
+        E_y_01 = None
 
+    if (col_key_2 != col_key_1) and (col_key_2 is not None):
+        col_2 = mesh.cols[col_key_2]
+        cell_items_2             = sorted(col_2.cells.items())
+        [x0_2, y0_2, x1_2, y1_2] = col_2.pos[:]
+        [dx_2, dy_2]             = [x1_2 - x0_2, y1_2 - y0_2]
+        [nx_2, ny_2]             = col_2.ndofs
+        [nc_2, cell_idxs_2]      = get_cell_idxs(mesh, col_key_2)
+        cell_mtxs_02             = [[None] * nc_2 for K in range(0, nc_0)]
+        if (F%2 == 0): # Construct E^K'K,y_jq
+            E_x_02 = None
+            E_y_02 = get_Ey(mesh, col_key_0, col_key_2)
+        else: # F%2 == 1, construct E^K'K,x_ip
+            E_x_02 = get_Ex(mesh, col_key_0, col_key_2)
+            E_y_02 = None
+    else:
+        col_key_2           = None
+        col_2               = None
+        cell_items_2        = None
+        [nx_2, ny_2]        = [None, None]
+        [nc_2, cell_idxs_2] = [None, None]
+        cell_mtxs_02        = None
+        E_x_02 = None
+        E_y_02 = None
+        
     # To ensure proper matrix construction, we initialize all cell
     # matrices to be empty sparse matrices
     for cell_key_0, cell_0 in cell_items_0:
         if cell_0.is_lf:
             cell_idx_0  = cell_idxs_0[cell_key_0]
-            [ndof_th_0] = cell_0.ndofs
-            cell_ndof_0 = ndof_x_0 * ndof_y_0 * ndof_th_0
+            [nth_0]     = cell_0.ndofs[:]
+            cell_ndof_0 = nx_0 * ny_0 * nth_0
 
             cell_mtxs_00[cell_idx_0] = \
                 coo_matrix((cell_ndof_0, cell_ndof_0))
             
-            for cell_key_1, cell_1 in cell_items_1:
-                if cell_1.is_lf:
-                    cell_idx_1  = cell_idxs_1[cell_key_1]
-                    [ndof_th_1] = cell_1.ndofs
-                    cell_ndof_1 = ndof_x_1 * ndof_y_1 * ndof_th_1
-
-                    cell_mtxs_01[cell_idx_0][cell_idx_1] = \
-                        coo_matrix((cell_ndof_0, cell_ndof_1))
+            if cell_items_1 is not None:
+                for cell_key_1, cell_1 in cell_items_1:
+                    if cell_1.is_lf:
+                        cell_idx_1  = cell_idxs_1[cell_key_1]
+                        [nth_1]     = cell_1.ndofs[:]
+                        cell_ndof_1 = nx_1 * ny_1 * nth_1
+                        
+                        cell_mtxs_01[cell_idx_0][cell_idx_1] = \
+                            coo_matrix((cell_ndof_0, cell_ndof_1))
+                        
+            if cell_items_2 is not None:
+                for cell_key_2, cell_2 in cell_items_2:
+                    if cell_2.is_lf:
+                        cell_idx_2  = cell_idxs_2[cell_key_2]
+                        [nth_2]     = cell_2.ndofs[:]
+                        cell_ndof_2 = nx_2 * ny_2 * nth_2
+                        
+                        cell_mtxs_02[cell_idx_0][cell_idx_2] = \
+                            coo_matrix((cell_ndof_0, cell_ndof_2))
                     
     # Loop through cells of column C
     # For each cell in column C, we loop through the neighboring cells K^(n)
@@ -147,6 +162,10 @@ def calc_col_matrix(mesh, col_key_0, col_key_1, F):
     for cell_key_0, cell_0 in cell_items_0:
         if cell_0.is_lf:
             # Get information about cell K in column C
+            [th0_0, th1_0] = cell_0.pos[:]
+            dth_0 = th1_0 - th0_0
+            [nth_0] = cell_0.ndofs[:]
+            cell_ndof_0 = nx_0 * ny_0 * nth_0
             S_quad_0   = cell_0.quad
             cell_idx_0 = cell_idxs_0[cell_key_0] # Matrix index of cell 0 in
                                                  # column matrices
@@ -157,218 +176,270 @@ def calc_col_matrix(mesh, col_key_0, col_key_1, F):
                       ((S_quad_0 == 2) and (F == 2 or F == 3)) or
                       ((S_quad_0 == 3) and (F == 3 or F == 0)) )
 
+            # Calculate values common across all cell matrices
+            if (F%2 == 0):
+                dcoeff = dy_0 * dth_0 / 4.
+            else: # F%2 == 1
+                dcoeff = dx_0 * dth_0 / 4.
+
             # If we're in Fp we contribute to M^CC and use the first formula
             # Otherwise we have the option of using the quadrature rule from
             # the neighboring column/cell
             if is_Fp:
-                cell_mtxs_00[cell_idx_0] += \
-                    calc_cell_matrix(mesh,
-                                     col_key_0,
-                                     cell_key_0,
-                                     col_key_0,
-                                     cell_key_0,
-                                     F, E_x_00, E_y_00)
-            else:
-                nhbr_cell_keys = ji_mesh.get_cell_nhbr_in_col(mesh,
-                                                              col_key_0,
-                                                              cell_key_0,
-                                                              col_key_1)
-                for cell_key_1 in nhbr_cell_keys:
-                    if cell_key_1 is not None:
-                        cell_1 = col_1.cells[cell_key_1]
-                        if cell_1.is_lf:
-                            cell_idx_1 = cell_idxs_1[cell_key_1]
-                            
-                            cell_mtxs_01[cell_idx_0][cell_idx_1] += \
-                                calc_cell_matrix(mesh,
-                                                 col_key_0,
-                                                 cell_key_0,
-                                                 col_key_1,
-                                                 cell_key_1,
-                                                 F, E_x_01, E_y_01)
+                [_, _, _, _, thb_0, wth_0] = qd.quad_xyth(nnodes_th = nth_0)
+                thf = push_forward(th0_0, th1_0, thb_0)
+                Th_F = Theta_F(thf, F)
+
+                alpha = get_idx_map(nx_0, ny_0, nth_0)
+                beta  = get_idx_map(nx_0, ny_0, nth_0)
+                
+                
+                if (F%2 == 0):
+                    alphalist = np.zeros([ny_0 * nth_0], dtype = np.int32)
+                    betalist  = np.zeros([ny_0 * nth_0], dtype = np.int32)
+                    vlist     = np.zeros([ny_0 * nth_0])
                     
+                    if (F == 0):
+                        x_idx = nx_0 - 1
+                    else: # F == 2
+                        x_idx = 0
+                    
+                    idx = 0
+                    for jj in range(0, ny_0):
+                        wy_j = wy_0[jj]
+                        for aa in range(0, nth_0):
+                            wth_a = wth_0[aa]
+                            Th_F_a = Th_F[aa]
+
+                            val = dcoeff * wy_j * wth_a * Th_F_a
+                            if np.abs(val) > tol:
+                                alphalist[idx] = alpha(x_idx, jj, aa)
+                                betalist[idx]  = beta(x_idx, jj, aa)
+                                vlist[idx]     = val
+                                
+                                idx += 1
+                            
+                else: #F%2 == 1
+                    alphalist = np.zeros([nx_0 * nth_0], dtype = np.int32)
+                    betalist  = np.zeros([nx_0 * nth_0], dtype = np.int32)
+                    vlist     = np.zeros([nx_0 * nth_0])
+                    
+                    if (F == 1):
+                        y_idx = ny_0 - 1
+                    else: # F == 3
+                        y_idx = 0
+                    
+                    idx = 0
+                    for ii in range(0, nx_0):
+                        wx_i = wx_0[ii]
+                        for aa in range(0, nth_0):
+                            wth_a = wth_0[aa]
+                            Th_F_a = Th_F[aa]
+                            
+                            val = dcoeff * wx_i * wth_a * Th_F_a
+                            if np.abs(val) > tol:
+                                alphalist[idx] = alpha(ii, y_idx, aa)
+                                betalist[idx]  = beta(ii, y_idx, aa)
+                                vlist[idx]     = val
+                                
+                                idx += 1
+                
+                cell_mtxs_00[cell_idx_0] = \
+                    coo_matrix((vlist, (alphalist, betalist)),
+                               shape = (cell_ndof_0, cell_ndof_0))
+
+                cell_mtxs_00[cell_idx_0].eliminate_zeros()
+    
+            else: # no is_Fp
+                if col_key_1 is not None:
+                    nhbr_cell_keys = ji_mesh.get_cell_nhbr_in_col(mesh,
+                                                                  col_key_0,
+                                                                  cell_key_0,
+                                                                  col_key_1)
+                    for cell_key_1 in nhbr_cell_keys:
+                        if cell_key_1 is not None:
+                            cell_1 = col_1.cells[cell_key_1]
+                            if cell_1.is_lf:
+                                cell_idx_1  = cell_idxs_1[cell_key_1]
+                                [nth_1]     = cell_1.ndofs[:]
+                                cell_ndof_1 = nx_1 * ny_1 * nth_1
+                                
+                                alpha = get_idx_map(nx_0, ny_0, nth_0)
+                                beta  = get_idx_map(nx_1, ny_1, nth_1)
+                                
+                                E_th = get_Eth(mesh,
+                                               col_key_0, cell_key_0,
+                                               col_key_1, cell_key_1,
+                                               F)
+                                
+                                if (F%2 == 0):
+                                    max_len   = ny_0 * nth_0 * ny_1 * nth_1
+                                    alphalist = np.zeros([max_len], dtype = np.int32)
+                                    betalist  = np.zeros([max_len], dtype = np.int32)
+                                    vlist     = np.zeros([max_len])
+                                    
+                                    if (F == 0):
+                                        x_idx_0 = nx_0 - 1
+                                        x_idx_1 = 0
+                                    else: # F == 2
+                                        x_idx_0 = 0
+                                        x_idx_1 = nx_1 - 1
+                                        
+                                    idx = 0
+                                    for jj in range(0, ny_1):
+                                        for qq in range(0, ny_0):
+                                            Ey_jq = E_y_01[jj, qq]
+                                            for aa in range(0, nth_1):
+                                                for rr in range(0, nth_0):
+                                                    Eth_ar = E_th[aa, rr]
+                                                    
+                                                    val = dcoeff * Ey_jq * Eth_ar
+                                                    
+                                                    if np.abs(val) > tol:
+                                                        alphalist[idx] = \
+                                                            alpha(x_idx_0, qq, rr)
+                                                        betalist[idx]  = \
+                                                            beta( x_idx_1, jj, aa)
+                                                        vlist[idx]     = val
+                                                        idx += 1
+                                                        
+                                else: #F%2 == 1
+                                    max_len   = nx_0 * nth_0 * nx_1 * nth_1
+                                    alphalist = np.zeros([max_len], dtype = np.int32)
+                                    betalist  = np.zeros([max_len], dtype = np.int32)
+                                    vlist     = np.zeros([max_len])
+                                    
+                                    if (F == 1):
+                                        y_idx_0 = ny_0 - 1
+                                        y_idx_1 = 0
+                                    else: # F == 3
+                                        y_idx_0 = 0
+                                        y_idx_1 = ny_1 - 1
+                                        
+                                    idx = 0
+                                    for ii in range(0, nx_1):
+                                        for pp in range(0, nx_0):
+                                            Ex_ip = E_x_01[ii, pp]
+                                            for aa in range(0, nth_1):
+                                                for rr in range(0, nth_0):
+                                                    Eth_ar = E_th[aa, rr]
+                                                    
+                                                    val = dcoeff * Ex_ip * Eth_ar
+                                                    
+                                                    if np.abs(val) > tol:
+                                                        alphalist[idx] = \
+                                                            alpha(pp, y_idx_0, rr)
+                                                        betalist[idx]  = \
+                                                            beta( ii, y_idx_1, aa)
+                                                        vlist[idx]     = val
+                                                        idx += 1
+                                                        
+                        cell_mtxs_01[cell_idx_0][cell_idx_1] = \
+                            coo_matrix((vlist, (alphalist, betalist)),
+                                       shape = (cell_ndof_0, cell_ndof_1))
+                        
+                        cell_mtxs_01[cell_idx_0][cell_idx_1].eliminate_zeros()
+
+                if col_key_2 is not None:
+                    nhbr_cell_keys = ji_mesh.get_cell_nhbr_in_col(mesh,
+                                                                  col_key_0,
+                                                                  cell_key_0,
+                                                                  col_key_2)
+                    for cell_key_2 in nhbr_cell_keys:
+                        if cell_key_2 is not None:
+                            cell_2 = col_2.cells[cell_key_2]
+                            if cell_2.is_lf:
+                                cell_idx_2  = cell_idxs_2[cell_key_2]
+                                [nth_2]     = cell_2.ndofs[:]
+                                cell_ndof_2 = nx_2 * ny_2 * nth_2
+                                
+                                alpha = get_idx_map(nx_0, ny_0, nth_0)
+                                beta  = get_idx_map(nx_2, ny_2, nth_2)
+                                
+                                E_th = get_Eth(mesh,
+                                               col_key_0, cell_key_0,
+                                               col_key_2, cell_key_2,
+                                               F)
+                                
+                                if (F%2 == 0):
+                                    max_len   = ny_0 * nth_0 * ny_2 * nth_2
+                                    alphalist = np.zeros([max_len], dtype = np.int32)
+                                    betalist  = np.zeros([max_len], dtype = np.int32)
+                                    vlist     = np.zeros([max_len])
+                                    
+                                    if (F == 0):
+                                        x_idx_0 = nx_0 - 1
+                                        x_idx_2 = 0
+                                    else: # F == 2
+                                        x_idx_0 = 0
+                                        x_idx_2 = nx_2 - 1
+                                        
+                                    idx = 0
+                                    for jj in range(0, ny_2):
+                                        for qq in range(0, ny_0):
+                                            Ey_jq = E_y_02[jj, qq]
+                                            for aa in range(0, nth_2):
+                                                for rr in range(0, nth_0):
+                                                    Eth_ar = E_th[aa, rr]
+                                                    
+                                                    val = dcoeff * Ey_jq * Eth_ar
+                                                    
+                                                    if np.abs(val) > tol:
+                                                        alphalist[idx] = \
+                                                            alpha(x_idx_0, qq, rr)
+                                                        betalist[idx]  = \
+                                                            beta( x_idx_2, jj, aa)
+                                                        vlist[idx]     = val
+                                                        idx += 1
+                                                        
+                                else: #F%2 == 1
+                                    max_len   = nx_0 * nth_0 * nx_2 * nth_2
+                                    alphalist = np.zeros([max_len], dtype = np.int32)
+                                    betalist  = np.zeros([max_len], dtype = np.int32)
+                                    vlist     = np.zeros([max_len])
+                                    
+                                    if (F == 1):
+                                        y_idx_0 = ny_0 - 1
+                                        y_idx_2 = 0
+                                    else: # F == 3
+                                        y_idx_0 = 0
+                                        y_idx_2 = ny_2 - 1
+                                        
+                                    idx = 0
+                                    for ii in range(0, nx_2):
+                                        for pp in range(0, nx_0):
+                                            Ex_ip = E_x_02[ii, pp]
+                                            for aa in range(0, nth_2):
+                                                for rr in range(0, nth_0):
+                                                    Eth_ar = E_th[aa, rr]
+                                                    
+                                                    val = dcoeff * Ex_ip * Eth_ar
+                                                    
+                                                    if np.abs(val) > tol:
+                                                        alphalist[idx] = \
+                                                            alpha(pp, y_idx_0, rr)
+                                                        betalist[idx]  = \
+                                                            beta( ii, y_idx_2, aa)
+                                                        vlist[idx]     = val
+                                                        idx += 1
+                        cell_mtxs_02[cell_idx_0][cell_idx_2] = \
+                            coo_matrix((vlist, (alphalist, betalist)),
+                                       shape = (cell_ndof_0, cell_ndof_2))
+                        
+                        cell_mtxs_02[cell_idx_0][cell_idx_2].eliminate_zeros()
+                
     col_mtx_00 = block_diag(cell_mtxs_00, format = 'csr')
-    col_mtx_01 = bmat(      cell_mtxs_01, format = 'csr')
-
-    return [col_mtx_00, col_mtx_01]
-
-def calc_cell_matrix(mesh, col_key_0, cell_key_0, col_key_1, cell_key_1, F,
-                     E_x, E_y):
-    """
-    Create the column interaction matrix between col_0, col_1.
-    """
-    
-    col_0  = mesh.cols[col_key_0]
-    cell_0 = col_0.cells[cell_key_0]
-    
-    col_1  = mesh.cols[col_key_1]
-    cell_1 = col_1.cells[cell_key_1]
-    
-    tol = 1.0E-15 # Tolerance for filling in the entry of a cell matrix.
-    S_quad_0 = cell_0.quad
-    
-    # If a cell is in F^+, contribute to column-matrix M^CC.
-    is_Fp = ( ((S_quad_0 == 0) and (F == 0 or F == 1)) or
-              ((S_quad_0 == 1) and (F == 1 or F == 2)) or
-              ((S_quad_0 == 2) and (F == 2 or F == 3)) or
-              ((S_quad_0 == 3) and (F == 3 or F == 0)) )
-
-    # Get information about column C
-    # _0 => Cell K in equations (in column C)
-    # **b => Pull back coordinates (in [-1, 1])
-    # w* => Quadrature weights
-    [x0_0, y0_0, x1_0, y1_0] = col_0.pos
-    [dx_0, dy_0]             = [x1_0 - x0_0, y1_0 - y0_0]
-    [ndof_x_0, ndof_y_0]     = col_0.ndofs
-    
-    [th0_0, th1_0] = cell_0.pos
-    dth_0          = th1_0 - th0_0
-    [ndof_th_0]    = cell_0.ndofs
-    [xxb_0, wx_0, yyb_0, wy_0, thb_0, wth_0] = \
-        qd.quad_xyth(nnodes_x  = ndof_x_0,
-                     nnodes_y  = ndof_y_0,
-                     nnodes_th = ndof_th_0)
-    
-    cell_ndof_0    = ndof_x_0 * ndof_y_0 * ndof_th_0
-    
-    # Set array to store cell matrices for inter-column matrices
-    # Certainly not block diagonal, but set sizes later once we get number of
-    # cells in neighboring columns
-    [x0_1, y0_1, x1_1, y1_1]         = col_1.pos
-    [dx_1, dy_1]                     = [x1_1 - x0_1, y1_1 - y0_1]
-    [ndof_x_1, ndof_y_1]             = col_1.ndofs
-    
-    [th0_1, th1_1] = cell_1.pos
-    dth_1          = th1_1 - th0_1
-    [ndof_th_1]    = cell_1.ndofs
-    
-    [xxb_1, wx_1, yyb_1, wy_1, thb_1, wth_1] = \
-        qd.quad_xyth(nnodes_x  = ndof_x_1,
-                     nnodes_y  = ndof_y_1,
-                     nnodes_th = ndof_th_1)
-    
-    cell_ndof_1    = ndof_x_1 * ndof_y_1 * ndof_th_1
-
-    # If on the inflow boundary of the domain, return a zero matrix
-    if (((col_0.nhbr_keys[F][0] is None) and
-         (col_0.nhbr_keys[F][1] is None)) and
-        not is_Fp):
-        cell_mtx = coo_matrix((cell_ndof_0, cell_ndof_1))
-        return cell_mtx
-
-    # Set up non-Delta theta part of dcoeff
-    if (F == 0) or (F == 2):
-        dcoeff = (dy_0 * dth_0) / 4.
+    if col_1 is not None:
+        col_mtx_01 = bmat(cell_mtxs_01, format = 'csr')
     else:
-        dcoeff = (dx_0 * dth_0) / 4.
-        
+        col_mtx_01 = None
+    
+    if col_2 is not None:
+        col_mtx_02 = bmat(cell_mtxs_02, format = 'csr')
+    else:
+        col_mtx_02 = None
 
-    # alpha is number of rows, beta is the number of columns
-    alpha = get_idx_map(ndof_x_0, ndof_y_0, ndof_th_0)
-    beta  = get_idx_map(ndof_x_1, ndof_y_1, ndof_th_1)
-    
-    E_th = get_Eth(mesh, col_key_0, cell_key_0,
-                   col_key_1, cell_key_1, F)
+    return [col_mtx_00, [col_key_1, col_mtx_01], [col_key_2, col_mtx_02]]
 
-    # Many quantities are actually dependent only on
-    # the parity of F not F itself, so we can 
-    # separate primarily into two cases
-    
-    if (F%2 == 0):
-        # Number of *NON-ZERO* DoFs
-        ndof_0 = ndof_y_0 * ndof_th_0 
-        ndof_1 = ndof_y_1 * ndof_th_1
-        
-        # The entry locations are mostly dependent
-        # on only the parity of F, and their value
-        # is entirely dependent on F, so we can
-        # handle those here, too
-        alphalist = np.zeros([ndof_0 * ndof_1], dtype = np.int32)
-        betalist  = np.zeros([ndof_0 * ndof_1], dtype = np.int32)
-        vlist     = np.zeros([ndof_0 * ndof_1])
-        
-        # The x index depends on whether col_0 is actually
-        # on the boundary of the domain or not.
-        if (((col_0.nhbr_keys[F][0] is None) and
-             (col_0.nhbr_keys[F][1] is None))
-            or is_Fp): # On boundary of domain
-            if (F == 0):
-                x_idx_0 = ndof_x_0 - 1
-            elif (F == 2):
-                x_idx_0 = 0
-            x_idx_1 = x_idx_0
-        else:
-            if (F == 0):
-                x_idx_0 = ndof_x_0 - 1
-                x_idx_1 = 0
-            elif (F == 2):
-                x_idx_0 = 0
-                x_idx_1 = ndof_x_1 - 1
-                
-        idx = 0
-        for jj in range(0, ndof_y_1):
-            for qq in range(0, ndof_y_0):
-                E_y_jq = E_y[jj, qq]
-                for aa in range(0, ndof_th_1):
-                    for rr in range(0, ndof_th_0):
-                        E_th_ar = E_th[aa, rr]
-                        
-                        val = dcoeff * E_th_ar * E_y_jq
-                        # Only put the value into the matrix if it's worthwhile to.
-                        if np.abs(val) > tol:
-                            alphalist[idx] = alpha(x_idx_0, qq, rr)
-                            betalist[idx]  = beta( x_idx_1, jj, aa)
-                            vlist[idx]     = val
-                            
-                            idx += 1
-            
-    elif (F%2 == 1):                            
-        # Number of *NON-ZERO* DoFs
-        ndof_0  = ndof_x_0 * ndof_th_0
-        ndof_1  = ndof_x_1 * ndof_th_1
-        
-        alphalist = np.zeros([ndof_0 * ndof_1], dtype = np.int32)
-        betalist  = np.zeros([ndof_0 * ndof_1], dtype = np.int32)
-        vlist     = np.zeros([ndof_0 * ndof_1])
-        
-        # The y index depends on whether col_0 is actually
-        # on the boundary of the domain or not.
-        if (((col_0.nhbr_keys[F][0] is None) and
-             (col_0.nhbr_keys[F][1] is None))
-            or is_Fp): # On boundary of domain
-            if (F == 1):
-                y_idx_0 = ndof_y_0 - 1
-            elif (F == 3):
-                y_idx_0 = 0
-            y_idx_1 = y_idx_0
-        else:
-            if (F == 1):
-                y_idx_0 = ndof_y_0 - 1
-                y_idx_1 = 0
-            elif (F == 3):
-                y_idx_0 = 0
-                y_idx_1 = ndof_y_1 - 1
-                
-        idx = 0
-        for ii in range(0, ndof_x_1):
-            for pp in range(0, ndof_x_0):
-                E_x_ip = E_x[ii, pp]
-                for aa in range(0, ndof_th_1):
-                    for rr in range(0, ndof_th_0):
-                        E_th_ar = E_th[aa, rr]
-                        
-                        val = dcoeff * E_th_ar * E_x_ip
-                        # Only put the value into the matrix if it's worthwhile to.
-                        if np.abs(val) > tol:
-                            alphalist[idx] = alpha(pp, y_idx_0, rr)
-                            betalist[idx]  = beta( ii, y_idx_1, aa)
-                            vlist[idx]     = dcoeff * E_th_ar * E_x_ip
-                            
-                            idx += 1
-                        
-    cell_mtx = coo_matrix((vlist, (alphalist, betalist)),
-                          shape = (cell_ndof_0, cell_ndof_1))
-    
-    cell_mtx.eliminate_zeros()
-    
-    return cell_mtx
+def Theta_F(theta, F):
+    return np.cos(theta - F * np.pi / 2.)
