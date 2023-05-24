@@ -41,17 +41,12 @@ def test_1(quad_type = 'lg', dir_name = 'test_quad', **kwargs):
     for nnode in nnodes:
         if quad_type == 'lg':
             [nodes, weights] = qd.lg_quad(nnode)
-            print(nnode)
-            print(nodes)
-            print(weights)
-            print('\n')
         elif quad_type == 'lgr':
             [nodes, weights] = qd.lgr_quad(nnode)
         elif quad_type == 'lgl':
             [nodes, weights] = qd.lgl_quad(nnode)
         elif quad_type == 'uni':
             [nodes, weights] = qd.uni_quad(nnode)
-            
         else:
             msg = (
                 'ERROR: Test 1 recieved invalid quad_type. ' +
@@ -59,7 +54,7 @@ def test_1(quad_type = 'lg', dir_name = 'test_quad', **kwargs):
             )
             print(msg)
             quit()
-    
+            
         # Calculate f on nodes for projection
         f_nodes = f(nodes)
         

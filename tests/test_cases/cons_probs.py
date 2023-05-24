@@ -18,7 +18,7 @@ def get_cons_prob(prob_name, prob_num, mesh):
         Smooth-ish in space and angle
         """
         def u(x, y, th):
-            return np.exp(-((th - 3. * np.pi / 2.)**2)) \
+            return np.exp(-(2 * (th - 3. * np.pi / 2.)**2)) \
                 * np.exp(-((x - Lx/3.)**2 + (y - Ly/3.)**2))
         
         def kappa(x, y):
@@ -33,12 +33,12 @@ def get_cons_prob(prob_name, prob_num, mesh):
         def f_mass(x, y, th): # *JUST* kappa * u
             return kappa(x, y) * u(x, y, th)
 
-        erf0 = erf(np.pi / 2)
-        erf1 = erf(3. * np.pi / 2.)
-        erfi0 = erfi(1. + 1.j * np.pi / 2.)
-        erfi1 = erfi(1. - 1.j * 3. * np.pi / 2.)
-        erfi2 = erfi(1. - 1.j * np.pi / 2.)
-        erfi3 = erfi(1. + 1.j * 3. * np.pi / 2.)
+        erf0 = erf(np.pi / np.sqrt(2.))
+        erf1 = erf(3. * np.pi / np.sqrt(2.))
+        erfi0 = erfi(1. + 1.j * np.pi / np.sqrt(2.))
+        erfi1 = erfi(1. - 1.j * 3. * np.pi / np.sqrt(2.))
+        erfi2 = erfi(1. - 1.j * np.pi / np.sqrt(2.))
+        erfi3 = erfi(1. + 1.j * 3. * np.pi / np.sqrt(2.))
         def f_scat(x, y, th): # *JUST* sigma * int_0^2pi Phi(th, th') * u(x, y, th') dth'
             return sigma(x, y) * np.exp(-((x - Lx/3.)**2 + (y - Ly/3.)**2)) \
                 * np.real(

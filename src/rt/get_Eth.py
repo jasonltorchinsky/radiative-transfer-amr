@@ -20,13 +20,6 @@ def get_Eth(mesh, col_key_0, cell_key_0, col_key_1, cell_key_1, F):
     mid_1  = (th0_1 + th1_1) / 2.
     
     if ndof_th_0 > ndof_th_1:
-        [_, _, _, _, thb_0, wth_0] = quad_xyth(nnodes_th = ndof_th_0)
-        
-        thf_0 = push_forward(th0_0, th1_0, thb_0).reshape([1, ndof_th_0])
-        Theta_F = Theta_F_func(thf_0, F)
-        
-        wth_0 = wth_0.reshape([1, ndof_th_0])
-        
         if lv_0 == lv_1:
             pos_str = 's'
         elif lv_0 - lv_1 == -1:
@@ -41,6 +34,21 @@ def get_Eth(mesh, col_key_0, cell_key_0, col_key_1, cell_key_1, F):
                 pos_str = 'l'
 
         nhbr_rel = (lv_0 - lv_1, pos_str)
+        
+        [_, _, _, _, thb_0, wth_0] = quad_xyth(nnodes_th = ndof_th_0)
+
+        ## WORK ON THIS, MAKE SURE IT'S RIGHT
+        if nhbr_rel[0] == -1: # Basis functions not continuous on whole interval,
+            # Must do integral over half interval
+            if nhbr_rel[1] == 'l':
+                thb_0 = 0.5 * (thb_0 - 1.)
+            else: # nhbr_rel[1] == 'u'
+                thb_0 = 0.5 * (thb_0 + 1.)
+        
+        thf_0 = push_forward(th0_0, th1_0, thb_0).reshape([1, ndof_th_0])
+        Theta_F = Theta_F_func(thf_0, F)
+        
+        wth_0 = wth_0.reshape([1, ndof_th_0])
         
         xsi_ar_matrix = get_f2f_matrix(dim_str  = 'th',
                                        nbasis   = ndof_th_1,

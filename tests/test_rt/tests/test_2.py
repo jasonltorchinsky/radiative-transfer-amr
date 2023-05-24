@@ -14,7 +14,7 @@ from dg.mesh import get_hasnt_th
 from dg.mesh.utils import plot_mesh, plot_mesh_p
 from dg.matrix import get_intr_mask, split_matrix, merge_vectors
 from dg.projection import Projection, push_forward, to_projection, intg_th
-from dg.projection.utils import plot_projection, plot_angular_dists
+from dg.projection.utils import plot_projection, plot_yth
 import dg.quadrature as qd
 from rt import calc_mass_matrix, calc_scat_matrix, \
     calc_intr_conv_matrix, calc_bdry_conv_matrix, \
@@ -37,7 +37,7 @@ def test_2(dir_name = 'test_rt'):
     # Problem Name: 'mass', 'scat'tering, 'conv'ection, 'comp'lete
     prob_name = ''
     # Problem Number
-    prob_num  = 0
+    prob_num  = 2
     # Refinement Type: 'sin'gle column, 'uni'form, 'a'daptive 'm'esh 'r'efinement, random ('rng')
     ref_type = 'amr'
     # Refinement Kind: 's'pa't'ia'l', 'ang'ular, 'all'
@@ -45,7 +45,7 @@ def test_2(dir_name = 'test_rt'):
     # Refinement Form: 'h', 'p'
     ref_form = ''
     # AMR Refinement Tolerance
-    tol_spt = 0.75
+    tol_spt = 0.90
     tol_ang = 0.5
     # Maximum number of DOFs
     max_ndof = 2**15
@@ -53,10 +53,8 @@ def test_2(dir_name = 'test_rt'):
     max_ntrial = 5
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combos = [
-        ['h',  'rng', 'spt'],
-        ['h',  'uni', 'spt']
+        ['h',  'rng', 'ang']
     ]
-    
 
     # Test Output Parameters
     do_plot_mesh        = True
@@ -91,7 +89,7 @@ def test_2(dir_name = 'test_rt'):
             # Get the base mesh, manufactured solution
             [Lx, Ly]                   = [2., 3.]
             pbcs                       = [False, False]
-            [ndof_x, ndof_y, ndof_th]  = [3, 3, 3]
+            [ndof_x, ndof_y, ndof_th]  = [6, 6, 2]
             has_th                     = True
             mesh = gen_mesh(Ls     = [Lx, Ly],
                             pbcs   = pbcs,
@@ -345,8 +343,8 @@ def test_2(dir_name = 'test_rt'):
                     #          4 * np.pi / 3, 5 * np.pi / 3]
                     #plot_projection(mesh, uh_proj, file_name = file_name, angles = angles)
                     
-                    file_name = os.path.join(trial_dir, 'uh_ang_dist.png')
-                    plot_angular_dists(mesh, uh_proj, file_name = file_name)
+                    file_name = os.path.join(trial_dir, 'uh_yth.png')
+                    plot_yth(mesh, uh_proj, file_name = file_name)
                     
                     
                     mean_uh = intg_th(mesh, uh_proj)
@@ -359,8 +357,8 @@ def test_2(dir_name = 'test_rt'):
                     #          4 * np.pi / 3, 5 * np.pi / 3]
                     #plot_projection(mesh, u_proj, file_name = file_name, angles = angles)
                     
-                    file_name = os.path.join(trial_dir, 'u_ang_dist.png')
-                    plot_angular_dists(mesh, u_proj, file_name = file_name)
+                    file_name = os.path.join(trial_dir, 'u_yth.png')
+                    plot_yth(mesh, u_proj, file_name = file_name)
                     
                     mean_u = intg_th(mesh, u_proj)
                     file_name = os.path.join(trial_dir, 'u_mean.png')

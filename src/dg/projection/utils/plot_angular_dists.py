@@ -14,105 +14,61 @@ def plot_angular_dists(mesh, proj, file_name = None, **kwargs):
     
     [Lx, Ly] = mesh.Ls[:]
     Lth = 2. * np.pi
-    
+
+    # Integrate each cell in x, and get the bounds for the colorbar
+    [vmin, vmax] = [0., 0.]
     col_items = sorted(mesh.cols.items())
-    
-    ny = 6
-    
-    ys = np.linspace(0., Ly, ny)
-    [nrows, ncols] = get_closest_factors(ny)
+    col_lfs = ((col_key, col) for col_key, col in col_items if col.is_lf)
+    cell_intg_xs = {}
+    for col_key, col in col_lfs:
+        [ndof_x, ndof_y] = col.ndofs[:]
 
-    # Create theta array based on the level of refinement of the cells
-    max_ndof_th = 0
-    max_lv = 0
-    for col_key, col in col_items:
+        [_, wx, _, _, _, _] = qd.quad_xyth(nnodes_x = ndof_x)
+
+        cell_items = sorted(col.cells.items())
+        cell_lfs = ((cell_key, cell) for cell_key, cell in cell_items if cell.is_lf)
+
+        for cell_key, cell in cell_lfs:
+            [ndof_th] = cell.ndofs[:]
+            proj_cell = proj.cols[col_key].cells[cell_key]
+
+            cell_intg_x = np.zeros([ndof_y, ndof_th])
+            for ii in range(0, ndof_x):
+                cell_intg_x += wx[ii] * proj_cell[ii, :, :]
+
+            cell_intg_xs[(col_key, cell_key)] = cell_intg_x
+    
+    fig, axs = plt.subplots()
+
+    for col_key, col in col_lfs:
         if col.is_lf:
+            [_, y0, _, y1] = col.pos[:]
+            dy             = y1 - y0
+            [_, ndof_y]    = col.ndofs[:]
+            
+            [_, _, yyb, _, _, _] = quad_xyth(nnodes_y = ndof_y)
+            
+            yyf = push_forward(y0, y1, yyb)
+        
             cell_items = sorted(col.cells.items())
-            for cell_key, cell in cell_items:
-                if cell.is_lf:
-                    max_lv = max(max_lv, cell.lv)
-                    max_ndof_th = max(max_ndof_th, cell.ndofs[0])
+            cell_lfs = ((cell_key, cell) for cell_key, cell in cell_items if cell.is_lf)
 
-    min_dth    = 2. * np.pi / (2. * max_lv)
-    coarse_th  = np.arange(0, 2. * np.pi + min_dth, min_dth)
-    ncoarse_th = np.size(coarse_th)
-    th = np.empty(0)
-    for aa in range(0, ncoarse_th - 1):
-        th0 = coarse_th[aa]
-        th1 = coarse_th[aa + 1]
-        [_, _, _, _, thb, _] = quad_xyth(nnodes_th = max_ndof_th)
-
-        thf = push_forward(th0, th1, thb)
-
-        th = np.concatenate([th, thf])
-
-    nth = np.size(th)
-    u  = np.zeros([nth])
-    
-    fig, axs = plt.subplots(nrows, ncols, sharex = True, sharey = True)
-    
-    for y_idx in range(0, ny):
-        y = ys[y_idx]
-        ax_col_idx = int(np.mod(y_idx, ncols))
-        ax_row_idx = int(np.floor(y_idx / ncols))
-        
-        ax = axs[ax_row_idx, ax_col_idx]
-        
-        ax.set_title('Vertical Position: {:.2f}'.format(y))
-        
-        for col_key, col in col_items:
-            if col.is_lf:
-                [x0, y0, x1, y1] = col.pos[:]
-                if ((y0 <= y) and (y <= y1)):
-                    [dx, dy]         = [x1 - x0, y1 - y0]
-                    [ndof_x, ndof_y] = col.ndofs[:]
-                    [xxb, w_x, yyb, _, _, _] = quad_xyth(nnodes_x = ndof_x,
-                                                         nnodes_y = ndof_y)
+            for cell_key, cell in cell_lfs:
+                [th0, th1] = cell.pos[:]
+                dth        = th1 - th0
+                [ndof_th]  = cell.ndofs[:]
+                [_, _, _, _, thb, _] = quad_xyth(nnodes_th = ndof_th)
+                
+                thf = push_forward(th0, th1, thb)
+                vals = cell_intg_xs[(col_key, cell_key)]
+                
+                pc = ax.pcolormesh(yyf, thf, vals.transpose(),
+                                   cmap = kwargs['cmap'],
+                                   vmin = vmin, vmax = vmax,
+                                   shading = 'gouraud')
                     
-                    y_pb = pull_back(y0, y1, y)
-                    
-                    proj_col = proj.cols[col_key]
-                    cell_items = sorted(col.cells.items())
-                    for cell_key, cell in cell_items:
-                        if cell.is_lf:
-                            [th0, th1] = cell.pos[:]
-                            for th_idx in range(0, nth):
-                                th_star = th[th_idx]
-                                if (th0 <= th_star) and (th_star <= th1):
-                                    [ndof_th]  = cell.ndofs
-
-                                    [_, _, _, _, thb, _] = quad_xyth(nnodes_th = ndof_th)
-                                    
-                                    th_starb = pull_back(th0, th1, th_star)
-                                    
-                                    proj_cell = proj_col.cells[cell_key]
-                                    vals_xyth = proj_cell.vals
-                                    
-                                    for ii in range(0, ndof_x):
-                                        wx_i = w_x[ii]
-                                        for jj in range(0, ndof_y):
-                                            psi_j = lag_eval(yyb, jj, y_pb)
-                                            for aa in range(0, ndof_th):
-                                                xsi_a = lag_eval(thb, aa, th_starb)
-                                                u[th_idx] += (dx / 2.) * wx_i \
-                                                    * vals_xyth[ii, jj, aa]  * psi_j * xsi_a
-
-                            ax.axvline(th1,
-                                       color = 'gray',
-                                       linestyle = '--',
-                                       linewidth = 0.2)
-        
-        ax.plot(th, u,
-                color = 'black',
-                linestyle = '-',
-                linewidth = 1)
-
-        # Get vertical limits
-        [u_min, u_max] = [np.amin(u), np.amax(u)]
-        
-        for ax in axs.flatten():
-            ax.set_xlim([0, Lth])
-            ax.set_ylim([0.9 * u_min, 1.1 * u_max])
+                rect = Rectangle((th0, y0), dth, dy, fill = False)
+            ax.add_patch(rect)
 
         nth_ticks = 9
         th_ticks = np.linspace(0, 2, nth_ticks) * np.pi

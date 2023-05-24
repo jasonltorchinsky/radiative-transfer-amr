@@ -7,7 +7,7 @@ import os, sys
 sys.path.append('../../src')
 from utils import print_msg
 
-from tests import test_0, test_1
+from tests import test_0, test_1, test_2
 
 def main():
 
@@ -28,12 +28,17 @@ def main():
                         type = int, choices = [0, 1], required = False,
                         help = help_str)
 
-    help_str = 'Do not run (0) or run (1) Test 1 - 1D Function Approximation'
+    help_str = 'Do not run (0) or run (1) Test 1 - 1D Function Approximation - Visual'
     parser.add_argument('--test_1', nargs = 1, default = [0],
                         type = int, choices = [0, 1], required = False,
                         help = help_str)
-    
+
+    help_str = 'Do not run (0) or run (1) Test 2 - Quadrature Rule Convergence'
     parser.add_argument('--test_2', nargs = 1, default = [0],
+                        type = int, choices = [0, 1], required = False,
+                        help = help_str)
+    
+    parser.add_argument('--test_33', nargs = 1, default = [0],
                         type = int, choices = [0, 1], required = False,
                         help = 'Do not run (0) or run (1) Test 2 - LG/LGL 1D Function Projection Comparison')
     parser.add_argument('--test_3', nargs = 1, default = [0],
@@ -58,17 +63,18 @@ def main():
                         help = help_str)
 
     args = parser.parse_args()
-    ntests = 2
+    ntests = 3
     if args.test_all[0]:
         run_tests = [True] * ntests
     else:
-        run_tests = [args.test_0[0], args.test_1[0]]
+        run_tests = [args.test_0[0], args.test_1[0],
+                     args.test_2[0]]
 
     dir_name = args.dir
     os.makedirs(dir_name, exist_ok = True)
 
     quad_types = ['lg', 'lgr', 'lgl', 'uni']
-    test_funcs = [test_0, test_1]
+    test_funcs = [test_0, test_1, test_2]
     
     for ntest, test_func in enumerate(test_funcs):
         if run_tests[ntest]:
