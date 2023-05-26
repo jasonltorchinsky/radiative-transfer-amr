@@ -37,7 +37,7 @@ def test_2(dir_name = 'test_rt'):
     # Problem Name: 'mass', 'scat'tering, 'conv'ection, 'comp'lete
     prob_name = ''
     # Problem Number
-    prob_num  = 2
+    prob_num  = 0
     # Refinement Type: 'sin'gle column, 'uni'form, 'a'daptive 'm'esh 'r'efinement, random ('rng')
     ref_type = 'amr'
     # Refinement Kind: 's'pa't'ia'l', 'ang'ular, 'all'
@@ -45,25 +45,27 @@ def test_2(dir_name = 'test_rt'):
     # Refinement Form: 'h', 'p'
     ref_form = ''
     # AMR Refinement Tolerance
-    tol_spt = 0.90
+    tol_spt = 0.75
     tol_ang = 0.5
     # Maximum number of DOFs
     max_ndof = 2**15
     # Maximum number of trials
-    max_ntrial = 5
+    max_ntrial = 8
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combos = [
-        ['h',  'rng', 'ang']
+        ['h',  'rng', 'ang'],
+        ['h',  'amr', 'ang'],
+        ['h',  'uni', 'ang']
     ]
 
     # Test Output Parameters
-    do_plot_mesh        = True
+    do_plot_mesh        = False
     do_plot_mesh_p      = False
     do_plot_matrix      = False
     do_plot_uh          = True
     do_plot_u           = True
     do_plot_diff        = False
-    do_plot_anl_err_ind = False
+    do_plot_anl_err_ind = True
     do_plot_sol_vecs    = False
     do_plot_errs        = True
 
@@ -89,7 +91,7 @@ def test_2(dir_name = 'test_rt'):
             # Get the base mesh, manufactured solution
             [Lx, Ly]                   = [2., 3.]
             pbcs                       = [False, False]
-            [ndof_x, ndof_y, ndof_th]  = [6, 6, 2]
+            [ndof_x, ndof_y, ndof_th]  = [6, 6, 3]
             has_th                     = True
             mesh = gen_mesh(Ls     = [Lx, Ly],
                             pbcs   = pbcs,
@@ -124,7 +126,7 @@ def test_2(dir_name = 'test_rt'):
             
             ndof = 0
             trial = 0
-            while (ndof < max_ndof) and (trial <= max_ntrial):
+            while (ndof < max_ndof) and (trial < max_ntrial):
                 perf_trial_0 = perf_counter()
                 print_msg('[Trial {}] Starting...\n'.format(trial))
                 

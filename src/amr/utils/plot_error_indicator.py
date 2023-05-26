@@ -124,7 +124,7 @@ def plot_error_indicator_by_cell(mesh, err_ind, file_name = None, **kwargs):
                                 edgecolor = 'black'
                                 )
                     ax.add_patch(wed)
-                
+                    
         
     if file_name:
         fig.set_size_inches(6.5, 6.5 * (Ly / Lx))

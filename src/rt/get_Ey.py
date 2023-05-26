@@ -1,7 +1,9 @@
 import numpy as np
 
-from dg.projection import get_f2f_matrix
-from dg.quadrature import quad_xyth
+from dg.projection import push_forward, pull_back, get_f2f_matrix
+from dg.quadrature import lag_eval, quad_xyth
+
+Ey_matrices = {}
 
 def get_Ey(mesh, col_key_0, col_key_1):
     
@@ -12,73 +14,101 @@ def get_Ey(mesh, col_key_0, col_key_1):
     mid_0    = (y0_0 + y1_0) / 2.
     
     col_1    = mesh.cols[col_key_1]
-    ndof_y_1 = col_1.ndofs[1]
+    ndof_y_1 = col_1.ndofs[0]
     lv_1     = col_1.lv
     [_, y0_1, _, y1_1] = col_1.pos[:]
     mid_1    = (y0_1 + y1_1) / 2.
+
+    # Check the comments for get-f2f_matrix for which matrix is which.
+    # We get the basis functions from _1 and the nodes from _0.
+    if lv_0 == lv_1:
+        pos_str = 's'
+    elif lv_0 - lv_1 == -1:
+        if mid_1 < mid_0:
+            pos_str = 'l'
+        else: # mid_0 < mid_1
+            pos_str = 'u'
+    elif lv_0 - lv_1 == 1:
+        if mid_1 < mid_0:
+            pos_str = 'u'
+        else: # mid_0 < mid_1
+            pos_str = 'l'
+        
+    nhbr_rel = (lv_0 - lv_1, pos_str)
     
-    if ndof_y_0 > ndof_y_1:
-        [_, _, _, wy_0, _, _] = quad_xyth(nnodes_y = ndof_y_0)
-        wy_0 = wy_0.reshape([1, ndof_y_0])
-        
-        if lv_0 == lv_1:
-            pos_str = 's'
-        elif lv_0 - lv_1 == -1:
-            if mid_1 < mid_0:
-                pos_str = 'l'
-            else: # mid_0 < mid_1
-                pos_str = 'u'
-        elif lv_0 - lv_1 == 1:
-            if mid_1 < mid_0:
-                pos_str = 'u'
-            else: # mid_0 < mid_1
-                pos_str = 'l'
+    key = (ndof_y_0, ndof_y_1, nhbr_rel)
+    if key in Ey_matrices.keys():
+        return Ey_matrices[key]
 
-        nhbr_rel = (lv_1 - lv_0, pos_str)
-                
-        psi_jq_matrix = get_f2f_matrix(dim_str  = 'y',
-                                       nbasis   = ndof_y_1,
-                                       nnode    = ndof_y_0,
-                                       nhbr_rel = nhbr_rel
-                                       )
-        
-        E_y = wy_0 * psi_jq_matrix
-
+    # Handles if K, K' are of different refinement levels
+    if nhbr_rel[0] == -1:
+        coeff = 0.5
+        if nhbr_rel[1] == 'l':
+            def f(y):
+                return 2. * y + 1.
+            
+            def f_inv(y):
+                return 0.5 * (y - 1.)
+        else: # if nhbr_rel[1] == 'u'
+            def f(y):
+                return 2. * y - 1.
+            
+            def f_inv(y):
+                return 0.5 * (y + 1.)
     else:
-        [_, _, _, wy_1, _, _] = quad_xyth(nnodes_y = ndof_y_1)
-        
-        psi_qj_matrix = get_f2f_matrix(dim_str  = 'y',
-                                       nbasis   = ndof_y_0,
-                                       nnode    = ndof_y_1,
-                                       nhbr_rel = (0, 's')
-                                       )
-        
-        if lv_0 == lv_1:
-            pos_str = 's'
-        elif lv_0 - lv_1 == -1:
-            if mid_1 < mid_0:
-                pos_str = 'l'
-            else: # mid_0 < mid_1
-                pos_str = 'u'
-        elif lv_0 - lv_1 == 1:
-            if mid_1 < mid_0:
-                pos_str = 'u'
-            else: # mid_0 < mid_1
-                pos_str = 'l'
+        coeff = 1.
+        def f(y):
+            return y
 
-        nhbr_rel = (lv_0 - lv_1, pos_str)
-                
-        psi_jj_matrix = get_f2f_matrix(dim_str  = 'y',
-                                       nbasis   = ndof_y_1,
-                                       nnode    = ndof_y_1,
-                                       nhbr_rel = nhbr_rel
-                                       )
-
+        def f_inv(y):
+            return y
+    
+    if ndof_y_0 >= ndof_y_1:
+        [_, _, yyb_0, wy_0, _, _] = quad_xyth(nnodes_y = ndof_y_0)
+        [_, _, yyb_1, _, _, _]    = quad_xyth(nnodes_y = ndof_y_1)
+        finv_yyb_0 = f_inv(yyb_0)
+        
+        psi_qq_matrix = np.zeros([ndof_y_0, ndof_y_0])
+        for qq in range(0, ndof_y_0):
+            for qq_p in range(0, ndof_y_0):
+                psi_qq_matrix[qq, qq_p] = lag_eval(yyb_0, qq, finv_yyb_0[qq_p])
+        
+        psi_jq_matrix = np.zeros([ndof_y_1, ndof_y_0])
+        finv_yyf_0 = push_forward(y0_0, y1_0, finv_yyb_0)
+        finv_yyb_0_1 = pull_back(y0_1, y1_1, finv_yyf_0)
+        for jj in range(0, ndof_y_1):
+            for qq_p in range(0, ndof_y_0):
+                psi_jq_matrix[jj, qq_p] = lag_eval(yyb_1, jj, finv_yyb_0_1[qq_p])
+        
         E_y = np.zeros([ndof_y_1, ndof_y_0])
         for jj in range(0, ndof_y_1):
             for qq in range(0, ndof_y_0):
-                for jjp in range(0, ndof_y_1):
-                    E_y[jj, qq] += wy_1[jjp] \
-                        * psi_jj_matrix[jj, jjp] * psi_qj_matrix[qq, jjp]
-
+                for qq_p in range(0, ndof_y_0):
+                    E_y[jj, qq] += coeff * wy_0[qq_p] \
+                        * psi_jq_matrix[jj, qq_p] * psi_qq_matrix[qq, qq_p]
+        
+    else:
+        [_, _, yyb_0, _, _, _]    = quad_xyth(nnodes_y = ndof_y_0)
+        [_, _, yyb_1, wy_1, _, _] = quad_xyth(nnodes_y = ndof_y_1)
+        finv_yyb_1 = f_inv(yyb_1)
+        
+        psi_qj_matrix = np.zeros([ndof_y_0, ndof_y_1])
+        for qq in range(0, ndof_y_0):
+            for jj_p in range(0, ndof_y_1):
+                psi_qj_matrix[qq, jj_p] = lag_eval(yyb_0, qq, finv_yyb_1[jj_p])
+        
+        psi_jj_matrix = np.zeros([ndof_y_1, ndof_y_1])
+        finv_yyf_1_0 = push_forward(y0_0, y1_0, finv_yyb_1)
+        finv_yyb_1_0 = pull_back(y0_1, y1_1, finv_yyf_1_0)
+        for jj in range(0, ndof_y_1):
+            for jj_p in range(0, ndof_y_1):
+                psi_jj_matrix[jj, jj_p] = lag_eval(yyb_1, jj, finv_yyb_1_0[jj_p])
+        
+        E_y = np.zeros([ndof_y_1, ndof_y_0])
+        for jj in range(0, ndof_y_1):
+            for qq in range(0, ndof_y_0):
+                for jj_p in range(0, ndof_y_1):
+                    E_y[jj, qq] += coeff * wy_1[jj_p] \
+                        * psi_jj_matrix[jj, jj_p] * psi_qj_matrix[qq, jj_p]
+                    
     return E_y
