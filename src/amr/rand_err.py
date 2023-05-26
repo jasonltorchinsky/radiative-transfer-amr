@@ -25,7 +25,7 @@ def rand_err(mesh, kind = 'all', form = 'hp'):
     err_ind = Error_Indicator(mesh, by_col = by_col, by_cell = by_cell)
 
     forms = ['h', 'p']
-    rng = np.random.default_rng(1)
+    rng = np.random.default_rng()
 
     for col_key, col in col_items:
         if col.is_lf:

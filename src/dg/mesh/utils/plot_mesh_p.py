@@ -73,6 +73,7 @@ def plot_mesh_p_3d(mesh, file_name = None):
     ax.set_ylim([0, Ly])
     
     colors = ['red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet']
+    unique_ndof_ths = []
     ncolors = len(colors)
     col_items = sorted(mesh.cols.items())
     for col_key, col in col_items:
@@ -95,13 +96,21 @@ def plot_mesh_p_3d(mesh, file_name = None):
 
                     [deg0, deg1] = [th0 * 180. / np.pi, th1 * 180. / np.pi]
                     
+                    if ndof_th not in unique_ndof_ths:
+                        unique_ndof_ths += [ndof_th]
+                        label = str(ndof_th)
+                    else:
+                        label = None
+                    
                     wed = Wedge((cx, cy), min(dx, dy)/2, deg0, deg1,
                                 edgecolor = 'black',
-                                facecolor = colors[ndof_th%ncolors]
+                                facecolor = colors[ndof_th%ncolors],
+                                label = label
                                 )
                     
                     ax.add_patch(wed)
-            
+    ax.legend()
+    
     if file_name:
         fig.set_size_inches(6.5, 6.5 * (Ly / Lx))
         plt.savefig(file_name, dpi = 300)

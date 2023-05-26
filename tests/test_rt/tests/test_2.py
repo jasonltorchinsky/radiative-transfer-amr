@@ -61,14 +61,14 @@ def test_2(dir_name = 'test_rt'):
     do_plot_mesh        = False
     do_plot_mesh_p      = True
     do_plot_matrix      = False
-    do_plot_uh          = False
-    do_plot_u           = False
+    do_plot_uh          = True
+    do_plot_u           = True
     do_plot_diff        = False
     do_plot_anl_err_ind = False
     do_plot_sol_vecs    = True
     do_plot_errs        = True
 
-    for prob_num in [1, 2, 3, 4]:
+    for prob_num in [0, 1, 2, 3, 4]:
         prob_dir = os.path.join(test_dir, str(prob_num))
         os.makedirs(prob_dir, exist_ok = True)
 
