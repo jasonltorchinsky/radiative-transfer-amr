@@ -137,3 +137,6 @@ run/*
 *.png
 *.pdf
 *.csv
+
+# Mathematica Notebooks
+*.nb
