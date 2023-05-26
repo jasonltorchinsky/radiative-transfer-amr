@@ -50,12 +50,12 @@ def test_2(dir_name = 'test_rt'):
     # Maximum number of DOFs
     max_ndof = 2**15
     # Maximum number of trials
-    max_ntrial = 8
+    max_ntrial = 5
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combos = [
-        ['h',  'rng', 'ang'],
-        ['h',  'amr', 'ang'],
-        ['h',  'uni', 'ang']
+        ['h',  'rng', 'spt'],
+        ['h',  'amr', 'spt'],
+        ['h',  'uni', 'spt']
     ]
 
     # Test Output Parameters
@@ -528,7 +528,7 @@ def test_2(dir_name = 'test_rt'):
             title_str = ( 'Convergence Rate - {} Problem'.format(prob_full_name) )
             ax.set_title(title_str)
             
-            file_name = 'convergence-{}.png'.format(prob_full_name.lower())
+            file_name = 'convergence-{}_{}.png'.format(prob_full_name.lower(), prob_num)
             fig.set_size_inches(6.5, 6.5)
             plt.savefig(os.path.join(prob_dir, file_name), dpi = 300)
             plt.close(fig)
