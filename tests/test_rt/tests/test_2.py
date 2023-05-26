@@ -74,8 +74,8 @@ def test_2(dir_name = 'test_rt'):
         os.makedirs(prob_dir, exist_ok = True)
         
         for prob_name in ['conv']:
-            prob_dir = os.path.join(prob_dir, prob_name)
-            os.makedirs(prob_dir, exist_ok = True)
+            subprob_dir = os.path.join(prob_dir, prob_name)
+            os.makedirs(subprob_dir, exist_ok = True)
             
             msg = ( 'Starting problem {}...\n'.format(prob_name) )
             print_msg(msg)
@@ -86,7 +86,7 @@ def test_2(dir_name = 'test_rt'):
             for combo in combos:
                 [ref_form, ref_type, ref_kind] = combo
                 combo_str = '{}-{}-{}'.format(ref_form, ref_type, ref_kind)
-                combo_dir = os.path.join(prob_dir, combo_str)
+                combo_dir = os.path.join(subprob_dir, combo_str)
                 os.makedirs(combo_dir, exist_ok = True)
                 
                 msg = ( 'Starting combination {}...\n'.format(combo_str) )
@@ -545,7 +545,7 @@ def test_2(dir_name = 'test_rt'):
                 
                 file_name = 'convergence-{}_{}.png'.format(prob_full_name.lower(),
                                                            prob_num)
-                file_path = os.path.join(prob_dir, file_name)
+                file_path = os.path.join(subprob_dir, file_name)
                 fig.set_size_inches(6.5, 6.5)
                 plt.savefig(file_path, dpi = 300)
                 plt.close(fig)
