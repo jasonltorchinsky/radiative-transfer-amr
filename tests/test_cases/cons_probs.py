@@ -72,10 +72,10 @@ def get_cons_prob(prob_name, prob_num, mesh):
         
         def u(x, y, th):
             return (np.cos(th))**2 * np.exp(-(32. * (x - Lx/3.)**2
-                                              + 16. * (y - Ly/2.)**2))
+                                              + 16. * (y - 2.*Ly/3.)**2))
         
         def kappa(x, y):
-            return np.exp(-((x - Lx/2.)**2 + (y - Ly/2.)**2)) + 1.
+            return 1. + np.exp(-((x - Lx/2.)**2 + (y - Ly/2.)**2))
         
         def sigma(x, y):
             return 0.9 * kappa(x, y)
@@ -88,20 +88,20 @@ def get_cons_prob(prob_name, prob_num, mesh):
 
         def f_scat(x, y, th): # *JUST* sigma * int_0^2pi Phi(th, th') * u(x, y, th') dth'
             return sigma(x, y) * (1. / 12.) * (6. + np.cos(2. * th)) \
-                * np.exp(-(32. * (x - Lx/3.)**2 + 16. * (y - Ly/2.)**2))
+                * np.exp(-(32. * (x - Lx/3.)**2 + 16. * (y - 2.*Ly/3.)**2))
 
         def f_conv(x, y, th): # *JUST* s.grad(u)
             return u(x, y, th) * (-64. * (x - Lx/3.) * np.cos(th)
-                                        + 32. * (y - Ly/2.) * np.sin(th))
+                                        - 32. * (y - 2.*Ly/3.) * np.sin(th))
 
         def u_intg_th(x, y):
             return np.pi * np.exp(-(32. * (x - Lx/3.)**2
-                                    + 16. * (y - Ly/2.)**2))
+                                    + 16. * (y - 2.*Ly/3.)**2))
         
         erfx = erf(4. * np.sqrt(2) * Lx/3.) + erf(8. * np.sqrt(2) * Lx/3.)
-        erfy = erf(2. * Ly)
+        erfy = erf(4. * Ly/3.) + erf(8. * Ly/3.)
         def u_intg_xy(th):
-            return (np.pi / (32. * np.sqrt(2.))) * erfx * erfy * (np.cos(th))**2
+            return (np.pi / (64. * np.sqrt(2.))) * erfx * erfy * (np.cos(th))**2
 
     elif prob_num == 2:
         """
@@ -234,7 +234,7 @@ def get_cons_prob(prob_name, prob_num, mesh):
             return (1. / 2.) * (np.sin(th / 2.))**2
             
     else:
-        msg = 'ERROR: Solution number {} is unsupported.'.format(sol_num)
+        msg = 'ERROR: Problem number {} is unsupported.'.format(prob_num)
         print_msg(msg)
         quit()
 

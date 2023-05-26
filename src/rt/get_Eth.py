@@ -7,19 +7,19 @@ Eth_matrices = {}
 
 def get_Eth(mesh, col_key_0, cell_key_0, col_key_1, cell_key_1, F):
     
-    col_0  = mesh.cols[col_key_0]
-    cell_0 = col_0.cells[cell_key_0]
-    [ndof_th_0] = cell_0.ndofs[:]
-    lv_0   = cell_0.lv
+    col_0          = mesh.cols[col_key_0]
+    cell_0         = col_0.cells[cell_key_0]
+    [ndof_th_0]    = cell_0.ndofs[:]
+    lv_0           = cell_0.lv
     [th0_0, th1_0] = cell_0.pos[:]
-    mid_0  = (th0_0 + th1_0) / 2.
+    mid_0          = (th0_0 + th1_0) / 2.
     
-    col_1  = mesh.cols[col_key_1]
-    cell_1 = col_1.cells[cell_key_1]
-    [ndof_th_1] = cell_1.ndofs[:]
-    lv_1   = cell_1.lv
+    col_1          = mesh.cols[col_key_1]
+    cell_1         = col_1.cells[cell_key_1]
+    [ndof_th_1]    = cell_1.ndofs[:]
+    lv_1           = cell_1.lv
     [th0_1, th1_1] = cell_1.pos[:]
-    mid_1  = (th0_1 + th1_1) / 2.
+    mid_1          = (th0_1 + th1_1) / 2.
 
     # Get the neighbor relation
     if lv_0 == lv_1:
