@@ -50,34 +50,36 @@ def test_2(dir_name = 'test_rt'):
     # Maximum number of DOFs
     max_ndof = 2**15
     # Maximum number of trials
-    max_ntrial = 2
+    max_ntrial = 6
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combos = [
-        ['h',  'rng', 'spt'],
-        ['h',  'amr', 'spt'],
-        ['h',  'uni', 'spt']
+        ['p',  'rng', 'ang'],
+        ['p',  'uni', 'ang']
     ]
 
     # Test Output Parameters
     do_plot_mesh        = False
-    do_plot_mesh_p      = False
+    do_plot_mesh_p      = True
     do_plot_matrix      = False
     do_plot_uh          = False
     do_plot_u           = False
     do_plot_diff        = False
     do_plot_anl_err_ind = False
-    do_plot_sol_vecs    = False
+    do_plot_sol_vecs    = True
     do_plot_errs        = True
 
-    for prob_num in [0, 1]:
+    for prob_num in [1, 2, 3, 4]:
         prob_dir = os.path.join(test_dir, str(prob_num))
         os.makedirs(prob_dir, exist_ok = True)
+
+        msg = ( 'Starting problem {}...\n'.format(prob_num) )
+        print_msg(msg)
         
-        for prob_name in ['conv']:
+        for prob_name in ['scat']:
             subprob_dir = os.path.join(prob_dir, prob_name)
             os.makedirs(subprob_dir, exist_ok = True)
             
-            msg = ( 'Starting problem {}...\n'.format(prob_name) )
+            msg = ( 'Starting sub-problem {}...\n'.format(prob_name) )
             print_msg(msg)
             
             combo_ndofs = {}
@@ -103,7 +105,7 @@ def test_2(dir_name = 'test_rt'):
                                 has_th = has_th)
                 
                 # Randomly refine to start
-                for _ in range(0, 0):
+                for _ in range(0, 2):
                     rand_err_ind = rand_err(mesh, kind = ref_kind, form = ref_form)
                     
                     mesh = ref_by_ind(mesh, rand_err_ind,

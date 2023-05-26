@@ -35,20 +35,24 @@ def get_cons_prob(prob_name, prob_num, mesh):
 
         erf0 = erf(np.pi / np.sqrt(2.))
         erf1 = erf(3. * np.pi / np.sqrt(2.))
-        erfi0 = erfi(1. + 1.j * np.pi / np.sqrt(2.))
-        erfi1 = erfi(1. - 1.j * 3. * np.pi / np.sqrt(2.))
-        erfi2 = erfi(1. - 1.j * np.pi / np.sqrt(2.))
-        erfi3 = erfi(1. + 1.j * 3. * np.pi / np.sqrt(2.))
+        erf2 = erf((1.j - np.pi) / np.sqrt(2.))
+        erf3 = erf((1.j + 3. * np.pi) / np.sqrt(2.))
+        erfi0 = erfi((1. - 1.j * np.pi) / np.sqrt(2.))
+        erfi1 = erfi((1. + 3.j * np.pi) / np.sqrt(2.))
         def f_scat(x, y, th): # *JUST* sigma * int_0^2pi Phi(th, th') * u(x, y, th') dth'
             return sigma(x, y) * np.exp(-((x - Lx/3.)**2 + (y - Ly/3.)**2)) \
                 * np.real(
-                    ( (1. / (24. * np.sqrt(np.pi)))
-                      * ( 6. * (erf0 + erf1)
-                          + 1.j * np.exp(-1 - 2.j * th) * (erfi0 - erfi1)
-                          + np.exp(4.j * th) * (- erfi2 + erfi3) )
+                    ((1. / (24. * np.sqrt(2. * np.pi)))
+                     * ( 6. * (erf0 + erf1)
+                         + ( np.exp(-0.5 - 2.j * th)
+                             * ( erf2 - erf3
+                                 - 1.j * np.exp(4.j * th) * (erfi0 - erfi1)
+                                )
+                            )
+                        )
                      )
                     )
-
+        
         def f_conv(x, y, th): # *JUST* s.grad(u)
             return -2. * u(x, y, th) \
                 * ((x - Lx/3.) * np.cos(th) + (y - Ly/3.) * np.sin(th))
