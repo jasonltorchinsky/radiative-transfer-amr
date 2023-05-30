@@ -138,5 +138,6 @@ run/*
 *.pdf
 *.csv
 
-# Mathematica Notebooks
+# Word Docs, Mathematica Notebooks, etc.
 *.nb
+*.docx

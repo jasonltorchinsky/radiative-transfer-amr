@@ -21,15 +21,15 @@ def get_cons_prob(prob_name, prob_num, mesh):
     # Get x-part
     if x_num == 0:
         def X(x):
-            return 1
+            return 1.
         
         def dXdx(x):
-            return 0
+            return 0.
         
         X_intg = Lx
         
         def kappa_x(x):
-            return 1
+            return 1.
         
     elif x_num == 1:
         def X(x):
@@ -71,20 +71,20 @@ def get_cons_prob(prob_name, prob_num, mesh):
         X_intg = (1. / 32.) * Lx * np.sqrt(np.pi) * np.real(erf0 + erf1) 
         
         def kappa_x(x):
-            return np.exp(-((8. / Lx) * (x - (5. * Lx / 7.)))**2)
+            return np.exp(-((8. / Lx) * (x - (5. * Lx / 7.)))**2) + 1.0
 
     # Get y-part
     if y_num == 0:
         def Y(y):
-            return 1
+            return 1.
         
         def dYdy(y):
-            return 0
+            return 0.
         
         Y_intg = Ly
         
         def kappa_y(y):
-            return 1
+            return 1.
         
     elif y_num == 1:
         def Y(y):
@@ -114,10 +114,10 @@ def get_cons_prob(prob_name, prob_num, mesh):
 
     elif y_num == 3:
         def Y(y):
-            return np.exp(-((16. / Ly) * (y - (Ly / 3.)))**2)
+            return np.exp(-((16. / Ly) * (y - (2. * Ly / 3.)))**2)
         
         def dYdy(y):
-            return -(2048. / Ly**2) * (y - (2. * Ly / 3.)) * Y(y)
+            return -(512. / Ly**2) * (y - (2. * Ly / 3.)) * Y(y)
         
         erf0 = erf(32. / 3.)
         erf1 = erf(64. / 3.)
@@ -125,12 +125,12 @@ def get_cons_prob(prob_name, prob_num, mesh):
         Y_intg = (1. / 64.) * Ly * np.sqrt(np.pi) * np.real(erf0 + erf1) 
         
         def kappa_y(y):
-            return np.exp(-((64. / Ly) * (y - (Ly / 5.)))**2)
+            return np.exp(-((64. / Ly) * (y - (Ly / 5.)))**2) + 1.0
 
     # Get th-part
     if th_num == 0:
         def TH(th):
-            return 1
+            return 1.
         
         TH_intg = 2. * np.pi
 
@@ -177,8 +177,7 @@ def get_cons_prob(prob_name, prob_num, mesh):
             val = (1. / 288.) * np.sqrt(np.pi) \
                 * (6. * erf01
                    + ( (-1.)**(1./5.) * np.exp(-(np.pi**2 / 144.) - 2.j * th)
-                       * (-np.exp(4.j * th) * erf23
-                          + (-1.)**(3./5.) * erf45)
+                       * (-np.exp(4.j * th) * erf23 + (-1.)**(3./5.) * erf45)
                        )
                    )
             return np.real(val)

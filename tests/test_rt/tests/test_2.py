@@ -53,7 +53,7 @@ def test_2(dir_name = 'test_rt'):
     max_ntrial = 6
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combos = [
-        ['h',  'uni', 'spt']
+        ['h',  'uni', 'ang']
     ]
 
     # Test Output Parameters
@@ -102,7 +102,7 @@ def test_2(dir_name = 'test_rt'):
                 # Get the base mesh, manufactured solution
                 [Lx, Ly]                   = [2., 3.]
                 pbcs                       = [False, False]
-                [ndof_x, ndof_y, ndof_th]  = [3, 3, 3]
+                [ndof_x, ndof_y, ndof_th]  = [3, 3, 8]
                 has_th                     = True
                 mesh = gen_mesh(Ls     = [Lx, Ly],
                                 pbcs   = pbcs,
