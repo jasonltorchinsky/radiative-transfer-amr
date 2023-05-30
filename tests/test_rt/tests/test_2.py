@@ -37,7 +37,7 @@ def test_2(dir_name = 'test_rt'):
     # Problem Name: 'mass', 'scat'tering, 'conv'ection, 'comp'lete
     prob_name = ''
     # Problem Number
-    prob_num  = 0
+    prob_num  = None
     # Refinement Type: 'sin'gle column, 'uni'form, 'a'daptive 'm'esh 'r'efinement, random ('rng')
     ref_type = ''
     # Refinement Kind: 's'pa't'ia'l', 'ang'ular, 'all'
@@ -53,29 +53,34 @@ def test_2(dir_name = 'test_rt'):
     max_ntrial = 6
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combos = [
-        ['p',  'rng', 'ang'],
-        ['p',  'uni', 'ang']
+        ['h',  'uni', 'spt']
     ]
 
     # Test Output Parameters
     do_plot_mesh        = False
-    do_plot_mesh_p      = True
+    do_plot_mesh_p      = False
     do_plot_matrix      = False
-    do_plot_uh          = True
-    do_plot_u           = True
+    do_plot_uh          = False
+    do_plot_u           = False
     do_plot_diff        = False
     do_plot_anl_err_ind = False
     do_plot_sol_vecs    = True
     do_plot_errs        = True
-
-    for prob_num in [0, 1, 2, 3, 4]:
+    
+    prob_nums = []
+    for x_num in range(0, 4):
+        for y_num in range(0, 4):
+            for th_num in range(0, 4):
+                prob_nums += [[x_num, y_num, th_num]]
+    
+    for prob_num in prob_nums:
         prob_dir = os.path.join(test_dir, str(prob_num))
         os.makedirs(prob_dir, exist_ok = True)
 
         msg = ( 'Starting problem {}...\n'.format(prob_num) )
         print_msg(msg)
         
-        for prob_name in ['scat']:
+        for prob_name in ['mass', 'scat', 'conv']:
             subprob_dir = os.path.join(prob_dir, prob_name)
             os.makedirs(subprob_dir, exist_ok = True)
             
@@ -97,7 +102,7 @@ def test_2(dir_name = 'test_rt'):
                 # Get the base mesh, manufactured solution
                 [Lx, Ly]                   = [2., 3.]
                 pbcs                       = [False, False]
-                [ndof_x, ndof_y, ndof_th]  = [6, 6, 3]
+                [ndof_x, ndof_y, ndof_th]  = [3, 3, 3]
                 has_th                     = True
                 mesh = gen_mesh(Ls     = [Lx, Ly],
                                 pbcs   = pbcs,
@@ -105,7 +110,7 @@ def test_2(dir_name = 'test_rt'):
                                 has_th = has_th)
                 
                 # Randomly refine to start
-                for _ in range(0, 2):
+                for _ in range(0, 0):
                     rand_err_ind = rand_err(mesh, kind = ref_kind, form = ref_form)
                     
                     mesh = ref_by_ind(mesh, rand_err_ind,
