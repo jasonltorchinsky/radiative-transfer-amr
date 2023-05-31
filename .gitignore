@@ -141,3 +141,4 @@ run/*
 # Word Docs, Mathematica Notebooks, etc.
 *.nb
 *.docx
+*.xlsx

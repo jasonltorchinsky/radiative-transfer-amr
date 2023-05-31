@@ -17,7 +17,7 @@ def lag_ddx(nodes):
 
     return dmat
 
-def lag_ddx_eval(nodes, j, x):
+def lag_ddx_eval_approx(nodes, j, x):
     '''
     Calculates the *approximate value* of the derivative of the jth Lagrange
     polynomial for a given set of nodes.
@@ -41,7 +41,7 @@ def lag_ddx_eval(nodes, j, x):
     
     return res
 
-def lag_ddx_eval_exact(nodes, j, x):
+def lag_ddx_eval(nodes, j, x):
     '''
     Calculates the exact value of the derivative of the jth Lagrange polynomial
     for a given set of  nodes.
