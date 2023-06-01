@@ -38,7 +38,8 @@ def test_2(dir_name = 'test_rt'):
     prob_name = ''
     # Problem Number
     prob_num  = None
-    # Refinement Type: 'sin'gle column, 'uni'form, 'a'daptive 'm'esh 'r'efinement, random ('rng')
+    # Refinement Type: 'sin'gle column, 'uni'form, 'a'daptive 'm'esh 'r'efinement,
+    # random ('rng')
     ref_type = ''
     # Refinement Kind: 's'pa't'ia'l', 'ang'ular, 'all'
     ref_kind = ''
@@ -53,15 +54,15 @@ def test_2(dir_name = 'test_rt'):
     max_ntrial = 8
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combos = [
-        ['h',  'amr', 'spt'],
-        ['p',  'amr', 'spt'],
-        ['hp', 'amr', 'spt']
+        ['h',  'rng', 'spt'],
+        ['p',  'rng', 'spt'],
+        ['hp', 'rng', 'spt']
     ]
 
     # Test Output Parameters
     do_plot_mesh        = False
     do_plot_mesh_p      = True
-    do_plot_matrix      = False
+    do_plot_matrix      = True
     do_plot_uh          = False
     do_plot_u           = False
     do_plot_diff        = False
@@ -83,7 +84,7 @@ def test_2(dir_name = 'test_rt'):
         msg = ( 'Starting problem {}...\n'.format(prob_num) )
         print_msg(msg)
         
-        for prob_name in ['comp']:
+        for prob_name in ['conv']:
             subprob_dir = os.path.join(prob_dir, prob_name)
             os.makedirs(subprob_dir, exist_ok = True)
             

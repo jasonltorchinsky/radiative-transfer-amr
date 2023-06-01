@@ -5,6 +5,7 @@ class Error_Indicator():
     def __init__(self, mesh, by_col, by_cell):
         self.by_col  = by_col
         self.by_cell = by_cell
+        self.max_err = 0.
         
         self.cols = {} # Columns in mesh
         col_items = sorted(mesh.cols.items())
