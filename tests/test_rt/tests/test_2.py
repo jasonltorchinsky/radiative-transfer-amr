@@ -53,14 +53,14 @@ def test_2(dir_name = 'test_rt'):
     max_ntrial = 8
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combos = [
-        ['hp', 'rng', 'spt'],
-        ['hp', 'amr', 'spt'],
-        ['hp', 'uni', 'spt']
+        ['h',  'amr', 'spt'],
+        ['p',  'amr', 'spt'],
+        ['hp', 'amr', 'spt']
     ]
 
     # Test Output Parameters
     do_plot_mesh        = False
-    do_plot_mesh_p      = False
+    do_plot_mesh_p      = True
     do_plot_matrix      = False
     do_plot_uh          = False
     do_plot_u           = False
@@ -74,7 +74,8 @@ def test_2(dir_name = 'test_rt'):
         for y_num in range(0, 4):
             for th_num in range(0, 4):
                 prob_nums += [[x_num, y_num, th_num]]
-                
+
+    prob_nums = [[2, 3, 2]]
     for prob_num in prob_nums:
         prob_dir = os.path.join(test_dir, str(prob_num))
         os.makedirs(prob_dir, exist_ok = True)
@@ -82,7 +83,7 @@ def test_2(dir_name = 'test_rt'):
         msg = ( 'Starting problem {}...\n'.format(prob_num) )
         print_msg(msg)
         
-        for prob_name in ['mass', 'scat', 'conv']:
+        for prob_name in ['comp']:
             subprob_dir = os.path.join(prob_dir, prob_name)
             os.makedirs(subprob_dir, exist_ok = True)
             

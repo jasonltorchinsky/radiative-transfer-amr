@@ -51,15 +51,23 @@ def hp_steer_col(mesh, uh, col_key):
         term_0 = np.log((2. * ndof_x - 1.) / (2 * ax_nx_sq)) / (2. * np.log(ndof_x - 1.))
         term_1 = np.log((2. * ndof_y - 1.) / (2 * ay_ny_sq)) / (2. * np.log(ndof_y - 1.))
         lp = 0.5 * (term_0 + term_1)
-        
-        if lp - 0.5 >= 0.5 * (ndof_x + ndof_y):
+
+        lhs = lp - 0.5
+        rhs = 0.25 * (ndof_x + ndof_y)
+        if lhs >= rhs:
             ref_form = 'h'
         else:
             ref_form = 'p'
-        
-        #print('spt ref form: {}, {:05.2f} >?< {}'.format(ref_form,
-        #                                                 lp - 0.5,
-        #                                                 0.5 * (ndof_x + ndof_y)))
+
+        if ref_form == 'h':
+            comp_str = '>='
+        else:
+            comp_str = '<'
+        msg = (
+            'spt ref_form: {}, '.format(ref_form) +
+            '{:.3f} {} {}'. format(lhs, comp_str, rhs)
+            )
+        print(msg)
             
         return ref_form
 
