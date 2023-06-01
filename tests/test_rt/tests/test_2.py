@@ -53,12 +53,9 @@ def test_2(dir_name = 'test_rt'):
     max_ntrial = 8
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combos = [
-        ['h',  'rng', 'spt'],
-        ['p',  'rng', 'spt'],
         ['hp', 'rng', 'spt'],
-        ['h',  'rng', 'ang'],
-        ['p',  'rng', 'ang'],
-        ['hp', 'rng', 'ang']
+        ['hp', 'amr', 'spt'],
+        ['hp', 'uni', 'spt']
     ]
 
     # Test Output Parameters
