@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.sparse.linalg import spsolve, gmres, inv, lgmres, bicg
 from time import perf_counter
 import os, sys
 
@@ -9,8 +10,11 @@ sys.path.append('../../tests')
 from test_cases import get_cons_prob
 
 sys.path.append('../../src')
+from dg.matrix import get_intr_mask, split_matrix
+from dg.projection import Projection
 from rt import calc_mass_matrix, calc_scat_matrix, \
-    calc_intr_conv_matrix, calc_bdry_conv_matrix
+    calc_intr_conv_matrix, calc_bdry_conv_matrix, \
+    calc_forcing_vec
 from amr import rand_err, ref_by_ind
 
 from utils import print_msg
@@ -42,7 +46,7 @@ def test_0(dir_name = 'test_perf'):
     # Maximum number of DOFs
     max_ndof = 2**14
     # Maximum number of trials
-    max_ntrial = 32
+    max_ntrial = 16
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combos = [
         ['h',  'rng', 'spt'],
@@ -86,7 +90,7 @@ def test_0(dir_name = 'test_perf'):
                             ndofs  = [ndof_x, ndof_y, ndof_th],
                             has_th = has_th)
             
-            [u, kappa, sigma, Phi, _, _, _] = get_cons_prob(prob_name = 'comp',
+            [u, kappa, sigma, Phi, f, _, _] = get_cons_prob(prob_name = 'comp',
                                                             prob_num  = prob_num,
                                                             mesh      = mesh)
             ndof = get_mesh_ndof(mesh)
@@ -99,13 +103,29 @@ def test_0(dir_name = 'test_perf'):
             scat_dts = []
             intr_conv_dts = []
             bdry_conv_dts = []
+            spsolve_dts  = []
+            gmres_dts    = []
+            gmres_pc_dts = []
+            lgmres_dts   = []
+            bicg_dts     = []
             
             trial = 0
             while (ndof < max_ndof) and (trial < max_ntrial):
-                # Set up output directories              
-                ndofs  += [get_mesh_ndof(mesh)]
+                msg = (
+                    'Starting trial {} of {}...'.format(trial, max_ntrial)
+                    )
+                print_msg(msg)
+                
+                # Set up output directories
+                ndof = get_mesh_ndof(mesh)
+                ndofs  += [ndof]
                 ncols  += [get_mesh_ncol(mesh)]
                 ncells += [get_mesh_ncell(mesh)]
+
+                msg = (
+                    'ndofs: {} of {}\n'.format(ndof, max_ndof)
+                    )
+                print_msg(msg)
                 
                 ## Mass matrix
                 mass_t0 = perf_counter()
@@ -138,6 +158,68 @@ def test_0(dir_name = 'test_perf'):
                 bdry_conv_dt = bdry_conv_tf - bdry_conv_t0
                 
                 bdry_conv_dts += [bdry_conv_dt]
+
+                ## Solve the complete problem...
+                f_vec  = calc_forcing_vec(mesh, f)
+                u_proj = Projection(mesh, u)
+                u_vec  = u_proj.to_vector()
+                    
+                intr_mask  = get_intr_mask(mesh)
+                bdry_mask  = np.invert(intr_mask)
+                f_vec_intr = f_vec[intr_mask]
+                u_vec_intr = u_vec[intr_mask]
+                bcs_vec    = u_vec[bdry_mask]
+
+                M_conv = (M_bdry_conv - M_intr_conv)
+                M = M_conv + M_mass - M_scat
+                [M_intr, M_bdry] = split_matrix(mesh, M, intr_mask)
+
+                A = M_intr
+                b = f_vec_intr - M_bdry @ bcs_vec
+
+                # ...with spsolve
+                spsolve_t0 = perf_counter()
+                uh_vec_intr = spsolve(A, b)
+                spsolve_tf = perf_counter()
+                spsolve_dt = spsolve_tf - spsolve_t0
+
+                spsolve_dts += [spsolve_dt]
+
+                # ...with gmres
+                gmres_t0 = perf_counter()
+                uh_vec_intr = gmres(A, b)
+                gmres_tf = perf_counter()
+                gmres_dt = gmres_tf - gmres_t0
+
+                gmres_dts += [gmres_dt]
+
+                # ...with gmres and a preconditioner
+                gmres_pc_t0 = perf_counter()
+                [PC, _] = split_matrix(mesh, M_mass + M_conv, intr_mask)
+                M_pc = inv(PC)
+                
+                uh_vec_intr = gmres(A, b, M = M_pc)
+                gmres_pc_tf = perf_counter()
+                gmres_pc_dt = gmres_pc_tf - gmres_pc_t0
+
+                gmres_pc_dts += [gmres_pc_dt]
+
+                # ...with lgmres
+                lgmres_t0 = perf_counter()
+                uh_vec_intr = lgmres(A, b)
+                lgmres_tf = perf_counter()
+                lgmres_dt = lgmres_tf - lgmres_t0
+
+                lgmres_dts += [lgmres_dt]
+
+                # ...with bicg
+                bicg_t0 = perf_counter()
+                uh_vec_intr = bicg(A, b)
+                bicg_tf = perf_counter()
+                bicg_dt = bicg_tf - bicg_t0
+
+                bicg_dts += [bicg_dt]
+
                 
                 
                 # Refine the mesh for the next trial
@@ -181,13 +263,38 @@ def test_0(dir_name = 'test_perf'):
                         color     = colors[3],
                         linestyle = '-')
 
+                ax.plot(ndofs, spsolve_dts,
+                        label     = 'spsolve',
+                        color     = colors[0],
+                        linestyle = '--')
+
+                ax.plot(ndofs, gmres_dts,
+                        label     = 'gmres',
+                        color     = colors[1],
+                        linestyle = '--')
+
+                ax.plot(ndofs, gmres_pc_dts,
+                        label     = 'Pre-conditioned gmres',
+                        color     = colors[2],
+                        linestyle = '--')
+
+                ax.plot(ndofs, lgmres_dts,
+                        label     = 'lgmres',
+                        color     = colors[3],
+                        linestyle = '--')
+
+                ax.plot(ndofs, bicg_dts,
+                        label     = 'bicg',
+                        color     = colors[4],
+                        linestyle = '--')
+
                 ax.legend()
                 
                 ax.set_xscale('log', base = 2)
                 ax.set_yscale('log', base = 2)
                         
                 ax.set_xlabel('Total Degrees of Freedom')
-                ax.set_ylabel('Construction Time [s]')
+                ax.set_ylabel('Execution Time [s]')
                 
                 ref_strat_str = ''
                 if ref_type == 'uni':
@@ -206,10 +313,10 @@ def test_0(dir_name = 'test_perf'):
                 title_str = ( '{} {} ${}$-Refinement '.format(ref_strat_str,
                                                               ref_kind_str,
                                                               ref_form) +
-                              'Matrix Construction Time' )
+                              'Construction/Execution Time' )
                 ax.set_title(title_str)
                     
-                file_name = 'matrix_construction.png'
+                file_name = 'exec_times.png'
                 file_path = os.path.join(combo_dir, file_name)
                 fig.set_size_inches(6.5, 6.5)
                 plt.savefig(file_path, dpi = 300)

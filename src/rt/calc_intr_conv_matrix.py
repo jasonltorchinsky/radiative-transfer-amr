@@ -5,6 +5,9 @@ from dg.matrix import get_idx_map, get_col_idxs, get_cell_idxs
 from dg.projection import push_forward
 import dg.quadrature as qd
 
+ddy_psis = {}
+ddx_phis = {}
+
 def calc_intr_conv_matrix(mesh):
 
     # Create column indexing for constructing global interior convection  matrix
@@ -68,6 +71,17 @@ def calc_intr_conv_matrix(mesh):
                     # When we take the derivative of psi, we end up with
                     # 2/dy * psi_bar in normalized coordinates, so dcoeff is
                     dcoeff = dx * dth / 4.
+                    
+                    # Store the ddy_psi matrix if we haven't yet calculated it
+                    if ndof_y in ddy_psis.keys():
+                        ddy_psi = ddy_psis[ndof_y]
+                    else:
+                        ddy_psi = np.zeros([ndof_y, ndof_y])
+                        for qq in range(0, ndof_y):
+                            for jj in range(0, ndof_y):
+                                ddy_psi[qq, jj] = qd.lag_ddx_eval(yyb, qq, yyb[jj])
+                        ddy_psis[ndof_y] = ddy_psi
+
                     idx = 0
                     for ii in range(0, ndof_x):
                         for jj in range(0, ndof_y):
@@ -75,7 +89,7 @@ def calc_intr_conv_matrix(mesh):
                             for aa in range(0, ndof_th):
                                 wth_sinth_a = wth_sinth[aa]
                                 for qq in range(0, ndof_y):
-                                    ddy_psi_qj = qd.lag_ddx_eval(yyb, qq, yyb[jj])
+                                    ddy_psi_qj = ddy_psi[qq, jj]
 
                                     alphalist_ipar[idx] = alpha(ii, qq, aa)
                                     betalist_ipar[idx]  = beta( ii, jj, aa)
@@ -101,6 +115,17 @@ def calc_intr_conv_matrix(mesh):
                     # When we take the derivative of phi, we end up with
                     # 2/dx * phi_bar in normalized coordinates, so dcoeff is
                     dcoeff = dy * dth / 4.
+                    
+                    # Store the ddy_psi matrix if we haven't yet calculated it
+                    if ndof_x in ddx_phis.keys():
+                        ddx_phi = ddx_phis[ndof_x]
+                    else:
+                        ddx_phi = np.zeros([ndof_x, ndof_x])
+                        for pp in range(0, ndof_x):
+                            for ii in range(0, ndof_x):
+                                ddx_phi[pp, ii] = qd.lag_ddx_eval(xxb, pp, xxb[ii])
+                            ddx_phis[ndof_x] = ddx_phi
+                    
                     idx = 0
                     for ii in range(0, ndof_x):
                         for jj in range(0, ndof_y):
@@ -108,7 +133,7 @@ def calc_intr_conv_matrix(mesh):
                             for aa in range(0, ndof_th):
                                 wth_costh_a = wth_costh[aa]
                                 for pp in range(0, ndof_x):
-                                    ddx_phi_pi = qd.lag_ddx_eval(xxb, pp, xxb[ii])
+                                    ddx_phi_pi = ddx_phi[pp, ii]
                                     
                                     alphalist_jqar[idx] = alpha(pp, jj, aa)
                                     betalist_jqar[idx]  = beta( ii, jj, aa)

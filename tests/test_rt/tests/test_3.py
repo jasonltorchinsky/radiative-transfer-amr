@@ -83,7 +83,7 @@ def test_3(dir_name = 'test_rt'):
             # Get the base mesh, test problem
             [Lx, Ly]                   = [2., 3.]
             pbcs                       = [True, False]
-            [ndof_x, ndof_y, ndof_th]  = [2, 2, 6]
+            [ndof_x, ndof_y, ndof_th]  = [3, 3, 3]
             has_th                     = True
             mesh = gen_mesh(Ls     = [Lx, Ly],
                             pbcs   = pbcs,
