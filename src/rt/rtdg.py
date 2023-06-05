@@ -1,4 +1,5 @@
 import numpy as np
+from inspect import signature
 from scipy.sparse.linalg import bicg, bicgstab, cg, cgs, gmres, lgmres, \
                                 minres, qmr, gcrotmk, tfqmr, spsolve, inv
 import sys
@@ -22,7 +23,7 @@ def rtdg(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     Solve the RT problem.
     """
     
-    default_kwargs = {'solver' : 'spsolve',
+    default_kwargs = {'solver' : 'minres',
                       'precondition' : False,
                       'verbose' : False}
     kwargs = {**default_kwargs, **kwargs}
@@ -36,13 +37,20 @@ def rtdg(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     M = M_conv + M_mass - M_scat
     intr_mask = get_intr_mask(mesh)
     [M_intr, M_bdry] = split_matrix(mesh, M, intr_mask)
-    
+
+    # Make sure forcing function takes three arguments
     if f is None:
         def forcing(x, y, th):
             return 0
-    else:
+    if len(signature(f).parameters) == 1:
+        def forcing(x, y, th):
+            return f(x)
+    elif len(signature(f).parameters) == 2:
         def forcing(x, y, th):
             return f(x, y)
+    elif len(signature(f).parameters) == 3:
+        def forcing(x, y, th):
+            return f(x, y, th)
     
     bcs_vec = calc_bcs_vec(mesh, bcs_dirac)
     
@@ -84,8 +92,10 @@ def rtdg(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
         [u_intr_vec, _] = gcrotmk(A, b, M = M_pc)
     elif kwargs['solver'] == 'tfqmr':
         [u_intr_vec, _] = tfqmr(A, b, M = M_pc)
-    else:
+    elif kwargs['solver'] == 'spsolve':
         u_intr_vec = spsolve(A, b)
+    else:
+        [u_intr_vec, _] = minres(A, b, M = M_pc)
         
     if kwargs['verbose']:
         tf = perf_counter()
@@ -95,7 +105,7 @@ def rtdg(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
             prec_str = ''
         msg = (
             'Solver {}{}. '.format(prec_str, kwargs['solver']) +
-            'Solve Time {:8.4f}\n'.format(tf - t0)
+            'Solve Time {:8.4f} [s]\n'.format(tf - t0)
             )
         print_msg(msg)
     

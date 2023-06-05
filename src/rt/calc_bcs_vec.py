@@ -119,8 +119,7 @@ def calc_bcs_vec(mesh, bcs_dirac):
                                         
                                         bcs_cell_vec[beta_idx] = bcs_ija \
                                             * phi_i * psi_j * xsi_a
-
-                        
+                                        
                     else:
                         for ii in range(0, ndof_x):
                             for jj in range(0, ndof_y):

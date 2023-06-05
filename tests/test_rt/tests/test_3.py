@@ -147,7 +147,7 @@ def test_3(dir_name = 'test_rt'):
                 hr_err_ind = high_res_err(mesh, uh_proj, kappa, sigma,
                                           Phi, [bcs, dirac], f, solver = 'minres',
                                           verbose = True)
-                inf_errs += hr_err_ind.max_err
+                inf_errs += [hr_err_ind.max_err]
                 
                 if do_plot_mesh:
                     file_name = 'mesh_3d_{}.png'.format(trial)

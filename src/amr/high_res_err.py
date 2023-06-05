@@ -55,52 +55,38 @@ def high_res_err(mesh, proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
             [nx, ny] = col.ndofs[:]
             [nx_hr, ny_hr] = mesh_hr.cols[col_key].ndofs[:]
             
-            if ((nx, nx_hr), (ny, ny_hr)) in spt_projs.keys():
-                spt_proj = spt_projs[((nx, nx_hr), (ny, ny_hr))]
+            [xxb,    _,     yyb,    _,     _, _] = qd.quad_xyth(nnodes_x = nx,
+                                                                nnodes_y = ny)
+            [xxb_hr, wx_hr, yyb_hr, wy_hr, _, _] = qd.quad_xyth(nnodes_x = nx_hr,
+                                                                nnodes_y = ny_hr)
+            
+            # Store spatial projection matrices for later reuse
+            if (nx, nx_hr) in phi_projs.keys():
+                phi_proj = phi_projs[(nx, nx_hr)][:]
             else:
-                [xxb,    _,     yyb,    _,     _, _] = qd.quad_xyth(nnodes_x = nx,
-                                                                    nnodes_y = ny)
-                [xxb_hr, wx_hr, yyb_hr, wy_hr, _, _] = qd.quad_xyth(nnodes_x = nx_hr,
-                                                                    nnodes_y = ny_hr)
-                
-                # Store spatial projection matrices for later reuse
-                if (nx, nx_hr) in phi_projs.keys():
-                    phi_proj = phi_projs[(nx, nx_hr)]
-                else:
-                    phi_proj = np.zeros([nx, nx_hr])
-                    for ii in range(0, nx):
-                        for pp in range(0, nx_hr):
-                            phi_proj[ii, pp] = qd.lag_eval(xxb, ii, xxb_hr[pp])
-                    phi_projs[(nx, nx_hr)] = phi_proj
-                    
-                if (ny, ny_hr) in psi_projs.keys():
-                    psi_proj = psi_projs[(ny, ny_hr)]
-                else:
-                    psi_proj = np.zeros([ny, ny_hr])
-                    for jj in range(0, ny):
-                        for qq in range(0, ny_hr):
-                            psi_proj[jj, qq] = qd.lag_eval(yyb, jj, yyb_hr[qq])
-                    psi_projs[(ny, ny_hr)] = psi_proj
-                    
-                    
-                # Get the column-dependent quantities here
-                spt_proj = np.zeros([nx_hr, ny_hr])
-                for pp in range(0, nx_hr):
-                    wx_p = wx_hr[pp]
+                phi_proj = np.zeros([nx, nx_hr])
+                for ii in range(0, nx):
+                    for pp in range(0, nx_hr):
+                        wx_pp = wx_hr[pp]
+                        phi_proj[ii, pp] =  wx_pp * qd.lag_eval(xxb, ii, xxb_hr[pp])
+                phi_projs[(nx, nx_hr)] = phi_proj[:]
+                        
+            if (ny, ny_hr) in psi_projs.keys():
+                psi_proj = psi_projs[(ny, ny_hr)][:]
+            else:
+                psi_proj = np.zeros([ny, ny_hr])
+                for jj in range(0, ny):
                     for qq in range(0, ny_hr):
-                        wy_q = wy_hr[qq]
-                        for ii in range(0, nx):
-                            phi_ip = phi_proj[ii, pp]
-                            for jj in range(0, ny):
-                                psi_jq = psi_proj[jj, qq]
-                                
-                                spt_proj[pp, qq] += wx_p * wy_q \
-                                    * phi_ip * psi_jq
-                spt_projs[((nx, nx_hr), (ny, ny_hr))] = spt_proj[:, :]
+                        wy_qq = wy_hr[qq]
+                        psi_proj[jj, qq] = wy_qq * qd.lag_eval(yyb, jj, yyb_hr[qq])
+                psi_projs[(ny, ny_hr)] = psi_proj[:]
                 
-            dcoeff_col = dx * dy / 4.
-            spt_proj *= dcoeff_col
-                            
+            dcoeff_x = dx / 2.
+            dcoeff_y = dy / 2.
+
+            phi_proj = dcoeff_x * phi_proj[:]
+            psi_proj = dcoeff_y * psi_proj[:]
+            
             col_err = 0.
             
             cell_items = sorted(col.cells.items())
@@ -117,33 +103,33 @@ def high_res_err(mesh, proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
                     
                     uh_cell  = proj.cols[col_key].cells[cell_key].vals
                     uhr_cell = proj_hr.cols[col_key].cells[cell_key].vals
-
+                    
                     uh_hr_cell = np.zeros_like(uhr_cell)
-                    dcoeff = dx * dy * dth / 8
-
+                    
                     # Store angular porjection matrices for later reuse                    
                     if (nth, nth_hr) in xsi_projs.keys():
-                        xsi_proj = xsi_projs[(nth, nth_hr)]
+                        xsi_proj = xsi_projs[(nth, nth_hr)][:]
                     else:
                         xsi_proj = np.zeros([nth, nth_hr])
                         for aa in range(0, nth):
                             for rr in range(0, nth_hr):
-                                xsi_proj[aa, rr] = qd.lag_eval(thb, aa, thb_hr[rr])
-                        xsi_projs[(nth, nth_hr)] = xsi_proj
-
-                    dcoeff_cell = dth / 2.
-                    for rr in range(0, nth_hr):
-                        wth_r = wth_hr[rr]
-                        for aa in range(0, nth):
-                            xsi_ar = xsi_proj[aa, rr]
+                                wth_rr = wth_hr[rr]
+                                xsi_proj[aa, rr] = wth_rr * qd.lag_eval(thb, aa, thb_hr[rr])
+                        xsi_projs[(nth, nth_hr)] = xsi_proj[:]
+                        
+                    xsi_proj = dth / 2. * xsi_proj[:]
+                        
+                    for pp in range(0, nx_hr):
+                        for qq in range(0, ny_hr):
+                            for rr in range(0, nth_hr):
+                                for ii in range(0, nx):
+                                    for jj in range(0, ny):
+                                        for aa in range(0, nth):
+                                            uh_hr_cell[pp, qq, rr] += uh_cell[ii, jj, aa] * phi_proj[ii, pp] * psi_proj[jj, qq] * xsi_proj[aa, rr]
                             
-                            uh_hr_cell[:, :, rr] += dcoeff_cell \
-                                *  wth_r * xsi_ar * spt_proj[:, :]
-                            
-                            
-                            
-                    col_err = max(col_err, np.amax(np.abs(uhr_cell - uh_hr_cell)))
                     cell_err = np.amax(np.abs(uhr_cell - uh_hr_cell))
+                    col_err = max(col_err, cell_err)
+                    
                     
                     err_ind.cols[col_key].cells[cell_key].err_ind = cell_err
                     
@@ -169,7 +155,7 @@ def high_res_err(mesh, proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
     if kwargs['verbose']:
         tf = perf_counter()
         msg = (
-            'Hi-Ref Error Indicator Construction Time: {:8.4f} [s]\n'.format(tf - t0)
+            'Hi-Res. Error Indicator Construction Time: {:8.4f} [s]\n'.format(tf - t0)
             )
         print_msg(msg)
 

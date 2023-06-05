@@ -19,7 +19,7 @@ import dg.quadrature as qd
 from rt import calc_mass_matrix, calc_scat_matrix, \
     calc_intr_conv_matrix, calc_bdry_conv_matrix, \
     calc_forcing_vec
-from amr import anl_err, anl_err_ang, anl_err_spt, rand_err, ref_by_ind
+from amr import anl_err, anl_err_ang, anl_err_spt, rand_err, high_res_err, ref_by_ind
 from amr.utils import plot_error_indicator, plot_cell_jumps
 
 from utils import print_msg
@@ -47,27 +47,31 @@ def test_2(dir_name = 'test_rt'):
     ref_form = ''
     # AMR Refinement Tolerance
     tol_spt = 0.75
-    tol_ang = 0.5
+    tol_ang = 0.75
     # Maximum number of DOFs
     max_ndof = 2**15
     # Maximum number of trials
-    max_ntrial = 8
+    max_ntrial = 16
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combos = [
-        ['h',  'rng', 'spt'],
-        ['p',  'rng', 'spt'],
-        ['hp', 'rng', 'spt']
+        ['h',  'uni', 'spt'],
+        ['p',  'uni', 'spt'],
+        ['hp', 'uni', 'spt'],
+        ['h',  'uni', 'ang'],
+        ['p',  'uni', 'ang'],
+        ['hp', 'uni', 'ang']
     ]
 
     # Test Output Parameters
     do_plot_mesh        = False
     do_plot_mesh_p      = True
-    do_plot_matrix      = True
+    do_plot_matrix      = False
     do_plot_uh          = False
     do_plot_u           = False
     do_plot_diff        = False
     do_plot_anl_err_ind = False
     do_plot_sol_vecs    = True
+    do_calc_hi_res_err  = False
     do_plot_errs        = True
     
     prob_nums = []
@@ -75,16 +79,15 @@ def test_2(dir_name = 'test_rt'):
         for y_num in range(0, 4):
             for th_num in range(0, 4):
                 prob_nums += [[x_num, y_num, th_num]]
-
-    prob_nums = [[2, 3, 2]]
+                
     for prob_num in prob_nums:
         prob_dir = os.path.join(test_dir, str(prob_num))
         os.makedirs(prob_dir, exist_ok = True)
-
+        
         msg = ( 'Starting problem {}...\n'.format(prob_num) )
         print_msg(msg)
         
-        for prob_name in ['conv']:
+        for prob_name in ['mass', 'scat', 'conv', 'comp']:
             subprob_dir = os.path.join(prob_dir, prob_name)
             os.makedirs(subprob_dir, exist_ok = True)
             
@@ -92,7 +95,8 @@ def test_2(dir_name = 'test_rt'):
             print_msg(msg)
             
             combo_ndofs = {}
-            combo_errs = {}
+            combo_anl_errs = {}
+            combo_hr_errs  = {}
             
             for combo in combos:
                 [ref_form, ref_type, ref_kind] = combo
@@ -106,7 +110,7 @@ def test_2(dir_name = 'test_rt'):
                 # Get the base mesh, manufactured solution
                 [Lx, Ly]                   = [2., 3.]
                 pbcs                       = [False, False]
-                [ndof_x, ndof_y, ndof_th]  = [3, 3, 8]
+                [ndof_x, ndof_y, ndof_th]  = [3, 3, 3]
                 has_th                     = True
                 mesh = gen_mesh(Ls     = [Lx, Ly],
                                 pbcs   = pbcs,
@@ -137,7 +141,8 @@ def test_2(dir_name = 'test_rt'):
                     
                 # Solve the manufactured problem over several trials
                 ref_ndofs = []
-                inf_errs  = []
+                anl_errs  = []
+                hr_errs   = []
                 
                 ndof = 0
                 trial = 0
@@ -261,11 +266,20 @@ def test_2(dir_name = 'test_rt'):
                     uh_proj = to_projection(mesh, uh_vec)
                     
                     # Caluclate error
+                    ## Analytic error
                     ndof = np.size(u_vec)
                     ref_ndofs += [ndof]
-                    inf_err = np.amax(np.abs(u_vec_intr - uh_vec_intr)) \
+                    anl_error = np.amax(np.abs(u_vec_intr - uh_vec_intr)) \
                         / np.amax(np.abs(u_vec_intr))
-                    inf_errs += [inf_err]
+                    anl_errs += [anl_error]
+
+                    ## Hi-res error
+                    if prob_name == 'comp' and do_calc_hi_res_err:
+                        hr_err_ind = high_res_err(mesh, uh_proj, kappa, sigma,
+                                                  Phi, [u, [False, Ly, False]],
+                                                  f, solver = 'minres',
+                                                  verbose = True)
+                        hr_errs += [hr_err_ind.max_err]
                     
                     mesh_2d = get_hasnt_th(mesh)
                     anl_err_ind = anl_err(mesh, uh_proj, u)
@@ -478,22 +492,36 @@ def test_2(dir_name = 'test_rt'):
                 if do_plot_errs:
                     fig, ax = plt.subplots()
                     
-                    ax.plot(ref_ndofs, inf_errs,
-                            label     = 'L$^{\infty}$ Error',
+                    ax.plot(ref_ndofs, anl_errs,
+                            label     = 'Analytic L$^{\infty}$ Error',
                             color     = 'k',
-                            linestyle = '-')
+                            linestyle = '--')
+
+                    if prob_name == 'comp' and do_calc_hi_res_err:
+                        ax.plot(ref_ndofs, hr_errs,
+                                label     = 'High-Resolution L$^{\infty}$ Error',
+                                color     = 'b',
+                                linestyle = '--')
                     
                     ax.set_xscale('log', base = 2)
                     ax.set_yscale('log', base = 2)
                     
-                    if np.log2(max(inf_errs)) - np.log2(min(inf_errs)) < 1:
-                        ymin = 2**(np.floor(np.log2(min(inf_errs))))
-                        ymax = 2**(np.ceil(np.log2(max(inf_errs))))
+
+                    if prob_name == 'comp' and do_calc_hi_res_err:
+                        max_err = max(anl_errs + hr_errs)
+                        min_err = min(anl_errs + hr_errs)
+                    else:
+                        max_err = max(anl_errs)
+                        min_err = min(anl_errs)
+                    if np.log2(max_err) - np.log2(min_err) < 1:
+                        ymin = 2**(np.floor(np.log2(min_err)))
+                        ymax = 2**(np.ceil(np.log2(max_err)))
                         ax.set_ylim([ymin, ymax])
                         
                     ax.set_xlabel('Total Degrees of Freedom')
                     ax.set_ylabel('L$^{\infty}$ Error')
-                    
+
+                    ax.legend()
                     
                     ref_strat_str = ''
                     if ref_type == 'sin':
@@ -525,7 +553,8 @@ def test_2(dir_name = 'test_rt'):
                     plt.close(fig)
                     
                 combo_ndofs[combo_str] = ref_ndofs
-                combo_errs[combo_str] = inf_errs
+                combo_anl_errs[combo_str] = anl_errs
+                combo_hr_errs[combo_str]  = hr_errs
                 
             if do_plot_errs:
                 fig, ax = plt.subplots()
@@ -539,10 +568,17 @@ def test_2(dir_name = 'test_rt'):
                 
                 for cc in range(0, ncombo):
                     combo_str = combo_names[cc]
-                    ax.plot(combo_ndofs[combo_str], combo_errs[combo_str],
-                            label     = combo_str,
+                    ax.plot(combo_ndofs[combo_str], combo_anl_errs[combo_str],
+                            label     = combo_str + ' Analytic',
                             color     = colors[cc],
-                            linestyle = '-')
+                            linestyle = '--')
+
+                    if prob_name == 'comp' and do_calc_hi_res_err:
+                        ax.plot(combo_ndofs[combo_str], combo_hr_errs[combo_str],
+                                label     = combo_str + ' High-Resolution',
+                                color     = colors[cc],
+                                linestyle = '-.')
+                    
                 ax.legend()
                 
                 ax.set_xscale('log', base = 2)
