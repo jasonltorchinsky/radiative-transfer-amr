@@ -1,22 +1,30 @@
 from copy import deepcopy
 import numpy as np
+from time import perf_counter
 
 from .Error_Indicator import Error_Indicator
 
 import dg.quadrature as qd
 from rt import rtdg
 
+from utils import print_msg
+
 phi_projs = {}
 psi_projs = {}
 xsi_projs = {}
 spt_projs = {}
 
-def high_res_err(mesh, proj, kappa, sigma, Phi, bcs_dirac, f):
+def high_res_err(mesh, proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
     """
     Create a high-resolution version of the mesh, solve the problem there,
     project the solution from the low-resolution mesh onto the high-resolution
     mesh, and find max-norm error from there.
     """
+    
+    default_kwargs = {'solver' : 'spsolve',
+                      'precondition' : False,
+                      'verbose' : False}
+    kwargs = {**default_kwargs, **kwargs}
     
     [bcs, dirac] = bcs_dirac
     
@@ -25,7 +33,7 @@ def high_res_err(mesh, proj, kappa, sigma, Phi, bcs_dirac, f):
     for _ in range(0, nref):
         mesh_hr.ref_mesh(kind = 'all', form = 'p')
 
-    proj_hr = rtdg(mesh_hr, kappa, sigma, Phi, [bcs, dirac], f)
+    proj_hr = rtdg(mesh_hr, kappa, sigma, Phi, [bcs, dirac], f, **kwargs)
     
     col_items = sorted(mesh.cols.items())
     ncols = len(col_items)
@@ -36,6 +44,9 @@ def high_res_err(mesh, proj, kappa, sigma, Phi, bcs_dirac, f):
     max_proj_hr = 0.
 
     # Get max_norm(u_hr - uh) by column
+    if kwargs['verbose']:
+        t0 = perf_counter()
+        
     for col_key, col in col_items:
         if col.is_lf:
             [x0, y0, x1, y1] = col.pos[:]
@@ -155,6 +166,11 @@ def high_res_err(mesh, proj, kappa, sigma, Phi, bcs_dirac, f):
                     err_ind.max_err = max(err_ind.max_err,
                                           err_ind.cols[col_key].cells[cell_key].err_ind)
 
-                    
+    if kwargs['verbose']:
+        tf = perf_counter()
+        msg = (
+            'Hi-Ref Error Indicator Construction Time: {:8.4f} [s]\n'.format(tf - t0)
+            )
+        print_msg(msg)
 
     return err_ind

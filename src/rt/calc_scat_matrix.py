@@ -129,6 +129,13 @@ def calc_scat_matrix(mesh, sigma, Phi, **kwargs):
     # Global scattering matrix is block-diagonal
     # with the column matrices as the blocks
     scat_mtx = block_diag(col_mtxs, format = 'csr')
+    
+    if kwargs['verbose']:
+        tf = perf_counter()
+        msg = (
+            'Scattering Matrix Construction Time: {:8.4f} [s]\n'.format(tf - t0)
+            )
+        print_msg(msg)
 
     return scat_mtx
 
@@ -242,12 +249,5 @@ def calc_scat_matrix_old(mesh, sigma, Phi):
     # Global scattering matrix is block-diagonal
     # with the column matrices as the blocks
     scat_mtx = block_diag(col_mtxs, format = 'csr')
-    
-    if kwargs['verbose']:
-        tf = perf_counter()
-        msg = (
-            'Scattering Matrix Construction Time: {:8.4f} [s]\n'.format(tf - t0)
-            )
-        print_msg(msg)
 
     return scat_mtx

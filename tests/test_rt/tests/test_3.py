@@ -120,7 +120,8 @@ def test_3(dir_name = 'test_rt'):
                 perf_cons_0 = perf_counter()
                 print_msg('[Trial {}] Solving the test problem...'.format(trial))
                 
-                uh_proj = rtdg(mesh, kappa, sigma, Phi, [bcs, dirac], f)
+                uh_proj = rtdg(mesh, kappa, sigma, Phi, [bcs, dirac], f, 
+                               solver = 'minres', verbose = True)
                 
                 perf_cons_f    = perf_counter()
                 perf_cons_diff = perf_cons_f - perf_cons_0
@@ -144,7 +145,8 @@ def test_3(dir_name = 'test_rt'):
 
                 # Calculate error
                 hr_err_ind = high_res_err(mesh, uh_proj, kappa, sigma,
-                                          Phi, [bcs, dirac], f)
+                                          Phi, [bcs, dirac], f, solver = 'minres',
+                                          verbose = True)
                 inf_errs += hr_err_ind.max_err
                 
                 if do_plot_mesh:

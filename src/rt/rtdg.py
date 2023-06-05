@@ -54,7 +54,6 @@ def rtdg(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     A = M_intr
     b = f_intr_vec - M_bdry @ bcs_vec
     
-    
     if kwargs['verbose']:
         t0 = perf_counter()
         
@@ -63,28 +62,28 @@ def rtdg(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
         M_pc = inv(M_conv + M_mass)
         [M_pc, _] = split_matrix(mesh, M_pc, intr_mask)
     else:
-        M = None
+        M_pc = None
     
     if kwargs['solver'] == 'bicg':
-        u_intr_vec = bicg(A, b, M = M_pc)
+        [u_intr_vec, _] = bicg(A, b, M = M_pc)
     elif kwargs['solver'] == 'bicgstab':
-        u_intr_vec = bicgstab(A, b, M = M_pc)
+        [u_intr_vec, _] = bicgstab(A, b, M = M_pc)
     elif kwargs['solver'] == 'cg':
-        u_intr_vec = cg(A, b, M = M_pc)
+        [u_intr_vec, _] = cg(A, b, M = M_pc)
     elif kwargs['solver'] == 'cgs':
-        u_intr_vec = cgs(A, b, M = M_pc)
+        [u_intr_vec, _] = cgs(A, b, M = M_pc)
     elif kwargs['solver'] == 'gmres':
-        u_intr_vec = gmres(A, b, M = M_pc)
+        [u_intr_vec, _] = gmres(A, b, M = M_pc)
     elif kwargs['solver'] == 'lgmres':
-        u_intr_vec = lgmres(A, b, M = M_pc)
+        [u_intr_vec, _] = lgmres(A, b, M = M_pc)
     elif kwargs['solver'] == 'minres':
-        u_intr_vec = minres(A, b, M = M_pc)
+        [u_intr_vec, _] = minres(A, b, M = M_pc)
     elif kwargs['solver'] == 'qmr':
-        u_intr_vec = qmr(A, b, M1 = M_pc)
+        [u_intr_vec, _] = qmr(A, b, M1 = M_pc)
     elif kwargs['solver'] == 'gcrotmk':
-        u_intr_vec = gcrotmk(A, b, M = M_pc)
+        [u_intr_vec, _] = gcrotmk(A, b, M = M_pc)
     elif kwargs['solver'] == 'tfqmr':
-        u_intr_vec = tfqmr(A, b, M = M_pc)
+        [u_intr_vec, _] = tfqmr(A, b, M = M_pc)
     else:
         u_intr_vec = spsolve(A, b)
         
@@ -95,7 +94,7 @@ def rtdg(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
         else:
             prec_str = ''
         msg = (
-            'Solver {}{}:\n'.format(prec_str, kwargs['solver']) +
+            'Solver {}{}. '.format(prec_str, kwargs['solver']) +
             'Solve Time {:8.4f}\n'.format(tf - t0)
             )
         print_msg(msg)
