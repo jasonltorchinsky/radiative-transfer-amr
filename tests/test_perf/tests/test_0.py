@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.sparse.linalg import spsolve, gmres, inv, lgmres, bicg
+from scipy.sparse.linalg import bicg, bicgstab, cg, cgs, gmres, lgmres, \
+                                minres, qmr, gcrotmk, tfqmr, spsolve, inv
 from time import perf_counter
 import os, sys
 
@@ -49,8 +50,6 @@ def test_0(dir_name = 'test_perf'):
     max_ntrial = 16
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combos = [
-        ['h',  'rng', 'spt'],
-        ['p',  'rng', 'spt'],
         ['h',  'rng', 'ang'],
         ['p',  'rng', 'ang']
     ]
@@ -64,7 +63,7 @@ def test_0(dir_name = 'test_perf'):
             for th_num in range(0, 4):
                 prob_nums += [[x_num, y_num, th_num]]
 
-    for prob_num in [[2, 2, 2]]:
+    for prob_num in [[3, 3, 2]]:
         prob_dir = os.path.join(test_dir, str(prob_num))
         os.makedirs(prob_dir, exist_ok = True)
         
@@ -99,15 +98,9 @@ def test_0(dir_name = 'test_perf'):
             ndofs  = []
             ncols  = []
             ncells = []
-            mass_dts = []
-            scat_dts = []
-            intr_conv_dts = []
-            bdry_conv_dts = []
-            spsolve_dts  = []
-            gmres_dts    = []
-            gmres_pc_dts = []
-            lgmres_dts   = []
-            bicg_dts     = []
+            cons_dts = {'mass' : [], 'scat' : [],
+                        'intr_conv' : [], 'bdry_conv' : []}
+            solve_dts = {'minres' : [], 'spsolve' : []}
             
             trial = 0
             while (ndof < max_ndof) and (trial < max_ntrial):
@@ -128,36 +121,32 @@ def test_0(dir_name = 'test_perf'):
                 print_msg(msg)
                 
                 ## Mass matrix
-                mass_t0 = perf_counter()
+                t0 = perf_counter()
                 M_mass  = calc_mass_matrix(mesh, kappa)
-                mass_tf = perf_counter()
-                mass_dt = mass_tf - mass_t0
+                tf = perf_counter()
                 
-                mass_dts += [mass_dt]
+                cons_dts['mass'] += [tf - t0]
                 
                 ## Scattering matrix
-                scat_t0 = perf_counter()
+                t0 = perf_counter()
                 M_scat  = calc_scat_matrix(mesh, sigma, Phi)
-                scat_tf = perf_counter()
-                scat_dt = scat_tf - scat_t0
+                tf = perf_counter()
                 
-                scat_dts += [scat_dt]
+                cons_dts['scat'] += [tf - t0]
                 
                 ## Interior convection matrix
-                intr_conv_t0 = perf_counter()
+                t0 = perf_counter()
                 M_intr_conv  = calc_intr_conv_matrix(mesh)
-                intr_conv_tf = perf_counter()
-                intr_conv_dt = intr_conv_tf - intr_conv_t0
+                tf = perf_counter()
                 
-                intr_conv_dts += [intr_conv_dt]
+                cons_dts['intr_conv'] += [tf - t0]
                 
                 ## Boundary convection matrix
-                bdry_conv_t0 = perf_counter()
+                t0 = perf_counter()
                 M_bdry_conv  = calc_bdry_conv_matrix(mesh)
-                bdry_conv_tf = perf_counter()
-                bdry_conv_dt = bdry_conv_tf - bdry_conv_t0
+                tf = perf_counter()
                 
-                bdry_conv_dts += [bdry_conv_dt]
+                cons_dts['bdry_conv'] += [tf - t0]
 
                 ## Solve the complete problem...
                 f_vec  = calc_forcing_vec(mesh, f)
@@ -176,50 +165,48 @@ def test_0(dir_name = 'test_perf'):
 
                 A = M_intr
                 b = f_vec_intr - M_bdry @ bcs_vec
-
-                # ...with spsolve
-                spsolve_t0 = perf_counter()
-                uh_vec_intr = spsolve(A, b)
-                spsolve_tf = perf_counter()
-                spsolve_dt = spsolve_tf - spsolve_t0
-
-                spsolve_dts += [spsolve_dt]
-
-                # ...with gmres
-                gmres_t0 = perf_counter()
-                uh_vec_intr = gmres(A, b)
-                gmres_tf = perf_counter()
-                gmres_dt = gmres_tf - gmres_t0
-
-                gmres_dts += [gmres_dt]
-
-                # ...with gmres and a preconditioner
-                gmres_pc_t0 = perf_counter()
-                [PC, _] = split_matrix(mesh, M_mass + M_conv, intr_mask)
-                M_pc = inv(PC)
                 
-                uh_vec_intr = gmres(A, b, M = M_pc)
-                gmres_pc_tf = perf_counter()
-                gmres_pc_dt = gmres_pc_tf - gmres_pc_t0
-
-                gmres_pc_dts += [gmres_pc_dt]
-
-                # ...with lgmres
-                lgmres_t0 = perf_counter()
-                uh_vec_intr = lgmres(A, b)
-                lgmres_tf = perf_counter()
-                lgmres_dt = lgmres_tf - lgmres_t0
-
-                lgmres_dts += [lgmres_dt]
-
-                # ...with bicg
-                bicg_t0 = perf_counter()
-                uh_vec_intr = bicg(A, b)
-                bicg_tf = perf_counter()
-                bicg_dt = bicg_tf - bicg_t0
-
-                bicg_dts += [bicg_dt]
-
+                for solve_type in solve_dts.keys():
+                    msg = (
+                        'Starting solve type {}...\n'.format(solve_type)
+                        )
+                    print_msg(msg)
+                    
+                    t0 = perf_counter()
+                    if solve_type[0:2] == 'p-':
+                        pc_str = 'p-'
+                        solve_type = solve_type[2:]
+                        M_pc = inv(M_conv + M_mass)
+                        [M_pc, _] = split_matrix(mesh, M_pc, intr_mask)
+                    else:
+                        pc_str = ''
+                        M_pc = None
+                        
+                    if solve_type == 'bicg':
+                        u_intr_vec = bicg(A, b, M = M_pc)
+                    elif solve_type == 'bicgstab':
+                        u_intr_vec = bicgstab(A, b, M = M_pc)
+                    elif solve_type == 'cg':
+                        u_intr_vec = cg(A, b, M = M_pc)
+                    elif solve_type == 'cgs':
+                        u_intr_vec = cgs(A, b, M = M_pc)
+                    elif solve_type == 'gmres':
+                        u_intr_vec = gmres(A, b, M = M_pc)
+                    elif solve_type == 'lgmres':
+                        u_intr_vec = lgmres(A, b, M = M_pc)
+                    elif solve_type == 'minres':
+                        u_intr_vec = minres(A, b, M = M_pc)
+                    elif solve_type == 'qmr':
+                        u_intr_vec = qmr(A, b)
+                    elif solve_type == 'gcrotmk':
+                        u_intr_vec = gcrotmk(A, b, M = M_pc)
+                    elif solve_type == 'tfqmr':
+                        u_intr_vec = tfqmr(A, b, M = M_pc)
+                    else:
+                        u_intr_vec = spsolve(A, b)
+                    
+                    tf = perf_counter()
+                    solve_dts[pc_str + solve_type] += [tf - t0]
                 
                 
                 # Refine the mesh for the next trial
@@ -243,50 +230,24 @@ def test_0(dir_name = 'test_perf'):
                 
                 fig, ax = plt.subplots()
                 
-                ax.plot(ndofs, mass_dts,
-                        label     = 'Mass',
-                        color     = colors[0],
-                        linestyle = '-')
+                c_idx = 0
+                for key in cons_dts.keys():
+                    ax.plot(ndofs, cons_dts[key],
+                            label     = key,
+                            color     = colors[c_idx],
+                            linestyle = '-')
+                    c_idx += 1
 
-                ax.plot(ndofs, scat_dts,
-                        label     = 'Scattering',
-                        color     = colors[1],
-                        linestyle = '-')
-
-                ax.plot(ndofs, intr_conv_dts,
-                        label     = 'Interior Convection',
-                        color     = colors[2],
-                        linestyle = '-')
-
-                ax.plot(ndofs, bdry_conv_dts,
-                        label     = 'Boundary Convection',
-                        color     = colors[3],
-                        linestyle = '-')
-
-                ax.plot(ndofs, spsolve_dts,
-                        label     = 'spsolve',
-                        color     = colors[0],
-                        linestyle = '--')
-
-                ax.plot(ndofs, gmres_dts,
-                        label     = 'gmres',
-                        color     = colors[1],
-                        linestyle = '--')
-
-                ax.plot(ndofs, gmres_pc_dts,
-                        label     = 'Pre-conditioned gmres',
-                        color     = colors[2],
-                        linestyle = '--')
-
-                ax.plot(ndofs, lgmres_dts,
-                        label     = 'lgmres',
-                        color     = colors[3],
-                        linestyle = '--')
-
-                ax.plot(ndofs, bicg_dts,
-                        label     = 'bicg',
-                        color     = colors[4],
-                        linestyle = '--')
+                l_styles = ['--', '-.', ':']
+                c_idx = 0
+                l_idx = 0
+                for key in solve_dts.keys():
+                    ax.plot(ndofs, solve_dts[key],
+                            label     = key,
+                            color     = colors[c_idx%9],
+                            linestyle = l_styles[int(c_idx/9)])
+                            
+                    c_idx += 1
 
                 ax.legend()
                 

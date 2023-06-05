@@ -1,11 +1,20 @@
 import numpy as np
 from scipy.sparse import coo_matrix, csr_matrix, block_diag, bmat, diags
+from time import perf_counter
 
 from dg.matrix import get_idx_map, get_col_idxs, get_cell_idxs
 from dg.projection import push_forward
 import dg.quadrature as qd
 
-def calc_mass_matrix(mesh, kappa):
+from utils import print_msg
+
+def calc_mass_matrix(mesh, kappa, **kwargs):
+
+    default_kwargs = {'verbose' : False}
+    kwargs = {**default_kwargs, **kwargs}
+    
+    if kwargs['verbose']:
+        t0 = perf_counter()
 
     # Create column indexing for constructing global mass matrix
     [ncols, col_idxs] = get_col_idxs(mesh)
@@ -81,5 +90,12 @@ def calc_mass_matrix(mesh, kappa):
     # Global mass matrix is block-diagonal
     # with the column matrices as the blocks
     mass_mtx = block_diag(col_mtxs, format = 'csr')
+    
+    if kwargs['verbose']:
+        tf = perf_counter()
+        msg = (
+            'Mass Matrix Construction Time: {:8.4f} [s]\n'.format(tf - t0)
+            )
+        print_msg(msg)
 
     return mass_mtx

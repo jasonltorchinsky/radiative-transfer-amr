@@ -1,14 +1,23 @@
 import numpy as np
 from scipy.sparse import coo_matrix, csr_matrix, block_diag, bmat
+from time import perf_counter
 
 from dg.matrix import get_idx_map, get_col_idxs, get_cell_idxs
 from dg.projection import push_forward
 import dg.quadrature as qd
 
+from utils import print_msg
+
 ddy_psis = {}
 ddx_phis = {}
 
-def calc_intr_conv_matrix(mesh):
+def calc_intr_conv_matrix(mesh, **kwargs):
+
+    default_kwargs = {'verbose' : False}
+    kwargs = {**default_kwargs, **kwargs}
+    
+    if kwargs['verbose']:
+        t0 = perf_counter()
 
     # Create column indexing for constructing global interior convection  matrix
     [ncols, col_idxs] = get_col_idxs(mesh)
@@ -154,5 +163,12 @@ def calc_intr_conv_matrix(mesh):
     # Global interior convection matrix is block-diagonal
     # with the column matrices as the blocks
     intr_conv_mtx = block_diag(col_mtxs, format = 'csr')
+    
+    if kwargs['verbose']:
+        tf = perf_counter()
+        msg = (
+            'Interior Convection Matrix Construction Time: {:8.4f} [s]\n'.format(tf - t0)
+            )
+        print_msg(msg)
 
     return intr_conv_mtx

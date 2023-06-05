@@ -1,11 +1,21 @@
 import numpy as np
 from scipy.sparse import coo_matrix, csr_matrix, block_diag, bmat
+from time import perf_counter
 
 from dg.matrix import get_idx_map, get_col_idxs, get_cell_idxs
 from dg.projection import push_forward
 import dg.quadrature as qd
 
-def calc_scat_matrix(mesh, sigma, Phi):
+from utils import print_msg
+
+def calc_scat_matrix(mesh, sigma, Phi, **kwargs):
+    
+    default_kwargs = {'verbose' : False}
+    kwargs = {**default_kwargs, **kwargs}
+    
+    if kwargs['verbose']:
+        t0 = perf_counter()
+    
     # Create column indexing for constructing global mass matrix
     [ncols, col_idxs] = get_col_idxs(mesh)
     col_mtxs = [None] * ncols # Global scattering matrix is block-diagonal, and so
@@ -148,7 +158,7 @@ def calc_scat_matrix_old(mesh, sigma, Phi):
             w_y = w_y.reshape(1, ndof_y)
 
             wx_wy_sigma_col = w_x * w_y * sigma(xxf, yyf)
-            
+                
             # Create cell indexing for constructing column mass matrix
             [ncells, cell_idxs] = get_cell_idxs(mesh, col_key)
             cell_mtxs = [[None] * ncells for K in range(0, ncells)]
@@ -164,7 +174,7 @@ def calc_scat_matrix_old(mesh, sigma, Phi):
                     [th0_0, th1_0] = cell_0.pos
                     dth_0          = th1_0 - th0_0
                     [ndof_th_0]    = cell_0.ndofs
-                    
+                        
                     [_, _, _, _, thb_0, w_th_0] = qd.quad_xyth(nnodes_th = ndof_th_0)
                     thf_0 = push_forward(th0_0, th1_0, thb_0).reshape(ndof_th_0, 1)
                     w_th_0 = w_th_0.reshape(ndof_th_0, 1)
@@ -205,22 +215,21 @@ def calc_scat_matrix_old(mesh, sigma, Phi):
                             for ii in range(0, ndof_x):
                                 for jj in range(0, ndof_y):
                                     wx_wy_sigma_ij = wx_wy_sigma_col[ii, jj]
-                                    for rr in range(0, ndof_th_0):
-                                        for aa in range(0, ndof_th_1):                 
-                                            wth0_wth1_Phi_ra = wth0_wth1_Phi_cell[rr, aa]
-
-                                            val = dcoeff * (dth_1 / 2.0) \
-                                                * wx_wy_sigma_ij * wth0_wth1_Phi_ra
-
-                                            if np.abs(val) > 1.e-14:
-                                                # Index of entry
-                                                alphalist[idx] = alpha(ii, jj, rr)
-                                                betalist[idx]  = beta( ii, jj, aa)
+                                    if wx_wy_sigma_ij > 1.e-14:
+                                        for rr in range(0, ndof_th_0):
+                                            for aa in range(0, ndof_th_1):                 
+                                                wth0_wth1_Phi_ra = wth0_wth1_Phi_cell[rr, aa]
                                                 
-                                                vlist[idx] = dcoeff * (dth_1 / 2.0) \
+                                                val = dcoeff * (dth_1 / 2.0) \
                                                     * wx_wy_sigma_ij * wth0_wth1_Phi_ra
-                                                idx += 1
-                                        
+                                                if np.abs(val) > 1.e-14:
+                                                    # Index of entry
+                                                    alphalist[idx] = alpha(ii, jj, rr)
+                                                    betalist[idx]  = beta( ii, jj, aa)
+                                                                
+                                                    vlist[idx] = val
+                                                    idx += 1
+                                            
                             cell_mtxs[cell_idx_0][cell_idx_1] = coo_matrix((vlist, (alphalist, betalist)),
                                                                            shape = (ndof_x * ndof_y * ndof_th_0,
                                                                                     ndof_x * ndof_y * ndof_th_1))
@@ -233,5 +242,12 @@ def calc_scat_matrix_old(mesh, sigma, Phi):
     # Global scattering matrix is block-diagonal
     # with the column matrices as the blocks
     scat_mtx = block_diag(col_mtxs, format = 'csr')
+    
+    if kwargs['verbose']:
+        tf = perf_counter()
+        msg = (
+            'Scattering Matrix Construction Time: {:8.4f} [s]\n'.format(tf - t0)
+            )
+        print_msg(msg)
 
     return scat_mtx

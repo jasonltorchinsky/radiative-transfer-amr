@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.sparse import coo_matrix, csr_matrix, block_diag, bmat
+from time import perf_counter
 
 from .get_Ex  import get_Ex
 from .get_Ey  import get_Ey
@@ -12,7 +13,13 @@ import dg.quadrature as qd
 
 from utils import print_msg
 
-def calc_bdry_conv_matrix(mesh):
+def calc_bdry_conv_matrix(mesh, **kwargs):
+
+    default_kwargs = {'verbose' : False}
+    kwargs = {**default_kwargs, **kwargs}
+    
+    if kwargs['verbose']:
+        t0 = perf_counter()
     
     # Variables that are the same throughout the loops
     col_items = sorted(mesh.cols.items())
@@ -57,6 +64,14 @@ def calc_bdry_conv_matrix(mesh):
     # Global boundary convection matrix is not block-diagonal
     # but we arranged the column matrices in the proper form
     bdry_conv_mtx = bmat(col_mtxs, format = 'csr')
+    
+    if kwargs['verbose']:
+        tf = perf_counter()
+        msg = (
+            'Boundary Convection Matrix Construction Time: {:8.4f} [s]\n'.format(tf - t0)
+            )
+        print_msg(msg)
+
     
     return bdry_conv_mtx
 
