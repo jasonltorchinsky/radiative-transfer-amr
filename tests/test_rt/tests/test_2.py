@@ -14,7 +14,7 @@ from dg.mesh import get_hasnt_th
 from dg.mesh.utils import plot_mesh, plot_mesh_p
 from dg.matrix import get_intr_mask, split_matrix, merge_vectors
 from dg.projection import Projection, push_forward, to_projection, intg_th
-from dg.projection.utils import plot_projection, plot_yth
+from dg.projection.utils import plot_xy, plot_xth, plot_yth
 import dg.quadrature as qd
 from rt import calc_mass_matrix, calc_scat_matrix, \
     calc_intr_conv_matrix, calc_bdry_conv_matrix, \
@@ -51,15 +51,10 @@ def test_2(dir_name = 'test_rt'):
     # Maximum number of DOFs
     max_ndof = 2**15
     # Maximum number of trials
-    max_ntrial = 16
+    max_ntrial = 8
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combos = [
-        ['h',  'uni', 'spt'],
-        ['p',  'uni', 'spt'],
-        ['hp', 'uni', 'spt'],
-        ['h',  'uni', 'ang'],
-        ['p',  'uni', 'ang'],
-        ['hp', 'uni', 'ang']
+        ['hp',  'rng', 'spt']
     ]
 
     # Test Output Parameters
@@ -71,7 +66,7 @@ def test_2(dir_name = 'test_rt'):
     do_plot_diff        = False
     do_plot_anl_err_ind = False
     do_plot_sol_vecs    = True
-    do_calc_hi_res_err  = False
+    do_calc_hi_res_err  = True
     do_plot_errs        = True
     
     prob_nums = []
@@ -80,14 +75,14 @@ def test_2(dir_name = 'test_rt'):
             for th_num in range(0, 4):
                 prob_nums += [[x_num, y_num, th_num]]
                 
-    for prob_num in prob_nums:
+    for prob_num in [[3, 3, 1]]:
         prob_dir = os.path.join(test_dir, str(prob_num))
         os.makedirs(prob_dir, exist_ok = True)
         
         msg = ( 'Starting problem {}...\n'.format(prob_num) )
         print_msg(msg)
         
-        for prob_name in ['mass', 'scat', 'conv', 'comp']:
+        for prob_name in ['comp']:
             subprob_dir = os.path.join(prob_dir, prob_name)
             os.makedirs(subprob_dir, exist_ok = True)
             
@@ -276,8 +271,8 @@ def test_2(dir_name = 'test_rt'):
                     ## Hi-res error
                     if prob_name == 'comp' and do_calc_hi_res_err:
                         hr_err_ind = high_res_err(mesh, uh_proj, kappa, sigma,
-                                                  Phi, [u, [False, Ly, False]],
-                                                  f, solver = 'minres',
+                                                  Phi, [u, [False, False, False]],
+                                                  f, solver = 'spsolve',
                                                   verbose = True)
                         hr_errs += [hr_err_ind.max_err]
                     
@@ -382,25 +377,30 @@ def test_2(dir_name = 'test_rt'):
                         plt.close(fig)
                         
                     if do_plot_uh:
+                        file_name = 'uh_xy_{}.png'.format(trial)
+                        file_path = os.path.join(trial_dir, file_name)
+                        plot_xy(mesh, uh_proj, file_name = file_path)
+                        
+                        file_name = 'uh_xth_{}.png'.format(trial)
+                        file_path = os.path.join(trial_dir, file_name)
+                        plot_xth(mesh, uh_proj, file_name = file_path)
+                        
                         file_name = 'uh_yth_{}.png'.format(trial)
                         file_path = os.path.join(trial_dir, file_name)
                         plot_yth(mesh, uh_proj, file_name = file_path)
                         
-                        
-                        mean_uh = intg_th(mesh, uh_proj)
-                        file_name = 'uh_xy_{}.png'.format(trial)
-                        file_path = os.path.join(trial_dir, file_name)
-                        plot_projection(mesh_2d, mean_uh, file_name = file_path)
-                        
                     if do_plot_u:
+                        file_name = 'u_xy_{}.png'.format(trial)
+                        file_path = os.path.join(trial_dir, file_name)
+                        plot_xy(mesh, u_proj, file_name = file_path)
+                        
+                        file_name = 'u_xth_{}.png'.format(trial)
+                        file_path = os.path.join(trial_dir, file_name)
+                        plot_xth(mesh, u_proj, file_name = file_path)
+                        
                         file_name = 'u_yth_{}.png'.format(trial)
                         file_path = os.path.join(trial_dir, file_name)
                         plot_yth(mesh, u_proj, file_name = file_path)
-                        
-                        mean_u = intg_th(mesh, u_proj)
-                        file_name = 'u_xy_{}.png'.format(trial)
-                        file_path = os.path.join(trial_dir, file_name)
-                        plot_projection(mesh_2d, mean_u, file_name = file_path)
                         
                     if do_plot_diff:            
                         mean_diff = intg_th(mesh, diff_proj)

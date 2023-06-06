@@ -4,6 +4,7 @@ from .Column import Column
 from .Cell import Cell
 
 from .get_nhbr import get_cell_nhbr_in_col
+from .calc_key import calc_col_key
 
 class Mesh:
     def __init__(self, Ls, pbcs, ndofs = [2, 2, 2], has_th = False):
