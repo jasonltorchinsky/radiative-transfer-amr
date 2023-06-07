@@ -30,19 +30,19 @@ def high_res_err(mesh, proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
     
     [bcs, dirac] = bcs_dirac
 
-    # X2 the polynomial degree in each element, h- refine everything once
-    mult = 2
+    # +2 the polynomial degree in each element, h- refine everything once
+    add = 2
     mesh_hr = deepcopy(mesh)
     col_hr_items = sorted(mesh_hr.cols.items())
     for col_hr_key, col_hr in col_hr_items:
         if col_hr.is_lf:
-            col_hr.ndofs[0] *= mult
-            col_hr.ndofs[1] *= mult
+            col_hr.ndofs[0] += add
+            col_hr.ndofs[1] += add
 
             cell_hr_items = sorted(col_hr.cells.items())
             for cell_hr_key, cell_hr in cell_hr_items:
                 if cell_hr.is_lf:
-                    cell_hr.ndofs[0] *= mult
+                    cell_hr.ndofs[0] += add
 
     mesh_hr.ref_mesh(kind = 'all', form = 'h')
     col_hr_items = sorted(mesh_hr.cols.items())

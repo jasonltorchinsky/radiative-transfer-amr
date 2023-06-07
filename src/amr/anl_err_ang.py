@@ -45,7 +45,8 @@ def anl_err_ang(mesh, proj, anl_sol_intg_xy):
                     thf = push_forward(th0, thf, thb).reshape(1, 1, ndof_th)
                     
                     uh_cell = proj.cols[col_key].cells[cell_key].vals
-                    uh_cell_intg_xy = dcoeff * np.sum(w_x * w_y * uh_cell, axis = (0, 1))
+                    uh_cell_intg_xy = dcoeff \
+                        * np.sum(w_x * w_y * uh_cell, axis = (0, 1))
                     
                     u_cell_intg_xy = anl_sol_intg_xy(thf)
                     
@@ -65,5 +66,8 @@ def anl_err_ang(mesh, proj, anl_sol_intg_xy):
             for cell_key, cell in cell_items:
                 if cell.is_lf:
                     err_ind.cols[col_key].cells[cell_key].err_ind /= max_u_intg_xy
+
+                    err_ind.max_err = max(err_ind.max_err,
+                                          err_ind.cols[col_key].cells[cell_key].err_ind)
 
     return err_ind

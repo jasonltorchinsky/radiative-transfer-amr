@@ -58,4 +58,7 @@ def anl_err_spt(mesh, proj, anl_sol_intg_th):
         if col.is_lf:
             err_ind.cols[col_key].err_ind /= max_u_intg_th
 
+            err_ind.max_err = max(err_ind.max_err,
+                                  err_ind.cols[col_key].err_ind)
+
     return err_ind

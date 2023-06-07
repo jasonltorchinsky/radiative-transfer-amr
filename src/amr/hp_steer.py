@@ -53,7 +53,7 @@ def hp_steer_col(mesh, uh, col_key):
         lp = 0.5 * (term_0 + term_1)
 
         lhs = lp - 0.5
-        rhs = 0.25 * (ndof_x + ndof_y)
+        rhs = 0.5 * (ndof_x + ndof_y)
         if lhs >= rhs:
             ref_form = 'h'
         else:
@@ -98,13 +98,22 @@ def hp_steer_cell(mesh, uh, col_key, cell_key):
             lp = np.log((2. * ndof_th - 1.) / (2 * ath_nth_sq)) \
                 / (2. * np.log(ndof_th - 1))
             
-            if lp - 0.5 >= ndof_th:
+            
+            lhs = lp - 0.5
+            rhs = ndof_th
+            if lhs >= rhs:
                 ref_form = 'h'
             else:
                 ref_form = 'p'
 
-            #print('ang ref form: {}, {:05.2f} >?< {}'.format(ref_form,
-            #                                                 lp - 0.5,
-            #                                                 ndof_th))
+            if ref_form == 'h':
+                comp_str = '>='
+            else:
+                comp_str = '<'
+            msg = (
+                'ang ref_form: {}, '.format(ref_form) +
+                '{:.3f} {} {}'. format(lhs, comp_str, rhs)
+            )
+            print(msg)
             
             return ref_form

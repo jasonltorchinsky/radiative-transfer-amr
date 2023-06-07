@@ -46,27 +46,31 @@ def test_2(dir_name = 'test_rt'):
     # Refinement Form: 'h', 'p'
     ref_form = ''
     # AMR Refinement Tolerance
-    tol_spt = 0.75
-    tol_ang = 0.75
+    tol_spt = 0.85
+    tol_ang = 0.85
     # Maximum number of DOFs
     max_ndof = 2**15
     # Maximum number of trials
-    max_ntrial = 3
+    max_ntrial = 6
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combos = [
-        ['hp',  'uni', 'spt']
+        ['h',  'uni', 'ang'],
+        ['p',  'uni', 'ang'],
+        ['h',  'amr', 'ang'],
+        ['p',  'amr', 'ang'],
+        ['hp', 'amr', 'ang']
     ]
 
     # Test Output Parameters
     do_plot_mesh        = False
-    do_plot_mesh_p      = False
+    do_plot_mesh_p      = True
     do_plot_matrix      = False
-    do_plot_uh          = False
-    do_plot_u           = False
+    do_plot_uh          = True
+    do_plot_u           = True
     do_plot_diff        = False
-    do_plot_anl_err_ind = False
+    do_plot_anl_err_ind = True
     do_plot_sol_vecs    = True
-    do_calc_hi_res_err  = True
+    do_calc_hi_res_err  = False
     do_plot_errs        = True
     
     prob_nums = []
@@ -75,7 +79,7 @@ def test_2(dir_name = 'test_rt'):
             for th_num in range(0, 4):
                 prob_nums += [[x_num, y_num, th_num]]
                 
-    for prob_num in [[3, 3, 2]]:
+    for prob_num in [[1, 2, 3]]:
         prob_dir = os.path.join(test_dir, str(prob_num))
         os.makedirs(prob_dir, exist_ok = True)
         
@@ -105,7 +109,7 @@ def test_2(dir_name = 'test_rt'):
                 # Get the base mesh, manufactured solution
                 [Lx, Ly]                   = [2., 3.]
                 pbcs                       = [False, False]
-                [ndof_x, ndof_y, ndof_th]  = [3, 3, 3]
+                [ndof_x, ndof_y, ndof_th]  = [8, 8, 3]
                 has_th                     = True
                 mesh = gen_mesh(Ls     = [Lx, Ly],
                                 pbcs   = pbcs,
@@ -137,6 +141,8 @@ def test_2(dir_name = 'test_rt'):
                 # Solve the manufactured problem over several trials
                 ref_ndofs = []
                 anl_errs  = []
+                anl_spt_errs = []
+                anl_ang_errs = []
                 hr_errs   = []
                 
                 ndof = 0
@@ -262,11 +268,14 @@ def test_2(dir_name = 'test_rt'):
                     
                     # Caluclate error
                     ## Analytic error
-                    ndof = np.size(u_vec)
-                    ref_ndofs += [ndof]
-                    anl_error = np.amax(np.abs(u_vec_intr - uh_vec_intr)) \
-                        / np.amax(np.abs(u_vec_intr))
-                    anl_errs += [anl_error]
+                    anl_err_ind = anl_err(mesh, uh_proj, u)
+                    anl_errs += [anl_err_ind.max_err]
+
+                    anl_err_ind_spt = anl_err_spt(mesh, uh_proj, u_intg_th)
+                    anl_spt_errs += [anl_err_ind_spt.max_err]
+
+                    anl_err_ind_ang = anl_err_ang(mesh, uh_proj, u_intg_xy)
+                    anl_ang_errs += [anl_err_ind_ang.max_err]
 
                     ## Hi-res error
                     if prob_name == 'comp' and do_calc_hi_res_err:
@@ -462,11 +471,6 @@ def test_2(dir_name = 'test_rt'):
                         mesh.ref_mesh(kind = ref_kind, form = ref_form)
                     elif ref_type == 'amr':
                         if ref_kind in ['ang', 'all']:
-                            anl_err_ind_ang = anl_err_ang(mesh, uh_proj, u_intg_xy)
-                        if ref_kind in ['spt', 'all']:
-                            anl_err_ind_spt = anl_err_spt(mesh, uh_proj, u_intg_th)
-                            
-                        if ref_kind in ['ang', 'all']:
                             mesh = ref_by_ind(mesh, anl_err_ind_ang,
                                               ref_ratio = tol_ang, form = ref_form)
                         if ref_kind in ['spt', 'all']:
@@ -492,16 +496,30 @@ def test_2(dir_name = 'test_rt'):
                 if do_plot_errs:
                     fig, ax = plt.subplots()
                     
+                    colors = ['#000000', '#E69F00', '#56B4E9', '#009E73',
+                              '#F0E442', '#0072B2', '#D55E00', '#CC79A7',
+                              '#882255']
+                    
                     ax.plot(ref_ndofs, anl_errs,
-                            label     = 'Analytic L$^{\infty}$ Error',
-                            color     = 'k',
+                            label     = 'Analytic Error',
+                            color     = colors[0],
+                            linestyle = '--')
+
+                    ax.plot(ref_ndofs, anl_spt_errs,
+                            label     = 'Analytic Spatial Error',
+                            color     = colors[1],
+                            linestyle = '--')
+
+                    ax.plot(ref_ndofs, anl_ang_errs,
+                            label     = 'Analytic Angular Error',
+                            color     = colors[2],
                             linestyle = '--')
 
                     if prob_name == 'comp' and do_calc_hi_res_err:
                         ax.plot(ref_ndofs, hr_errs,
-                                label     = 'High-Resolution L$^{\infty}$ Error',
-                                color     = 'b',
-                                linestyle = '--')
+                                label     = 'High-Resolution Error',
+                                color     = colors[3],
+                                linestyle = '-.')
                     
                     ax.set_xscale('log', base = 2)
                     ax.set_yscale('log', base = 2)
