@@ -51,15 +51,15 @@ def test_2(dir_name = 'test_rt'):
     # Maximum number of DOFs
     max_ndof = 2**15
     # Maximum number of trials
-    max_ntrial = 8
+    max_ntrial = 3
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combos = [
-        ['hp',  'rng', 'spt']
+        ['hp',  'uni', 'spt']
     ]
 
     # Test Output Parameters
     do_plot_mesh        = False
-    do_plot_mesh_p      = True
+    do_plot_mesh_p      = False
     do_plot_matrix      = False
     do_plot_uh          = False
     do_plot_u           = False
@@ -75,7 +75,7 @@ def test_2(dir_name = 'test_rt'):
             for th_num in range(0, 4):
                 prob_nums += [[x_num, y_num, th_num]]
                 
-    for prob_num in [[3, 3, 1]]:
+    for prob_num in [[3, 3, 2]]:
         prob_dir = os.path.join(test_dir, str(prob_num))
         os.makedirs(prob_dir, exist_ok = True)
         

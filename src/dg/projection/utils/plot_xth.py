@@ -67,12 +67,12 @@ def plot_xth(mesh, proj, file_name = None, **kwargs):
                     thf = push_forward(th0, th1, thb)
                     vals = cell_intg_ys[(col_key, cell_key)]
                     
-                    pc = ax.pcolormesh(thf, xxf, vals,
+                    pc = ax.pcolormesh(xxf, thf, vals.transpose(),
                                        cmap = kwargs['cmap'],
                                        vmin = vmin, vmax = vmax,
                                        shading = 'gouraud')
                     
-                    rect = Rectangle((th0, x0), dth, dx, fill = False)
+                    rect = Rectangle((x0, th0), dx, dth, fill = False)
                     ax.add_patch(rect)
     
     fig.colorbar(pc)
@@ -83,11 +83,11 @@ def plot_xth(mesh, proj, file_name = None, **kwargs):
     for aa in range(0, nth_ticks):
         th_rad = th_ticks[aa] / np.pi
         th_tick_labels[aa] = '{:.2f}\u03C0'.format(th_rad)
-    ax.set_xticks(th_ticks)
-    ax.set_xticklabels(th_tick_labels)
+    ax.set_yticks(th_ticks)
+    ax.set_yticklabels(th_tick_labels)
 
-    ax.set_xlim([0, Lth])
-    ax.set_ylim([0, Lx])
+    ax.set_xlim([0, Lx])
+    ax.set_ylim([0, Lth])
     
     if file_name:
         fig.set_size_inches(6.5, 6.5 * (Lx / Lth))

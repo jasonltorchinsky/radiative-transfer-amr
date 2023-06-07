@@ -4,6 +4,8 @@ from time import perf_counter
 
 from .Error_Indicator import Error_Indicator
 
+from dg.mesh import calc_col_key, calc_cell_key
+from dg.projection import push_forward, pull_back
 import dg.quadrature as qd
 from rt import rtdg
 
@@ -14,7 +16,7 @@ psi_projs = {}
 xsi_projs = {}
 
 
-def high_res_err_old(mesh, proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
+def high_res_err(mesh, proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
     """
     Create a high-resolution version of the mesh, solve the problem there,
     project the solution from the low-resolution mesh onto the high-resolution
@@ -43,7 +45,8 @@ def high_res_err_old(mesh, proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
                     cell_hr.ndofs[0] *= mult
 
     mesh_hr.ref_mesh(kind = 'all', form = 'h')
-
+    col_hr_items = sorted(mesh_hr.cols.items())
+    
     proj_hr = rtdg(mesh_hr, kappa, sigma, Phi, [bcs, dirac], f, **kwargs)
     
     err_ind = Error_Indicator(mesh, by_col = True, by_cell = True)
@@ -64,12 +67,12 @@ def high_res_err_old(mesh, proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
             
             col_idx = [int(col_hr_i/2), int(col_hr_j/2)]
             # Get which child col_hr is of col
-            if int(col_hr_i/2) == col_hr_i:
+            if int(col_hr_i/2) == col_hr_i/2:
                 i_str = '-'
             else:
                 i_str = '+'
 
-            if int(col_hr_j/2) == col_hr_j:
+            if int(col_hr_j/2) == col_hr_j/2:
                 j_str = '-'
             else:
                 j_str = '+'
@@ -79,16 +82,16 @@ def high_res_err_old(mesh, proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
             col_key = calc_col_key(col_idx, col_lv)
             # Assume this is a leaf
             col     = mesh.cols[col_key]
+            [nx, ny] = col.ndofs[:]
+            [nx_hr, ny_hr] = col_hr.ndofs[:]
             
             # Store spatial projection matrices for later reuse
             if (nx, nx_hr, col_chld_str) in phi_projs.keys():
                 phi_proj = phi_projs[(nx, nx_hr, col_chld_str)][:]
             else:
-                [nx, _] = col.ndofs[:]
                 [x0, _, x1, _] = col.pos[:]
                 [xxb, _, _, _, _, _] = qd.quad_xyth(nnodes_x = nx)
                 
-                [nx_hr, _] = col_hr.ndofs[:]
                 [x0_hr, _, x1_hr, _] = col_hr.pos[:]
                 [xxb_hr, _, _, _, _, _] = qd.quad_xyth(nnodes_x = nx_hr)
                 
@@ -105,11 +108,9 @@ def high_res_err_old(mesh, proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
             if (ny, ny_hr, col_chld_str) in psi_projs.keys():
                 psi_proj = psi_projs[(ny, ny_hr, col_chld_str)][:]
             else:
-                [_, ny] = col.ndofs[:]
                 [_, y0, _, y1] = col.pos[:]
                 [_, _, yyb, __, _, _] = qd.quad_xyth(nnodes_y = ny)
                 
-                [_, ny_hr] = col_hr.ndofs[:]
                 [_, y0_hr, _, y1_hr] = col_hr.pos[:]
                 [_, _, yyb_hr, _, _, _] = qd.quad_xyth(nnodes_y = ny_hr)
                 
@@ -124,6 +125,7 @@ def high_res_err_old(mesh, proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
                 psi_projs[(ny, ny_hr, col_chld_str)] = psi_proj[:]
                 
             col_err = 0.
+            cell_err = 0.
             
             cell_hr_items = sorted(col_hr.cells.items())
             for cell_hr_key, cell_hr in cell_hr_items:
@@ -131,28 +133,47 @@ def high_res_err_old(mesh, proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
                     # Get cell in mesh that cell_hr is contained in
                     # ASSUMES ONE h_REFINEMENT
                     ## CONTINUE FROM HERE
-                    [th0, th1] = cell.pos[:]
+                    cell_hr_i = cell_hr.idx
+                    cell_hr_lv = cell_hr.lv
                     
-                    [nth]    = cell.ndofs[:]
-                    [nth_hr] = mesh_hr.cols[col_key].cells[cell_key].ndofs[:]
-
-                    [_, _, _, _, thb,    _] = qd.quad_xyth(nnodes_th = nth)
-                    [_, _, _, _, thb_hr, _] = qd.quad_xyth(nnodes_th = nth_hr)
-                    
-                    uh_cell  = proj.cols[col_key].cells[cell_key].vals
-                    uhr_cell = proj_hr.cols[col_key].cells[cell_key].vals
-                    
-                    uh_hr_cell = np.zeros_like(uhr_cell)
-                    
-                    # Store angular porjection matrices for later reuse                    
-                    if (nth, nth_hr) in xsi_projs.keys():
-                        xsi_proj = xsi_projs[(nth, nth_hr)][:]
+                    cell_idx = int(cell_hr_i/2)
+                    if int(cell_hr_i/2) == cell_hr_i/2:
+                        i_str = '-'
                     else:
+                        i_str = '+'
+                    cell_chld_str = i_str
+                    
+                    cell_lv = int(cell_hr_lv - 1)
+                    cell_key = calc_cell_key(cell_idx, cell_lv)
+                    # Assume this is leaf
+                    cell     = col.cells[cell_key]
+                    [nth]    = cell.ndofs[:]
+                    [nth_hr] = cell_hr.ndofs[:]
+                    
+                    # Store angular porjection matrices for later reuse
+                    if (nth, nth_hr, cell_chld_str) in xsi_projs.keys():
+                        xsi_proj = xsi_projs[(nth, nth_hr, cell_chld_str)][:]
+                    else:
+                        [th0, th1] = cell.pos[:]
+                        [_, _, _, _, thb,  _] = qd.quad_xyth(nnodes_th = nth)
+                        
+                        [th0_hr, th1_hr] = cell_hr.pos[:]
+                        [_, _, _, _, thb_hr,  _] = qd.quad_xyth(nnodes_th = nth_hr)
+                        
+                        # Must push forward, pull back for proper coordinate evaluation
+                        thf_hr = push_forward(th0_hr, th1_hr, thb_hr)
+                        thb_hr = pull_back(th0, th1, thf_hr)
+                        
                         xsi_proj = np.zeros([nth, nth_hr])
                         for aa in range(0, nth):
                             for rr in range(0, nth_hr):
                                 xsi_proj[aa, rr] = qd.lag_eval(thb, aa, thb_hr[rr])
-                        xsi_projs[(nth, nth_hr)] = xsi_proj[:]
+                        xsi_projs[(nth, nth_hr, cell_chld_str)] = xsi_proj[:]
+                    
+                    uh_cell  = proj.cols[col_key].cells[cell_key].vals
+                    uhr_cell = proj_hr.cols[col_hr_key].cells[cell_hr_key].vals
+                    
+                    uh_hr_cell = np.zeros_like(uhr_cell)
                         
                     for pp in range(0, nx_hr):
                         for qq in range(0, ny_hr):
@@ -166,17 +187,17 @@ def high_res_err_old(mesh, proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
                                             uh_hr_cell[pp, qq, rr] += uh_cell[ii, jj, aa] \
                                                 * phi_ip * psi_jq * xsi_ar
                             
-                    cell_err = np.amax(np.abs(uhr_cell - uh_hr_cell))
-                    col_err = max(col_err, cell_err)
-                    
+                    cell_err = max(cell_err, np.amax(np.abs(uhr_cell - uh_hr_cell)))
+                    col_err  = max(col_err, cell_err)
                     
                     err_ind.cols[col_key].cells[cell_key].err_ind = cell_err
                     
-                    max_proj_hr   = max(max_proj_hr, np.amax(np.abs(uhr_cell)))
+                    max_proj_hr = max(max_proj_hr, np.amax(np.abs(uhr_cell)))
             
             err_ind.cols[col_key].err_ind = col_err
             
     # Weight to be relative error
+    col_items = sorted(mesh.cols.items())
     for col_key, col in col_items:
         if col.is_lf:
             err_ind.cols[col_key].err_ind /= max_proj_hr
