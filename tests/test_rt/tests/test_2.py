@@ -51,14 +51,12 @@ def test_2(dir_name = 'test_rt'):
     # Maximum number of DOFs
     max_ndof = 2**15
     # Maximum number of trials
-    max_ntrial = 6
+    max_ntrial = 16
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combos = [
         ['h',  'uni', 'ang'],
         ['p',  'uni', 'ang'],
-        ['h',  'amr', 'ang'],
-        ['p',  'amr', 'ang'],
-        ['hp', 'amr', 'ang']
+        ['hp', 'uni', 'ang']
     ]
 
     # Test Output Parameters
@@ -67,7 +65,7 @@ def test_2(dir_name = 'test_rt'):
     do_plot_matrix      = False
     do_plot_uh          = True
     do_plot_u           = True
-    do_plot_diff        = False
+    do_plot_diff        = True
     do_plot_anl_err_ind = True
     do_plot_sol_vecs    = True
     do_calc_hi_res_err  = False
@@ -79,7 +77,7 @@ def test_2(dir_name = 'test_rt'):
             for th_num in range(0, 4):
                 prob_nums += [[x_num, y_num, th_num]]
                 
-    for prob_num in [[1, 2, 3]]:
+    for prob_num in [[2, 2, 3]]:
         prob_dir = os.path.join(test_dir, str(prob_num))
         os.makedirs(prob_dir, exist_ok = True)
         
@@ -109,7 +107,7 @@ def test_2(dir_name = 'test_rt'):
                 # Get the base mesh, manufactured solution
                 [Lx, Ly]                   = [2., 3.]
                 pbcs                       = [False, False]
-                [ndof_x, ndof_y, ndof_th]  = [8, 8, 3]
+                [ndof_x, ndof_y, ndof_th]  = [3, 3, 8]
                 has_th                     = True
                 mesh = gen_mesh(Ls     = [Lx, Ly],
                                 pbcs   = pbcs,
@@ -149,7 +147,7 @@ def test_2(dir_name = 'test_rt'):
                 trial = 0
                 while (ndof < max_ndof) and (trial < max_ntrial):
                     perf_trial_0 = perf_counter()
-                    print_msg('[Trial {}] Starting...\n'.format(trial))
+                    print_msg('[Trial {}] Starting with {} of {} ndofs...\n'.format(trial, ndof, max_ndof))
                     
                     # Set up output directories
                     trial_dir = os.path.join(combo_dir, 'trial_{}'.format(trial))
@@ -266,6 +264,9 @@ def test_2(dir_name = 'test_rt'):
                     uh_vec  = merge_vectors(uh_vec_intr, bcs_vec, intr_mask)
                     uh_proj = to_projection(mesh, uh_vec)
                     
+                    ndof = np.size(uh_vec)
+                    ref_ndofs += [ndof]
+                    
                     # Caluclate error
                     ## Analytic error
                     anl_err_ind = anl_err(mesh, uh_proj, u)
@@ -291,6 +292,7 @@ def test_2(dir_name = 'test_rt'):
                     diff_vec_intr = uh_vec_intr - u_vec_intr
                     zero_bcs_vec  = 0. * bcs_vec
                     diff_vec      = merge_vectors(diff_vec_intr, zero_bcs_vec, intr_mask)
+                    diff_vec      = np.abs(diff_vec)
                     diff_proj     = to_projection(mesh, diff_vec)
                     
                     if do_plot_mesh:
@@ -412,10 +414,17 @@ def test_2(dir_name = 'test_rt'):
                         plot_yth(mesh, u_proj, file_name = file_path)
                         
                     if do_plot_diff:            
-                        mean_diff = intg_th(mesh, diff_proj)
                         file_name = 'diff_xy_{}.png'.format(trial)
                         file_path = os.path.join(trial_dir, file_name)
-                        plot_projection(mesh_2d, mean_diff, file_name = file_path)
+                        plot_xy(mesh, diff_proj, file_name = file_path)
+                        
+                        file_name = 'diff_xth_{}.png'.format(trial)
+                        file_path = os.path.join(trial_dir, file_name)
+                        plot_xth(mesh, diff_proj, file_name = file_path)
+                        
+                        file_name = 'diff_yth_{}.png'.format(trial)
+                        file_path = os.path.join(trial_dir, file_name)
+                        plot_yth(mesh, diff_proj, file_name = file_path)
                     
                     if do_plot_anl_err_ind:
                         file_name = 'anl_err_{}.png'.format(trial)
