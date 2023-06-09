@@ -54,9 +54,7 @@ def test_2(dir_name = 'test_rt'):
     max_ntrial = 6
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combos = [
-        ['h',  'amr', 'spt'],
-        ['h',  'amr', 'ang'],
-        ['h',  'amr', 'all']
+        ['p',  'uni', 'ang']
     ]
 
     # Test Output Parameters
@@ -77,7 +75,7 @@ def test_2(dir_name = 'test_rt'):
             for th_num in range(0, 4):
                 prob_nums += [[x_num, y_num, th_num]]
                 
-    for prob_num in [[1, 2, 3]]:
+    for prob_num in [[1, 0, 2]]:
         prob_dir = os.path.join(test_dir, str(prob_num))
         os.makedirs(prob_dir, exist_ok = True)
         
@@ -107,7 +105,7 @@ def test_2(dir_name = 'test_rt'):
                 # Get the base mesh, manufactured solution
                 [Lx, Ly]                   = [2., 3.]
                 pbcs                       = [False, False]
-                [ndof_x, ndof_y, ndof_th]  = [3, 3, 3]
+                [ndof_x, ndof_y, ndof_th]  = [8, 8, 8]
                 has_th                     = True
                 mesh = gen_mesh(Ls     = [Lx, Ly],
                                 pbcs   = pbcs,

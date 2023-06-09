@@ -40,7 +40,7 @@ def anl_err_ang(mesh, proj, anl_sol_intg_xy):
                     
                     [_, _, _, _, thb, _] = qd.quad_xyth(nnodes_th = ndof_th)
                     
-                    thf = push_forward(th0, th1, thb).reshape(1, 1, ndof_th)
+                    thf = push_forward(th0, th1, thb)
                     
                     uh_cell = proj.cols[col_key].cells[cell_key].vals
                     uh_cell_intg_xy = dcoeff \
