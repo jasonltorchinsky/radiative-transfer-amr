@@ -42,8 +42,8 @@ def anl_err(mesh, proj, anl_sol):
                     uh_cell = proj.cols[col_key].cells[cell_key].vals
                     u_cell  = anl_sol(xxf, yyf, thf)
                     
-                    col_err = max(col_err, np.amax(np.abs(u_cell - uh_cell)))
                     cell_err = np.amax(np.abs(u_cell - uh_cell))
+                    col_err = max(col_err, cell_err)
                     
                     err_ind.cols[col_key].cells[cell_key].err_ind = cell_err
                     

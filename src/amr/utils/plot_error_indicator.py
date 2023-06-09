@@ -12,15 +12,17 @@ def plot_error_indicator(mesh, err_ind, file_name = None, **kwargs):
     
     default_kwargs = {'angles' : [0, np.pi/2, np.pi, 3*np.pi/2],
                       'cmap' : 'Reds',
-                      'name' : ''}
+                      'name' : '',
+                      'by_col' : err_ind.by_col,
+                      'by_cell' : err_ind.by_cell}
     kwargs = {**default_kwargs, **kwargs}
 
-    if err_ind.by_col:
+    if err_ind.by_col and kwargs['by_col']:
         [fig, ax] = plot_error_indicator_by_column(mesh,
                                                    err_ind,
                                                    file_name = file_name,
                                                    **kwargs)
-    if err_ind.by_cell:
+    elif err_ind.by_cell and kwargs['by_cell']:
         [fig, ax] = plot_error_indicator_by_cell(mesh,
                                                  err_ind,
                                                  file_name = file_name,

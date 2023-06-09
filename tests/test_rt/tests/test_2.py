@@ -51,12 +51,12 @@ def test_2(dir_name = 'test_rt'):
     # Maximum number of DOFs
     max_ndof = 2**15
     # Maximum number of trials
-    max_ntrial = 16
+    max_ntrial = 6
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combos = [
-        ['h',  'uni', 'ang'],
-        ['p',  'uni', 'ang'],
-        ['hp', 'uni', 'ang']
+        ['h',  'amr', 'spt'],
+        ['h',  'amr', 'ang'],
+        ['h',  'amr', 'all']
     ]
 
     # Test Output Parameters
@@ -77,7 +77,7 @@ def test_2(dir_name = 'test_rt'):
             for th_num in range(0, 4):
                 prob_nums += [[x_num, y_num, th_num]]
                 
-    for prob_num in [[2, 2, 3]]:
+    for prob_num in [[1, 2, 3]]:
         prob_dir = os.path.join(test_dir, str(prob_num))
         os.makedirs(prob_dir, exist_ok = True)
         
@@ -107,7 +107,7 @@ def test_2(dir_name = 'test_rt'):
                 # Get the base mesh, manufactured solution
                 [Lx, Ly]                   = [2., 3.]
                 pbcs                       = [False, False]
-                [ndof_x, ndof_y, ndof_th]  = [3, 3, 8]
+                [ndof_x, ndof_y, ndof_th]  = [3, 3, 3]
                 has_th                     = True
                 mesh = gen_mesh(Ls     = [Lx, Ly],
                                 pbcs   = pbcs,
@@ -147,7 +147,8 @@ def test_2(dir_name = 'test_rt'):
                 trial = 0
                 while (ndof < max_ndof) and (trial < max_ntrial):
                     perf_trial_0 = perf_counter()
-                    print_msg('[Trial {}] Starting with {} of {} ndofs...\n'.format(trial, ndof, max_ndof))
+                    msg = '[Trial {}] Starting with {} of {} ndofs...\n'.format(trial, ndof, max_ndof)
+                    print_msg(msg)
                     
                     # Set up output directories
                     trial_dir = os.path.join(combo_dir, 'trial_{}'.format(trial))
@@ -427,11 +428,19 @@ def test_2(dir_name = 'test_rt'):
                         plot_yth(mesh, diff_proj, file_name = file_path)
                     
                     if do_plot_anl_err_ind:
-                        file_name = 'anl_err_{}.png'.format(trial)
+                        file_name = 'anl_err_by_col_{}.png'.format(trial)
                         file_path = os.path.join(trial_dir, file_name)
                         plot_error_indicator(mesh, anl_err_ind,
                                              file_name = file_path,
-                                             name = 'Analytic Max-Norm')
+                                             name = 'Analytic Max-Norm',
+                                             by_cell = False)
+
+                        file_name = 'anl_err_by_cell_{}.png'.format(trial)
+                        file_path = os.path.join(trial_dir, file_name)
+                        plot_error_indicator(mesh, anl_err_ind,
+                                             file_name = file_path,
+                                             name = 'Analytic Max-Norm',
+                                             by_col = False)
                         
                         anl_err_ind_ang = anl_err_ang(mesh, uh_proj, u_intg_xy)
                         file_name = 'anl_err_ang_{}.png'.format(trial)
@@ -465,6 +474,25 @@ def test_2(dir_name = 'test_rt'):
                         ax.set_title('Solution Comparison')
                         
                         file_name = 'soln_{}.png'.format(trial)
+                        file_path = os.path.join(trial_dir, file_name)
+                        fig.set_size_inches(6.5, 6.5)
+                        plt.savefig(file_path, dpi = 300)
+                        plt.close(fig)
+
+                        # Plot solutions
+                        fig, ax = plt.subplots()
+
+                        max_u_vec_intr = np.amax(np.abs(u_vec_intr))
+                        ax.plot((u_vec_intr - uh_vec_intr) / max_u_vec_intr,
+                                label = '$(u - u_{h}) / max(\abs{u})$',
+                                color = 'k',
+                                drawstyle = 'steps-post')
+                        
+                        ax.legend()
+                        
+                        ax.set_title('Solution Comparison')
+                        
+                        file_name = 'diff_{}.png'.format(trial)
                         file_path = os.path.join(trial_dir, file_name)
                         fig.set_size_inches(6.5, 6.5)
                         plt.savefig(file_path, dpi = 300)

@@ -21,6 +21,7 @@ def anl_err_spt(mesh, proj, anl_sol_intg_th):
             col_err = 0.
             
             [x0, y0, xf, yf] = col.pos[:]
+            [dx, dy]         = [xf - x0, yf - y0]
             [ndof_x, ndof_y] = col.ndofs[:]
             
             [xxb, _, yyb, _, _, _] = qd.quad_xyth(nnodes_x = ndof_x,
