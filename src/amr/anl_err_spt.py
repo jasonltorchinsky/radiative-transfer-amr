@@ -35,8 +35,8 @@ def anl_err_spt(mesh, proj, anl_sol_intg_th):
             cell_items = sorted(col.cells.items())
             for cell_key, cell in cell_items:
                 if cell.is_lf:
-                    [th0, thf] = cell.pos[:]
-                    dth        = thf - th0
+                    [th0, th1] = cell.pos[:]
+                    dth        = th1 - th0
                     [ndof_th]  = cell.ndofs[:]
                     
                     [_, _, _, _, thb, w_th] = qd.quad_xyth(nnodes_th = ndof_th)
@@ -46,7 +46,7 @@ def anl_err_spt(mesh, proj, anl_sol_intg_th):
                     uh_cell = proj.cols[col_key].cells[cell_key].vals
                     uh_col_intg_th += (dth / 2.) * np.sum(w_th * uh_cell, axis = 2)
                     
-            u_col_intg_th = anl_sol_intg_th(xxf, yyf)
+            u_col_intg_th = anl_sol_intg_th(xxf, yyf, 0, 2. * np.pi)
             col_err       = np.amax(np.abs(u_col_intg_th - uh_col_intg_th))
             max_u_intg_th = max(max_u_intg_th, np.amax(np.abs(u_col_intg_th)))
             

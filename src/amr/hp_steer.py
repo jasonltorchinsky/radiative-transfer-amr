@@ -30,7 +30,7 @@ def hp_steer_col(mesh, uh, col_key):
         L_jn = eval_legendre(ndofs_y.transpose(), yyb)
         
         a_nxj = (2. * ndof_x - 1.) * (2. * ndofs_y + 1.) / 4. \
-            * L_nxm @ wx_wy_uh_hat @ L_jn.transpose()
+            * (L_nxm @ wx_wy_uh_hat @ L_jn.transpose())
 
         ax_nx_sq = 0
         for jj in range(0, ndof_y):
@@ -42,7 +42,7 @@ def hp_steer_col(mesh, uh, col_key):
         L_nyn = eval_legendre(ndof_y - 1, yyb)
         
         a_iny = (2. * ndofs_x + 1.) * (2. * ndof_y - 1.) / 4. \
-            * L_im @ wx_wy_uh_hat @ L_nyn.transpose()
+            * (L_im @ wx_wy_uh_hat @ L_nyn.transpose())
 
         ay_ny_sq = 0
         for ii in range(0, ndof_x):
@@ -67,7 +67,7 @@ def hp_steer_col(mesh, uh, col_key):
             'spt ref_form: {}, '.format(ref_form) +
             '{:.3f} {} {}'. format(lhs, comp_str, rhs)
             )
-        print(msg)
+        #print(msg)
             
         return ref_form
 
@@ -114,6 +114,6 @@ def hp_steer_cell(mesh, uh, col_key, cell_key):
                 'ang ref_form: {}, '.format(ref_form) +
                 '{:.3f} {} {}'. format(lhs, comp_str, rhs)
             )
-            print(msg)
+            #print(msg)
             
             return ref_form

@@ -98,7 +98,7 @@ def calc_col_matrix(mesh, col_key_0, F):
         cell_items_1             = sorted(col_1.cells.items())
         [x0_1, y0_1, x1_1, y1_1] = col_1.pos[:]
         [dx_1, dy_1]             = [x1_1 - x0_1, y1_1 - y0_1]
-        [nx_1, ny_1]             = col_1.ndofs
+        [nx_1, ny_1]             = col_1.ndofs[:]
         [nc_1, cell_idxs_1]      = get_cell_idxs(mesh, col_key_1)
         cell_mtxs_01             = [[None] * nc_1 for K in range(0, nc_0)]
         if (F%2 == 0): # Construct E^K'K,y_jq
@@ -121,7 +121,7 @@ def calc_col_matrix(mesh, col_key_0, F):
         cell_items_2             = sorted(col_2.cells.items())
         [x0_2, y0_2, x1_2, y1_2] = col_2.pos[:]
         [dx_2, dy_2]             = [x1_2 - x0_2, y1_2 - y0_2]
-        [nx_2, ny_2]             = col_2.ndofs
+        [nx_2, ny_2]             = col_2.ndofs[:]
         [nc_2, cell_idxs_2]      = get_cell_idxs(mesh, col_key_2)
         cell_mtxs_02             = [[None] * nc_2 for K in range(0, nc_0)]
         if (F%2 == 0): # Construct E^K'K,y_jq

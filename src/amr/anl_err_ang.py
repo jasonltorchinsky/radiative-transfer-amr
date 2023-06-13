@@ -10,7 +10,6 @@ from dg.projection import push_forward, pull_back
 def anl_err_ang(mesh, proj, anl_sol_intg_xy):
     
     col_items = sorted(mesh.cols.items())
-    ncols = len(col_items)
     
     err_ind = Error_Indicator(mesh, by_col = False, by_cell = True)
     
@@ -26,8 +25,8 @@ def anl_err_ang(mesh, proj, anl_sol_intg_xy):
             [xxb, w_x, yyb, w_y, _, _] = qd.quad_xyth(nnodes_x = ndof_x,
                                                       nnodes_y = ndof_y)
             
-            w_x = w_x.reshape(ndof_x, 1, 1)
-            w_y = w_y.reshape(1, ndof_y, 1)
+            w_x = w_x.reshape([ndof_x, 1, 1])
+            w_y = w_y.reshape([1, ndof_y, 1])
             
             dcoeff = dx * dy / 4.
            
@@ -46,7 +45,7 @@ def anl_err_ang(mesh, proj, anl_sol_intg_xy):
                     uh_cell_intg_xy = dcoeff \
                         * np.sum(w_x * w_y * uh_cell, axis = (0, 1))
                     
-                    u_cell_intg_xy = anl_sol_intg_xy(thf)
+                    u_cell_intg_xy = anl_sol_intg_xy(x0, x1, y0, y1, thf)
                     
                     cell_err = np.amax(np.abs(u_cell_intg_xy - uh_cell_intg_xy))
                     err_ind.cols[col_key].cells[cell_key].err_ind = cell_err

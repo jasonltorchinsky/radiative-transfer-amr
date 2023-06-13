@@ -51,10 +51,12 @@ def test_2(dir_name = 'test_rt'):
     # Maximum number of DOFs
     max_ndof = 2**15
     # Maximum number of trials
-    max_ntrial = 6
+    max_ntrial = 12
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combos = [
-        ['p',  'uni', 'ang']
+        ['h',  'rng', 'all'],
+        ['p',  'rng', 'all'],
+        ['hp', 'rng', 'all']
     ]
 
     # Test Output Parameters
@@ -63,7 +65,7 @@ def test_2(dir_name = 'test_rt'):
     do_plot_matrix      = False
     do_plot_uh          = True
     do_plot_u           = True
-    do_plot_diff        = True
+    do_plot_diff        = False
     do_plot_anl_err_ind = True
     do_plot_sol_vecs    = True
     do_calc_hi_res_err  = False
@@ -75,14 +77,14 @@ def test_2(dir_name = 'test_rt'):
             for th_num in range(0, 4):
                 prob_nums += [[x_num, y_num, th_num]]
                 
-    for prob_num in [[1, 0, 2]]:
+    for prob_num in [[1, 1, 3]]:
         prob_dir = os.path.join(test_dir, str(prob_num))
         os.makedirs(prob_dir, exist_ok = True)
         
         msg = ( 'Starting problem {}...\n'.format(prob_num) )
         print_msg(msg)
         
-        for prob_name in ['comp']:
+        for prob_name in ['mass', 'scat', 'conv', 'comp']:
             subprob_dir = os.path.join(prob_dir, prob_name)
             os.makedirs(subprob_dir, exist_ok = True)
             
@@ -105,7 +107,7 @@ def test_2(dir_name = 'test_rt'):
                 # Get the base mesh, manufactured solution
                 [Lx, Ly]                   = [2., 3.]
                 pbcs                       = [False, False]
-                [ndof_x, ndof_y, ndof_th]  = [8, 8, 8]
+                [ndof_x, ndof_y, ndof_th]  = [3, 3, 3]
                 has_th                     = True
                 mesh = gen_mesh(Ls     = [Lx, Ly],
                                 pbcs   = pbcs,
@@ -119,6 +121,10 @@ def test_2(dir_name = 'test_rt'):
                     mesh = ref_by_ind(mesh, rand_err_ind,
                                       ref_ratio = tol_spt,
                                       form = ref_form)
+
+                # Perform some uniform (anguler or spatial) h-refinements to start
+                for _ in range(0, 0):
+                    mesh.ref_mesh(kind = 'ang', form = 'h')
                 
                 [u, kappa, sigma, Phi, f,
                  u_intg_th, u_intg_xy] = get_cons_prob(prob_name = prob_name,

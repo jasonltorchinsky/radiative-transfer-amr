@@ -71,27 +71,26 @@ def rtdg(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
         [M_pc, _] = split_matrix(mesh, M_pc, intr_mask)
     else:
         M_pc = None
-    
+
+        tol = 1.e-13
     if kwargs['solver'] == 'bicg':
-        [u_intr_vec, _] = bicg(A, b, M = M_pc)
+        [u_intr_vec, _] = bicg(A, b, tol = tol, M = M_pc)
     elif kwargs['solver'] == 'bicgstab':
-        [u_intr_vec, _] = bicgstab(A, b, M = M_pc)
+        [u_intr_vec, _] = bicgstab(A, b, tol = tol,  M = M_pc)
     elif kwargs['solver'] == 'cg':
-        [u_intr_vec, _] = cg(A, b, M = M_pc)
+        [u_intr_vec, _] = cg(A, b, tol = tol,  M = M_pc)
     elif kwargs['solver'] == 'cgs':
-        [u_intr_vec, _] = cgs(A, b, M = M_pc)
+        [u_intr_vec, _] = cgs(A, b, tol = tol,  M = M_pc)
     elif kwargs['solver'] == 'gmres':
-        [u_intr_vec, _] = gmres(A, b, M = M_pc)
+        [u_intr_vec, _] = gmres(A, b, tol = tol,  M = M_pc)
     elif kwargs['solver'] == 'lgmres':
-        [u_intr_vec, _] = lgmres(A, b, M = M_pc)
-    elif kwargs['solver'] == 'minres':
-        [u_intr_vec, _] = minres(A, b, M = M_pc)
+        [u_intr_vec, _] = lgmres(A, b, tol = tol,  M = M_pc)
     elif kwargs['solver'] == 'qmr':
-        [u_intr_vec, _] = qmr(A, b, M1 = M_pc)
+        [u_intr_vec, _] = qmr(A, b, tol = tol,  M1 = M_pc)
     elif kwargs['solver'] == 'gcrotmk':
-        [u_intr_vec, _] = gcrotmk(A, b, M = M_pc)
+        [u_intr_vec, _] = gcrotmk(A, b, tol = tol,  M = M_pc)
     elif kwargs['solver'] == 'tfqmr':
-        [u_intr_vec, _] = tfqmr(A, b, M = M_pc)
+        [u_intr_vec, _] = tfqmr(A, b, tol = tol,  M = M_pc)
     elif kwargs['solver'] == 'spsolve':
         u_intr_vec = spsolve(A, b)
     else:

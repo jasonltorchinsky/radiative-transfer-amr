@@ -14,7 +14,7 @@ def get_Ey(mesh, col_key_0, col_key_1):
     mid_0    = (y0_0 + y1_0) / 2.
     
     col_1    = mesh.cols[col_key_1]
-    ndof_y_1 = col_1.ndofs[0]
+    ndof_y_1 = col_1.ndofs[1]
     lv_1     = col_1.lv
     [_, y0_1, _, y1_1] = col_1.pos[:]
     mid_1    = (y0_1 + y1_1) / 2.
