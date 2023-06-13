@@ -13,7 +13,7 @@ sys.path.append('../../src')
 from dg.mesh import get_hasnt_th
 from dg.mesh.utils import plot_mesh, plot_mesh_p
 from dg.projection import Projection, intg_th
-from dg.projection.utils import plot_projection, plot_yth
+from dg.projection.utils import plot_projection, plot_xy, plot_xth, plot_yth
 from rt import rtdg
 from amr import cell_jump_err, col_jump_err, rand_err, high_res_err, ref_by_ind
 
@@ -39,8 +39,8 @@ def test_3(dir_name = 'test_rt'):
     # Refinement Form: 'h', 'p'
     ref_form = ''
     # AMR Refinement Tolerance
-    tol_spt = 0.75
-    tol_ang = 0.5
+    tol_spt = 0.85
+    tol_ang = 0.85
     # Maximum number of DOFs
     max_ndof = 2**15
     # Maximum number of trials
@@ -121,7 +121,7 @@ def test_3(dir_name = 'test_rt'):
                 print_msg('[Trial {}] Solving the test problem...'.format(trial))
                 
                 uh_proj = rtdg(mesh, kappa, sigma, Phi, [bcs, dirac], f, 
-                               solver = 'minres', verbose = True)
+                               solver = 'spsolve', verbose = True)
                 
                 perf_cons_f    = perf_counter()
                 perf_cons_diff = perf_cons_f - perf_cons_0
@@ -145,7 +145,7 @@ def test_3(dir_name = 'test_rt'):
 
                 # Calculate error
                 hr_err_ind = high_res_err(mesh, uh_proj, kappa, sigma,
-                                          Phi, [bcs, dirac], f, solver = 'minres',
+                                          Phi, [bcs, dirac], f, solver = 'spsolve',
                                           verbose = True)
                 inf_errs += [hr_err_ind.max_err]
                 
@@ -198,15 +198,17 @@ def test_3(dir_name = 'test_rt'):
                     plt.close(fig)
                 
                 if do_plot_uh:
+                    file_name = 'uh_xy_{}.png'.format(trial)
+                    file_path = os.path.join(trial_dir, file_name)
+                    plot_xy(mesh, uh_proj, file_name = file_path)
+                    
+                    file_name = 'uh_xth_{}.png'.format(trial)
+                    file_path = os.path.join(trial_dir, file_name)
+                    plot_xth(mesh, uh_proj, file_name = file_path)
+                    
                     file_name = 'uh_yth_{}.png'.format(trial)
                     file_path = os.path.join(trial_dir, file_name)
                     plot_yth(mesh, uh_proj, file_name = file_path)
-                    
-                    
-                    mean_uh = intg_th(mesh, uh_proj)
-                    file_name = 'uh_xy_{}.png'.format(trial)
-                    file_path = os.path.join(trial_dir, file_name)
-                    plot_projection(mesh_2d, mean_uh, file_name = file_path)
                     
                     
                 # Refine the mesh for the next trial

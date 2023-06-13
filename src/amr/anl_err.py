@@ -1,6 +1,7 @@
 import numpy as np
 
 from .Error_Indicator import Error_Indicator
+from .hp_steer import hp_steer_col, hp_steer_cell
 
 import dg.quadrature as qd
 from dg.projection import push_forward, pull_back
@@ -46,10 +47,13 @@ def anl_err(mesh, proj, anl_sol):
                     col_err = max(col_err, cell_err)
                     
                     err_ind.cols[col_key].cells[cell_key].err_ind = cell_err
+                    err_ind.cols[col_key].cells[cell_key].ref_form = \
+                        hp_steer_cell(mesh, proj, col_key, cell_key)
                     
                     max_u   = max(max_u, np.amax(np.abs(u_cell)))
             
             err_ind.cols[col_key].err_ind = col_err
+            err_ind.cols[col_key].ref_form = hp_steer_col(mesh, proj, col_key)
             
     # Weight to be relative error
     for col_key, col in col_items:

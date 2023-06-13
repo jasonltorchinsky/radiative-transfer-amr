@@ -19,7 +19,8 @@ import dg.quadrature as qd
 from rt import calc_mass_matrix, calc_scat_matrix, \
     calc_intr_conv_matrix, calc_bdry_conv_matrix, \
     calc_forcing_vec
-from amr import anl_err, anl_err_ang, anl_err_spt, rand_err, high_res_err, ref_by_ind
+from amr import anl_err, anl_err_ang, anl_err_spt, rand_err, high_res_err, \
+    nneg_err, ref_by_ind
 from amr.utils import plot_error_indicator, plot_cell_jumps
 
 from utils import print_msg
@@ -54,9 +55,10 @@ def test_2(dir_name = 'test_rt'):
     max_ntrial = 12
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combos = [
-        ['h',  'rng', 'all'],
-        ['p',  'rng', 'all'],
-        ['hp', 'rng', 'all']
+        ['p',  'nneg', 'spt'],
+        ['hp', 'nneg', 'spt'],
+        ['p',  'nneg', 'ang'],
+        ['hp', 'nneg', 'ang']
     ]
 
     # Test Output Parameters
@@ -84,7 +86,7 @@ def test_2(dir_name = 'test_rt'):
         msg = ( 'Starting problem {}...\n'.format(prob_num) )
         print_msg(msg)
         
-        for prob_name in ['mass', 'scat', 'conv', 'comp']:
+        for prob_name in ['comp']:
             subprob_dir = os.path.join(prob_dir, prob_name)
             os.makedirs(subprob_dir, exist_ok = True)
             
@@ -122,7 +124,7 @@ def test_2(dir_name = 'test_rt'):
                                       ref_ratio = tol_spt,
                                       form = ref_form)
 
-                # Perform some uniform (anguler or spatial) h-refinements to start
+                # Perform some uniform (angular or spatial) h-refinements to start
                 for _ in range(0, 0):
                     mesh.ref_mesh(kind = 'ang', form = 'h')
                 
@@ -518,9 +520,18 @@ def test_2(dir_name = 'test_rt'):
                             mesh = ref_by_ind(mesh, anl_err_ind_spt,
                                               ref_ratio = tol_spt, form = ref_form)
                     elif ref_type == 'rng':
-                        rand_err_ind = rand_err(mesh, kind = ref_kind, form = ref_form)
+                        rand_err_ind = rand_err(mesh,
+                                                kind = ref_kind,
+                                                form = ref_form)
                         
                         mesh = ref_by_ind(mesh, rand_err_ind,
+                                          ref_ratio = tol_spt,
+                                          form = ref_form)
+                    elif ref_type == 'nneg':
+                        nneg_err_ind = nneg_err(mesh, uh_proj,
+                                                kind = ref_kind,
+                                                form = ref_form)
+                        mesh = ref_by_ind(mesh, nneg_err_ind,
                                           ref_ratio = tol_spt,
                                           form = ref_form)
                         

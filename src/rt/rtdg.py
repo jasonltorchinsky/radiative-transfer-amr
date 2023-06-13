@@ -23,7 +23,7 @@ def rtdg(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     Solve the RT problem.
     """
     
-    default_kwargs = {'solver' : 'minres',
+    default_kwargs = {'solver' : 'spsolve',
                       'precondition' : False,
                       'verbose' : False}
     kwargs = {**default_kwargs, **kwargs}
@@ -94,7 +94,8 @@ def rtdg(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     elif kwargs['solver'] == 'spsolve':
         u_intr_vec = spsolve(A, b)
     else:
-        [u_intr_vec, _] = minres(A, b, M = M_pc)
+        kwargs['solver'] = 'spsolve'
+        u_intr_vec = spsolve(A, b)
         
     if kwargs['verbose']:
         tf = perf_counter()

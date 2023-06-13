@@ -6,5 +6,6 @@ from .col_jump_err import col_jump_err, intg_col_bdry_th
 from .cell_jump_err import cell_jump_err
 from .high_res_err import high_res_err
 from .hp_steer import hp_steer_col, hp_steer_cell
+from .nneg_err import nneg_err
 from .rand_err import rand_err
 from .ref_by_ind import ref_by_ind
