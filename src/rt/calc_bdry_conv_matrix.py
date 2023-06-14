@@ -443,14 +443,14 @@ def calc_col_matrix(mesh, col_key_0, F):
                         
                         cell_mtxs_02[cell_idx_0][cell_idx_2].eliminate_zeros()
                 
-    col_mtx_00 = block_diag(cell_mtxs_00, format = 'csr')
+    col_mtx_00 = block_diag(cell_mtxs_00, format = 'coo')
     if col_1 is not None:
-        col_mtx_01 = bmat(cell_mtxs_01, format = 'csr')
+        col_mtx_01 = bmat(cell_mtxs_01, format = 'coo')
     else:
         col_mtx_01 = None
     
     if col_2 is not None:
-        col_mtx_02 = bmat(cell_mtxs_02, format = 'csr')
+        col_mtx_02 = bmat(cell_mtxs_02, format = 'coo')
     else:
         col_mtx_02 = None
 

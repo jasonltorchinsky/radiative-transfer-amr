@@ -47,8 +47,8 @@ def anl_err_ang(mesh, proj, anl_sol_intg_xy):
                     
                     u_cell_intg_xy = anl_sol_intg_xy(x0, x1, y0, y1, thf)
                     
-                    cell_err = np.amax(np.abs(u_cell_intg_xy - uh_cell_intg_xy))
-                    err_ind.cols[col_key].cells[cell_key].err_ind = cell_err
+                    cell_err = np.amax(np.abs(u_cell_intg_xy - uh_cell_intg_xy) / (dx * dy * dth))
+                    err_ind.cols[col_key].cells[cell_key].err_ind = cell_err 
                     
                     err_ind.cols[col_key].cells[cell_key].ref_form = \
                         hp_steer_cell(mesh, proj, col_key, cell_key)
@@ -62,7 +62,7 @@ def anl_err_ang(mesh, proj, anl_sol_intg_xy):
 
             for cell_key, cell in cell_items:
                 if cell.is_lf:
-                    err_ind.cols[col_key].cells[cell_key].err_ind /= max_u_intg_xy
+                    #err_ind.cols[col_key].cells[cell_key].err_ind /= max_u_intg_xy
 
                     err_ind.max_err = max(err_ind.max_err,
                                           err_ind.cols[col_key].cells[cell_key].err_ind)

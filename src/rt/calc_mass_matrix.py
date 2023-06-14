@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.sparse import coo_matrix, csr_matrix, block_diag, bmat, diags
+from scipy.sparse import coo_matrix, csr_matrix, dia_matrix, block_diag, bmat, diags
 from time import perf_counter
 
 from dg.matrix import get_idx_map, get_col_idxs, get_cell_idxs
@@ -7,6 +7,7 @@ from dg.projection import push_forward
 import dg.quadrature as qd
 
 from utils import print_msg
+
 
 def calc_mass_matrix(mesh, kappa, **kwargs):
 
@@ -75,7 +76,7 @@ def calc_mass_matrix(mesh, kappa, **kwargs):
                             wx_wy_kappa_ij = wx_wy_kappa_col[ii, jj]
                             for aa in range(0, ndof_th):
                                 wth_a = w_th[aa]
-
+                                
                                 # Calculate entry index, value
                                 betalist[idx] = beta(ii, jj, aa)
                                 
@@ -85,7 +86,7 @@ def calc_mass_matrix(mesh, kappa, **kwargs):
                                 
                     cell_mtxs[cell_idx] = coo_matrix((vlist, (betalist, betalist)))
                     
-            col_mtxs[col_idx] = block_diag(cell_mtxs, format = 'csr')
+            col_mtxs[col_idx] = block_diag(cell_mtxs, format = 'coo')
 
     # Global mass matrix is block-diagonal
     # with the column matrices as the blocks

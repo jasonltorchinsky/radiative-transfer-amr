@@ -52,13 +52,10 @@ def test_2(dir_name = 'test_rt'):
     # Maximum number of DOFs
     max_ndof = 2**15
     # Maximum number of trials
-    max_ntrial = 12
+    max_ntrial = 16
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combos = [
-        ['p',  'nneg', 'spt'],
-        ['hp', 'nneg', 'spt'],
-        ['p',  'nneg', 'ang'],
-        ['hp', 'nneg', 'ang']
+        ['h',  'amr',  'ang']
     ]
 
     # Test Output Parameters
@@ -79,7 +76,7 @@ def test_2(dir_name = 'test_rt'):
             for th_num in range(0, 4):
                 prob_nums += [[x_num, y_num, th_num]]
                 
-    for prob_num in [[1, 1, 3]]:
+    for prob_num in [[1, 2, 3]]:
         prob_dir = os.path.join(test_dir, str(prob_num))
         os.makedirs(prob_dir, exist_ok = True)
         
@@ -126,7 +123,7 @@ def test_2(dir_name = 'test_rt'):
 
                 # Perform some uniform (angular or spatial) h-refinements to start
                 for _ in range(0, 0):
-                    mesh.ref_mesh(kind = 'ang', form = 'h')
+                    mesh.ref_mesh(kind = 'all', form = 'h')
                 
                 [u, kappa, sigma, Phi, f,
                  u_intg_th, u_intg_xy] = get_cons_prob(prob_name = prob_name,

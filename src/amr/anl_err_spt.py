@@ -44,10 +44,10 @@ def anl_err_spt(mesh, proj, anl_sol_intg_th):
                     w_th = w_th.reshape([1, 1, ndof_th])
                     
                     uh_cell = proj.cols[col_key].cells[cell_key].vals
-                    uh_col_intg_th += (dth / 2.) * np.sum(w_th * uh_cell, axis = 2)
+                    uh_col_intg_th += (dth / 2.) * np.sum(w_th * uh_cell, axis = 2) 
                     
             u_col_intg_th = anl_sol_intg_th(xxf, yyf, 0, 2. * np.pi)
-            col_err       = np.amax(np.abs(u_col_intg_th - uh_col_intg_th))
+            col_err       = np.amax(np.abs(u_col_intg_th - uh_col_intg_th) / (dx * dy * 2. * np.pi)) 
             max_u_intg_th = max(max_u_intg_th, np.amax(np.abs(u_col_intg_th)))
             
             err_ind.cols[col_key].err_ind  = col_err
@@ -56,7 +56,7 @@ def anl_err_spt(mesh, proj, anl_sol_intg_th):
     # Weight to be relative error
     for col_key, col in col_items:
         if col.is_lf:
-            err_ind.cols[col_key].err_ind /= max_u_intg_th
+            #err_ind.cols[col_key].err_ind /= max_u_intg_th
 
             err_ind.max_err = max(err_ind.max_err,
                                   err_ind.cols[col_key].err_ind)

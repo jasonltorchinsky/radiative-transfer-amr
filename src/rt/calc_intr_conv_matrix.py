@@ -158,7 +158,7 @@ def calc_intr_conv_matrix(mesh, **kwargs):
                     
                     cell_mtxs[cell_idx] = delta_ipar + delta_jqar
                     
-            col_mtxs[col_idx] = block_diag(cell_mtxs, format = 'csr')
+            col_mtxs[col_idx] = block_diag(cell_mtxs, format = 'coo')
             
     # Global interior convection matrix is block-diagonal
     # with the column matrices as the blocks

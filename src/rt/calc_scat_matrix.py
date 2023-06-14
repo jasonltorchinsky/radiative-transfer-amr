@@ -2,13 +2,16 @@ import numpy as np
 from scipy.sparse import coo_matrix, csr_matrix, block_diag, bmat
 from time import perf_counter
 
+from multiprocess import pool
+
 from dg.matrix import get_idx_map, get_col_idxs, get_cell_idxs
 from dg.projection import push_forward
 import dg.quadrature as qd
 
 from utils import print_msg
 
-def calc_scat_matrix(mesh, sigma, Phi, **kwargs):
+
+def calc_scat_matrix_old(mesh, sigma, Phi, **kwargs):
     
     default_kwargs = {'verbose' : False}
     kwargs = {**default_kwargs, **kwargs}
@@ -33,13 +36,12 @@ def calc_scat_matrix(mesh, sigma, Phi, **kwargs):
             [xxb, wx, yyb, wy, _, _] = qd.quad_xyth(nnodes_x = nx,
                                                     nnodes_y = ny)
             
-            xxf = push_forward(x0, x1, xxb)
-            yyf = push_forward(y0, y1, yyb)
+            xxf = push_forward(x0, x1, xxb).reshape([nx, 1])
+            wx = wx.reshape([nx, 1])
+            yyf = push_forward(y0, y1, yyb).reshape([1, ny])
+            wy = wy.reshape([1, ny])
+            wx_wy_sigma_h = wx * wy * sigma(xxf, yyf)
             
-            sigma_h = np.zeros([nx, ny])
-            for ii in range(0, nx):
-                for jj in range(0, ny):
-                    sigma_h[ii, jj] = sigma(xxf[ii], yyf[jj])
             
             # Create cell indexing for constructing column mass matrix
             [ncells, cell_idxs] = get_cell_idxs(mesh, col_key)
@@ -95,40 +97,48 @@ def calc_scat_matrix(mesh, sigma, Phi, **kwargs):
                             # Construct cell matrix
                             idx = 0
                             for ii in range(0, nx):
-                                wx_i = wx[ii]
                                 for jj in range(0, ny):
-                                    wy_j = wy[jj]
-                                    sigma_ij = sigma_h[ii, jj]
-                                    for rr in range(0, nth_0):
-                                        wth_0_rr = wth_0[rr]
-                                        for aa in range(0, nth_1):
-                                            wth_1_aa = wth_1[aa]
-                                            Phi_ra = Phi_h[rr, aa]
-                                            
-                                            val = dcoeff * (dth_1 / 2.0) \
-                                                * wx_i * wy_j * wth_0_rr \
-                                                * wth_1_aa * sigma_ij * Phi_ra
-                                            
-                                            if np.abs(val) > 1.e-14:
-                                                # Index of entry
-                                                alphalist[idx] = alpha(ii, jj, rr)
-                                                betalist[idx]  = beta( ii, jj, aa)
+                                    wx_wy_sigma_ij = wx_wy_sigma_h[ii, jj]
+                                    if wx_wy_sigma_ij > 1.e-14:
+                                        for rr in range(0, nth_0):
+                                            wth_0_rr = wth_0[rr]
+                                            for aa in range(0, nth_1):
+                                                wth_1_aa = wth_1[aa]
+                                                Phi_ra = Phi_h[rr, aa]
                                                 
-                                                vlist[idx] = val
-                                                idx += 1
+                                                val = dcoeff * (dth_1 / 2.0) \
+                                                    * wx_wy_sigma_ij * wth_0_rr \
+                                                    * wth_1_aa * Phi_ra
+                                                
+                                                if np.abs(val) > 1.e-14:
+                                                    # Index of entry
+                                                    alphalist[idx] = alpha(ii, jj, rr)
+                                                    betalist[idx]  = beta( ii, jj, aa)
+                                                    
+                                                    vlist[idx] = val
+                                                    idx += 1
                                         
                             cell_mtxs[cell_idx_0][cell_idx_1] = coo_matrix((vlist, (alphalist, betalist)),
                                                                            shape = (nx * ny * nth_0,
                                                                                     nx * ny * nth_1))
                             cell_mtxs[cell_idx_0][cell_idx_1].eliminate_zeros()
                             
+                            # Clean up some variables
+                            del alphalist, betalist, vlist, Phi_h
+                            
             # Column scattering matrix is not block-diagonal
             # but we arranged the cell matrices in the proper form
-            col_mtxs[col_idx] = bmat(cell_mtxs, format = 'csr')
+            col_mtxs[col_idx] = bmat(cell_mtxs, format = 'coo')
+
+            # Clean up some variables
+            del cell_mtxs
 
     # Global scattering matrix is block-diagonal
     # with the column matrices as the blocks
     scat_mtx = block_diag(col_mtxs, format = 'csr')
+
+    # Clean up some variables
+    del col_mtxs
     
     if kwargs['verbose']:
         tf = perf_counter()
@@ -140,7 +150,15 @@ def calc_scat_matrix(mesh, sigma, Phi, **kwargs):
     return scat_mtx
 
 
-def calc_scat_matrix_old(mesh, sigma, Phi):
+
+def calc_scat_matrix(mesh, sigma, Phi, **kwargs):
+    
+    default_kwargs = {'verbose' : False}
+    kwargs = {**default_kwargs, **kwargs}
+    
+    if kwargs['verbose']:
+        t0 = perf_counter()
+    
     # Create column indexing for constructing global mass matrix
     [ncols, col_idxs] = get_col_idxs(mesh)
     col_mtxs = [None] * ncols # Global scattering matrix is block-diagonal, and so
@@ -153,19 +171,18 @@ def calc_scat_matrix_old(mesh, sigma, Phi):
             col_idx = col_idxs[col_key]
             [x0, y0, x1, y1] = col.pos
             [dx, dy] = [x1 - x0, y1 - y0]
-            [ndof_x, ndof_y] = col.ndofs
+            [nx, ny] = col.ndofs
             
-            [xxb, w_x, yyb, w_y, _, _] = qd.quad_xyth(nnodes_x = ndof_x,
-                                                      nnodes_y = ndof_y)
+            [xxb, wx, yyb, wy, _, _] = qd.quad_xyth(nnodes_x = nx,
+                                                    nnodes_y = ny)
             
-            xxf = push_forward(x0, x1, xxb).reshape(ndof_x, 1)
-            yyf = push_forward(y0, y1, yyb).reshape(1, ndof_y)
-
-            w_x = w_x.reshape(ndof_x, 1)
-            w_y = w_y.reshape(1, ndof_y)
-
-            wx_wy_sigma_col = w_x * w_y * sigma(xxf, yyf)
-                
+            xxf = push_forward(x0, x1, xxb).reshape([nx, 1])
+            wx = wx.reshape([nx, 1])
+            yyf = push_forward(y0, y1, yyb).reshape([1, ny])
+            wy = wy.reshape([1, ny])
+            wx_wy_sigma_h = wx * wy * sigma(xxf, yyf)
+            
+            
             # Create cell indexing for constructing column mass matrix
             [ncells, cell_idxs] = get_cell_idxs(mesh, col_key)
             cell_mtxs = [[None] * ncells for K in range(0, ncells)]
@@ -180,14 +197,14 @@ def calc_scat_matrix_old(mesh, sigma, Phi):
                     cell_idx_0     = cell_idxs[cell_key_0]
                     [th0_0, th1_0] = cell_0.pos
                     dth_0          = th1_0 - th0_0
-                    [ndof_th_0]    = cell_0.ndofs
-                        
-                    [_, _, _, _, thb_0, w_th_0] = qd.quad_xyth(nnodes_th = ndof_th_0)
-                    thf_0 = push_forward(th0_0, th1_0, thb_0).reshape(ndof_th_0, 1)
-                    w_th_0 = w_th_0.reshape(ndof_th_0, 1)
+                    [nth_0]        = cell_0.ndofs
+                    
+                    [_, _, _, _, thb_0, wth_0] = qd.quad_xyth(nnodes_th = nth_0)
+                    
+                    thf_0 = push_forward(th0_0, th1_0, thb_0)
                     
                     # Indexing from p, q, r to alpha
-                    alpha = get_idx_map(ndof_x, ndof_y, ndof_th_0)
+                    alpha = get_idx_map(nx, ny, nth_0)
                     
                     # Values common to equation for each entry
                     dcoeff = dx * dy * dth_0 / 8
@@ -198,56 +215,77 @@ def calc_scat_matrix_old(mesh, sigma, Phi):
                             cell_idx_1     = cell_idxs[cell_key_1]
                             [th0_1, th1_1] = cell_1.pos
                             dth_1          = th1_1 - th0_1
-                            [ndof_th_1]    = cell_1.ndofs
+                            [nth_1]        = cell_1.ndofs
                             
-                            [_, _, _, _, thb_1, w_th_1] = qd.quad_xyth(nnodes_th = ndof_th_1)
-                            thf_1 = push_forward(th0_1, th1_1, thb_1).reshape(1, ndof_th_1)
-                            w_th_1 = w_th_1.reshape(1, ndof_th_1)
+                            [_, _, _, _, thb_1, wth_1] = qd.quad_xyth(nnodes_th = nth_1)
+                            thf_1 = push_forward(th0_1, th1_1, thb_1)
                             
-                            Phi_cell = Phi(thf_0, thf_1)
-                            
-                            wth0_wth1_Phi_cell = w_th_0 * w_th_1 * Phi_cell
+                            Phi_h = np.zeros([nth_0, nth_1])
+                            for rr in range(0, nth_0):
+                                for aa in range(0, nth_1):
+                                    Phi_h[rr, aa] = Phi(thf_0[rr], thf_1[aa])
                             
                             # List of coordinates, values for constructing cell matrices
-                            cell_ndof = ndof_th_0 * ndof_th_1 * ndof_x * ndof_y
+                            cell_ndof = nth_0 * nth_1 * nx * ny
                             alphalist = np.zeros([cell_ndof], dtype = np.int32) # alpha index
                             betalist  = np.zeros([cell_ndof], dtype = np.int32) # beta index
-                            vlist = np.zeros([cell_ndof]) # Matrix entry
+                            vlist     = np.zeros([cell_ndof]) # Matrix entry
                             
                             # Indexing from i, j, a to beta
-                            beta = get_idx_map(ndof_x, ndof_y, ndof_th_1)
+                            beta = get_idx_map(nx, ny, nth_1)
                             
                             # Construct cell matrix
                             idx = 0
-                            for ii in range(0, ndof_x):
-                                for jj in range(0, ndof_y):
-                                    wx_wy_sigma_ij = wx_wy_sigma_col[ii, jj]
+                            for ii in range(0, nx):
+                                for jj in range(0, ny):
+                                    wx_wy_sigma_ij = wx_wy_sigma_h[ii, jj]
                                     if wx_wy_sigma_ij > 1.e-14:
-                                        for rr in range(0, ndof_th_0):
-                                            for aa in range(0, ndof_th_1):                 
-                                                wth0_wth1_Phi_ra = wth0_wth1_Phi_cell[rr, aa]
+                                        for rr in range(0, nth_0):
+                                            wth_0_rr = wth_0[rr]
+                                            for aa in range(0, nth_1):
+                                                wth_1_aa = wth_1[aa]
+                                                Phi_ra = Phi_h[rr, aa]
                                                 
                                                 val = dcoeff * (dth_1 / 2.0) \
-                                                    * wx_wy_sigma_ij * wth0_wth1_Phi_ra
+                                                    * wx_wy_sigma_ij * wth_0_rr \
+                                                    * wth_1_aa * Phi_ra
+                                                
                                                 if np.abs(val) > 1.e-14:
                                                     # Index of entry
                                                     alphalist[idx] = alpha(ii, jj, rr)
                                                     betalist[idx]  = beta( ii, jj, aa)
-                                                                
+                                                    
                                                     vlist[idx] = val
                                                     idx += 1
-                                            
+                                        
                             cell_mtxs[cell_idx_0][cell_idx_1] = coo_matrix((vlist, (alphalist, betalist)),
-                                                                           shape = (ndof_x * ndof_y * ndof_th_0,
-                                                                                    ndof_x * ndof_y * ndof_th_1))
+                                                                           shape = (nx * ny * nth_0,
+                                                                                    nx * ny * nth_1))
                             cell_mtxs[cell_idx_0][cell_idx_1].eliminate_zeros()
+                            
+                            # Clean up some variables
+                            del alphalist, betalist, vlist, Phi_h
                             
             # Column scattering matrix is not block-diagonal
             # but we arranged the cell matrices in the proper form
-            col_mtxs[col_idx] = bmat(cell_mtxs, format = 'csr')
+            col_mtxs[col_idx] = bmat(cell_mtxs, format = 'coo')
+
+            # Clean up some variables
+            del cell_mtxs
 
     # Global scattering matrix is block-diagonal
     # with the column matrices as the blocks
     scat_mtx = block_diag(col_mtxs, format = 'csr')
 
+    # Clean up some variables
+    del col_mtxs
+    
+    if kwargs['verbose']:
+        tf = perf_counter()
+        msg = (
+            'Scattering Matrix Construction Time: {:8.4f} [s]\n'.format(tf - t0)
+            )
+        print_msg(msg)
+
     return scat_mtx
+

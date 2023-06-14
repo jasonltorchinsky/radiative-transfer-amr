@@ -50,8 +50,15 @@ def test_0(dir_name = 'test_perf'):
     max_ntrial = 16
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combos = [
-        ['h',  'rng', 'ang'],
-        ['p',  'rng', 'ang']
+        ['h',  'uni', 'spt'],
+        ['p',  'uni', 'spt'],
+        ['hp', 'uni', 'spt'],
+        ['h',  'uni', 'ang'],
+        ['p',  'uni', 'ang'],
+        ['hp', 'uni', 'ang'],
+        ['h',  'uni', 'all'],
+        ['p',  'uni', 'all'],
+        ['hp', 'uni', 'all']
     ]
 
     # Test Output Parameters
@@ -98,9 +105,12 @@ def test_0(dir_name = 'test_perf'):
             ndofs  = []
             ncols  = []
             ncells = []
-            cons_dts = {'mass' : [], 'scat' : [],
-                        'intr_conv' : [], 'bdry_conv' : []}
-            solve_dts = {'minres' : [], 'spsolve' : []}
+            do_solve = False
+            cons_dts = {'scat' : []}
+            solve_dts = {}
+            #cons_dts = {'mass' : [], 'scat' : [],
+            #            'intr_conv' : [], 'bdry_conv' : []}
+            #solve_dts = {'spsolve' : []}
             
             trial = 0
             while (ndof < max_ndof) and (trial < max_ntrial):
@@ -121,94 +131,97 @@ def test_0(dir_name = 'test_perf'):
                 print_msg(msg)
                 
                 ## Mass matrix
-                t0 = perf_counter()
-                M_mass  = calc_mass_matrix(mesh, kappa)
-                tf = perf_counter()
-                
-                cons_dts['mass'] += [tf - t0]
+                if 'mass' in cons_dts.keys():
+                    t0 = perf_counter()
+                    M_mass  = calc_mass_matrix(mesh, kappa)
+                    tf = perf_counter()
+                    
+                    cons_dts['mass'] += [tf - t0]
                 
                 ## Scattering matrix
-                t0 = perf_counter()
-                M_scat  = calc_scat_matrix(mesh, sigma, Phi)
-                tf = perf_counter()
-                
-                cons_dts['scat'] += [tf - t0]
+                if 'scat' in cons_dts.keys():
+                    t0 = perf_counter()
+                    M_scat  = calc_scat_matrix(mesh, sigma, Phi)
+                    tf = perf_counter()
+                    
+                    cons_dts['scat'] += [tf - t0]
                 
                 ## Interior convection matrix
-                t0 = perf_counter()
-                M_intr_conv  = calc_intr_conv_matrix(mesh)
-                tf = perf_counter()
-                
-                cons_dts['intr_conv'] += [tf - t0]
+                if 'intr_conv' in cons_dts.keys():
+                    t0 = perf_counter()
+                    M_intr_conv  = calc_intr_conv_matrix(mesh)
+                    tf = perf_counter()
+                    
+                    cons_dts['intr_conv'] += [tf - t0]
                 
                 ## Boundary convection matrix
-                t0 = perf_counter()
-                M_bdry_conv  = calc_bdry_conv_matrix(mesh)
-                tf = perf_counter()
-                
-                cons_dts['bdry_conv'] += [tf - t0]
+                if 'bdry_conv' in cons_dts.keys():
+                    t0 = perf_counter()
+                    M_bdry_conv  = calc_bdry_conv_matrix(mesh)
+                    tf = perf_counter()
+                    
+                    cons_dts['bdry_conv'] += [tf - t0]
 
                 ## Solve the complete problem...
-                f_vec  = calc_forcing_vec(mesh, f)
-                u_proj = Projection(mesh, u)
-                u_vec  = u_proj.to_vector()
+                if do_solve:
+                    f_vec  = calc_forcing_vec(mesh, f)
+                    u_proj = Projection(mesh, u)
+                    u_vec  = u_proj.to_vector()
                     
-                intr_mask  = get_intr_mask(mesh)
-                bdry_mask  = np.invert(intr_mask)
-                f_vec_intr = f_vec[intr_mask]
-                u_vec_intr = u_vec[intr_mask]
-                bcs_vec    = u_vec[bdry_mask]
-
-                M_conv = (M_bdry_conv - M_intr_conv)
-                M = M_conv + M_mass - M_scat
-                [M_intr, M_bdry] = split_matrix(mesh, M, intr_mask)
-
-                A = M_intr
-                b = f_vec_intr - M_bdry @ bcs_vec
-                
-                for solve_type in solve_dts.keys():
-                    msg = (
-                        'Starting solve type {}...\n'.format(solve_type)
+                    intr_mask  = get_intr_mask(mesh)
+                    bdry_mask  = np.invert(intr_mask)
+                    f_vec_intr = f_vec[intr_mask]
+                    u_vec_intr = u_vec[intr_mask]
+                    bcs_vec    = u_vec[bdry_mask]
+                    
+                    M_conv = (M_bdry_conv - M_intr_conv)
+                    M = M_conv + M_mass - M_scat
+                    [M_intr, M_bdry] = split_matrix(mesh, M, intr_mask)
+                    
+                    A = M_intr
+                    b = f_vec_intr - M_bdry @ bcs_vec
+                    
+                    for solve_type in solve_dts.keys():
+                        msg = (
+                            'Starting solve type {}...\n'.format(solve_type)
                         )
-                    print_msg(msg)
-                    
-                    t0 = perf_counter()
-                    if solve_type[0:2] == 'p-':
-                        pc_str = 'p-'
-                        solve_type = solve_type[2:]
-                        M_pc = inv(M_conv + M_mass)
-                        [M_pc, _] = split_matrix(mesh, M_pc, intr_mask)
-                    else:
-                        pc_str = ''
-                        M_pc = None
+                        print_msg(msg)
                         
-                    if solve_type == 'bicg':
-                        u_intr_vec = bicg(A, b, M = M_pc)
-                    elif solve_type == 'bicgstab':
-                        u_intr_vec = bicgstab(A, b, M = M_pc)
-                    elif solve_type == 'cg':
-                        u_intr_vec = cg(A, b, M = M_pc)
-                    elif solve_type == 'cgs':
-                        u_intr_vec = cgs(A, b, M = M_pc)
-                    elif solve_type == 'gmres':
-                        u_intr_vec = gmres(A, b, M = M_pc)
-                    elif solve_type == 'lgmres':
-                        u_intr_vec = lgmres(A, b, M = M_pc)
-                    elif solve_type == 'minres':
-                        u_intr_vec = minres(A, b, M = M_pc)
-                    elif solve_type == 'qmr':
-                        u_intr_vec = qmr(A, b)
-                    elif solve_type == 'gcrotmk':
-                        u_intr_vec = gcrotmk(A, b, M = M_pc)
-                    elif solve_type == 'tfqmr':
-                        u_intr_vec = tfqmr(A, b, M = M_pc)
-                    else:
-                        u_intr_vec = spsolve(A, b)
-                    
-                    tf = perf_counter()
-                    solve_dts[pc_str + solve_type] += [tf - t0]
-                
-                
+                        t0 = perf_counter()
+                        if solve_type[0:2] == 'p-':
+                            pc_str = 'p-'
+                            solve_type = solve_type[2:]
+                            M_pc = inv(M_conv + M_mass)
+                            [M_pc, _] = split_matrix(mesh, M_pc, intr_mask)
+                        else:
+                            pc_str = ''
+                            M_pc = None
+                            
+                        if solve_type == 'bicg':
+                            u_intr_vec = bicg(A, b, M = M_pc)
+                        elif solve_type == 'bicgstab':
+                            u_intr_vec = bicgstab(A, b, M = M_pc)
+                        elif solve_type == 'cg':
+                            u_intr_vec = cg(A, b, M = M_pc)
+                        elif solve_type == 'cgs':
+                            u_intr_vec = cgs(A, b, M = M_pc)
+                        elif solve_type == 'gmres':
+                            u_intr_vec = gmres(A, b, M = M_pc)
+                        elif solve_type == 'lgmres':
+                            u_intr_vec = lgmres(A, b, M = M_pc)
+                        elif solve_type == 'qmr':
+                            u_intr_vec = qmr(A, b)
+                        elif solve_type == 'gcrotmk':
+                            u_intr_vec = gcrotmk(A, b, M = M_pc)
+                        elif solve_type == 'tfqmr':
+                            u_intr_vec = tfqmr(A, b, M = M_pc)
+                        else:
+                            u_intr_vec = spsolve(A, b)
+                            
+                        tf = perf_counter()
+                        solve_dts[pc_str + solve_type] += [tf - t0]
+                        
+                        
                 # Refine the mesh for the next trial
                 if ref_type == 'uni':
                     ## Refine the mesh uniformly

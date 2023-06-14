@@ -44,7 +44,7 @@ def test_3(dir_name = 'test_rt'):
     # Maximum number of DOFs
     max_ndof = 2**15
     # Maximum number of trials
-    max_ntrial = 8
+    max_ntrial = 4
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combos = [
         ['h',  'rng', 'spt'],
