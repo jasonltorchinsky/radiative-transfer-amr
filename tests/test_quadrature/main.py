@@ -7,7 +7,7 @@ import os, sys
 sys.path.append('../../src')
 from utils import print_msg
 
-from tests import test_0, test_1, test_2
+from tests import test_0, test_1, test_2, test_3
 
 def main():
 
@@ -37,23 +37,28 @@ def main():
     parser.add_argument('--test_2', nargs = 1, default = [0],
                         type = int, choices = [0, 1], required = False,
                         help = help_str)
-    
-    parser.add_argument('--test_33', nargs = 1, default = [0],
-                        type = int, choices = [0, 1], required = False,
-                        help = 'Do not run (0) or run (1) Test 2 - LG/LGL 1D Function Projection Comparison')
+
+    help_str = 'Do not run (0) or run (1) Test 3 -Half/Full Interval Quadrature Rule Convergence'
     parser.add_argument('--test_3', nargs = 1, default = [0],
                         type = int, choices = [0, 1], required = False,
+                        help = help_str)
+    
+    parser.add_argument('--test_a', nargs = 1, default = [0],
+                        type = int, choices = [0, 1], required = False,
+                        help = 'Do not run (0) or run (1) Test 2 - LG/LGL 1D Function Projection Comparison')
+    parser.add_argument('--test_b', nargs = 1, default = [0],
+                        type = int, choices = [0, 1], required = False,
                         help = 'Do not run (0) or run (1) Test 3 - LG/LGL 1D Function Projection Accuracy')
-    parser.add_argument('--test_4', nargs = 1, default = [0],
+    parser.add_argument('--test_c', nargs = 1, default = [0],
                         type = int, choices = [0, 1], required = False,
                         help = 'Do not run (0) or run (1) Test 4 - LG/LGL 1D Derivative Function Projection Comparison')
-    parser.add_argument('--test_5', nargs = 1, default = [0],
+    parser.add_argument('--test_d', nargs = 1, default = [0],
                         type = int, choices = [0, 1], required = False,
                         help = 'Do not run (0) or run (1) Test 5 - LG/LGL 1D Function Derivative Projection Accuracy')
-    parser.add_argument('--test_6', nargs = 1, default = [0],
+    parser.add_argument('--test_e', nargs = 1, default = [0],
                         type = int, choices = [0, 1], required = False,
                         help = 'Do not run (0) or run (1) Test 6 - LG/LGL 1D Function Antidifferentiation')
-    parser.add_argument('--test_7', nargs = 1, default = [0],
+    parser.add_argument('--test_f', nargs = 1, default = [0],
                         type = int, choices = [0, 1], required = False,
                         help = 'Do not run (0) or run (1) Test 7 - LG/LGL 1D Function Integration')
 
@@ -63,18 +68,18 @@ def main():
                         help = help_str)
 
     args = parser.parse_args()
-    ntests = 3
+    ntests = 4
     if args.test_all[0]:
         run_tests = [True] * ntests
     else:
         run_tests = [args.test_0[0], args.test_1[0],
-                     args.test_2[0]]
+                     args.test_2[0], args.test_3[0]]
 
     dir_name = args.dir
     os.makedirs(dir_name, exist_ok = True)
 
     quad_types = ['lg', 'lgr', 'lgl', 'uni']
-    test_funcs = [test_0, test_1, test_2]
+    test_funcs = [test_0, test_1, test_2, test_3]
     
     for ntest, test_func in enumerate(test_funcs):
         if run_tests[ntest]:

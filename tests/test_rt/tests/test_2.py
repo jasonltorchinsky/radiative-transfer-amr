@@ -14,7 +14,7 @@ from dg.mesh import get_hasnt_th
 from dg.mesh.utils import plot_mesh, plot_mesh_p
 from dg.matrix import get_intr_mask, split_matrix, merge_vectors
 from dg.projection import Projection, push_forward, to_projection, intg_th
-from dg.projection.utils import plot_xy, plot_xth, plot_yth
+from dg.projection.utils import plot_xy, plot_xth, plot_yth, plot_xyth
 import dg.quadrature as qd
 from rt import calc_mass_matrix, calc_scat_matrix, \
     calc_intr_conv_matrix, calc_bdry_conv_matrix, \
@@ -48,25 +48,26 @@ def test_2(dir_name = 'test_rt'):
     ref_form = ''
     # AMR Refinement Tolerance
     tol_spt = 0.85
-    tol_ang = 0.85
+    tol_ang = 0.90
     # Maximum number of DOFs
     max_ndof = 2**15
     # Maximum number of trials
-    max_ntrial = 16
+    max_ntrial = 6
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combos = [
-        ['h',  'amr',  'ang']
+        ['h',  'rng', 'spt'],
+        ['h',  'uni', 'spt']
     ]
 
     # Test Output Parameters
     do_plot_mesh        = False
-    do_plot_mesh_p      = True
+    do_plot_mesh_p      = False
     do_plot_matrix      = False
     do_plot_uh          = True
     do_plot_u           = True
-    do_plot_diff        = False
+    do_plot_diff        = True
     do_plot_anl_err_ind = True
-    do_plot_sol_vecs    = True
+    do_plot_sol_vecs    = False
     do_calc_hi_res_err  = False
     do_plot_errs        = True
     
@@ -76,14 +77,14 @@ def test_2(dir_name = 'test_rt'):
             for th_num in range(0, 4):
                 prob_nums += [[x_num, y_num, th_num]]
                 
-    for prob_num in [[1, 2, 3]]:
+    for prob_num in [[0, 0, 0]]:
         prob_dir = os.path.join(test_dir, str(prob_num))
         os.makedirs(prob_dir, exist_ok = True)
         
         msg = ( 'Starting problem {}...\n'.format(prob_num) )
         print_msg(msg)
         
-        for prob_name in ['comp']:
+        for prob_name in ['conv']:
             subprob_dir = os.path.join(prob_dir, prob_name)
             os.makedirs(subprob_dir, exist_ok = True)
             
@@ -296,7 +297,6 @@ def test_2(dir_name = 'test_rt'):
                     diff_vec_intr = uh_vec_intr - u_vec_intr
                     zero_bcs_vec  = 0. * bcs_vec
                     diff_vec      = merge_vectors(diff_vec_intr, zero_bcs_vec, intr_mask)
-                    diff_vec      = np.abs(diff_vec)
                     diff_proj     = to_projection(mesh, diff_vec)
                     
                     if do_plot_mesh:
@@ -403,6 +403,10 @@ def test_2(dir_name = 'test_rt'):
                         file_name = 'uh_yth_{}.png'.format(trial)
                         file_path = os.path.join(trial_dir, file_name)
                         plot_yth(mesh, uh_proj, file_name = file_path)
+
+                        file_name = 'uh_xyth_{}.png'.format(trial)
+                        file_path = os.path.join(trial_dir, file_name)
+                        plot_xyth(mesh, uh_proj, file_name = file_path)
                         
                     if do_plot_u:
                         file_name = 'u_xy_{}.png'.format(trial)
@@ -416,19 +420,27 @@ def test_2(dir_name = 'test_rt'):
                         file_name = 'u_yth_{}.png'.format(trial)
                         file_path = os.path.join(trial_dir, file_name)
                         plot_yth(mesh, u_proj, file_name = file_path)
+
+                        file_name = 'u_xyth_{}.png'.format(trial)
+                        file_path = os.path.join(trial_dir, file_name)
+                        plot_xyth(mesh, u_proj, file_name = file_path)
                         
                     if do_plot_diff:            
                         file_name = 'diff_xy_{}.png'.format(trial)
                         file_path = os.path.join(trial_dir, file_name)
-                        plot_xy(mesh, diff_proj, file_name = file_path)
+                        plot_xy(mesh, diff_proj, file_name = file_path, cmap = 'bwr')
                         
                         file_name = 'diff_xth_{}.png'.format(trial)
                         file_path = os.path.join(trial_dir, file_name)
-                        plot_xth(mesh, diff_proj, file_name = file_path)
+                        plot_xth(mesh, diff_proj, file_name = file_path, cmap = 'bwr')
                         
                         file_name = 'diff_yth_{}.png'.format(trial)
                         file_path = os.path.join(trial_dir, file_name)
-                        plot_yth(mesh, diff_proj, file_name = file_path)
+                        plot_yth(mesh, diff_proj, file_name = file_path, cmap = 'bwr')
+
+                        file_name = 'diff_xyth_{}.png'.format(trial)
+                        file_path = os.path.join(trial_dir, file_name)
+                        plot_xyth(mesh, diff_proj, file_name = file_path, cmap = 'bwr')
                     
                     if do_plot_anl_err_ind:
                         file_name = 'anl_err_by_col_{}.png'.format(trial)
@@ -571,7 +583,7 @@ def test_2(dir_name = 'test_rt'):
                                 linestyle = '-.')
                     
                     ax.set_xscale('log', base = 2)
-                    ax.set_yscale('log', base = 2)
+                    ax.set_yscale('log', base = 10)
                     
 
                     if prob_name == 'comp' and do_calc_hi_res_err:
@@ -649,7 +661,7 @@ def test_2(dir_name = 'test_rt'):
                 ax.legend()
                 
                 ax.set_xscale('log', base = 2)
-                ax.set_yscale('log', base = 2)
+                ax.set_yscale('log', base = 10)
                 
                 ax.set_xlabel('Total Degrees of Freedom')
                 ax.set_ylabel('L$^{\infty}$ Error')

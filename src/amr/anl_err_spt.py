@@ -12,8 +12,7 @@ def anl_err_spt(mesh, proj, anl_sol_intg_th):
     
     err_ind = Error_Indicator(mesh, by_col = True, by_cell = False)
 
-    # To get max-norm relative error, we need the maximal value of anl_sol
-    max_u_intg_th = 0.
+    max_err = 0.
 
     # Get max_norm(u - uh) by column
     for col_key, col in col_items:
@@ -48,17 +47,12 @@ def anl_err_spt(mesh, proj, anl_sol_intg_th):
                     
             u_col_intg_th = anl_sol_intg_th(xxf, yyf, 0, 2. * np.pi)
             col_err       = np.amax(np.abs(u_col_intg_th - uh_col_intg_th) / (dx * dy * 2. * np.pi)) 
-            max_u_intg_th = max(max_u_intg_th, np.amax(np.abs(u_col_intg_th)))
             
             err_ind.cols[col_key].err_ind  = col_err
+            max_err = max(max_err, col_err)
+            
             err_ind.cols[col_key].ref_form = hp_steer_col(mesh, proj, col_key)
-
-    # Weight to be relative error
-    for col_key, col in col_items:
-        if col.is_lf:
-            #err_ind.cols[col_key].err_ind /= max_u_intg_th
-
-            err_ind.max_err = max(err_ind.max_err,
-                                  err_ind.cols[col_key].err_ind)
-
+            
+    err_ind.max_err = max_err
+    
     return err_ind

@@ -47,18 +47,11 @@ def test_0(dir_name = 'test_perf'):
     # Maximum number of DOFs
     max_ndof = 2**14
     # Maximum number of trials
-    max_ntrial = 16
+    max_ntrial = 8
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combos = [
-        ['h',  'uni', 'spt'],
-        ['p',  'uni', 'spt'],
-        ['hp', 'uni', 'spt'],
         ['h',  'uni', 'ang'],
-        ['p',  'uni', 'ang'],
-        ['hp', 'uni', 'ang'],
-        ['h',  'uni', 'all'],
-        ['p',  'uni', 'all'],
-        ['hp', 'uni', 'all']
+        ['h',  'uni', 'spt']
     ]
 
     # Test Output Parameters
@@ -70,7 +63,7 @@ def test_0(dir_name = 'test_perf'):
             for th_num in range(0, 4):
                 prob_nums += [[x_num, y_num, th_num]]
 
-    for prob_num in [[3, 3, 2]]:
+    for prob_num in [[0, 0, 2]]:
         prob_dir = os.path.join(test_dir, str(prob_num))
         os.makedirs(prob_dir, exist_ok = True)
         

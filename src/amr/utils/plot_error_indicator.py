@@ -1,7 +1,9 @@
 import numpy as np
+import matplotlib as mpl
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle, Wedge
+from matplotlib.collections import PatchCollection
 import sys
 
 sys.path.append('../..')
@@ -43,7 +45,7 @@ def plot_error_indicator_by_column(mesh, err_ind, file_name = None, **kwargs):
     ax.set_ylim([0, Ly])
 
     # Get colorbar min/max
-    [vmin, vmax] = [10.**10, -10.**10]
+    [vmin, vmax] = [0., -10.**10]
     col_items = sorted(mesh.cols.items())
     for col_key, col in col_items:
         if col.is_lf:
@@ -90,7 +92,7 @@ def plot_error_indicator_by_cell(mesh, err_ind, file_name = None, **kwargs):
     ax.set_ylim([0, Ly])
     
     # Get colorbar min/max
-    [vmin, vmax] = [10.**10, -10.**10]
+    [vmin, vmax] = [0., -10.**10]
     col_items = sorted(mesh.cols.items())
     for col_key, col in col_items:
         if col.is_lf:
@@ -99,7 +101,10 @@ def plot_error_indicator_by_cell(mesh, err_ind, file_name = None, **kwargs):
                 if cell.is_lf:
                     vmin = min(vmin, err_ind.cols[col_key].cells[cell_key].err_ind)
                     vmax = max(vmax, err_ind.cols[col_key].cells[cell_key].err_ind)
-                    
+
+    wedges = []
+    wedge_colors = []
+    rects = []
     col_items = sorted(mesh.cols.items())
     for col_key, col in col_items:
         if col.is_lf:
@@ -108,9 +113,9 @@ def plot_error_indicator_by_cell(mesh, err_ind, file_name = None, **kwargs):
             [cx, cy] = [(x0 + x1) / 2., (y0 + y1) / 2.]
             
             rect = Rectangle((x0, y0), dx, dy,
-                             fill = False,
+                             facecolor = 'none',
                              edgecolor = 'black')
-            ax.add_patch(rect)
+            rects += [rect]
 
             cell_items = sorted(col.cells.items())
             for cell_key, cell in cell_items:
@@ -121,13 +126,23 @@ def plot_error_indicator_by_cell(mesh, err_ind, file_name = None, **kwargs):
                     cell_err = err_ind.cols[col_key].cells[cell_key].err_ind
                     cell_err_norm = (1. / (vmax - vmin)) * (cell_err - vmin)
                     
-                    wed = Wedge((cx, cy), min(dx, dy)/2, deg0, deg1,
-                                facecolor = cmap(cell_err_norm),
-                                edgecolor = 'black'
-                                )
-                    ax.add_patch(wed)
+                    wedge = Wedge((cx, cy), min(dx, dy)/2, deg0, deg1,
+                                  facecolor = cmap(cell_err),
+                                  edgecolor = 'black')
+                    wedges += [wedge]
+                    wedge_color = cell_err
+                    wedge_colors += [wedge_color]
                     
-        
+    rect_coll = PatchCollection(rects, match_original = True)
+    ax.add_collection(rect_coll)
+    
+    wedge_coll = PatchCollection(wedges, edgecolor = 'black', cmap = cmap)
+    wedge_coll.set_array(wedge_colors)
+    wedge_coll.set_clim([vmin, vmax])
+    ax.add_collection(wedge_coll)
+    
+    fig.colorbar(wedge_coll, ax = ax)
+    
     if file_name:
         fig.set_size_inches(6.5, 6.5 * (Ly / Lx))
         plt.savefig(file_name, dpi = 300)
