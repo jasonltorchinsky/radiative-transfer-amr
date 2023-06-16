@@ -1,3 +1,4 @@
+from copy import deepcopy
 import numpy as np
 
 from dg.projection import push_forward, pull_back
@@ -44,8 +45,9 @@ def get_Eth(mesh, col_key_0, cell_key_0, col_key_1, cell_key_1, F):
     nhbr_rel = (lv_0 - lv_1, pos_str)
 
     key = (ndof_th_0, ndof_th_1, nhbr_rel)
-    if key in Eth_matrices.keys():
-        return Eth_matrices[key]
+    # ISSUE: Theta_F is dependent on cell position, so we can't just resuse data
+    #if key in Eth_matrices.keys():
+    #    return Eth_matrices[key]
     
     [_, _, _, _, thb_0, wth_0] = quad_xyth(nnodes_th = ndof_th_0)
     [_, _, _, _, thb_1, wth_1] = quad_xyth(nnodes_th = ndof_th_1)
@@ -139,6 +141,7 @@ def get_Eth(mesh, col_key_0, cell_key_0, col_key_1, cell_key_1, F):
                         
                         E_th[aa, rr] += wth_ap * Theta_F_ap * xsi_aap * xsi_rap
                         
+    #Eth_matrices[key] = deepcopy(E_th)
     return E_th
 
 # Theta^F function

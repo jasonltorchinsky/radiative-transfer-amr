@@ -52,21 +52,21 @@ def test_2(dir_name = 'test_rt'):
     # Maximum number of DOFs
     max_ndof = 2**15
     # Maximum number of trials
-    max_ntrial = 6
+    max_ntrial = 4
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combos = [
-        ['h',  'rng', 'spt'],
-        ['h',  'uni', 'spt']
+        ['h',  'rng', 'ang'],
+        ['h',  'uni', 'ang']
     ]
 
     # Test Output Parameters
     do_plot_mesh        = False
     do_plot_mesh_p      = False
     do_plot_matrix      = False
-    do_plot_uh          = True
-    do_plot_u           = True
-    do_plot_diff        = True
-    do_plot_anl_err_ind = True
+    do_plot_uh          = False
+    do_plot_u           = False
+    do_plot_diff        = False
+    do_plot_anl_err_ind = False
     do_plot_sol_vecs    = False
     do_calc_hi_res_err  = False
     do_plot_errs        = True

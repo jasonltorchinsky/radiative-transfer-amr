@@ -1,3 +1,4 @@
+from copy import deepcopy
 import numpy as np
 
 from dg.projection import push_forward, pull_back, get_f2f_matrix
@@ -120,6 +121,7 @@ def get_Ey(mesh, col_key_0, col_key_1):
                         
                         E_y[jj, qq] += wy_jq * psi_jjp * psi_qjp
                         
+    Ey_matrices[key] = deepcopy(E_y)
     return E_y
 
 def get_Ey_old(mesh, col_key_0, col_key_1):

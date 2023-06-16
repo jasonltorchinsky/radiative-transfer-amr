@@ -1,4 +1,5 @@
 import numpy as np
+from copy import deepcopy
 
 from dg.projection import push_forward, pull_back
 from dg.quadrature import lag_eval, quad_xyth
@@ -122,6 +123,7 @@ def get_Ex(mesh, col_key_0, col_key_1):
                         
                         E_x[ii, pp] += wx_ip * phi_iip * phi_pip
                         
+    Ex_matrices[key] = deepcopy(E_x)
     return E_x
 
 def get_Ex_old(mesh, col_key_0, col_key_1):
