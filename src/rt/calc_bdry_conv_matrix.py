@@ -80,7 +80,7 @@ def calc_col_matrix(mesh, col_key_0, F):
     Create the column matrices corresponding to face F of column 0.
     """
 
-    tol = 1.e-14 # Tolerance for non-zero values in matrices.
+    tol = 0.0 # Tolerance for non-zero values in matrices.
 
     col_0 = mesh.cols[col_key_0]
     cell_items_0             = sorted(col_0.cells.items())
@@ -354,7 +354,7 @@ def calc_col_matrix(mesh, col_key_0, F):
                                        shape = (cell_ndof_0, cell_ndof_1))
                         
                         cell_mtxs_01[cell_idx_0][cell_idx_1].eliminate_zeros()
-
+                        
                 if col_key_2 is not None:
                     nhbr_cell_keys = ji_mesh.get_cell_nhbr_in_col(mesh,
                                                                   col_key_0,

@@ -4,8 +4,7 @@ import numpy as np
 from dg.projection import push_forward, pull_back
 from dg.quadrature import lag_eval, quad_xyth
 
-Eth_matrices = {}
-
+#Eth_matrices = {}
 
 def get_Eth(mesh, col_key_0, cell_key_0, col_key_1, cell_key_1, F):
     
@@ -81,7 +80,8 @@ def get_Eth(mesh, col_key_0, cell_key_0, col_key_1, cell_key_1, F):
                         xsi_rrp = xsi_rr_matrix[rr, rr_p]
                         
                         E_th[aa, rr] += coeff * wth_rp * Theta_F_rp * xsi_arp * xsi_rrp
-        else:
+                        
+        else: # ndof_th_1 >= ndof_th_0
             thf_1 = push_forward(th0_1, th1_1, thb_1)
             Theta_F = Theta_F_func(thf_1, F)
             
@@ -142,6 +142,7 @@ def get_Eth(mesh, col_key_0, cell_key_0, col_key_1, cell_key_1, F):
                         E_th[aa, rr] += wth_ap * Theta_F_ap * xsi_aap * xsi_rap
                         
     #Eth_matrices[key] = deepcopy(E_th)
+    E_th[np.abs(E_th) < 1.e-15] = 0.0
     return E_th
 
 # Theta^F function

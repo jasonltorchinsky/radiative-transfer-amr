@@ -33,7 +33,7 @@ def test_2(dir_name = 'test_rt'):
     
     test_dir = os.path.join(dir_name, 'test_2')
     os.makedirs(test_dir, exist_ok = True)
-
+    
     # Test parameters:
     # Problem Name: 'mass', 'scat'tering, 'conv'ection, 'comp'lete
     prob_name = ''
@@ -55,16 +55,15 @@ def test_2(dir_name = 'test_rt'):
     max_ntrial = 4
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combos = [
-        ['h',  'rng', 'ang'],
-        ['h',  'uni', 'ang']
+        ['p',  'rng', 'ang']
     ]
-
+    
     # Test Output Parameters
     do_plot_mesh        = False
-    do_plot_mesh_p      = False
+    do_plot_mesh_p      = True
     do_plot_matrix      = False
-    do_plot_uh          = False
-    do_plot_u           = False
+    do_plot_uh          = True
+    do_plot_u           = True
     do_plot_diff        = False
     do_plot_anl_err_ind = False
     do_plot_sol_vecs    = False
@@ -121,7 +120,7 @@ def test_2(dir_name = 'test_rt'):
                     mesh = ref_by_ind(mesh, rand_err_ind,
                                       ref_ratio = tol_spt,
                                       form = ref_form)
-
+                    
                 # Perform some uniform (angular or spatial) h-refinements to start
                 for _ in range(0, 0):
                     mesh.ref_mesh(kind = 'all', form = 'h')
@@ -207,7 +206,7 @@ def test_2(dir_name = 'test_rt'):
                             'Time Elapsed: {:08.3f} [s]'.format(perf_cons_diff)
                         )
                         print_msg(msg)
-                    
+                        
                         ## Boundary convection matrix
                         perf_cons_0 = perf_counter()
                         msg = ('[Trial {}] Constructing '.format(trial) +
@@ -276,13 +275,13 @@ def test_2(dir_name = 'test_rt'):
                     ## Analytic error
                     anl_err_ind = anl_err(mesh, uh_proj, u)
                     anl_errs += [anl_err_ind.max_err]
-
+                    
                     anl_err_ind_spt = anl_err_spt(mesh, uh_proj, u_intg_th)
                     anl_spt_errs += [anl_err_ind_spt.max_err]
-
+                    
                     anl_err_ind_ang = anl_err_ang(mesh, uh_proj, u_intg_xy)
                     anl_ang_errs += [anl_err_ind_ang.max_err]
-
+                    
                     ## Hi-res error
                     if prob_name == 'comp' and do_calc_hi_res_err:
                         hr_err_ind = high_res_err(mesh, uh_proj, kappa, sigma,
@@ -326,7 +325,7 @@ def test_2(dir_name = 'test_rt'):
                                     file_name   = file_path,
                                     plot_dim    = 2,
                                     label_cells = (trial <= 3))
-                    
+                        
                     if do_plot_matrix:
                         # Get the ending indices for the column matrices,
                         # number of DOFs in mesh
@@ -437,7 +436,7 @@ def test_2(dir_name = 'test_rt'):
                         file_name = 'diff_yth_{}.png'.format(trial)
                         file_path = os.path.join(trial_dir, file_name)
                         plot_yth(mesh, diff_proj, file_name = file_path, cmap = 'bwr')
-
+                        
                         file_name = 'diff_xyth_{}.png'.format(trial)
                         file_path = os.path.join(trial_dir, file_name)
                         plot_xyth(mesh, diff_proj, file_name = file_path, cmap = 'bwr')
@@ -449,7 +448,7 @@ def test_2(dir_name = 'test_rt'):
                                              file_name = file_path,
                                              name = 'Analytic Max-Norm',
                                              by_cell = False)
-
+                        
                         file_name = 'anl_err_by_cell_{}.png'.format(trial)
                         file_path = os.path.join(trial_dir, file_name)
                         plot_error_indicator(mesh, anl_err_ind,
@@ -493,10 +492,10 @@ def test_2(dir_name = 'test_rt'):
                         fig.set_size_inches(6.5, 6.5)
                         plt.savefig(file_path, dpi = 300)
                         plt.close(fig)
-
+                        
                         # Plot solutions
                         fig, ax = plt.subplots()
-
+                        
                         max_u_vec_intr = np.amax(np.abs(u_vec_intr))
                         ax.plot((u_vec_intr - uh_vec_intr) / max_u_vec_intr,
                                 label = '$(u - u_{h}) / max(\abs{u})$',
@@ -565,17 +564,17 @@ def test_2(dir_name = 'test_rt'):
                             label     = 'Analytic Error',
                             color     = colors[0],
                             linestyle = '--')
-
+                    
                     ax.plot(ref_ndofs, anl_spt_errs,
                             label     = 'Analytic Spatial Error',
                             color     = colors[1],
                             linestyle = '--')
-
+                    
                     ax.plot(ref_ndofs, anl_ang_errs,
                             label     = 'Analytic Angular Error',
                             color     = colors[2],
                             linestyle = '--')
-
+                    
                     if prob_name == 'comp' and do_calc_hi_res_err:
                         ax.plot(ref_ndofs, hr_errs,
                                 label     = 'High-Resolution Error',
@@ -585,7 +584,7 @@ def test_2(dir_name = 'test_rt'):
                     ax.set_xscale('log', base = 2)
                     ax.set_yscale('log', base = 10)
                     
-
+                    
                     if prob_name == 'comp' and do_calc_hi_res_err:
                         max_err = max(anl_errs + hr_errs)
                         min_err = min(anl_errs + hr_errs)
@@ -599,7 +598,7 @@ def test_2(dir_name = 'test_rt'):
                         
                     ax.set_xlabel('Total Degrees of Freedom')
                     ax.set_ylabel('L$^{\infty}$ Error')
-
+                    
                     ax.legend()
                     
                     ref_strat_str = ''
@@ -651,7 +650,7 @@ def test_2(dir_name = 'test_rt'):
                             label     = combo_str + ' Analytic',
                             color     = colors[cc],
                             linestyle = '--')
-
+                    
                     if prob_name == 'comp' and do_calc_hi_res_err:
                         ax.plot(combo_ndofs[combo_str], combo_hr_errs[combo_str],
                                 label     = combo_str + ' High-Resolution',
