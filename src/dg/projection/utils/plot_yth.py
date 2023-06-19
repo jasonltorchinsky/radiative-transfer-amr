@@ -26,6 +26,8 @@ def plot_yth(mesh, proj, file_name = None, **kwargs):
     for col_key, col in col_items:
         if col.is_lf:
             [ndof_x, ndof_y] = col.ndofs[:]
+            [x0, _, x1, _]   = col.pos[:]
+            dx = x1 - x0
             
             [_, wx, _, _, _, _] = qd.quad_xyth(nnodes_x = ndof_x)
             
@@ -37,7 +39,7 @@ def plot_yth(mesh, proj, file_name = None, **kwargs):
                     
                     cell_intg_x = np.zeros([ndof_y, ndof_th])
                     for ii in range(0, ndof_x):
-                        cell_intg_x += wx[ii] * proj_cell.vals[ii, :, :]
+                        cell_intg_x += (dx / 2.) * wx[ii] * proj_cell.vals[ii, :, :]
                         
                     cell_intg_xs[(col_key, cell_key)] = cell_intg_x
 

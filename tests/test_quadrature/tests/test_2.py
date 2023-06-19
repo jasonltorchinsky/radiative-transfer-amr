@@ -29,7 +29,7 @@ def test_2(quad_type = 'lg', dir_name = 'test_quad', **kwargs):
         quad_type_str = 'Uniform'
 
     max_ntrial = 12
-    for func_num in range(0, 4):
+    for func_num in range(0, 6):
         [F, f, _] = get_cons_funcs(func_num = func_num)
         
         nnodes = [0] * max_ntrial

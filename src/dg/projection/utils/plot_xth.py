@@ -25,6 +25,8 @@ def plot_xth(mesh, proj, file_name = None, **kwargs):
     for col_key, col in col_items:
         if col.is_lf:
             [ndof_x, ndof_y] = col.ndofs[:]
+            [_, y0, _, y1] = col.pos[:]
+            dy = y1 - y0
             
             [_, _, _, wy, _, _] = qd.quad_xyth(nnodes_y = ndof_y)
             
@@ -36,7 +38,7 @@ def plot_xth(mesh, proj, file_name = None, **kwargs):
                     
                     cell_intg_y = np.zeros([ndof_x, ndof_th])
                     for jj in range(0, ndof_y):
-                        cell_intg_y += wy[jj] * proj_cell.vals[:, jj, :]
+                        cell_intg_y += (dy / 2.) * wy[jj] * proj_cell.vals[:, jj, :]
                         
                     cell_intg_ys[(col_key, cell_key)] = cell_intg_y
 

@@ -34,9 +34,9 @@ def calc_scat_matrix(mesh, sigma, Phi, **kwargs):
                                                     nnodes_y = ny)
             
             xxf = push_forward(x0, x1, xxb).reshape([nx, 1])
-            wx = wx.reshape([nx, 1])
+            wx  = wx.reshape([nx, 1])
             yyf = push_forward(y0, y1, yyb).reshape([1, ny])
-            wy = wy.reshape([1, ny])
+            wy  = wy.reshape([1, ny])
             wx_wy_sigma_h = wx * wy * sigma(xxf, yyf)
             
             
@@ -96,7 +96,7 @@ def calc_scat_matrix(mesh, sigma, Phi, **kwargs):
                             for ii in range(0, nx):
                                 for jj in range(0, ny):
                                     wx_wy_sigma_ij = wx_wy_sigma_h[ii, jj]
-                                    if wx_wy_sigma_ij > 1.e-14:
+                                    if np.abs(wx_wy_sigma_ij) > 1.e-14:
                                         for rr in range(0, nth_0):
                                             wth_0_rr = wth_0[rr]
                                             for aa in range(0, nth_1):

@@ -10,8 +10,8 @@ import dg.quadrature as qd
 
 def test_3(quad_type = 'lg', dir_name = 'test_quad', **kwargs):
     """
-    Tests convergence of the quadrature rule when integrating on half the 
-    interval.
+    Tests convergence of the quadrature rule when integrating on two
+    half-intervals.
     """
 
     default_kwargs = {}
@@ -34,7 +34,11 @@ def test_3(quad_type = 'lg', dir_name = 'test_quad', **kwargs):
         [F, f, _] = get_cons_funcs(func_num = func_num)
         
         nnodes = [0] * max_ntrial
-        errs   = [0] * max_ntrial
+        errs_0  = [0] * max_ntrial
+        errs_l  = [0] * max_ntrial
+        errs_r  = [0] * max_ntrial
+        errs_lr = [0] * max_ntrial
+        
         for trial in range(0, max_ntrial):
             nnode = 2**(trial + 1)
             nnodes[trial] = nnode
@@ -58,20 +62,46 @@ def test_3(quad_type = 'lg', dir_name = 'test_quad', **kwargs):
 
             # Push nodes forward onto interval [-1, 3], then integrate
             # numerically on [-1, 1]
-            nodes_big = 2. * (nodes + 1.) - 1.
-            nodes_small = 0.5 * (nodes + 1) - 1.
-            f_nodes_big = f(nodes_big)
-            num_intg = 0
-            for nn in range(0, nnode):
-                for nn_p in range(0, nnode):
-                    num_intg += weights[nn] * f_nodes_big[nn_p] * qd.lag_eval(nodes, nn_p, nodes_small[nn])
-            anl_intg = F(1) - F(-1)
+            nodes_0 = nodes # Full interval
+            nodes_1l = 0.5 * (nodes - 1.) # Left half-interval
+            nodes_1r = 0.5 * (nodes + 1.) # Right half-interval
             
-            errs[trial] = np.abs(anl_intg - num_intg)
+            f_0 = f(nodes_0)
+            nintg_0 = 0.
+            nintg_l = 0.
+            nintg_r = 0.
+            
+            for nn in range(0, nnode):
+                nintg_0 += weights[nn] * f_0[nn]
+                for nn_p in range(0, nnode):
+                    nintg_l += 0.5 * weights[nn] * f_0[nn_p] * qd.lag_eval(nodes_0, nn_p, nodes_1l[nn])
+                    nintg_r += 0.5 * weights[nn] * f_0[nn_p] * qd.lag_eval(nodes_0, nn_p, nodes_1r[nn])
+                
+            aintg_0 = F(1) - F(-1)
+            aintg_l = F(0) - F(-1)
+            aintg_r = F(1) - F(0)
+
+            errs_0[trial]  = np.abs(aintg_0 - nintg_0)
+            errs_l[trial]  = np.abs(aintg_l - nintg_l)
+            errs_r[trial]  = np.abs(aintg_r - nintg_r)
+            errs_lr[trial] = np.abs(aintg_0 - (nintg_l + nintg_r))
             
         # Plot errors
         fig, ax = plt.subplots()
-        ax.plot(nnodes, errs,
+        ax.plot(nnodes, errs_0,
+                label = '0',
+                color = 'k',
+                linestyle = '-')
+        ax.plot(nnodes, errs_l,
+                label = 'l',
+                color = 'b',
+                linestyle = '--')
+        ax.plot(nnodes, errs_r,
+                label = 'r',
+                color = 'r',
+                linestyle = '--')
+        ax.plot(nnodes, errs_l,
+                label = 'lr',
                 color = 'k',
                 linestyle = '--')
         
@@ -80,6 +110,8 @@ def test_3(quad_type = 'lg', dir_name = 'test_quad', **kwargs):
         
         ax.set_xlabel('Number of Nodes')
         ax.set_ylabel('Error')
+
+        ax.legend()
         
         title_str = ('1-D Function Integration via\n'
                      + '{} Quadrature').format(quad_type_str)

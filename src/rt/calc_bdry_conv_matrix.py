@@ -56,10 +56,16 @@ def calc_bdry_conv_matrix(mesh, **kwargs):
                 
                 if col_key_1 is not None:
                     col_idx_1 = col_idxs[col_key_1]
-                    col_mtxs[col_idx_0][col_idx_1] = col_mtx_01
+                    if col_mtxs[col_idx_0][col_idx_1] is None:
+                        col_mtxs[col_idx_0][col_idx_1] = col_mtx_01
+                    else:                        
+                        col_mtxs[col_idx_0][col_idx_1] += col_mtx_01
                 if col_key_2 is not None:
                     col_idx_2 = col_idxs[col_key_2]
-                    col_mtxs[col_idx_0][col_idx_2] = col_mtx_02
+                    if col_mtxs[col_idx_0][col_idx_2] is None:
+                        col_mtxs[col_idx_0][col_idx_2] = col_mtx_02
+                    else:                        
+                        col_mtxs[col_idx_0][col_idx_2] += col_mtx_02
                 
     # Global boundary convection matrix is not block-diagonal
     # but we arranged the column matrices in the proper form
@@ -80,7 +86,7 @@ def calc_col_matrix(mesh, col_key_0, F):
     Create the column matrices corresponding to face F of column 0.
     """
 
-    tol = 0.0 # Tolerance for non-zero values in matrices.
+    tol = 1.e-15 # Tolerance for non-zero values in matrices.
 
     col_0 = mesh.cols[col_key_0]
     cell_items_0             = sorted(col_0.cells.items())
@@ -349,11 +355,11 @@ def calc_col_matrix(mesh, col_key_0, F):
                                                         vlist[idx]     = val
                                                         idx += 1
                                                         
-                        cell_mtxs_01[cell_idx_0][cell_idx_1] = \
-                            coo_matrix((vlist, (alphalist, betalist)),
-                                       shape = (cell_ndof_0, cell_ndof_1))
-                        
-                        cell_mtxs_01[cell_idx_0][cell_idx_1].eliminate_zeros()
+                                cell_mtxs_01[cell_idx_0][cell_idx_1] = \
+                                    coo_matrix((vlist, (alphalist, betalist)),
+                                               shape = (cell_ndof_0, cell_ndof_1))
+                                
+                                cell_mtxs_01[cell_idx_0][cell_idx_1].eliminate_zeros()
                         
                 if col_key_2 is not None:
                     nhbr_cell_keys = ji_mesh.get_cell_nhbr_in_col(mesh,
@@ -437,11 +443,11 @@ def calc_col_matrix(mesh, col_key_0, F):
                                                             beta( ii, y_idx_2, aa)
                                                         vlist[idx]     = val
                                                         idx += 1
-                        cell_mtxs_02[cell_idx_0][cell_idx_2] = \
-                            coo_matrix((vlist, (alphalist, betalist)),
-                                       shape = (cell_ndof_0, cell_ndof_2))
+                                cell_mtxs_02[cell_idx_0][cell_idx_2] = \
+                                    coo_matrix((vlist, (alphalist, betalist)),
+                                               shape = (cell_ndof_0, cell_ndof_2))
                         
-                        cell_mtxs_02[cell_idx_0][cell_idx_2].eliminate_zeros()
+                                cell_mtxs_02[cell_idx_0][cell_idx_2].eliminate_zeros()
                 
     col_mtx_00 = block_diag(cell_mtxs_00, format = 'coo')
     if col_1 is not None:

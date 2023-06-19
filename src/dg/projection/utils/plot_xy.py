@@ -31,14 +31,16 @@ def plot_xy(mesh, proj, file_name = None, **kwargs):
             cell_items = sorted(col.cells.items())
             for cell_key, cell in cell_items:
                 if cell.is_lf:
-                    [ndof_th] = cell.ndofs[:]
+                    [ndof_th]    = cell.ndofs[:]
+                    [th_0, th_1] = cell.pos[:]
+                    dth          = th_1 - th_0
 
                     [_, _, _, _, _, wth] = qd.quad_xyth(nnodes_th = ndof_th)
                     
                     proj_cell = proj.cols[col_key].cells[cell_key]
                     
                     for aa in range(0, ndof_th):
-                        col_intg_th += wth[aa] * proj_cell.vals[:, :, aa]
+                        col_intg_th += (dth / 2.) * wth[aa] * proj_cell.vals[:, :, aa]
                         
             col_intg_ths[col_key] = col_intg_th
 

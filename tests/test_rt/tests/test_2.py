@@ -55,7 +55,10 @@ def test_2(dir_name = 'test_rt'):
     max_ntrial = 4
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combos = [
-        ['p',  'rng', 'ang']
+        ['h',  'rng', 'ang'],
+        ['p',  'rng', 'ang'],
+        ['h',  'rng', 'spt'],
+        ['p',  'rng', 'spt']
     ]
     
     # Test Output Parameters
@@ -64,7 +67,7 @@ def test_2(dir_name = 'test_rt'):
     do_plot_matrix      = False
     do_plot_uh          = True
     do_plot_u           = True
-    do_plot_diff        = False
+    do_plot_diff        = True
     do_plot_anl_err_ind = False
     do_plot_sol_vecs    = False
     do_calc_hi_res_err  = False
@@ -83,7 +86,7 @@ def test_2(dir_name = 'test_rt'):
         msg = ( 'Starting problem {}...\n'.format(prob_num) )
         print_msg(msg)
         
-        for prob_name in ['conv']:
+        for prob_name in ['scat', 'conv']:
             subprob_dir = os.path.join(prob_dir, prob_name)
             os.makedirs(subprob_dir, exist_ok = True)
             
@@ -106,7 +109,7 @@ def test_2(dir_name = 'test_rt'):
                 # Get the base mesh, manufactured solution
                 [Lx, Ly]                   = [2., 3.]
                 pbcs                       = [False, False]
-                [ndof_x, ndof_y, ndof_th]  = [3, 3, 3]
+                [ndof_x, ndof_y, ndof_th]  = [2, 2, 2]
                 has_th                     = True
                 mesh = gen_mesh(Ls     = [Lx, Ly],
                                 pbcs   = pbcs,

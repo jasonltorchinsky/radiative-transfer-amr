@@ -68,19 +68,19 @@ def quad_xyth(nnodes_x = 1, nnodes_y = 1, nnodes_th = 1):
     if nnodes_th < 1:
         print_msg('ERROR: ATTEMPTED TO CALCULATE QUADRATURE WEIGHTS WITH NNODES_TH < 1.')
         quit()
-    elif nnodes_th in lgl_nodes.keys():
-        [nodes_th, weights_th] = [lgl_nodes[nnodes_th], lgl_weights[nnodes_th]]
+    elif nnodes_th in lg_nodes.keys():
+        [nodes_th, weights_th] = [lg_nodes[nnodes_th], lg_weights[nnodes_th]]
     elif nnodes_th == 1:
         [nodes_th, weights_th] = [np.asarray([0]), np.asarray([2])]
         
-        lgl_nodes[nnodes_th] = nodes_th
-        lgl_weights[nnodes_th] = weights_th
+        lg_nodes[nnodes_th] = nodes_th
+        lg_weights[nnodes_th] = weights_th
     else:
-        [nodes_th, weights_th] = lgl_quad(nnodes_th)
+        [nodes_th, weights_th] = lg_quad(nnodes_th)
         nodes_th = np.flip(nodes_th)
         weights_th = np.flip(weights_th)
         
-        lgl_nodes[nnodes_th] = nodes_th
-        lgl_weights[nnodes_th] = weights_th
+        lg_nodes[nnodes_th] = nodes_th
+        lg_weights[nnodes_th] = weights_th
 
     return [nodes_x, weights_x, nodes_y, weights_y, nodes_th, weights_th]

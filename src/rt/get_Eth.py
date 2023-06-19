@@ -44,7 +44,7 @@ def get_Eth(mesh, col_key_0, cell_key_0, col_key_1, cell_key_1, F):
     nhbr_rel = (lv_0 - lv_1, pos_str)
 
     key = (ndof_th_0, ndof_th_1, nhbr_rel)
-    # ISSUE: Theta_F is dependent on cell position, so we can't just resuse data
+    # ISSUE: Theta_F is dependent on cell position, so we can't just reuse data
     #if key in Eth_matrices.keys():
     #    return Eth_matrices[key]
     
@@ -79,7 +79,7 @@ def get_Eth(mesh, col_key_0, cell_key_0, col_key_1, cell_key_1, F):
                         xsi_arp = xsi_ar_matrix[aa, rr_p]
                         xsi_rrp = xsi_rr_matrix[rr, rr_p]
                         
-                        E_th[aa, rr] += coeff * wth_rp * Theta_F_rp * xsi_arp * xsi_rrp
+                        E_th[aa, rr] += wth_rp * Theta_F_rp * xsi_arp * xsi_rrp
                         
         else: # ndof_th_1 >= ndof_th_0
             thf_1 = push_forward(th0_1, th1_1, thb_1)
@@ -97,7 +97,10 @@ def get_Eth(mesh, col_key_0, cell_key_0, col_key_1, cell_key_1, F):
                 for rr in range(0, ndof_th_0):
                     xsi_ra = xsi_ra_matrix[rr, aa]
                     
-                    E_th[aa, rr] = coeff * wth_a * Theta_F_a * xsi_ra
+                    E_th[aa, rr] = wth_a * Theta_F_a * xsi_ra
+                    
+        E_th *= coeff
+        
     else:
         if ndof_th_0 >= ndof_th_1:
             thf_0 = push_forward(th0_0, th1_0, thb_0)
@@ -116,6 +119,7 @@ def get_Eth(mesh, col_key_0, cell_key_0, col_key_1, cell_key_1, F):
                     xsi_ar = xsi_ar_matrix[aa, rr]
                     
                     E_th[aa, rr] = wth_r * Theta_F_r * xsi_ar
+                    
         else:
             thf_1_0 = push_forward(th0_0, th1_0, thb_1)
             Theta_F = Theta_F_func(thf_1_0, F)

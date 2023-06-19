@@ -33,7 +33,7 @@ def test_1(quad_type = 'lg', dir_name = 'test_quad', **kwargs):
     nx = 250
     xx = np.linspace(-1, 1, nx)
 
-    for func_num in range(0, 5):
+    for func_num in range(0, 6):
         [_, f, _] = get_cons_funcs(func_num = func_num)
     
         f_anl  = f(xx)
