@@ -65,9 +65,13 @@ def plot_mesh_2d(mesh, ax = None, file_name = None, **kwargs):
                 ax.text(x_mid, y_mid, label,
                         ha = 'center', va = 'center')
                 
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+    
         
     if file_name:
         fig.set_size_inches(6.5, 6.5 * (Ly / Lx))
+        plt.tight_layout()
         plt.savefig(file_name, dpi = 300)
         plt.close(fig)
 
@@ -111,10 +115,22 @@ def plot_mesh_3d_box(mesh, ax = None, file_name = None, **kwargs):
                     zmid = (z0 + z1) / 2.
                     label = '{}, {}'.format(idx, lv)
                     ax.text(xmid, ymid, zmid, label, zdir = None)
-        
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+    ax.set_zlabel(r'$\theta$')
+    
+    nth_ticks = 9
+    th_ticks = np.linspace(0, 2, nth_ticks) * np.pi
+    th_tick_labels = [None] * nth_ticks
+    for aa in range(0, nth_ticks):
+        th_rad = th_ticks[aa] / np.pi
+        th_tick_labels[aa] = '{:.2f}\u03C0'.format(th_rad)
+    ax.set_zticks(th_ticks)
+    ax.set_zticklabels(th_tick_labels)
+    
     if file_name:
         fig.set_size_inches(6.5, 6.5)
-        plt.savefig(file_name, dpi = 300)
+        plt.savefig(file_name, dpi = 300, bbox_inches = 'tight')
         plt.close(fig)
 
     return [fig, ax]
@@ -177,180 +193,6 @@ def get_prism(xs, ys, zs, color = 'w'):
         
     return faces
 
-def plot_mesh_upg(mesh, ax = None, file_name = None, **kwargs):
-    default_kwargs = {'label_cells': False,
-                      'show_attr': None,
-                      'colormap': 'viridis'}
-    kwargs = {**default_kwargs, **kwargs}
-
-    if type(kwargs['show_attr']) is not list:
-        [fig, ax] = plot_mesh_attr(mesh, ax = ax,
-                                   file_name = file_name,
-                                   **kwargs)
-    else:
-        if ax is not None:
-            print(( 'ERROR IN PLOTTING MESH: Unable to add mesh' +
-                    ' plot of multiple attributes ot existing axis.' +
-                    ' Aborting...' ))
-            sys.exit(13)
-        if mesh.ndim != 2:
-            print(( 'ERROR IN PLOTTING MESH: Unable to plot mesh' +
-                    ' with more or fewer than two dimensions.' +
-                    ' Aborting...' ))
-            sys.exit(13)
-        
-        Lx = mesh.Ls[0]
-        Ly = mesh.Ls[1]
-        
-        # Set up the subplots
-        nattrs = len(kwargs['show_attr'])
-        [nrows, ncols] = get_closest_factors(nattrs)
-        
-        fig, axs = plt.subplots(nrows, ncols, sharex = True, sharey = True)
-        for ax in axs.flatten():
-            ax.set_xlim([0, Lx])
-            ax.set_ylim([0, Ly])
-
-        attrs = kwargs['show_attr']
-        for ax_idx in range(0, nattrs):
-            attr = attrs[ax_idx]
-            kwargs['show_attr'] = attr
-            
-            ax_x_idx = int(np.mod(ax_idx, ncols))
-            ax_y_idx = int(np.floor(ax_idx / ncols))
-            ax = axs[ax_y_idx, ax_x_idx]
-            
-            plot_mesh_attr(mesh, ax = ax, file_name = None, **kwargs)
-            
-        if file_name:
-            fig.set_size_inches(6.5, 6.5 * (Ly / Lx))
-            plt.savefig(file_name, dpi = 300)
-            plt.close(fig)
-            
-
-    return [fig, ax]
-
-def plot_mesh_attr(mesh, ax = None, file_name = None, **kwargs):
-
-    default_kwargs = {'label_cells': False,
-                      'show_attr': None,
-                      'colormap': 'viridis'}
-    kwargs = {**default_kwargs, **kwargs}
-    
-    [Lx, Ly] = mesh.Ls[0:2]
-
-    if ax:
-        fig = plt.gcf()
-    else:
-        fig, ax = plt.subplots()
-
-    ax.set_xlim([0, Lx])
-    ax.set_ylim([0, Ly])
-
-    nrects = 0
-    for col_key, col in sorted(mesh.cols.items()):
-        if col.is_lf:
-            nrects += 1
-
-    # If we are plotting an attribute, get the color scale necessary
-    if kwargs['show_attr']:
-        cmap = plt.colormaps[kwargs['colormap']]
-        cmin = 10**10
-        cmax = -10**10
-        if kwargs['show_attr'] == 'dof_x':
-            for col_key, col in sorted(mesh.cols.items()):
-                if col.is_lf:
-                    cmin = np.amin([cmin, col.ndofs[0]])
-                    cmax = np.amax([cmax, col.ndofs[0]])
-        elif kwargs['show_attr'] == 'dof_y':
-            for col_key, col in sorted(mesh.cols.items()):
-                if col.is_lf:
-                    cmin = np.amin([cmin, col.ndofs[0]])
-                    cmax = np.amax([cmax, col.ndofs[0]])
-        #elif kwargs['show_attr'] == 'dof_a':
-        #    for col_key, col in sorted(mesh.cols.items()):
-        #        if col.is_lf:
-        #            for cell_key, cell in sorted(col.cells.items()):
-        #                cmin = np.amin(cmin, cell.ndofs[0])
-        #                cmax = np.amax(cmax, cell.ndofs[0])
-        elif kwargs['show_attr'] == 'lv':
-            for col_key, col in sorted(mesh.cols.items()):
-                if col.is_lf:
-                    cmin = np.amin([cmin, col.lv])
-                    cmax = np.amax([cmax, col.lv])
-
-        cmin -= 0.1
-        cmax += 0.1
-    
-    for col_key, col in sorted(mesh.cols.items()):
-        if col.is_lf:
-            # Plot cell
-            [x0, y0, x1, y1] = col.pos
-            width = x1 - x0
-            height = y1 - y0
-            
-            rect = Rectangle((x0, y0), width, height, fill = False)
-            ax.add_patch(rect)
-            
-            if kwargs['show_attr']:
-                xx = np.asarray([x0, x1])
-                yy = np.asarray([y0, y1])
-                if kwargs['show_attr'] == 'dof_x':
-                    zz = np.asarray([[col.ndofs[0]]])
-                elif kwargs['show_attr'] == 'dof_y':
-                    zz = np.asarray([[col.ndofs[1]]])
-                #elif kwargs['show_attr'] == 'dof_a':
-                #    zz = np.asarray([[mesh.dof_a[key]]])
-                elif kwargs['show_attr'] == 'lv':
-                    zz = np.asarray([[col.lv]])
-                im = ax.pcolormesh(xx, yy, zz,
-                                   cmap = cmap,
-                                   shading = 'flat',
-                                   vmin = cmin, vmax = cmax)
-                
-            # Label each cell with idxs, lvs
-            if kwargs['label_cells']:
-                idxs = col.idx
-                lvs  = col.lv
-                xmid = (x0 + x1) / 2.
-                ymid = (y0 + y1) / 2.
-                label = str(idx) + ', ' + str(lv)
-                ax.text(xmid, ymid, label,
-                        ha = 'center', va = 'center')
-
-    if kwargs['show_attr']:
-        if file_name:
-            fig.subplots_adjust(right=0.8)
-            cbar_ax = fig.add_axes([0.85, 0.15, 0.025, 0.7])
-            cbar = fig.colorbar(mappable = im, cax = cbar_ax)
-        else:
-            cbar = fig.colorbar(mappable = im, ax = ax)
-            
-        cbar.set_ticks(np.arange(np.ceil(cmin), np.floor(cmax) + 1))
-        if kwargs['show_attr'] == 'dof_x':
-            cbar.set_label('Degrees of Freedom [x]',
-                           rotation = 270,
-                           labelpad = 15)
-        elif kwargs['show_attr'] == 'dof_y':
-            cbar.set_label('Degrees of Freedom [y]',
-                           rotation = 270,
-                           labelpad = 15)
-        #elif kwargs['show_attr'] == 'dof_a':
-        #    cbar.set_label('Degrees of Freedom [a]',
-        #                   rotation = 270,
-        #                   labelpad = 15)
-        elif kwargs['show_attr'] == 'lv':
-            cbar.set_label('Refinement Level [lv]',
-                           rotation = 270,
-                           labelpad = 15)
-        
-    if file_name:
-        fig.set_size_inches(6.5, 6.5 * (Ly / Lx))
-        plt.savefig(file_name, dpi = 300)
-        plt.close(fig)
-
-    return [fig, ax]
-
 def get_closest_factors(x):
     '''
     Gets the factors of x that are closest to the square root.
@@ -400,10 +242,13 @@ def plot_mesh_3d_flat(mesh, ax = None,
                                 edgecolor = 'black'
                                 )
                     ax.add_patch(wed)
-                
-        
+                    
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+    
     if file_name:
         fig.set_size_inches(6.5, 6.5 * (Ly / Lx))
+        plt.tight_layout()
         plt.savefig(file_name, dpi = 300)
         plt.close(fig)
 

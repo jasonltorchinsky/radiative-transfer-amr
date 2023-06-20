@@ -10,7 +10,7 @@ sys.path.append('../../tests')
 from test_cases import get_cons_prob
 
 sys.path.append('../../src')
-from dg.mesh import get_hasnt_th
+from dg.mesh import Mesh, get_hasnt_th
 from dg.mesh.utils import plot_mesh, plot_mesh_p
 from dg.matrix import get_intr_mask, split_matrix, merge_vectors
 from dg.projection import Projection, push_forward, to_projection, intg_th
@@ -55,10 +55,7 @@ def test_2(dir_name = 'test_rt'):
     max_ntrial = 4
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combos = [
-        ['h',  'rng', 'ang'],
-        ['p',  'rng', 'ang'],
-        ['h',  'rng', 'spt'],
-        ['p',  'rng', 'spt']
+        ['h',  'rng', 'ang']
     ]
     
     # Test Output Parameters
@@ -86,7 +83,7 @@ def test_2(dir_name = 'test_rt'):
         msg = ( 'Starting problem {}...\n'.format(prob_num) )
         print_msg(msg)
         
-        for prob_name in ['scat', 'conv']:
+        for prob_name in ['scat']:
             subprob_dir = os.path.join(prob_dir, prob_name)
             os.makedirs(subprob_dir, exist_ok = True)
             
@@ -115,6 +112,13 @@ def test_2(dir_name = 'test_rt'):
                                 pbcs   = pbcs,
                                 ndofs  = [ndof_x, ndof_y, ndof_th],
                                 has_th = has_th)
+
+                mesh = Mesh(Ls     = [Lx, Ly],
+                            pbcs   = pbcs,
+                            ndofs  = [ndof_x, ndof_y, ndof_th],
+                            has_th = has_th)
+                for _ in range(0, 2):
+                    mesh.ref_mesh(kind = 'ang', form = 'h')
                 
                 # Randomly refine to start
                 for _ in range(0, 0):

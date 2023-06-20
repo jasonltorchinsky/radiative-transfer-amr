@@ -84,7 +84,7 @@ def plot_nhbrs(mesh, col_key_0, cell_key_0 = None, file_name = None, **kwargs):
                             
     if file_name:
         fig.set_size_inches(6.5, 6.5 * (Ly / Lx))
-        plt.savefig(file_name, dpi = 300)
+        plt.savefig(file_name, dpi = 300, bbox_inches = 'tight')
         plt.close(fig)
                 
     return ax
