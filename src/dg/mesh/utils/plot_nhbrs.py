@@ -37,7 +37,7 @@ def plot_nhbrs(mesh, col_key_0, cell_key_0 = None, file_name = None, **kwargs):
     ax.set_xlim([0, Lx])
     ax.set_ylim([0, Ly])
 
-    colors = ['#004D40', '#D81B60', '#FFC107']
+    colors = ['#000000', '#E69F00', '#56B4E9']
 
     col_items = sorted(mesh.cols.items())
     for col_key, col in col_items:
