@@ -13,6 +13,7 @@ def get_cons_prob(prob_name, prob_num, mesh):
 
     [Lx, Ly] = mesh.Ls[:]
     [x_num, y_num, th_num] = prob_num[:]
+    [sx, sy, sth] = [16., 16., 64.]
     # 0 - Constant
     # 1 - Linear
     # 2 - Shallow gradient
@@ -62,18 +63,18 @@ def get_cons_prob(prob_name, prob_num, mesh):
 
     elif x_num == 3:
         def X(x):
-            return np.exp(-((16. / Lx) * (x - (Lx / 3.)))**2)
+            return np.exp(-((sx / Lx) * (x - (Lx / 3.)))**2)
         
         def dXdx(x):
-            return -(512. / Lx**2) * (x - (Lx / 3.)) * X(x)
+            return -((2. * sx**2) / Lx**2) * (x - Lx / 3.) * X(x)
         
         def X_intg(x0, x1):
-            erf0 = erf((16. / 3.) - (16. * x0 / Lx))
-            erf1 = erf((16. / 3.) - (16. * x1 / Lx))
-            return (1. / 32.) * Lx * np.sqrt(np.pi) * np.real(erf0 - erf1) 
+            erf0 = erf(sx * (Lx - 3. * x0) / (3. * Lx))
+            erf1 = erf(sx * (Lx - 3. * x1) / (3. * Lx))
+            return (1. / (2. * sx)) * Lx * np.sqrt(np.pi) * np.real(erf0 - erf1) 
         
         def kappa_x(x):
-            return np.exp(-((8. / Lx) * (x - (5. * Lx / 7.)))**2) + 1.0
+            return np.exp(-((sx / (2. * Lx)) * (x - (5. * Lx / 7.)))**2) + 1.0
 
     # Get y-part
     if y_num == 0:
@@ -119,18 +120,18 @@ def get_cons_prob(prob_name, prob_num, mesh):
 
     elif y_num == 3:
         def Y(y):
-            return np.exp(-((16. / Ly) * (y - (2. * Ly / 3.)))**2)
+            return np.exp(-((sy / Ly) * (y - (2. * Ly / 3.)))**2)
         
         def dYdy(y):
-            return -(512. / Ly**2) * (y - (2. * Ly / 3.)) * Y(y)
+            return -((2. * sy**2) / Ly**2) * (y - (2. * Ly / 3.)) * Y(y)
         
         def Y_intg(y0, y1):
-            erf0 = erf((32. / 3.) - (16. * y0 / Ly))
-            erf1 = erf((32. / 3.) - (16. * y1 / Ly))
-            return (1. / 32.) * Ly * np.sqrt(np.pi) * np.real(erf0 - erf1) 
+            erf0 = erf((sy / Ly) * ((2. * Ly / 3.) - y0))
+            erf1 = erf((sy / Ly) * ((2. * Ly / 3.) - y1))
+            return (1. / (2. * sy)) * Ly * np.sqrt(np.pi) * np.real(erf0 - erf1) 
         
         def kappa_y(y):
-            return np.exp(-((64. / Ly) * (y - (Ly / 5.)))**2) + 1.0
+            return np.exp(-((2. * sy / Ly) * (y - (Ly / 5.)))**2) + 1.0
 
     # Get th-part
     if th_num == 0:
@@ -169,37 +170,36 @@ def get_cons_prob(prob_name, prob_num, mesh):
             sin0 = np.sin((np.pi / 5.) + th0)
             sin1 = np.sin((np.pi / 5.) + th1)
             return 0.5 * ((th1 + sin1) - (th0 + sin0))
-
+        
         def TH_scat(th):
             return 1. / 2. * np.ones_like(th)
-
+        
     elif th_num == 3:
         def TH(th):
-            return np.exp(-((12. / np.pi) * (th - (7. * np.pi / 5.)))**2)
+            return np.exp(-((sth / (2. * np.pi)) * (th - (7. * np.pi / 5.)))**2)
         
         def TH_intg(th0, th1):
-            erf0 = erf((84. / 5.) - (12. * th0 / np.pi))
-            erf1 = erf((84. / 5.) - (12. * th1 / np.pi))
-            return (1. / 24.) * np.pi**(3. / 2.) * np.real(erf0 - erf1) 
+            erf0 = erf((sth / (10. * np.pi)) * (7. * np.pi - 5. * th0))
+            erf1 = erf((sth / (10. * np.pi)) * (7. * np.pi - 5. * th1))
+            return (1. / sth) * np.pi**(3. / 2.) * np.real(erf0 - erf1) 
         
-        erf0 = erf(36. / 5.)
-        erf1 = erf(84. / 5.)
-        erf01 = erf0 + erf1
+        erf0 = erf(3. * sth / 10.)
+        erf1 = erf(7. * sth / 10.)
         
-        erf2 = erf((84. / 5.) - (1.j * np.pi) / 12.)
-        erf3 = erf((36. / 5.) + (1.j * np.pi) / 12.)
-        erf23 = erf2 + erf3
+        erfi2 = erfi((2. * np.pi) / sth + (3.j * sth) / 10.)
+        erfi3 = erfi((2. * np.pi) / sth - (7.j * sth) / 10.)
         
-        erf4 = erf((36. / 5.) - (1.j * np.pi) / 12.)
-        erf5 = erf((84. / 5.) + (1.j * np.pi) / 12.)
-        erf45 = erf4 + erf5
+        erfi4 = erfi((2. * np.pi) / sth - (3.j * sth) / 10.)
+        erfi5 = erfi((2. * np.pi) / sth + (7.j * sth) / 10.)
 
         def TH_scat(th):
-            val = (1. / 288.) * np.sqrt(np.pi) \
-                * (6. * erf01
-                   + ( (-1.)**(1./5.) * np.exp(-(np.pi**2 / 144.) - 2.j * th)
-                       * (-np.exp(4.j * th) * erf23 + (-1.)**(3./5.) * erf45)
-                       )
+            val = (1. / (12. * sth)) * np.sqrt(np.pi) \
+                * (6. * (erf0 + erf1) \
+                   + (-1.)**(3./10.) \
+                     * np.exp(-((4. * np.pi**2)/(sth**2)) - 2.j * th) \
+                     * (erfi2 - erfi3 + (-1.)**(2./5.) * np.exp(4.j * th) \
+                        * (-erfi4 + erfi5)
+                        )
                    )
             return np.real(val)
         

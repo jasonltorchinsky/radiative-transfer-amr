@@ -50,12 +50,13 @@ def test_2(dir_name = 'test_rt'):
     tol_spt = 0.85
     tol_ang = 0.90
     # Maximum number of DOFs
-    max_ndof = 2**15
+    max_ndof = 2**14
     # Maximum number of trials
-    max_ntrial = 4
+    max_ntrial = 12
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combos = [
-        ['h',  'rng', 'ang']
+        ['h',  'uni', 'ang'],
+        ['h',  'amr', 'ang']
     ]
     
     # Test Output Parameters
@@ -76,14 +77,14 @@ def test_2(dir_name = 'test_rt'):
             for th_num in range(0, 4):
                 prob_nums += [[x_num, y_num, th_num]]
                 
-    for prob_num in [[0, 0, 0]]:
+    for prob_num in [[2, 2, 3]]:
         prob_dir = os.path.join(test_dir, str(prob_num))
         os.makedirs(prob_dir, exist_ok = True)
         
         msg = ( 'Starting problem {}...\n'.format(prob_num) )
         print_msg(msg)
         
-        for prob_name in ['scat']:
+        for prob_name in ['comp']:
             subprob_dir = os.path.join(prob_dir, prob_name)
             os.makedirs(subprob_dir, exist_ok = True)
             
@@ -106,7 +107,7 @@ def test_2(dir_name = 'test_rt'):
                 # Get the base mesh, manufactured solution
                 [Lx, Ly]                   = [2., 3.]
                 pbcs                       = [False, False]
-                [ndof_x, ndof_y, ndof_th]  = [2, 2, 2]
+                [ndof_x, ndof_y, ndof_th]  = [8, 8, 3]
                 has_th                     = True
                 mesh = gen_mesh(Ls     = [Lx, Ly],
                                 pbcs   = pbcs,
