@@ -9,8 +9,8 @@ from dg.projection import push_forward, pull_back
 
 def plot_yth(mesh, proj, file_name = None, **kwargs):
     
-    default_kwargs = {'angles' : [0, np.pi/2, np.pi, 3*np.pi/2],
-                      'cmap' : 'hot'}
+    default_kwargs = {'cmap'  : 'hot',
+                      'scale' : 'normal'}
     kwargs = {**default_kwargs, **kwargs}
     
     if not mesh.has_th:
@@ -45,6 +45,15 @@ def plot_yth(mesh, proj, file_name = None, **kwargs):
 
                     vmin = min(np.amin(cell_intg_x), vmin)
                     vmax = max(np.amax(cell_intg_x), vmax)
+                    
+    scale = kwargs['scale']
+    if scale == 'diff':
+        v_bnd = max(np.abs(vmin), np.abs(vmax))
+        vmin = -v_bnd
+        vmax = v_bnd
+    elif scale == 'pos':
+        vmin = 0.
+    # Default to a normal color scale
     
     fig, ax = plt.subplots()
 

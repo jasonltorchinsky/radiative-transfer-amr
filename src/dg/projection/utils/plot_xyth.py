@@ -12,7 +12,8 @@ from dg.projection import push_forward, pull_back
 
 def plot_xyth(mesh, proj, file_name = None, **kwargs):
     
-    default_kwargs = {'cmap' : 'hot'}
+    default_kwargs = {'cmap'  : 'hot',
+                      'scale' : 'normal'}
     kwargs = {**default_kwargs, **kwargs}
     
     cmap = cm.get_cmap(kwargs['cmap'])
@@ -24,7 +25,7 @@ def plot_xyth(mesh, proj, file_name = None, **kwargs):
     ax.set_ylim([0, Ly])
     
     # Get colorbar min/max
-    [vmin, vmax] = [0., -10.**10]
+    [vmin, vmax] = [10.**10, -10.**10]
     col_items = sorted(mesh.cols.items())
     for col_key, col in col_items:
         if col.is_lf:
@@ -34,6 +35,15 @@ def plot_xyth(mesh, proj, file_name = None, **kwargs):
                     cell_mean = np.mean(proj.cols[col_key].cells[cell_key].vals)
                     vmin = min(vmin, cell_mean)
                     vmax = max(vmax, cell_mean)
+
+    scale = kwargs['scale']
+    if scale == 'diff':
+        v_bnd = max(np.abs(vmin), np.abs(vmax))
+        vmin = -v_bnd
+        vmax = v_bnd
+    elif scale == 'pos':
+        vmin = 0.
+    # Default to a normal color scale
 
     wedges = []
     wedge_colors = []

@@ -19,8 +19,8 @@ import dg.quadrature as qd
 from rt import calc_mass_matrix, calc_scat_matrix, \
     calc_intr_conv_matrix, calc_bdry_conv_matrix, \
     calc_forcing_vec
-from amr import anl_err, anl_err_ang, anl_err_spt, rand_err, high_res_err, \
-    nneg_err, ref_by_ind
+from amr import anl_err, anl_err_ang, anl_err_spt, cell_jump_err, col_jump_err, \
+    rand_err, high_res_err, low_res_err, nneg_err, ref_by_ind
 from amr.utils import plot_error_indicator, plot_cell_jumps
 
 from utils import print_msg
@@ -47,16 +47,18 @@ def test_2(dir_name = 'test_rt'):
     # Refinement Form: 'h', 'p'
     ref_form = ''
     # AMR Refinement Tolerance
-    tol_spt = 0.85
+    tol_spt = 0.90
     tol_ang = 0.90
     # Maximum number of DOFs
     max_ndof = 2**14
     # Maximum number of trials
-    max_ntrial = 12
+    max_ntrial = 24
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combos = [
-        ['h',  'uni', 'ang'],
-        ['h',  'amr', 'ang']
+        ['h',  'uni',     'ang'],
+        ['p',  'uni',     'ang'],
+        ['h',  'amr-jmp', 'ang'],
+        ['hp', 'amr-jmp', 'ang']
     ]
     
     # Test Output Parameters
@@ -69,15 +71,17 @@ def test_2(dir_name = 'test_rt'):
     do_plot_anl_err_ind = False
     do_plot_sol_vecs    = False
     do_calc_hi_res_err  = False
+    do_calc_low_res_err = False
     do_plot_errs        = True
     
     prob_nums = []
-    for x_num in range(0, 4):
-        for y_num in range(0, 4):
-            for th_num in range(0, 4):
-                prob_nums += [[x_num, y_num, th_num]]
+    for x_num in range(2, 3):
+        for y_num in range(2, 3):
+            for th_num in range(3, 4):
+                for scat_num in range(2, 3):
+                    prob_nums += [[x_num, y_num, th_num, scat_num]]
                 
-    for prob_num in [[2, 2, 3]]:
+    for prob_num in prob_nums:
         prob_dir = os.path.join(test_dir, str(prob_num))
         os.makedirs(prob_dir, exist_ok = True)
         
@@ -114,12 +118,12 @@ def test_2(dir_name = 'test_rt'):
                                 ndofs  = [ndof_x, ndof_y, ndof_th],
                                 has_th = has_th)
 
-                mesh = Mesh(Ls     = [Lx, Ly],
-                            pbcs   = pbcs,
-                            ndofs  = [ndof_x, ndof_y, ndof_th],
-                            has_th = has_th)
-                for _ in range(0, 2):
-                    mesh.ref_mesh(kind = 'ang', form = 'h')
+                #mesh = Mesh(Ls     = [Lx, Ly],
+                #            pbcs   = pbcs,
+                #            ndofs  = [ndof_x, ndof_y, ndof_th],
+                #            has_th = has_th)
+                #for _ in range(0, 2):
+                #    mesh.ref_mesh(kind = 'ang', form = 'h')
                 
                 # Randomly refine to start
                 for _ in range(0, 0):
@@ -152,7 +156,10 @@ def test_2(dir_name = 'test_rt'):
                 anl_errs  = []
                 anl_spt_errs = []
                 anl_ang_errs = []
+                jmp_spt_errs = []
+                jmp_ang_errs = []
                 hr_errs   = []
+                lr_errs   = []
                 
                 ndof = 0
                 trial = 0
@@ -289,6 +296,13 @@ def test_2(dir_name = 'test_rt'):
                     
                     anl_err_ind_ang = anl_err_ang(mesh, uh_proj, u_intg_xy)
                     anl_ang_errs += [anl_err_ind_ang.max_err]
+
+                    ## Jump error
+                    jmp_err_ind_spt = col_jump_err(mesh, uh_proj)
+                    jmp_spt_errs += [jmp_err_ind_spt.max_err]
+
+                    jmp_err_ind_ang = cell_jump_err(mesh, uh_proj)
+                    jmp_ang_errs += [jmp_err_ind_ang.max_err]
                     
                     ## Hi-res error
                     if prob_name == 'comp' and do_calc_hi_res_err:
@@ -297,6 +311,14 @@ def test_2(dir_name = 'test_rt'):
                                                   f, solver = 'spsolve',
                                                   verbose = True)
                         hr_errs += [hr_err_ind.max_err]
+
+                    ## Low-res error
+                    if prob_name == 'comp' and do_calc_low_res_err:
+                        lr_err_ind = low_res_err(mesh, uh_proj, kappa, sigma,
+                                                 Phi, [u, [False, False, False]],
+                                                 f, solver = 'spsolve',
+                                                 verbose = True)
+                        lr_errs += [lr_err_ind.max_err]
                     
                     mesh_2d = get_hasnt_th(mesh)
                     anl_err_ind = anl_err(mesh, uh_proj, u)
@@ -435,19 +457,23 @@ def test_2(dir_name = 'test_rt'):
                     if do_plot_diff:            
                         file_name = 'diff_xy_{}.png'.format(trial)
                         file_path = os.path.join(trial_dir, file_name)
-                        plot_xy(mesh, diff_proj, file_name = file_path, cmap = 'bwr')
+                        plot_xy(mesh, diff_proj, file_name = file_path,
+                                cmap = 'bwr', scale = 'diff')
                         
                         file_name = 'diff_xth_{}.png'.format(trial)
                         file_path = os.path.join(trial_dir, file_name)
-                        plot_xth(mesh, diff_proj, file_name = file_path, cmap = 'bwr')
+                        plot_xth(mesh, diff_proj, file_name = file_path,
+                                cmap = 'bwr', scale = 'diff')
                         
                         file_name = 'diff_yth_{}.png'.format(trial)
                         file_path = os.path.join(trial_dir, file_name)
-                        plot_yth(mesh, diff_proj, file_name = file_path, cmap = 'bwr')
+                        plot_yth(mesh, diff_proj, file_name = file_path,
+                                cmap = 'bwr', scale = 'diff')
                         
                         file_name = 'diff_xyth_{}.png'.format(trial)
                         file_path = os.path.join(trial_dir, file_name)
-                        plot_xyth(mesh, diff_proj, file_name = file_path, cmap = 'bwr')
+                        plot_xyth(mesh, diff_proj, file_name = file_path,
+                                cmap = 'bwr', scale = 'diff')
                     
                     if do_plot_anl_err_ind:
                         file_name = 'anl_err_by_col_{}.png'.format(trial)
@@ -455,28 +481,32 @@ def test_2(dir_name = 'test_rt'):
                         plot_error_indicator(mesh, anl_err_ind,
                                              file_name = file_path,
                                              name = 'Analytic Max-Norm',
-                                             by_cell = False)
+                                             by_cell = False,
+                                             scale = 'pos')
                         
                         file_name = 'anl_err_by_cell_{}.png'.format(trial)
                         file_path = os.path.join(trial_dir, file_name)
                         plot_error_indicator(mesh, anl_err_ind,
                                              file_name = file_path,
                                              name = 'Analytic Max-Norm',
-                                             by_col = False)
+                                             by_col = False,
+                                             scale = 'pos')
                         
                         anl_err_ind_ang = anl_err_ang(mesh, uh_proj, u_intg_xy)
                         file_name = 'anl_err_ang_{}.png'.format(trial)
                         file_path = os.path.join(trial_dir, file_name)
                         plot_error_indicator(mesh, anl_err_ind_ang,
                                              file_name = file_path,
-                                             name = 'Analytic Max-Norm Angular')
+                                             name = 'Analytic Max-Norm Angular',
+                                             scale = 'pos')
                         
                         anl_err_ind_spt = anl_err_spt(mesh, uh_proj, u_intg_th)
                         file_name = 'anl_err_spt_{}.png'.format(trial)
                         file_path = os.path.join(trial_dir, file_name)
                         plot_error_indicator(mesh, anl_err_ind_spt,
                                              file_name = file_path,
-                                             name = 'Analytic Max-Norm Spatial')
+                                             name = 'Analytic Max-Norm Spatial',
+                                             scale = 'pos')
                         
                     if do_plot_sol_vecs:
                         # Plot solutions
@@ -528,12 +558,19 @@ def test_2(dir_name = 'test_rt'):
                     elif ref_type == 'uni':
                         ## Refine the mesh uniformly
                         mesh.ref_mesh(kind = ref_kind, form = ref_form)
-                    elif ref_type == 'amr':
+                    elif ref_type == 'amr-anl':
                         if ref_kind in ['ang', 'all']:
                             mesh = ref_by_ind(mesh, anl_err_ind_ang,
                                               ref_ratio = tol_ang, form = ref_form)
                         if ref_kind in ['spt', 'all']:
                             mesh = ref_by_ind(mesh, anl_err_ind_spt,
+                                              ref_ratio = tol_spt, form = ref_form)
+                    elif ref_type == 'amr-jmp':
+                        if ref_kind in ['ang', 'all']:
+                            mesh = ref_by_ind(mesh, jmp_err_ind_ang,
+                                              ref_ratio = tol_ang, form = ref_form)
+                        if ref_kind in ['spt', 'all']:
+                            mesh = ref_by_ind(mesh, jmp_err_ind_spt,
                                               ref_ratio = tol_spt, form = ref_form)
                     elif ref_type == 'rng':
                         rand_err_ind = rand_err(mesh,
@@ -543,6 +580,15 @@ def test_2(dir_name = 'test_rt'):
                         mesh = ref_by_ind(mesh, rand_err_ind,
                                           ref_ratio = tol_spt,
                                           form = ref_form)
+                        
+                    elif ref_type == 'rng2':
+                        col_keys = list(mesh.cols.keys())
+                        ncol = len(col_keys)
+                        to_ref = np.random.choice(col_keys,
+                                                  max(1, int(ncol * (1. - tol_spt))),
+                                                  replace = False)
+                        for col_key in to_ref:
+                            mesh.ref_col(col_key, kind = 'ang', form = ref_form)
                     elif ref_type == 'nneg':
                         nneg_err_ind = nneg_err(mesh, uh_proj,
                                                 kind = ref_kind,
@@ -583,22 +629,34 @@ def test_2(dir_name = 'test_rt'):
                             color     = colors[2],
                             linestyle = '--')
                     
+                    ax.plot(ref_ndofs, jmp_spt_errs,
+                            label     = 'Column Jump Error',
+                            color     = colors[3],
+                            linestyle = '--')
+                    
+                    ax.plot(ref_ndofs, jmp_ang_errs,
+                            label     = 'Cell Jump Error',
+                            color     = colors[4],
+                            linestyle = '--')
+                    
                     if prob_name == 'comp' and do_calc_hi_res_err:
                         ax.plot(ref_ndofs, hr_errs,
                                 label     = 'High-Resolution Error',
-                                color     = colors[3],
+                                color     = colors[5],
+                                linestyle = '-.')
+
+                    if prob_name == 'comp' and do_calc_low_res_err:
+                        ax.plot(ref_ndofs, lr_errs,
+                                label     = 'Low-Resolution Error',
+                                color     = colors[6],
                                 linestyle = '-.')
                     
                     ax.set_xscale('log', base = 2)
                     ax.set_yscale('log', base = 10)
                     
-                    
-                    if prob_name == 'comp' and do_calc_hi_res_err:
-                        max_err = max(anl_errs + hr_errs)
-                        min_err = min(anl_errs + hr_errs)
-                    else:
-                        max_err = max(anl_errs)
-                        min_err = min(anl_errs)
+                    errs = anl_errs + jmp_spt_errs + jmp_ang_errs + hr_errs + lr_errs
+                    max_err = max(errs)
+                    min_err = min(errs)
                     if np.log2(max_err) - np.log2(min_err) < 1:
                         ymin = 2**(np.floor(np.log2(min_err)))
                         ymax = 2**(np.ceil(np.log2(max_err)))
@@ -614,8 +672,10 @@ def test_2(dir_name = 'test_rt'):
                         ref_strat_str = 'Single Column'
                     elif ref_type == 'uni':
                         ref_strat_str = 'Uniform'
-                    elif ref_type == 'amr':
-                        ref_strat_str = 'Adaptive'
+                    elif ref_type == 'amr-anl':
+                        ref_strat_str = 'Analytic-Adaptive'
+                    elif ref_type == 'amr-jmp':
+                        ref_strat_str = 'Jump-Adaptive'
                         
                     ref_kind_str = ''
                     if ref_kind == 'spt':

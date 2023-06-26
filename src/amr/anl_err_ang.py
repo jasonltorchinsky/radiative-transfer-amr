@@ -28,7 +28,7 @@ def anl_err_ang(mesh, proj, anl_sol_intg_xy):
             w_y = w_y.reshape([1, ndof_y, 1])
             
             dcoeff = dx * dy / 4.
-           
+            
             cell_items = sorted(col.cells.items())
             for cell_key, cell in cell_items:
                 if cell.is_lf:
@@ -47,7 +47,7 @@ def anl_err_ang(mesh, proj, anl_sol_intg_xy):
                     u_cell_intg_xy = anl_sol_intg_xy(x0, x1, y0, y1, thf)
                     
                     cell_err = np.amax(np.abs(u_cell_intg_xy - uh_cell_intg_xy) / (dx * dy))
-                    err_ind.cols[col_key].cells[cell_key].err_ind = cell_err 
+                    err_ind.cols[col_key].cells[cell_key].err_ind = cell_err
                     
                     max_err = max(max_err, cell_err)
                     

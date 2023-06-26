@@ -55,11 +55,11 @@ def hp_steer_col(mesh, uh, col_key):
         lhs = lp - 0.5
         rhs = 0.5 * (ndof_x + ndof_y)
         if lhs >= rhs:
-            ref_form = 'h'
-        else:
             ref_form = 'p'
+        else:
+            ref_form = 'h'
 
-        if ref_form == 'h':
+        if ref_form == 'p':
             comp_str = '>='
         else:
             comp_str = '<'
@@ -102,11 +102,11 @@ def hp_steer_cell(mesh, uh, col_key, cell_key):
             lhs = lp - 0.5
             rhs = ndof_th
             if lhs >= rhs:
-                ref_form = 'h'
-            else:
                 ref_form = 'p'
+            else:
+                ref_form = 'h'
 
-            if ref_form == 'h':
+            if ref_form == 'p':
                 comp_str = '>='
             else:
                 comp_str = '<'
