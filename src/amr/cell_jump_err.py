@@ -6,16 +6,29 @@ from .hp_steer import hp_steer_cell
 import dg.quadrature as qd
 from dg.projection import push_forward, pull_back
 
-def cell_jump_err(mesh, proj):
+def cell_jump_err(mesh, proj, **kwargs):
 
+    default_kwargs = {'ref_col'      : False,
+                      'col_ref_form' : None,
+                      'col_ref_kind' : None,
+                      'col_ref_tol'  : None,
+                      'ref_cell'      : True,
+                      'cell_ref_form' : 'hp',
+                      'cell_ref_kind' : 'ang',
+                      'cell_ref_tol'  : 0.85}
+    kwargs = {**default_kwargs, **kwargs}
+    
+    err_ind = Error_Indicator(mesh, **kwargs)
+    
     col_items = sorted(mesh.cols.items())
-    ncols = len(col_items)
-
-    # Array to store column jump errors
-    err_ind = Error_Indicator(mesh, by_col = False, by_cell = True)
-    cell_intg_xys = {}
+    
+    # Track maximum error(s) to calculate hp-steering only where needed
+    cell_max_err  = 0.
+    cell_ref_tol  = kwargs['cell_ref_tol']
     
     # Begin by integrating each column with respect to theta
+    cell_intg_xys = {}
+    col_items = sorted(mesh.cols.items())
     for col_key, col in col_items:
         if col.is_lf:
             cell_items = sorted(col.cells.items())
@@ -24,14 +37,18 @@ def cell_jump_err(mesh, proj):
                     cell_intg_xys[(col_key, cell_key)] = \
                         intg_cell_bdry_xy(mesh, proj, col_key, cell_key)
             
-    # Once we have integrated against x, y for all cells, we need to calculate
-    # the jumps
+    # Once we have spatially-integrated alogn angular faces of each cell, we
+    # calculate the jumps
     for col_key, col in col_items:
         if col.is_lf:
+            # Column information for weighting
             [x0, y0, xf, yf] = col.pos[:]
             [dx, dy]         = [xf - x0, yf - y0]
             [ndof_x, ndof_y] = col.ndofs[:]
-            
+
+            dA = dx * dy
+
+            #Loop through cells to calculate error
             cell_items = sorted(col.cells.items())
             for cell_key_0, cell_0 in cell_items:
                 if cell_0.is_lf:
@@ -45,11 +62,24 @@ def cell_jump_err(mesh, proj):
                         
                         cell_err += (cell_intg_xy_0 - cell_intg_xy_1)**2
                         
-                    dA = dx * dy
                     cell_err = np.sqrt((1. / dA) * cell_err)
-                    
-                    err_ind.cols[col_key].cells[cell_key_0].err_ind = cell_err
-                    err_ind.cols[col_key].cells[cell_key_0].ref_form = hp_steer_cell(mesh, proj, col_key, cell_key_0)
+                    cell_max_err = max(cell_max_err, cell_err)
+                    if kwargs['ref_cell']:
+                        err_ind.cols[col_key].cells[cell_key_0].err = cell_err
+                        
+    if kwargs['ref_cell']:
+        err_ind.cell_max_err = cell_max_err
+        cell_ref_thrsh = cell_ref_tol * cell_max_err
+        
+        for col_key, col in col_items:
+            if col.is_lf:
+                cell_items = sorted(col.cells.items())
+                for cell_key, cell in cell_items:
+                    if err_ind.cols[col_key].cells[cell_key].err >= cell_ref_thrsh:
+                        if err_ind.cols[col_key].cells[cell_key].ref_form == 'hp':
+                            err_ind.cols[col_key].cells[cell_key].ref_form = hp_steer_cell(mesh, proj, col_key, cell_key)
+                    else:
+                        err_ind.cols[col_key].cells[cell_key].ref_form = None
                     
     return err_ind
 

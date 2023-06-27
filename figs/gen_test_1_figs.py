@@ -4,28 +4,22 @@ from scipy.sparse.linalg import spsolve, eigs
 from time import perf_counter
 import os, sys
 
-from .gen_mesh import gen_mesh
 
-sys.path.append('../../tests')
-from test_cases import get_cons_prob
-
-sys.path.append('../../src')
-from dg.mesh import Mesh, get_hasnt_th
+sys.path.append('../src')
+from dg.mesh import Mesh
 from dg.mesh.utils import plot_mesh, plot_mesh_p
 from dg.matrix import get_intr_mask, split_matrix, merge_vectors
 from dg.projection import Projection, push_forward, to_projection, intg_th
 from dg.projection.utils import plot_xy, plot_xth, plot_yth, plot_xyth
 import dg.quadrature as qd
-from rt import calc_mass_matrix, calc_scat_matrix, \
-    calc_intr_conv_matrix, calc_bdry_conv_matrix, \
-    calc_forcing_vec
+from rt import rtdg
 from amr import anl_err, anl_err_ang, anl_err_spt, cell_jump_err, col_jump_err, \
     rand_err, high_res_err, low_res_err, nneg_err, ref_by_ind
 from amr.utils import plot_error_indicator, plot_cell_jumps
 
 from utils import print_msg
 
-def test_2(dir_name = 'test_rt'):
+def main(dir_name = 'figs'):
     """
     Solves constructed ("manufactured") problems, with options for sub-problems
     and different types of refinement.
@@ -35,17 +29,6 @@ def test_2(dir_name = 'test_rt'):
     os.makedirs(test_dir, exist_ok = True)
     
     # Test parameters:
-    # Problem Name: 'mass', 'scat'tering, 'conv'ection, 'comp'lete
-    prob_name = ''
-    # Problem Number
-    prob_num  = None
-    # Refinement Type: 'sin'gle column, 'uni'form, 'a'daptive 'm'esh 'r'efinement,
-    # random ('rng')
-    ref_type = ''
-    # Refinement Kind: 's'pa't'ia'l', 'ang'ular, 'all'
-    ref_kind = ''
-    # Refinement Form: 'h', 'p'
-    ref_form = ''
     # AMR Refinement Tolerance
     tol_spt = 0.90
     tol_ang = 0.90
@@ -76,215 +59,85 @@ def test_2(dir_name = 'test_rt'):
     do_calc_low_res_err = False
     do_plot_errs        = True
     
-    prob_nums = []
-    for x_num in range(2, 3):
-        for y_num in range(2, 3):
-            for th_num in range(3, 4):
-                for scat_num in range(2, 3):
-                    prob_nums += [[x_num, y_num, th_num, scat_num]]
-                
-    for prob_num in prob_nums:
-        prob_dir = os.path.join(test_dir, str(prob_num))
-        os.makedirs(prob_dir, exist_ok = True)
+    combo_ndofs = {}
+    combo_anl_errs = {}
+    combo_hr_errs  = {}
+    
+    for combo in combos:
+        [ref_form, ref_type, ref_kind] = combo
+        combo_str = '{}-{}-{}'.format(ref_form, ref_type, ref_kind)
+        combo_dir = os.path.join(subprob_dir, combo_str)
+        os.makedirs(combo_dir, exist_ok = True)
         
-        msg = ( 'Starting problem {}...\n'.format(prob_num) )
+        msg = ( 'Starting combination {}...\n'.format(combo_str) )
         print_msg(msg)
         
-        for prob_name in ['comp']:
-            subprob_dir = os.path.join(prob_dir, prob_name)
-            os.makedirs(subprob_dir, exist_ok = True)
+        # Get the base mesh, manufactured solution
+        [Lx, Ly]                   = [3., 2.]
+        pbcs                       = [True, False]
+        [ndof_x, ndof_y, ndof_th]  = [3, 3, 3]
+        has_th                     = True
+        
+        mesh = Mesh(Ls     = [Lx, Ly],
+                    pbcs   = pbcs,
+                    ndofs  = [ndof_x, ndof_y, ndof_th],
+                    has_th = has_th)
+        
+        for _ in range(0, 2):
+            mesh.ref_mesh(kind = 'ang', form = 'h')
+
+        for _ in range(0, 1):
+            mesh.ref_mesh(kind = 'spt', form = 'h')
             
-            msg = ( 'Starting sub-problem {}...\n'.format(prob_name) )
+        # Randomly refine to start
+        for _ in range(0, 0):
+            rand_err_ind = rand_err(mesh, kind = ref_kind, form = ref_form)
+            
+            mesh = ref_by_ind(mesh, rand_err_ind,
+                              ref_ratio = tol_spt,
+                              form = ref_form)
+            
+        # Manufactured solution from Shukai's paper
+        def XY(x, y):
+            return 1. + np.cos(2. * np.pi * x / Lx) * np.sin(np.pi * y / Ly)
+        def Theta(th):
+            if (0 <= th) and (th <= np.pi / 2):
+                return np.sin((np.pi / 2.) * (1 - 2. * th / np.pi))
+            elif (3. * np.pi / 2 <= th) and (th <= 2. * np.pi):
+                return ((2. / np.pi) * (th - 3. * np.pi / 2.))**3
+            else:
+                return 0.
+        def Phi_HG(th, phi):
+            ## CONTINUE FROM HERE
+        
+                    
+        # Perform some uniform (angular or spatial) h-refinements to start
+        for _ in range(0, 0):
+            mesh.ref_mesh(kind = 'all', form = 'h')
+            
+        # Solve the manufactured problem over several trials
+        ref_ndofs = []
+        anl_errs  = []
+        anl_spt_errs = []
+        anl_ang_errs = []
+        jmp_spt_errs = []
+        jmp_ang_errs = []
+        hr_errs   = []
+        lr_errs   = []
+        
+        ndof = 0
+        trial = 0
+        while (ndof < max_ndof) and (trial < max_ntrial):
+            perf_trial_0 = perf_counter()
+            msg = '[Trial {}] Starting with {} of {} ndofs...\n'.format(trial, ndof, max_ndof)
             print_msg(msg)
             
-            combo_ndofs = {}
-            combo_anl_errs = {}
-            combo_hr_errs  = {}
+            # Set up output directories
+            trial_dir = os.path.join(combo_dir, 'trial_{}'.format(trial))
+            os.makedirs(trial_dir, exist_ok = True)
             
-            for combo in combos:
-                [ref_form, ref_type, ref_kind] = combo
-                combo_str = '{}-{}-{}'.format(ref_form, ref_type, ref_kind)
-                combo_dir = os.path.join(subprob_dir, combo_str)
-                os.makedirs(combo_dir, exist_ok = True)
-                
-                msg = ( 'Starting combination {}...\n'.format(combo_str) )
-                print_msg(msg)
-                
-                # Get the base mesh, manufactured solution
-                [Lx, Ly]                   = [2., 3.]
-                pbcs                       = [False, False]
-                [ndof_x, ndof_y, ndof_th]  = [8, 8, 3]
-                has_th                     = True
-                mesh = gen_mesh(Ls     = [Lx, Ly],
-                                pbcs   = pbcs,
-                                ndofs  = [ndof_x, ndof_y, ndof_th],
-                                has_th = has_th)
-
-                #mesh = Mesh(Ls     = [Lx, Ly],
-                #            pbcs   = pbcs,
-                #            ndofs  = [ndof_x, ndof_y, ndof_th],
-                #            has_th = has_th)
-                #for _ in range(0, 2):
-                #    mesh.ref_mesh(kind = 'ang', form = 'h')
-                
-                # Randomly refine to start
-                for _ in range(0, 0):
-                    rand_err_ind = rand_err(mesh, kind = ref_kind, form = ref_form)
-                    
-                    mesh = ref_by_ind(mesh, rand_err_ind,
-                                      ref_ratio = tol_spt,
-                                      form = ref_form)
-                    
-                # Perform some uniform (angular or spatial) h-refinements to start
-                for _ in range(0, 0):
-                    mesh.ref_mesh(kind = 'all', form = 'h')
-                
-                [u, kappa, sigma, Phi, f,
-                 u_intg_th, u_intg_xy] = get_cons_prob(prob_name = prob_name,
-                                                       prob_num  = prob_num,
-                                                       mesh      = mesh)
-                
-                if prob_name == 'mass':
-                    prob_full_name = 'Mass'
-                elif prob_name == 'scat':
-                    prob_full_name = 'Scattering'
-                elif prob_name == 'conv':
-                    prob_full_name = 'Convection'
-                elif prob_name == 'comp':
-                    prob_full_name = 'Complete'
-                    
-                # Solve the manufactured problem over several trials
-                ref_ndofs = []
-                anl_errs  = []
-                anl_spt_errs = []
-                anl_ang_errs = []
-                jmp_spt_errs = []
-                jmp_ang_errs = []
-                hr_errs   = []
-                lr_errs   = []
-                
-                ndof = 0
-                trial = 0
-                while (ndof < max_ndof) and (trial < max_ntrial):
-                    perf_trial_0 = perf_counter()
-                    msg = '[Trial {}] Starting with {} of {} ndofs...\n'.format(trial, ndof, max_ndof)
-                    print_msg(msg)
-                    
-                    # Set up output directories
-                    trial_dir = os.path.join(combo_dir, 'trial_{}'.format(trial))
-                    os.makedirs(trial_dir, exist_ok = True)
-                    
-                    # Construct the matrices for the problem
-                    if prob_name in ['mass', 'scat', 'comp']:
-                        ## Mass matrix
-                        perf_cons_0 = perf_counter()
-                        msg = '[Trial {}] Constructing mass matrix...'.format(trial)
-                        print_msg(msg)
-                        
-                        M_mass = calc_mass_matrix(mesh, kappa)
-                        
-                        perf_cons_f    = perf_counter()
-                        perf_cons_diff = perf_cons_f - perf_cons_0
-                        msg = (
-                            '[Trial {}] Mass matrix constructed! '.format(trial) +
-                            'Time Elapsed: {:08.3f} [s]'.format(perf_cons_diff)
-                        )
-                        print_msg(msg)
-                    
-                    if prob_name in ['scat', 'comp']:
-                        ## Scattering matrix
-                        perf_cons_0 = perf_counter()
-                        msg = '[Trial {}] Constructing scattering matrix...'.format(trial)
-                        print_msg(msg)
-                        
-                        M_scat = calc_scat_matrix(mesh, sigma, Phi)
-                        
-                        perf_cons_f    = perf_counter()
-                        perf_cons_diff = perf_cons_f - perf_cons_0
-                        msg = (
-                            '[Trial {}] Scattering matrix constructed! '.format(trial) +
-                            'Time Elapsed: {:08.3f} [s]'.format(perf_cons_diff)
-                        )
-                        print_msg(msg)
-                        
-                        
-                    if prob_name in ['conv', 'comp']:
-                        ## Interior convection matrix
-                        perf_cons_0 = perf_counter()
-                        msg = '[Trial {}] Constructing interior convection matrix...'.format(trial)
-                        print_msg(msg)
-                        
-                        M_intr_conv = calc_intr_conv_matrix(mesh)
-                        
-                        perf_cons_f    = perf_counter()
-                        perf_cons_diff = perf_cons_f - perf_cons_0
-                        msg = (
-                            '[Trial {}] Interior convection matrix constructed! '.format(trial) +
-                            'Time Elapsed: {:08.3f} [s]'.format(perf_cons_diff)
-                        )
-                        print_msg(msg)
-                        
-                        ## Boundary convection matrix
-                        perf_cons_0 = perf_counter()
-                        msg = ('[Trial {}] Constructing '.format(trial) +
-                               'boundary convection matrix...'
-                               )
-                        print_msg(msg)
-                        
-                        M_bdry_conv = calc_bdry_conv_matrix(mesh)
-                        
-                        perf_cons_f    = perf_counter()
-                        perf_cons_diff = perf_cons_f - perf_cons_0
-                        msg = (
-                            '[Trial {}] Boundary convection matrix constructed! '.format(trial) +
-                            'Time Elapsed: {:08.3f} [s]'.format(perf_cons_diff)
-                        )
-                        print_msg(msg)
-                        
-                    ## Forcing vector, analytic solution, interior DOFs mask
-                    f_vec  = calc_forcing_vec(mesh, f)
-                    u_proj = Projection(mesh, u)
-                    u_vec  = u_proj.to_vector()
-                    
-                    intr_mask  = get_intr_mask(mesh)
-                    bdry_mask  = np.invert(intr_mask)
-                    f_vec_intr = f_vec[intr_mask]
-                    u_vec_intr = u_vec[intr_mask]
-                    bcs_vec    = u_vec[bdry_mask]
-                    
-                    ## Solve manufactured problem
-                    perf_soln_0 = perf_counter()
-                    msg = '[Trial {}] Solving manufactured problem...'.format(trial)
-                    print_msg(msg)
-                    
-                    if prob_name == 'mass':
-                        M = M_mass
-                    elif prob_name == 'scat':
-                        M = M_mass - M_scat
-                    elif prob_name == 'conv':
-                        M = M_bdry_conv - M_intr_conv
-                    elif prob_name == 'comp':
-                        M = (M_bdry_conv - M_intr_conv) + M_mass - M_scat
-                    else:
-                        msg = 'ERROR - Undefined problem name {}'.format(prob_name)
-                        print(msg)
-                        sys.exit(-1)
-                        
-                    [M_intr, M_bdry] = split_matrix(mesh, M, intr_mask)
-                    
-                    uh_vec_intr = spsolve(M_intr, f_vec_intr - M_bdry @ bcs_vec)
-                    
-                    perf_soln_f    = perf_counter()
-                    perf_soln_diff = perf_soln_f - perf_soln_0
-                    msg = (
-                        '[Trial {}] Manufactured problem solved! '.format(trial) +
-                        'Time Elapsed: {:08.3f} [s]'.format(perf_soln_diff)
-                    )
-                    print_msg(msg)
-                    
-                    uh_vec  = merge_vectors(uh_vec_intr, bcs_vec, intr_mask)
-                    uh_proj = to_projection(mesh, uh_vec)
-                    
+            uh = rtdg(mesh, kappa, sigma, Phi, bcs_dirac, f)
+            
                     ndof = np.size(uh_vec)
                     ref_ndofs += [ndof]
                     

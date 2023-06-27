@@ -6,126 +6,297 @@ from .hp_steer import hp_steer_col
 import dg.quadrature as qd
 from dg.projection import push_forward, pull_back
 
-def col_jump_err(mesh, proj):
+def col_jump_err(mesh, proj, **kwargs):
 
-    col_items = sorted(mesh.cols.items())
-    ncols = len(col_items)
-
-    # Array to store column jump errors
-    err_ind = Error_Indicator(mesh, by_col = True, by_cell = False)
-    col_intg_ths = {}
+    default_kwargs = {'ref_col'      : True,
+                      'col_ref_form' : 'hp',
+                      'col_ref_kind' : 'spt',
+                      'col_ref_tol'  : 0.85,
+                      'ref_cell'      : False,
+                      'cell_ref_form' : None,
+                      'cell_ref_kind' : None,
+                      'cell_ref_tol'  : None}
+    kwargs = {**default_kwargs, **kwargs}
     
-    # Begin by integrating each column with respect to theta
+    err_ind = Error_Indicator(mesh, **kwargs)
+    
+    col_items = sorted(mesh.cols.items())
+    
+    # Track maximum error(s) to calculate hp-steering only where needed
+    col_max_err  = 0.
+    col_ref_tol  = kwargs['col_ref_tol']
+    
+    # Begin by angularly-integrating each column
+    col_intg_ths = {}
+    col_items = sorted(mesh.cols.items())
     for col_key, col in col_items:
         if col.is_lf:                                    
             col_intg_ths[col_key] = intg_col_bdry_th(mesh, proj, col_key)
             
-    # Once we have integrated against theta for all cols, we need to integrate
-    # the jumps in the spatial dimensions
+    # Once we have angularly-integrated along spatial faces of each col, we
+    # spatially-integrate the jumps
     for col_key_0, col_0 in col_items:
         if col_0.is_lf:
-            [x0_0, y0_0, xf_0, yf_0] = col_0.pos[:]
-            [dx_0, dy_0]             = [xf_0 - x0_0, yf_0 - y0_0]
+            # Column information for quadrature
+            [x0_0, y0_0, x1_0, y1_0] = col_0.pos[:]
+            [dx_0, dy_0]             = [x1_0 - x0_0, y1_0 - y0_0]
             [ndof_x_0, ndof_y_0]     = col_0.ndofs[:]
-
+            
             [xxb_0, wx_0, yyb_0, wy_0, _, _] = qd.quad_xyth(nnodes_x = ndof_x_0,
                                                             nnodes_y = ndof_y_0)
+            
+            xx1_0 = push_forward(x0_0, x1_0, xxb_0)
+            yyf_0 = push_forward(y0_0, y1_0, yyb_0)
 
-            xxf_0 = push_forward(x0_0, xf_0, xxb_0)
-            yyf_0 = push_forward(y0_0, yf_0, yyb_0)
-
+            # Loop through faces to calculate error
             col_err = 0.
-
             for F in range(0, 4):
                 nhbr_keys = list(set(col_0.nhbr_keys[F]))
+                
+                col_intg_th_0 = col_intg_ths[col_key_0][F]
                 
                 for col_key_1 in nhbr_keys:
                     if col_key_1 is not None:
                         col_1 = mesh.cols[col_key_1]
                         if col_1.is_lf:
-                            [x0_1, y0_1, xf_1, yf_1] = col_1.pos[:]
-                            [dx_1, dy_1]             = [xf_1 - x0_1, yf_1 - y0_1]
+                            # Column information for quadrature
+                            [x0_1, y0_1, x1_1, y1_1] = col_1.pos[:]
+                            [dx_1, dy_1]             = [x1_1 - x0_1, y1_1 - y0_1]
                             [ndof_x_1, ndof_y_1]     = col_1.ndofs[:]
                             
                             [xxb_1, wx_1, yyb_1, wy_1, _, _] = qd.quad_xyth(nnodes_x = ndof_x_1,
                                                                             nnodes_y = ndof_y_1)
-                            xxf_1 = push_forward(x0_1, xf_1, xxb_1)
-                            yyf_1 = push_forward(y0_1, yf_1, yyb_1)
-
-                            # Depending on the number of DOFs, we project the
-                            # solution on the basis of one column onto the other
-
-                            # Project from the smaller ndof to the larger
-                            if (F%2 == 0):
-                                dcoeff = dy_0 / 2.
-                            else:
-                                dcoeff = dx_0 / 2.
+                            
+                            col_intg_th_1 = col_intg_ths[col_key_1][(F+2)%4]
                             
                             if (F%2 == 0):
-                                if (ndof_y_0 >= ndof_y_1):
-                                    col_intg_th_1 = np.zeros([ndof_y_0])
-                                    yyb_0_1 = pull_back(y0_1, yf_1, yyf_0)
-                                            
-                                    for jj in range(0, ndof_y_0):
-                                        y_j = yyb_0_1[jj]
-                                        if (-1.0 <= y_j) and (y_j <= 1.0):
-                                            for qq in range(0, ndof_y_1):
-                                                col_intg_th_1[jj] += \
-                                                    col_intg_ths[col_key_1][(F+2)%4][qq] \
-                                                    * qd.lag_eval(yyb_1, qq, y_j)
-                                            
-                                            col_err += dcoeff * wy_0[jj] \
-                                                * (col_intg_ths[col_key_0][F][jj] - col_intg_th_1[jj])**2
-                                        
-                                else:
-                                    col_intg_th_0 = np.zeros([ndof_y_1])
-                                    yyb_1_0 = pull_back(y0_0, yf_0, yyf_1)
-                                            
-                                    for qq in range(0, ndof_y_1):
-                                        y_q = yyb_1_0[qq]
-                                        if (-1.0 <= y_q) and (y_q <= 1.0):
+                                # Integrate over whichever face is smaller
+                                if dy_0 >= dy_1:
+                                    dcoeff = dy_1 / 2
+                                    
+                                    # Use quadrature rule for whichever column
+                                    # has more nodes
+                                    if (ndof_y_0 >= ndof_y_1):
+                                        # Project col_0
+                                        yyf_0_1 = push_forward(y0_1, y1_1, yyb_0)
+                                        yyb_0_1_0 = pull_back(y0_0, y1_0, yyf_0_1)
+                                        psi_jjp_matrix = np.zeros([ndof_y_0, ndof_y_0])
+                                        for jj in range(0, ndof_y_0):
+                                            for jj_p in range(0, ndof_y_0):
+                                                psi_jjp_matrix[jj, jj_p] = \
+                                                    qd.lag_eval(yyb_0, jj, yyb_0_1_0[jj_p])
+                                                
+                                        col_intg_th_0_0 = np.zeros(ndof_y_0)
+                                        for jj_p in range(0, ndof_y_0):
                                             for jj in range(0, ndof_y_0):
-                                                col_intg_th_0[qq] += \
-                                                    col_intg_ths[col_key_0][F][jj] \
-                                                    * qd.lag_eval(yyb_0, jj, y_q)
-                                            col_err += dcoeff * wy_1[qq] \
-                                                * (col_intg_th_0[qq] - col_intg_ths[col_key_1][(F+2)%4][qq])**2
+                                                col_intg_th_0_0[jj_p] += col_intg_th_0[jj] * psi_jjp_matrix[jj, jj_p]
+                                                
+                                        # Project col_1
+                                        psi_qjp_matrix = np.zeros([ndof_y_1, ndof_y_0])
+                                        for qq in range(0, ndof_y_1):
+                                            for jj_p in range(0, ndof_y_0):
+                                                psi_qjp_matrix[qq, jj_p] = \
+                                                    qd.lag_eval(yyb_1, qq, yyb_0[jj_p])
+                                                
+                                        col_intg_th_1_0 = np.zeros(ndof_y_0)
+                                        for jj_p in range(0, ndof_y_0):
+                                            for qq in range(0, ndof_y_1):
+                                                col_intg_th_1_0[jj_p] += col_intg_th_1[qq] * psi_qjp_matrix[qq, jj_p]
+                                                
+                                        col_err += dcoeff * np.sum(wy_0 * (col_intg_th_0_0 - col_intg_th_1_0)**2)
+                                                
+                                    else: # ndof_y_0 < ndof_y_1
+                                        # Project col_0
+                                        yyf_1 = push_forward(y0_1, y1_1, yyb_1)
+                                        yyb_1_0 = pull_back(y0_0, y1_0, yyf_1)
+                                        psi_jqp_matrix = np.zeros([ndof_y_0, ndof_y_1])
+                                        for jj in range(0, ndof_y_0):
+                                            for qq_p in range(0, ndof_y_1):
+                                                psi_jqp_matrix[jj, qq_p] = \
+                                                    qd.lag_eval(yyb_0, jj, yyb_1_0[qq_p])
+                                                                                                
+                                        col_intg_th_0_1 = np.zeros(ndof_y_1)
+                                        for qq_p in range(0, ndof_y_1):
+                                            for jj in range(0, ndof_y_0):
+                                                col_intg_th_0_1[qq_p] += col_intg_th_0[jj] * psi_jqp_matrix[jj, qq_p]
+                                                
+                                        col_err += dcoeff * np.sum(wy_1 * (col_intg_th_0_1 - col_intg_th_1)**2)
                                         
-                            else:
-                                if (ndof_x_0 >= ndof_x_1):
-                                    col_intg_th_1 = np.zeros([ndof_x_0])
-                                    xxb_0_1 = pull_back(x0_1, xf_1, xxf_0)
-                                            
-                                    for ii in range(0, ndof_x_0):
-                                        x_i = xxb_0_1[ii]
-                                        if (-1.0 <= x_i) and (x_i <= 1.0):
-                                            for pp in range(0, ndof_x_1):
-                                                col_intg_th_1[ii] += \
-                                                    col_intg_ths[col_key_1][(F+2)%4][pp] \
-                                                    * qd.lag_eval(xxb_1, pp, x_i)
-                                            col_err += dcoeff * wx_0[ii] \
-                                                * (col_intg_ths[col_key_0][F][ii] - col_intg_th_1[ii])**2
+                                else: # dy_0 < dy_1:
+                                    dcoeff = dy_0 / 2
+                                    
+                                    # Use quadrature rule for whichever column
+                                    # has more nodes
+                                    if (ndof_y_0 >= ndof_y_1):
+                                        # Perform projection for col_1
+                                        yyf_0 = push_forward(y0_0, y1_0, yyb_0)
+                                        yyb_0_1 = pull_back(y0_1, y1_1, yyf_0)
+                                        psi_qjp_matrix = np.zeros([ndof_y_1, ndof_y_0])
+                                        for qq in range(0, ndof_y_1):
+                                            for jj_p in range(0, ndof_y_0):
+                                                psi_qjp_matrix[qq, jj_p] = \
+                                                    qd.lag_eval(yyb_1, qq, yyb_0_1[jj_p])
+                                                                                                
+                                        col_intg_th_1_0 = np.zeros(ndof_y_0)
+                                        for jj_p in range(0, ndof_y_0):
+                                            for qq in range(0, ndof_y_1):
+                                                col_intg_th_0_0[jj_p] += col_intg_th_1[qq] * psi_qjp_matrix[qq, jj_p]
+                                                
+                                        col_err += dcoeff * np.sum(wy_0 * (col_intg_th_0 - col_intg_th_1_0)**2)
                                         
-                                else:
-                                    col_intg_th_0 = np.zeros([ndof_x_1])
-                                    xxb_1_0 = pull_back(x0_0, xf_0, xxf_1)
-                                            
-                                    for pp in range(0, ndof_x_1):
-                                        x_p = xxb_1_0[pp]
-                                        if (-1.0 <= x_p) and (x_p <= 1.0):
+                                    else: # ndof_y_0 < ndof_y_1
+                                        # Perform projection for col_0
+                                        psi_jqp_matrix = np.zeros([ndof_y_0, ndof_y_1])
+                                        for jj in range(0, ndof_y_0):
+                                            for qq_p in range(0, ndof_y_1):
+                                                psi_qjp_matrix[jj, qq_p] = \
+                                                    qd.lag_eval(yyb_0, jj, yyb_1[qq_p])
+                                                
+                                        col_intg_th_0_1 = np.zeros(ndof_y_1)
+                                        for qq_p in range(0, ndof_y_1):
+                                            for jj in range(0, ndof_y_0):
+                                                col_intg_th_0_1[qq_p] += col_intg_th_0[jj] * psi_jqp_matrix[jj, qq_p]
+                                                
+                                        # Perform projection for col_1
+                                        yyf_1_0 = push_forward(y0_0, y1_0, yyb_1)
+                                        yyb_1_0_1 = pull_back(y0_1, y1_1, yyf_1_0)
+                                        psi_qqp_matrix = np.zeros([ndof_y_1, ndof_y_1])
+                                        for qq in range(0, ndof_y_1):
+                                            for qq_p in range(0, ndof_y_1):
+                                                psi_qqp_matrix[qq, qq_p] = \
+                                                    qd.lag_eval(yyb_1, qq, yyb_1_0_1[qq_p])
+                                                
+                                        col_intg_th_1_1 = np.zeros(ndof_y_1)
+                                        for qq_p in range(0, ndof_y_1):
+                                            for qq in range(0, ndof_y_1):
+                                                col_intg_th_1_1[qq_p] += col_intg_th_1[qq] * psi_qqp_matrix[qq, qq_p]
+                                                
+                                        col_err += dcoeff * np.sum(wy_1 * (col_intg_th_0_1 - col_intg_th_1_1)**2)
+                                        
+                            else: # (F%2) == 1
+                                # Integrate over whichever face is smaller
+                                if dx_0 >= dx_1:
+                                    dcoeff = dx_1 / 2
+                                    
+                                    # Use quadrature rule for whichever column
+                                    # has more nodes
+                                    if (ndof_x_0 >= ndof_x_1):
+                                        # Project col_0
+                                        xxf_0_1 = push_forward(y0_1, y1_1, xxb_0)
+                                        xxb_0_1_0 = pull_back(y0_0, y1_0, xxf_0_1)
+                                        phi_iip_matrix = np.zeros([ndof_x_0, ndof_x_0])
+                                        for ii in range(0, ndof_x_0):
+                                            for ii_p in range(0, ndof_x_0):
+                                                phi_iip_matrix[ii, ii_p] = \
+                                                    qd.lag_eval(xxb_0, ii, xxb_0_1_0[ii_p])
+                                                
+                                        col_intg_th_0_0 = np.zeros(ndof_x_0)
+                                        for ii_p in range(0, ndof_x_0):
                                             for ii in range(0, ndof_x_0):
-                                                col_intg_th_0[pp] += \
-                                                    col_intg_ths[col_key_0][F][ii] \
-                                                    * qd.lag_eval(xxb_0, ii, x_p)
-                                            col_err += dcoeff * wx_1[pp] \
-                                                * (col_intg_th_0[pp] - col_intg_ths[col_key_1][(F+2)%4][pp])**2
+                                                col_intg_th_0_0[ii_p] += col_intg_th_0[ii] * phi_iip_matrix[ii, ii_p]
+                                                
+                                        # Project col_1
+                                        phi_pip_matrix = np.zeros([ndof_x_1, ndof_x_0])
+                                        for pp in range(0, ndof_x_1):
+                                            for ii_p in range(0, ndof_x_0):
+                                                phi_pip_matrix[pp, ii_p] = \
+                                                    qd.lag_eval(xxb_1, pp, xxb_0[ii_p])
+                                                
+                                        col_intg_th_1_0 = np.zeros(ndof_x_0)
+                                        for ii_p in range(0, ndof_x_0):
+                                            for pp in range(0, ndof_x_1):
+                                                col_intg_th_1_0[ii_p] += col_intg_th_1[pp] * phi_pip_matrix[pp, ii_p]
+                                                
+                                        col_err += dcoeff * np.sum(wx_0 * (col_intg_th_0_0 - col_intg_th_1_0)**2)
+                                                
+                                    else: # ndof_x_0 < ndof_x_1
+                                        # Project col_0
+                                        xxf_1 = push_forward(y0_1, y1_1, xxb_1)
+                                        xxb_1_0 = pull_back(y0_0, y1_0, xxf_1)
+                                        phi_ipp_matrix = np.zeros([ndof_x_0, ndof_x_1])
+                                        for ii in range(0, ndof_x_0):
+                                            for pp_p in range(0, ndof_x_1):
+                                                phi_ipp_matrix[ii, pp_p] = \
+                                                    qd.lag_eval(xxb_0, ii, xxb_1_0[pp_p])
+                                                                                                
+                                        col_intg_th_0_1 = np.zeros(ndof_x_1)
+                                        for pp_p in range(0, ndof_x_1):
+                                            for ii in range(0, ndof_x_0):
+                                                col_intg_th_0_1[pp_p] += col_intg_th_0[ii] * phi_ipp_matrix[ii, pp_p]
+                                                
+                                        col_err += dcoeff * np.sum(wx_1 * (col_intg_th_0_1 - col_intg_th_1)**2)
+                                        
+                                else: # dx_0 < dx_1:
+                                    dcoeff = dx_0 / 2
+                                    
+                                    # Use quadrature rule for whichever column
+                                    # has more nodes
+                                    if (ndof_x_0 >= ndof_x_1):
+                                        # Perform projection for col_1
+                                        xxf_0 = push_forward(y0_0, y1_0, xxb_0)
+                                        xxb_0_1 = pull_back(y0_1, y1_1, xxf_0)
+                                        phi_pip_matrix = np.zeros([ndof_x_1, ndof_x_0])
+                                        for pp in range(0, ndof_x_1):
+                                            for ii_p in range(0, ndof_x_0):
+                                                phi_pip_matrix[pp, ii_p] = \
+                                                    qd.lag_eval(xxb_1, pp, xxb_0_1[ii_p])
+                                                                                                
+                                        col_intg_th_1_0 = np.zeros(ndof_x_0)
+                                        for ii_p in range(0, ndof_x_0):
+                                            for pp in range(0, ndof_x_1):
+                                                col_intg_th_0_0[ii_p] += col_intg_th_1[pp] * phi_pip_matrix[pp, ii_p]
+                                                
+                                        col_err += dcoeff * np.sum(wx_0 * (col_intg_th_0 - col_intg_th_1_0)**2)
+                                        
+                                    else: # ndof_x_0 < ndof_x_1
+                                        # Perform projection for col_0
+                                        phi_ipp_matrix = np.zeros([ndof_x_0, ndof_x_1])
+                                        for ii in range(0, ndof_x_0):
+                                            for pp_p in range(0, ndof_x_1):
+                                                phi_pip_matrix[ii, pp_p] = \
+                                                    qd.lag_eval(xxb_0, ii, xxb_1[pp_p])
+                                                
+                                        col_intg_th_0_1 = np.zeros(ndof_x_1)
+                                        for pp_p in range(0, ndof_x_1):
+                                            for ii in range(0, ndof_x_0):
+                                                col_intg_th_0_1[pp_p] += col_intg_th_0[ii] * phi_ipp_matrix[ii, pp_p]
+                                                
+                                        # Perform projection for col_1
+                                        xxf_1_0 = push_forward(y0_0, y1_0, xxb_1)
+                                        xxb_1_0_1 = pull_back(y0_1, y1_1, xxf_1_0)
+                                        phi_ppp_matrix = np.zeros([ndof_x_1, ndof_x_1])
+                                        for pp in range(0, ndof_x_1):
+                                            for pp_p in range(0, ndof_x_1):
+                                                phi_ppp_matrix[pp, pp_p] = \
+                                                    qd.lag_eval(xxb_1, pp, xxb_1_0_1[pp_p])
+                                                
+                                        col_intg_th_1_1 = np.zeros(ndof_x_1)
+                                        for pp_p in range(0, ndof_x_1):
+                                            for pp in range(0, ndof_x_1):
+                                                col_intg_th_1_1[pp_p] += col_intg_th_1[pp] * phi_ppp_matrix[pp, pp_p]
+                                                
+                                        col_err += dcoeff * np.sum(wx_1 * (col_intg_th_0_1 - col_intg_th_1_1)**2)
                                         
             perim = 2. * dx_0 + 2. * dy_0
             col_err = np.sqrt((1. / perim) * col_err)
+            col_max_err = max(col_max_err, col_err)
             
-            err_ind.cols[col_key_0].err_ind = col_err
-            err_ind.cols[col_key_0].ref_form = hp_steer_col(mesh, proj, col_key_0)
-
+            if kwargs['ref_col']:
+                err_ind.cols[col_key_0].err = col_err
+                
+    # Weight to be relative error, determine hp-steering
+    if kwargs['ref_col']:
+        err_ind.col_max_err = col_max_err
+        col_ref_thrsh = col_ref_tol * col_max_err
+        
+        for col_key, col in col_items:
+            if col.is_lf:
+                if err_ind.cols[col_key].err >= col_ref_thrsh: # Does this one need to be refined?
+                    if err_ind.cols[col_key].ref_form == 'hp': # Does the form of refinement need to be chosen?
+                        err_ind.cols[col_key].ref_form = hp_steer_col(mesh, proj, col_key)
+                else: # Needn't be refined
+                    err_ind.cols[col_key].ref_form = None
+                    
     return err_ind
 
 def intg_col_bdry_th(mesh, proj, col_key):
