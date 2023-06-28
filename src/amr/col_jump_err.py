@@ -140,7 +140,7 @@ def col_jump_err(mesh, proj, **kwargs):
                                         col_intg_th_1_0 = np.zeros(ndof_y_0)
                                         for jj_p in range(0, ndof_y_0):
                                             for qq in range(0, ndof_y_1):
-                                                col_intg_th_0_0[jj_p] += col_intg_th_1[qq] * psi_qjp_matrix[qq, jj_p]
+                                                col_intg_th_1_0[jj_p] += col_intg_th_1[qq] * psi_qjp_matrix[qq, jj_p]
                                                 
                                         col_err += dcoeff * np.sum(wy_0 * (col_intg_th_0 - col_intg_th_1_0)**2)
                                         
@@ -149,7 +149,7 @@ def col_jump_err(mesh, proj, **kwargs):
                                         psi_jqp_matrix = np.zeros([ndof_y_0, ndof_y_1])
                                         for jj in range(0, ndof_y_0):
                                             for qq_p in range(0, ndof_y_1):
-                                                psi_qjp_matrix[jj, qq_p] = \
+                                                psi_jqp_matrix[jj, qq_p] = \
                                                     qd.lag_eval(yyb_0, jj, yyb_1[qq_p])
                                                 
                                         col_intg_th_0_1 = np.zeros(ndof_y_1)
@@ -244,7 +244,7 @@ def col_jump_err(mesh, proj, **kwargs):
                                         col_intg_th_1_0 = np.zeros(ndof_x_0)
                                         for ii_p in range(0, ndof_x_0):
                                             for pp in range(0, ndof_x_1):
-                                                col_intg_th_0_0[ii_p] += col_intg_th_1[pp] * phi_pip_matrix[pp, ii_p]
+                                                col_intg_th_1_0[ii_p] += col_intg_th_1[pp] * phi_pip_matrix[pp, ii_p]
                                                 
                                         col_err += dcoeff * np.sum(wx_0 * (col_intg_th_0 - col_intg_th_1_0)**2)
                                         
@@ -253,7 +253,7 @@ def col_jump_err(mesh, proj, **kwargs):
                                         phi_ipp_matrix = np.zeros([ndof_x_0, ndof_x_1])
                                         for ii in range(0, ndof_x_0):
                                             for pp_p in range(0, ndof_x_1):
-                                                phi_pip_matrix[ii, pp_p] = \
+                                                phi_ipp_matrix[ii, pp_p] = \
                                                     qd.lag_eval(xxb_0, ii, xxb_1[pp_p])
                                                 
                                         col_intg_th_0_1 = np.zeros(ndof_x_1)

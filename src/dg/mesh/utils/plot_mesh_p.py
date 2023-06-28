@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle, Wedge
+from matplotlib.collections import PatchCollection
 
 def plot_mesh_p(mesh, file_name = None, **kwargs):
     
@@ -75,6 +76,10 @@ def plot_mesh_p_3d(mesh, file_name = None):
     colors = ['red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet']
     unique_ndof_ths = []
     ncolors = len(colors)
+
+    wedges = []
+    rects = []
+    
     col_items = sorted(mesh.cols.items())
     for col_key, col in col_items:
         if col.is_lf:
@@ -85,7 +90,7 @@ def plot_mesh_p_3d(mesh, file_name = None):
             rect = Rectangle((x0, y0), dx, dy,
                                      edgecolor = 'black',
                                      fill = None)
-            ax.add_patch(rect)
+            rects += [rect]
 
             cell_items = sorted(col.cells.items())
             
@@ -102,14 +107,23 @@ def plot_mesh_p_3d(mesh, file_name = None):
                     else:
                         label = None
                     
-                    wed = Wedge((cx, cy), min(dx, dy)/2, deg0, deg1,
-                                edgecolor = 'black',
-                                facecolor = colors[ndof_th%ncolors],
-                                label = label
-                                )
+                    wedge = Wedge((cx, cy), min(dx, dy)/2, deg0, deg1,
+                                  edgecolor = 'black',
+                                  facecolor = colors[ndof_th%ncolors],
+                                  label = label
+                                  )
                     
-                    ax.add_patch(wed)
-    ax.legend()
+                    wedges += [wedge]
+                    
+    rect_coll = PatchCollection(rects, match_original = True)
+    ax.add_collection(rect_coll)
+    
+    wedge_coll = PatchCollection(wedges, edgecolor = 'black')
+    ax.add_collection(wedge_coll)
+                    
+    handles, labels = plt.gca().get_legend_handles_labels()
+    order = [0,2,1]
+    plt.legend([handles[idx] for idx in order],[labels[idx] for idx in order])
     
     if file_name:
         fig.set_size_inches(6.5, 6.5 * (Ly / Lx))

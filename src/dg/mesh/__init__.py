@@ -74,6 +74,7 @@ class Mesh:
     from .ref_col_ang import ref_col_ang
     from .ref_cell import ref_cell
     from .ref_mesh import ref_mesh
+    from .get_ndof import get_ndof
     
 def get_hasnt_th(mesh):
 
