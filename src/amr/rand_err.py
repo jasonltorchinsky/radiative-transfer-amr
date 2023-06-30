@@ -31,7 +31,7 @@ def rand_err(mesh, **kwargs):
     cell_ref_tol = kwargs['cell_ref_tol']
     
     ref_forms = ['h', 'p']
-    rng = np.random.default_rng(1)
+    rng = np.random.default_rng()
 
     # Calculate errors
     col_items = sorted(mesh.cols.items())

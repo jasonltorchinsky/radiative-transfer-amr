@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.patches import Rectangle, Wedge
+from matplotlib.patches import Patch, Rectangle, Wedge
 from matplotlib.collections import PatchCollection
 
 def plot_mesh_p(mesh, file_name = None, **kwargs):
@@ -25,39 +25,50 @@ def plot_mesh_p_2d(mesh, file_name = None, **kwargs):
     kwargs = {**default_kwargs, **kwargs}
     
     fig, ax = plt.subplots()
+        
+    [Lx, Ly] = mesh.Ls[:]
+    ax.set_xlim([0, Lx])
+    ax.set_ylim([0, Ly])
 
-    [Lx, Ly] = mesh.Ls
+    colors = ['red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet']
+    unique_ndof_xs = []
+    ncolors = len(colors)
 
-    # Get colorbar min/max
-    [vmin, vmax] = [10e10, -10e10]
+    rects = []
+    labels = []
+    legend_elements = []
+    
     col_items = sorted(mesh.cols.items())
     for col_key, col in col_items:
         if col.is_lf:
             [ndof_x, ndof_y] = col.ndofs[:]
-            vmin = int(min(ndof_x, vmin))
-            vmax = int(max(ndof_x, vmax))
-
-    cmap = plt.get_cmap('gist_rainbow', vmax - vmin + 1)
-
-    for col_key, col in col_items:
-        if col.is_lf:
-            [x0, y0, x1, y1] = col.pos[:]
-            [ndof_x, ndof_y] = col.ndofs[:]
+            [x0, y0, x1, y1] = col.pos
+            [dx, dy]  = [x1 - x0, y1 - y0]
+            [cx, cy] = [(x0 + x1) / 2., (y0 + y1) / 2.]
             
-            pc = ax.pcolormesh([x0, x1], [y0, y1], [[ndof_x]],
-                               shading = 'flat',
-                               vmin = vmin, vmax = vmax,
-                               cmap = cmap, edgecolors = 'black')
-
-            # Label each cell with idxs, lvs
-            if kwargs['label_cells']:
-                [x_mid, y_mid] = [(x0 + x1) / 2., (y0 + y1) / 2.]
-                label = '{}'.format(col.key)
-                ax.text(x_mid, y_mid, label,
-                        ha = 'center', va = 'center')
-
-    fig.colorbar(pc)
+            color = colors[ndof_x%ncolors]
+            
+            if ndof_x not in unique_ndof_xs:
+                unique_ndof_xs += [ndof_x]
+                label = str(ndof_x)
+                labels += [ndof_x]
+                legend_elements += [Patch(facecolor = color,
+                                          edgecolor = 'black',
+                                          label     = label)]
+            
+            rect = Rectangle((x0, y0), dx, dy,
+                             facecolor = color,
+                             edgecolor = 'black')
+            rects += [rect]
+            
+    rect_coll = PatchCollection(rects, match_original = True)
+    ax.add_collection(rect_coll)
     
+    order = np.argsort(labels)
+    legend_elements = np.array(legend_elements)[order]
+    legend_elements = list(legend_elements)
+    ax.legend(handles = legend_elements)
+
     if file_name:
         fig.set_size_inches(6.5, 6.5 * (Ly / Lx))
         plt.savefig(file_name, dpi = 300)
@@ -79,6 +90,8 @@ def plot_mesh_p_3d(mesh, file_name = None):
 
     wedges = []
     rects = []
+    labels = []
+    legend_elements = []
     
     col_items = sorted(mesh.cols.items())
     for col_key, col in col_items:
@@ -88,8 +101,8 @@ def plot_mesh_p_3d(mesh, file_name = None):
             [cx, cy] = [(x0 + x1) / 2., (y0 + y1) / 2.]
 
             rect = Rectangle((x0, y0), dx, dy,
-                                     edgecolor = 'black',
-                                     fill = None)
+                             edgecolor = 'black',
+                             fill = None)
             rects += [rect]
 
             cell_items = sorted(col.cells.items())
@@ -100,17 +113,19 @@ def plot_mesh_p_3d(mesh, file_name = None):
                     [ndof_th]  = cell.ndofs[:]
 
                     [deg0, deg1] = [th0 * 180. / np.pi, th1 * 180. / np.pi]
+                    color = colors[ndof_th%ncolors]
                     
                     if ndof_th not in unique_ndof_ths:
                         unique_ndof_ths += [ndof_th]
                         label = str(ndof_th)
-                    else:
-                        label = None
+                        labels += [ndof_th]
+                        legend_elements += [Patch(facecolor = color,
+                                                  edgecolor = 'black',
+                                                  label     = label)]
                     
                     wedge = Wedge((cx, cy), min(dx, dy)/2, deg0, deg1,
                                   edgecolor = 'black',
-                                  facecolor = colors[ndof_th%ncolors],
-                                  label = label
+                                  facecolor = color
                                   )
                     
                     wedges += [wedge]
@@ -118,12 +133,13 @@ def plot_mesh_p_3d(mesh, file_name = None):
     rect_coll = PatchCollection(rects, match_original = True)
     ax.add_collection(rect_coll)
     
-    wedge_coll = PatchCollection(wedges, edgecolor = 'black')
+    wedge_coll = PatchCollection(wedges, match_original = True)
     ax.add_collection(wedge_coll)
-                    
-    handles, labels = plt.gca().get_legend_handles_labels()
-    order = [0,2,1]
-    plt.legend([handles[idx] for idx in order],[labels[idx] for idx in order])
+    
+    order = np.argsort(labels)
+    legend_elements = np.array(legend_elements)[order]
+    legend_elements = list(legend_elements)
+    ax.legend(handles = legend_elements)
     
     if file_name:
         fig.set_size_inches(6.5, 6.5 * (Ly / Lx))

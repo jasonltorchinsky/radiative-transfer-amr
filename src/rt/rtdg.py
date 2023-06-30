@@ -117,19 +117,19 @@ def rtdg(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
 def merge_vecs(intr_mask, intr_vec, bdry_vec):
     
     ndof = np.size(intr_mask)
-
+    
     vec = np.zeros(ndof)
     intr_idx = 0
     bdry_idx = 0
-
+    
     for ii in range(0, ndof):
         if intr_mask[ii]:
             vec[ii] = intr_vec[intr_idx]
-
+            
             intr_idx += 1
         else:
             vec[ii] = bdry_vec[bdry_idx]
             
             bdry_idx += 1
-
+            
     return vec

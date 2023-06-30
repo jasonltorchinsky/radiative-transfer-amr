@@ -1,7 +1,7 @@
 import numpy as np
 
 from .Error_Indicator import Error_Indicator
-from .hp_steer import hp_steer_cell
+from .hp_steer import hp_steer_cell, hp_steer_col
 
 import dg.quadrature as qd
 from dg.projection import push_forward, pull_back
@@ -23,6 +23,8 @@ def cell_jump_err(mesh, proj, **kwargs):
     col_items = sorted(mesh.cols.items())
     
     # Track maximum error(s) to calculate hp-steering only where needed
+    col_max_err  = 0.
+    col_ref_tol  = kwargs['col_ref_tol']
     cell_max_err  = 0.
     cell_ref_tol  = kwargs['cell_ref_tol']
     
@@ -45,9 +47,12 @@ def cell_jump_err(mesh, proj, **kwargs):
             [x0, y0, xf, yf] = col.pos[:]
             [dx, dy]         = [xf - x0, yf - y0]
             [ndof_x, ndof_y] = col.ndofs[:]
-
+            
             dA = dx * dy
 
+            if kwargs['ref_col']:
+                col_err = 0.
+            
             #Loop through cells to calculate error
             cell_items = sorted(col.cells.items())
             for cell_key_0, cell_0 in cell_items:
@@ -67,12 +72,31 @@ def cell_jump_err(mesh, proj, **kwargs):
                     if kwargs['ref_cell']:
                         err_ind.cols[col_key].cells[cell_key_0].err = cell_err
                         
+                    if kwargs['ref_col']:
+                        col_err += cell_err
+                        
+            if kwargs['ref_col']:
+                err_ind.cols[col_key].err = col_err
+                col_max_err = max(col_max_err, col_err)
+                
+    if kwargs['ref_col']:
+        err_ind.col_max_err = col_max_err
+        col_ref_thrsh = col_ref_tol * col_max_err
+        
     if kwargs['ref_cell']:
         err_ind.cell_max_err = cell_max_err
         cell_ref_thrsh = cell_ref_tol * cell_max_err
         
-        for col_key, col in col_items:
-            if col.is_lf:
+    for col_key, col in col_items:
+        if col.is_lf:
+            if kwargs['ref_col']:
+                if err_ind.cols[col_key].err >= col_ref_thrsh:
+                    if err_ind.cols[col_key].ref_form == 'hp':
+                        err_ind.cols[col_key].ref_form = hp_steer_col(mesh, proj, col_key)
+                else:
+                    err_ind.cols[col_key].ref_form = None
+                
+            if kwargs['ref_cell']:
                 cell_items = sorted(col.cells.items())
                 for cell_key, cell in cell_items:
                     if err_ind.cols[col_key].cells[cell_key].err >= cell_ref_thrsh:
@@ -108,7 +132,7 @@ def intg_cell_bdry_xy(mesh, proj, col_key, cell_key):
             [ndof_th]  = cell.ndofs
             
             proj_cell  = proj_col.cells[cell_key]
-            uh_cell = proj_cell.vals
+            uh_cell    = proj_cell.vals
         
             # Store spatial integral along each angular face
             # F = 0 => Bottom
