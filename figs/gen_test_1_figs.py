@@ -30,11 +30,11 @@ def main(dir_name = 'figs'):
     
     # Test parameters:
     # Maximum number of DOFs
-    max_ndof = 2**17
+    max_ndof = 2**16
     # Maximum number of trials
-    max_ntrial = 10
+    max_ntrial = 12
     # Minimum error before cut-off
-    min_err = 10**(-6)
+    min_err = 10**(-7)
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combo_0 = {'full_name'  : 'Uniform Angular h-Refinement',
                'short_name' : 'h-uni-ang',
@@ -134,7 +134,7 @@ def main(dir_name = 'figs'):
                'ref_cell'      : True,
                'cell_ref_form' : 'h',
                'cell_ref_kind' : 'ang',
-               'cell_ref_tol'  : 0.9}
+               'cell_ref_tol'  : 0.85}
     combo_9 = {'full_name'  : 'Inhomogenous Anisotropic Adaptive Angular hp-Refinement',
                'short_name' : 'hp-ia-amr-jmp-ang',
                'ref_type'   : 'amr-jmp-ang',
@@ -145,7 +145,7 @@ def main(dir_name = 'figs'):
                'ref_cell'      : True,
                'cell_ref_form' : 'hp',
                'cell_ref_kind' : 'ang',
-               'cell_ref_tol'  : 0.9}
+               'cell_ref_tol'  : 0.85}
     combo_10 = {'full_name'  : 'Inhomogenous Anisotropic Adaptive Angular hp-Refinement',
                 'short_name' : 'hp-ia-amr-nneg-ang',
                 'ref_type'   : 'nneg',
@@ -170,8 +170,10 @@ def main(dir_name = 'figs'):
                 'cell_ref_tol'  : None}
     
     combos = [
-        combo_6,
-        combo_8
+        combo_0,
+        combo_1,
+        combo_8,
+        combo_9
     ]
     
     # Output options
@@ -206,7 +208,7 @@ def main(dir_name = 'figs'):
         # Get the base mesh, manufactured solution
         [Lx, Ly]                   = [3., 2.]
         pbcs                       = [False, False]
-        [ndof_x, ndof_y, ndof_th]  = [8, 8, 3]
+        [ndof_x, ndof_y, ndof_th]  = [8, 8, 4]
         has_th                     = True
         
         mesh = Mesh(Ls     = [Lx, Ly],
@@ -214,7 +216,7 @@ def main(dir_name = 'figs'):
                     ndofs  = [ndof_x, ndof_y, ndof_th],
                     has_th = has_th)
         
-        for _ in range(0, 4):
+        for _ in range(0, 2):
             mesh.ref_mesh(kind = 'ang', form = 'h')
             
         for _ in range(0, 2):
@@ -258,7 +260,7 @@ def main(dir_name = 'figs'):
         def kappa(x, y):
             return kappa_x(x) * kappa_y(y)
         def sigma(x, y):
-            return 0.9 * kappa(x, y)
+            return 0.2 * kappa(x, y)
         g = 0.8
         def Phi_HG(Th):
             return (1. - g**2) / (1 + g**2 - 2. * g * np.cos(Th))**(3./2.)

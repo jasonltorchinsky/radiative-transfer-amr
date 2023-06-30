@@ -34,7 +34,7 @@ def get_cons_prob(prob_name, prob_num, mesh, **kwargs):
         return kappa_x(x) * kappa_y(y)
     
     def sigma(x, y):
-        return 0.9 * kappa(x, y)
+        return 0.1 * kappa(x, y)
     
     def f_mass(x, y, th):
         return kappa(x, y) * u(x, y, th)

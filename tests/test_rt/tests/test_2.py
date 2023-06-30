@@ -45,9 +45,7 @@ def test_2(dir_name = 'test_rt'):
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combos = [
         ['h',  'uni',     'ang'],
-        ['p',  'uni',     'ang'],
-        ['h',  'amr-jmp', 'ang'],
-        ['hp', 'amr-jmp', 'ang']
+        ['h',  'amr-jmp', 'ang']
     ]
     
     # Test Output Parameters
@@ -107,8 +105,8 @@ def test_2(dir_name = 'test_rt'):
                                 pbcs   = pbcs,
                                 ndofs  = [ndof_x, ndof_y, ndof_th],
                                 has_th = has_th)
-                for _ in range(0, 2):
-                    mesh.ref_mesh('ang', 'h')
+                #for _ in range(0, 2):
+                #    mesh.ref_mesh('ang', 'h')
                 
                 [u, kappa, sigma, Phi, f,
                  u_intg_th, u_intg_xy] = get_cons_prob(prob_name = prob_name,
@@ -128,6 +126,10 @@ def test_2(dir_name = 'test_rt'):
                 # Solve the manufactured problem over several trials
                 ref_ndofs = []
                 anl_errs  = []
+                anl_spt_errs = []
+                anl_ang_errs = []
+                jmp_spt_errs = []
+                jmp_ang_errs = []
                 
                 ndof  = mesh.get_ndof()
                 trial = 0
@@ -482,7 +484,7 @@ def test_2(dir_name = 'test_rt'):
                     ax.set_xscale('log', base = 2)
                     ax.set_yscale('log', base = 10)
                     
-                    errs = anl_errs + jmp_spt_errs + jmp_ang_errs + hr_errs + lr_errs
+                    errs = anl_errs + jmp_spt_errs + jmp_ang_errs #+ hr_errs + lr_errs
                     max_err = max(errs)
                     min_err = min(errs)
                     if np.log2(max_err) - np.log2(min_err) < 1:
@@ -528,7 +530,7 @@ def test_2(dir_name = 'test_rt'):
                     
                 combo_ndofs[combo_str] = ref_ndofs
                 combo_anl_errs[combo_str] = anl_errs
-                combo_hr_errs[combo_str]  = hr_errs
+                #combo_hr_errs[combo_str]  = hr_errs
                 
             if do_plot_errs:
                 fig, ax = plt.subplots()
