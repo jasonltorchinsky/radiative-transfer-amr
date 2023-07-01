@@ -32,20 +32,10 @@ def main(dir_name = 'figs'):
     for _ in range(0, 2):
         mesh.ref_mesh(kind = 'ang', form = 'h')
         
-    # Randomly refine
-    for _ in range(0, 3):
-        rand_err_ind = rand_err(mesh, kind = 'spt', form = 'h')
-        
-        mesh = ref_by_ind(mesh, rand_err_ind,
-                          ref_ratio = 0.75,
-                          form      = 'h')
-
-    for _ in range(0, 2):
-        rand_err_ind = rand_err(mesh, kind = 'ang', form = 'h')
-        
-        mesh = ref_by_ind(mesh, rand_err_ind,
-                          ref_ratio = 0.85,
-                          form      = 'h')
+    mesh.ref_col(col_key = 2, kind = 'spt', form = 'h')
+    mesh.ref_col(col_key = 11, kind = 'spt', form = 'h')
+    mesh.ref_cell(col_key = 42, cell_key = 4, form = 'h')
+    mesh.ref_cell(col_key = 42, cell_key = 9, form = 'h')
         
     file_name = 'mesh_3d_flat.png'
     file_path = os.path.join(figs_dir, file_name)
@@ -69,8 +59,8 @@ def main(dir_name = 'figs'):
 
     file_name = 'mesh_nhbrs.png'
     file_path = os.path.join(figs_dir, file_name)
-    col_key = list(mesh.cols.keys())[-16]
-    cell_key = list(mesh.cols[col_key].cells.keys())[1]
+    col_key = 12
+    cell_key = 9
     plot_nhbrs(mesh, col_key, cell_key,
                file_name = file_path)
     

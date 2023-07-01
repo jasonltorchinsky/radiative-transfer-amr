@@ -39,8 +39,10 @@ def cell_jump_err(mesh, proj, **kwargs):
                     cell_intg_xys[(col_key, cell_key)] = \
                         intg_cell_bdry_xy(mesh, proj, col_key, cell_key)
             
-    # Once we have spatially-integrated alogn angular faces of each cell, we
+    # Once we have spatially-integrated along angular faces of each cell, we
     # calculate the jumps
+    col_errs = []
+    cell_errs = []
     for col_key, col in col_items:
         if col.is_lf:
             # Column information for weighting
@@ -71,14 +73,70 @@ def cell_jump_err(mesh, proj, **kwargs):
                     cell_max_err = max(cell_max_err, cell_err)
                     if kwargs['ref_cell']:
                         err_ind.cols[col_key].cells[cell_key_0].err = cell_err
+                        cell_errs += [[col_key, cell_key_0, cell_err]]
                         
                     if kwargs['ref_col']:
                         col_err += cell_err
                         
             if kwargs['ref_col']:
                 err_ind.cols[col_key].err = col_err
+                col_errs += [[col_key, col_err]]
                 col_max_err = max(col_max_err, col_err)
-                
+
+    """
+    # Sort errors, then pick top (1-ref_tol) percent of them to refine
+    if kwargs['ref_col']:
+        err_ind.col_max_err = col_max_err
+        col_errs    = np.array(col_errs)
+        mask        = np.argsort(col_errs[:, 1])
+        col_ref_ord = col_errs[mask, 0]
+        ncol        = np.size(col_errs)
+        ncol_to_ref = int(np.ceil((1. - col_ref_tol) * ncol))
+
+    if kwargs['ref_cell']:
+        err_ind.cell_max_err = cell_max_err
+        cell_errs    = np.array(cell_errs)
+        mask         = np.argsort(-cell_errs[:, 2])
+        cell_ref_ord = cell_errs[mask, 0:2].astype('int32')
+        ncell        = np.size(cell_errs[:, 0])
+        ncell_to_ref = int(np.ceil((1. - cell_ref_tol) * ncell))
+        
+        
+    if kwargs['ref_col']:
+        for cc in range(0, ncol_to_ref):
+            col_key = col_ref_ord[cc]
+            col = mesh.cols[col_key]
+            if col.is_lf:
+                if err_ind.cols[col_key].ref_form == 'hp':
+                        err_ind.cols[col_key].ref_form = hp_steer_col(mesh, proj, col_key)
+                        
+        for cc in range(ncol_to_ref, ncol):
+            col_key = col_errs[cc]
+            col = mesh.cols[col_key]
+            if col.is_lf:
+                err_ind.cols[col_key].ref_form = None
+
+    if kwargs['ref_cell']:
+        for kk in range(0, ncell_to_ref):
+            col_key = cell_ref_ord[kk, 0]
+            cell_key = cell_ref_ord[kk, 1]
+            col = mesh.cols[col_key]
+            if col.is_lf:
+                cell = col.cells[cell_key]
+                if cell.is_lf:
+                    if err_ind.cols[col_key].cells[cell_key].ref_form == 'hp':
+                            err_ind.cols[col_key].cells[cell_key].ref_form = hp_steer_cell(mesh, proj, col_key, cell_key)
+                            
+        for kk in range(ncell_to_ref, ncell):
+            col_key = cell_ref_ord[kk, 0]
+            cell_key = cell_ref_ord[kk, 1]
+            col = mesh.cols[col_key]
+            if col.is_lf:
+                cell = col.cells[cell_key]
+                if cell.is_lf:
+                    err_ind.cols[col_key].cells[cell_key].ref_form = None
+    """
+    # Refine if error is at least tol*max_err
     if kwargs['ref_col']:
         err_ind.col_max_err = col_max_err
         col_ref_thrsh = col_ref_tol * col_max_err
@@ -86,6 +144,7 @@ def cell_jump_err(mesh, proj, **kwargs):
     if kwargs['ref_cell']:
         err_ind.cell_max_err = cell_max_err
         cell_ref_thrsh = cell_ref_tol * cell_max_err
+        
         
     for col_key, col in col_items:
         if col.is_lf:
@@ -104,7 +163,7 @@ def cell_jump_err(mesh, proj, **kwargs):
                             err_ind.cols[col_key].cells[cell_key].ref_form = hp_steer_cell(mesh, proj, col_key, cell_key)
                     else:
                         err_ind.cols[col_key].cells[cell_key].ref_form = None
-                    
+                        
     return err_ind
 
 def intg_cell_bdry_xy(mesh, proj, col_key, cell_key):

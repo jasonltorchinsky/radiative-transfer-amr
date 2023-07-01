@@ -30,11 +30,11 @@ def main(dir_name = 'figs'):
     
     # Test parameters:
     # Maximum number of DOFs
-    max_ndof = 2**16
+    max_ndof = 2**18
     # Maximum number of trials
-    max_ntrial = 12
+    max_ntrial = 24
     # Minimum error before cut-off
-    min_err = 10**(-7)
+    min_err = 10.**(-7)
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combo_0 = {'full_name'  : 'Uniform Angular h-Refinement',
                'short_name' : 'h-uni-ang',
@@ -108,7 +108,7 @@ def main(dir_name = 'figs'):
                'ref_col'      : True,
                'col_ref_form' : 'h',
                'col_ref_kind' : 'ang',
-               'col_ref_tol'  : 0.9,
+               'col_ref_tol'  : 0.85,
                'ref_cell'      : False,
                'cell_ref_form' : None,
                'cell_ref_kind' : None,
@@ -119,7 +119,7 @@ def main(dir_name = 'figs'):
                'ref_col'      : True,
                'col_ref_form' : 'hp',
                'col_ref_kind' : 'ang',
-               'col_ref_tol'  : 0.9,
+               'col_ref_tol'  : 0.85,
                'ref_cell'      : False,
                'cell_ref_form' : None,
                'cell_ref_kind' : None,
@@ -247,7 +247,7 @@ def main(dir_name = 'figs'):
             return (4. / Ly) * Y(y)
         def XY(x, y):
             return X(x) * Y(y)
-        sth = 64.
+        sth = 96.
         def Theta(th):
             return np.exp(-((sth / (2. * np.pi)) * (th - (7. * np.pi / 5.)))**2)
         def u(x, y, th):

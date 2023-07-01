@@ -42,9 +42,7 @@ def main(kappa, sigma, Phi, dir_name = 'figs'):
     for _ in range(0, 5):
         rand_err_ind = rand_err(mesh, kind = 'all', form = 'h')
         
-        mesh = ref_by_ind(mesh, rand_err_ind,
-                          ref_ratio = 0.75,
-                          form      = 'h')
+        mesh = ref_by_ind(mesh, rand_err_ind)
     
     M_mass = calc_mass_matrix(mesh, kappa)
     
@@ -89,11 +87,11 @@ def main(kappa, sigma, Phi, dir_name = 'figs'):
                markersize = 4.,
                color      = 'k')
                         
-        title_str = 'Local-Element {} Matrix'.format(matrix_name)
+        title_str = 'Local-Spatio-Angular Element {} Matrix'.format(matrix_name)
         ax.set_title(title_str)
         
         matrix_fname = (matrix_name.replace(" ", "_")).lower()
-        file_name = 'element_{}_matrix.png'.format(matrix_fname)
+        file_name = 'spatio_angular_element_{}_matrix.png'.format(matrix_fname)
         file_path = os.path.join(figs_dir, file_name)
         fig.set_size_inches(6.5, 6.5)
         plt.savefig(file_path, dpi = 300, bbox_inches = 'tight')
@@ -107,11 +105,11 @@ def main(kappa, sigma, Phi, dir_name = 'figs'):
                markersize = 2.,
                color      = 'k')
                         
-        title_str = 'Local-Column {} Matrix'.format(matrix_name)
+        title_str = 'Local-Spatial Element {} Matrix'.format(matrix_name)
         ax.set_title(title_str)
         
         matrix_fname = (matrix_name.replace(" ", "_")).lower()
-        file_name = 'column_{}_matrix.png'.format(matrix_fname)
+        file_name = 'spatial_element_{}_matrix.png'.format(matrix_fname)
         file_path = os.path.join(figs_dir, file_name)
         fig.set_size_inches(6.5, 6.5)
         plt.savefig(file_path, dpi = 300, bbox_inches = 'tight')
