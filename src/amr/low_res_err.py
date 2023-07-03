@@ -3,9 +3,8 @@ import numpy as np
 from time import perf_counter
 
 from .Error_Indicator import Error_Indicator
+from .hp_steer import hp_steer_col, hp_steer_cell
 
-from dg.mesh import calc_col_key, calc_cell_key
-from dg.projection import push_forward, pull_back
 import dg.quadrature as qd
 from rt import rtdg
 
@@ -22,9 +21,9 @@ def low_res_err(mesh, proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
     mesh, and find max-norm error from there.
     """
     
-    default_kwargs = {'solver'  : 'spsolve',
+    default_kwargs = {'solver'       : 'spsolve',
                       'precondition' : False,
-                      'verbose' : False,
+                      'verbose'      : False,
                       'ref_col'      : True,
                       'col_ref_form' : 'hp',
                       'col_ref_kind' : 'spt',
@@ -34,13 +33,8 @@ def low_res_err(mesh, proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
                       'cell_ref_kind' : 'ang',
                       'cell_ref_tol'  : 0.85}
     kwargs = {**default_kwargs, **kwargs}
-
-    
     
     col_items = sorted(mesh.cols.items())
-    
-    # Relative error is weighted by the integral of the anlytic solution, u'
-    u_intg = 0.
     
     # Track maximum error(s) to calculate hp-steering only where needed
     col_max_err  = 0.
@@ -154,7 +148,7 @@ def low_res_err(mesh, proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
                                             xsi_ar = xsi_proj[aa, rr]
                                             uh_lr_cell[pp, qq, rr] += ulr_cell[ii, jj, aa] \
                                                 * phi_ip * psi_jq * xsi_ar
-
+                                            
                     # Calculate error
                     cell_err = np.amax(np.abs(uh_cell - uh_lr_cell))
                     col_err  = max(col_err, cell_err)
@@ -162,18 +156,20 @@ def low_res_err(mesh, proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
                     
                     if kwargs['ref_cell']:
                         err_ind.cols[col_key].cells[cell_key].err_ind = cell_err
-
+                        cell_max_err = max(cell_max_err, cell_err)
+                        
             if kwargs['ref_col']:
                 err_ind.cols[col_key].err_ind = col_err
+                col_max_err = max(col_max_err, col_err)
             
     # Weight errors to be relative, and calculate hp-steering criteria
     if kwargs['ref_col']:
-        col_max_err  /= uh_max
+        col_max_err  /= max_uh
         col_ref_thrsh = col_ref_tol * col_max_err
         err_ind.col_max_err = col_max_err
 
     if kwargs['ref_cell']:
-        cell_max_err  /= uh_max
+        cell_max_err  /= max_uh
         cell_ref_thrsh = cell_ref_tol * cell_max_err
         err_ind.cell_max_err = cell_max_err
         
@@ -181,7 +177,7 @@ def low_res_err(mesh, proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
     for col_key, col in col_items:
         if col.is_lf:
             if kwargs['ref_col']: # If we're refining columns
-                err_ind.cols[col_key].err /= u_intg
+                err_ind.cols[col_key].err /= max_uh
                 if err_ind.cols[col_key].err >= col_ref_thrsh: # Does this one need to be refined?
                     if err_ind.cols[col_key].ref_form == 'hp': # Does the form of refinement need to be chosen?
                         err_ind.cols[col_key].ref_form = hp_steer_col(mesh, proj, col_key)
@@ -193,7 +189,7 @@ def low_res_err(mesh, proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
                 cell_items = sorted(col.cells.items())
                 for cell_key, cell in cell_items:
                     if cell.is_lf:
-                        err_ind.cols[col_key].cells[cell_key].err /= u_intg
+                        err_ind.cols[col_key].cells[cell_key].err /= max_uh
                         
                         if err_ind.cols[col_key].cells[cell_key].err >= cell_ref_thrsh: # Does this one need to be refined?
                             if err_ind.cols[col_key].cells[cell_key].ref_form == 'hp': # Does the form of refinement need to be chosen?

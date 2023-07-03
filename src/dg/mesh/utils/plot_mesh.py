@@ -68,13 +68,12 @@ def plot_mesh_2d(mesh, ax = None, file_name = None, **kwargs):
     ax.set_xlabel('x')
     ax.set_ylabel('y')
     
-        
     if file_name:
         fig.set_size_inches(6.5, 6.5 * (Ly / Lx))
         plt.tight_layout()
         plt.savefig(file_name, dpi = 300)
         plt.close(fig)
-
+        
     return [fig, ax]
 
 def plot_mesh_3d_box(mesh, ax = None, file_name = None, **kwargs):

@@ -9,6 +9,10 @@ from .. import get_cell_nhbr_in_col
 def plot_nhbrs(mesh, col_key_0, cell_key_0 = None, file_name = None, **kwargs):
     
     default_kwargs = {'label_cells' : False}
+    if cell_key_0 is not None:
+        default_kwargs['plot_dim'] = 3
+    else:
+        default_kwargs['plot_dim'] = 2
     kwargs = {**default_kwargs, **kwargs}
     
     
@@ -57,34 +61,39 @@ def plot_nhbrs(mesh, col_key_0, cell_key_0 = None, file_name = None, **kwargs):
                              edgecolor = 'black')
             ax.add_patch(rect)
 
-            cell_items = sorted(col.cells.items())
-            for cell_key, cell in cell_items:
-                if cell.is_lf:
-                    [th0, th1] = cell.pos[:]
-                    [deg0, deg1] = [th0 * 180. / np.pi, th1 * 180. / np.pi]
-                    
-                    if (col_key == col_key_0) and (cell_key == cell_key_0):
-                        facecolor = colors[0]
-                    elif col_key in cell_nhbr_keys.keys():
-                        if cell_key in cell_nhbr_keys[col_key]:
-                            if col_key == col_key_0:
-                                facecolor = colors[1]
+            if kwargs['plot_dim'] == 3:
+                cell_items = sorted(col.cells.items())
+                for cell_key, cell in cell_items:
+                    if cell.is_lf:
+                        [th0, th1] = cell.pos[:]
+                        [deg0, deg1] = [th0 * 180. / np.pi, th1 * 180. / np.pi]
+                        
+                        if (col_key == col_key_0) and (cell_key == cell_key_0):
+                            facecolor = colors[0]
+                        elif col_key in cell_nhbr_keys.keys():
+                            if cell_key in cell_nhbr_keys[col_key]:
+                                if col_key == col_key_0:
+                                    facecolor = colors[1]
+                                else:
+                                    facecolor = colors[2]
                             else:
-                                facecolor = colors[2]
+                                facecolor = 'none'
                         else:
                             facecolor = 'none'
-                    else:
-                        facecolor = 'none'
-                        
-                    wed = Wedge((cx, cy), min(dx, dy)/2, deg0, deg1,
-                                facecolor = facecolor,
-                                edgecolor = 'black'
-                                )
-                    ax.add_patch(wed)
                             
+                        wed = Wedge((cx, cy), min(dx, dy)/2, deg0, deg1,
+                                    facecolor = facecolor,
+                                    edgecolor = 'black'
+                                    )
+                        ax.add_patch(wed)
+                        
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+    
     if file_name:
         fig.set_size_inches(6.5, 6.5 * (Ly / Lx))
-        plt.savefig(file_name, dpi = 300, bbox_inches = 'tight')
+        plt.tight_layout()
+        plt.savefig(file_name, dpi = 300)
         plt.close(fig)
                 
     return ax

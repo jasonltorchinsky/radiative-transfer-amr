@@ -69,8 +69,12 @@ def plot_mesh_p_2d(mesh, file_name = None, **kwargs):
     legend_elements = list(legend_elements)
     ax.legend(handles = legend_elements)
 
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+    
     if file_name:
         fig.set_size_inches(6.5, 6.5 * (Ly / Lx))
+        plt.tight_layout()
         plt.savefig(file_name, dpi = 300)
         plt.close(fig)
                 
@@ -140,9 +144,13 @@ def plot_mesh_p_3d(mesh, file_name = None):
     legend_elements = np.array(legend_elements)[order]
     legend_elements = list(legend_elements)
     ax.legend(handles = legend_elements)
+
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
     
     if file_name:
         fig.set_size_inches(6.5, 6.5 * (Ly / Lx))
+        plt.tight_layout()
         plt.savefig(file_name, dpi = 300)
         plt.close(fig)
                 

@@ -13,8 +13,8 @@ from dg.projection import Projection, to_projection
 from dg.projection.utils import plot_xy, plot_xth, plot_yth, plot_xyth
 import dg.quadrature as qd
 from rt import rtdg
-from amr import anl_err, anl_err_ang, anl_err_spt, cell_jump_err, col_jump_err, \
-    rand_err, high_res_err, low_res_err, nneg_err, ref_by_ind
+from amr import cell_jump_err, col_jump_err, rand_err, high_res_err, \
+    low_res_err, nneg_err, ref_by_ind
 from amr.utils import plot_error_indicator
 
 from utils import print_msg
@@ -25,12 +25,12 @@ def main(dir_name = 'figs'):
     and different types of refinement.
     """
     
-    figs_dir = os.path.join(dir_name, 'test_1_figs')
+    figs_dir = os.path.join(dir_name, 'test_2_figs')
     os.makedirs(figs_dir, exist_ok = True)
     
     # Test parameters:
     # Maximum number of DOFs
-    max_ndof = 2**18
+    max_ndof = 2**17
     # Maximum number of trials
     max_ntrial = 24
     # Minimum error before cut-off
@@ -59,50 +59,6 @@ def main(dir_name = 'figs'):
                'cell_ref_kind' : None,
                'cell_ref_tol'  : None}
     combo_2 = {'full_name'  : 'Inhomogenous Isotropic Adaptive Angular h-Refinement',
-               'short_name' : 'h-ii-amr-anl-ang',
-               'ref_type'   : 'amr-anl-ang',
-               'ref_col'      : True,
-               'col_ref_form' : 'h',
-               'col_ref_kind' : 'ang',
-               'col_ref_tol'  : 0.9,
-               'ref_cell'      : False,
-               'cell_ref_form' : None,
-               'cell_ref_kind' : None,
-               'cell_ref_tol'  : None}
-    combo_3 = {'full_name'  : 'Inhomogenous Isotropic Adaptive Angular hp-Refinement',
-               'short_name' : 'hp-ii-amr-anl-ang',
-               'ref_type'   : 'amr-anl-ang',
-               'ref_col'      : True,
-               'col_ref_form' : 'hp',
-               'col_ref_kind' : 'ang',
-               'col_ref_tol'  : 0.9,
-               'ref_cell'      : False,
-               'cell_ref_form' : None,
-               'cell_ref_kind' : None,
-               'cell_ref_tol'  : None}
-    combo_4 = {'full_name'  : 'Inhomogenous Anisotropic Adaptive Angular h-Refinement',
-               'short_name' : 'h-ia-amr-anl-ang',
-               'ref_type'   : 'amr-anl-ang',
-               'ref_col'      : False,
-               'col_ref_form' : None,
-               'col_ref_kind' : None,
-               'col_ref_tol'  : None,
-               'ref_cell'      : True,
-               'cell_ref_form' : 'h',
-               'cell_ref_kind' : 'ang',
-               'cell_ref_tol'  : 0.9}
-    combo_5 = {'full_name'  : 'Inhomogenous Anisotropic Adaptive Angular hp-Refinement',
-               'short_name' : 'hp-ia-amr-anl-ang',
-               'ref_type'   : 'amr-anl-ang',
-               'ref_col'      : False,
-               'col_ref_form' : None,
-               'col_ref_kind' : None,
-               'col_ref_tol'  : None,
-               'ref_cell'      : True,
-               'cell_ref_form' : 'h',
-               'cell_ref_kind' : 'ang',
-               'cell_ref_tol'  : 0.9}
-    combo_6 = {'full_name'  : 'Inhomogenous Isotropic Adaptive Angular h-Refinement',
                'short_name' : 'h-ii-amr-jmp-ang',
                'ref_type'   : 'amr-jmp-ang',
                'ref_col'      : True,
@@ -113,7 +69,7 @@ def main(dir_name = 'figs'):
                'cell_ref_form' : None,
                'cell_ref_kind' : None,
                'cell_ref_tol'  : None}
-    combo_7 = {'full_name'  : 'Inhomogenous Isotropic Adaptive Angular hp-Refinement',
+    combo_3 = {'full_name'  : 'Inhomogenous Isotropic Adaptive Angular hp-Refinement',
                'short_name' : 'hp-ii-amr-jmp-ang',
                'ref_type'   : 'amr-jmp-ang',
                'ref_col'      : True,
@@ -124,7 +80,7 @@ def main(dir_name = 'figs'):
                'cell_ref_form' : None,
                'cell_ref_kind' : None,
                'cell_ref_tol'  : None}
-    combo_8 = {'full_name'  : 'Inhomogenous Anisotropic Adaptive Angular h-Refinement',
+    combo_4 = {'full_name'  : 'Inhomogenous Anisotropic Adaptive Angular h-Refinement',
                'short_name' : 'h-ia-amr-jmp-ang',
                'ref_type'   : 'amr-jmp-ang',
                'ref_col'      : False,
@@ -135,7 +91,7 @@ def main(dir_name = 'figs'):
                'cell_ref_form' : 'h',
                'cell_ref_kind' : 'ang',
                'cell_ref_tol'  : 0.85}
-    combo_9 = {'full_name'  : 'Inhomogenous Anisotropic Adaptive Angular hp-Refinement',
+    combo_5 = {'full_name'  : 'Inhomogenous Anisotropic Adaptive Angular hp-Refinement',
                'short_name' : 'hp-ia-amr-jmp-ang',
                'ref_type'   : 'amr-jmp-ang',
                'ref_col'      : False,
@@ -146,51 +102,46 @@ def main(dir_name = 'figs'):
                'cell_ref_form' : 'hp',
                'cell_ref_kind' : 'ang',
                'cell_ref_tol'  : 0.85}
-    combo_10 = {'full_name'  : 'Inhomogenous Anisotropic Adaptive Angular hp-Refinement',
-                'short_name' : 'hp-ia-amr-nneg-ang',
-                'ref_type'   : 'nneg',
-                'ref_col'      : False,
-                'col_ref_form' : None,
-                'col_ref_kind' : None,
-                'col_ref_tol'  : None,
-                'ref_cell'      : True,
-                'cell_ref_form' : 'hp',
-                'cell_ref_kind' : 'ang',
-                'cell_ref_tol'  : 0.0}
-    combo_11 = {'full_name'  : 'Inhomogenous Anisotropic Adaptive Angular hp-Refinement',
-                'short_name' : 'hp-ii-amr-nneg-ang',
-                'ref_type'   : 'nneg',
-                'ref_col'      : True,
-                'col_ref_form' : 'hp',
-                'col_ref_kind' : 'ang',
-                'col_ref_tol'  : 0.0,
-                'ref_cell'      : False,
-                'cell_ref_form' : None,
-                'cell_ref_kind' : None,
-                'cell_ref_tol'  : None}
+    combo_6 = {'full_name'  : 'Inhomogenous Anisotropic Adaptive Angular hp-Refinement',
+               'short_name' : 'hp-ia-amr-nneg-ang',
+               'ref_type'   : 'nneg',
+               'ref_col'      : False,
+               'col_ref_form' : None,
+               'col_ref_kind' : None,
+               'col_ref_tol'  : None,
+               'ref_cell'      : True,
+               'cell_ref_form' : 'hp',
+               'cell_ref_kind' : 'ang',
+               'cell_ref_tol'  : 0.0}
+    combo_7 = {'full_name'  : 'Inhomogenous Anisotropic Adaptive Angular hp-Refinement',
+               'short_name' : 'hp-ii-amr-nneg-ang',
+               'ref_type'   : 'nneg',
+               'ref_col'      : True,
+               'col_ref_form' : 'hp',
+               'col_ref_kind' : 'ang',
+               'col_ref_tol'  : 0.0,
+               'ref_cell'      : False,
+               'cell_ref_form' : None,
+               'cell_ref_kind' : None,
+               'cell_ref_tol'  : None}
     
     combos = [
-        combo_0,
-        combo_1,
-        combo_8,
-        combo_9
+        combo_0
     ]
     
     # Output options
     do_plot_mesh        = False
     do_plot_mesh_p      = True
     do_plot_uh          = True
-    do_plot_u           = True
-    do_plot_diff        = True
     do_plot_err_ind     = True
     do_plot_errs        = True
     
     combo_names = []
     combo_ndofs = {}
-    combo_anl_errs = {}
+    combo_high_res_errs = {}
     
     perf_all_0 = perf_counter()
-    msg = ( 'Generating test 1 figures...\n' )
+    msg = ( 'Generating test 2 figures...\n' )
     print_msg(msg)
     
     for combo in combos:
@@ -236,27 +187,11 @@ def main(dir_name = 'figs'):
             
             mesh = ref_by_ind(mesh, rand_err_ind)
             
-        # Manufactured solution
-        def X(x):
-            return np.exp(-((1. / Lx) * (x - (Lx / 3.)))**2)
-        def dXdx(x):
-            return -(2. / Lx**2) * (x - (Lx / 3.)) * X(x)
-        def Y(y):
-            return np.exp(-4. * (Ly - y) / Ly)
-        def dYdy(y):
-            return (4. / Ly) * Y(y)
-        def XY(x, y):
-            return X(x) * Y(y)
-        sth = 96.
-        def Theta(th):
-            return np.exp(-((sth / (2. * np.pi)) * (th - (7. * np.pi / 5.)))**2)
-        def u(x, y, th):
-            return XY(x, y) * Theta(th)
-        
+        # Test problem : No spatial dependence
         def kappa_x(x):
-            return np.exp(-((1. / Lx) * (x - (Lx / 2.)))**2)
+            return np.ones_like(x)
         def kappa_y(y):
-            return np.exp(-y / Ly)
+            return np.ones_like(y)
         def kappa(x, y):
             return kappa_x(x) * kappa_y(y)
         def sigma(x, y):
@@ -269,33 +204,21 @@ def main(dir_name = 'figs'):
             val = (1. - g**2) / (1 + g**2 - 2. * g * np.cos(th - phi))**(3./2.)
             return val / norm
         def f(x, y, th):
-            # Propagation part
-            prop = (np.cos(th) * dXdx(x) * Y(y) + np.sin(th) * X(x) * dYdy(y)) * Theta(th)
-            # Extinction part
-            extn = kappa(x, y) * u(x, y, th)
-            # Scattering part
-            [Theta_scat, _] = quad(lambda phi: Phi(th, phi) * Theta(phi), 0., 2. * np.pi)
-            scat =  sigma(x, y) * XY(x, y) * Theta_scat
-            return prop + extn - scat
+            return 0
+        y_top = Ly
         def bcs(x, y, th):
-            return u(x, y, th)
+            dth = 0.5
+            ang_min = 3.0 * np.pi / 2.0 - dth / 2.0
+            ang_max = 3.0 * np.pi / 2.0 + dth / 2.0
+            if (y == y_top) and (ang_min <= th) and (th <= ang_max):
+                return 10.0
+            else:
+                return 0.0
         dirac = [None, None, None]
-        
-        def u_intg_th(x, y, th0, th1):
-            [Theta_intg, _] = quad(lambda th: Theta(th), th0, th1)
-            return XY(x, y) * Theta_intg
-        
-        def u_intg_xy(x0, x1, y0, y1, th):
-            [XY_intg, _] = dblquad(lambda x, y: XY(x, y), x0, x1, y0, y1)
-            return XY_intg * Theta(th)
-        
-        # Perform some uniform (angular or spatial) h-refinements to start
-        for _ in range(0, 0):
-            mesh.ref_mesh(kind = 'all', form = 'h')
             
         # Solve the manufactured problem over several trials
         ref_ndofs = []
-        anl_errs  = []
+        high_res_errs  = []
         
         ndof  = mesh.get_ndof()
         trial = 0
@@ -334,25 +257,31 @@ def main(dir_name = 'figs'):
                    )
             print_msg(msg)
             
-            # Caluclate analytic error
+            # Caluclate high-resolution error
             perf_0 = perf_counter()
-            msg = ( '[Trial {}] Obtaining analytic error...\n'.format(trial)
+            msg = ( '[Trial {}] Obtaining high-resolution error...\n'.format(trial)
                    )
             print_msg(msg)
             
-            anl_err_ind = anl_err(mesh, uh_proj, u)
+            high_res_err_ind = high_res_err(mesh, uh_proj,
+                                          kappa, sigma, Phi, [bcs, dirac], f,
+                                          **combo)
             
             perf_f = perf_counter()
             perf_diff = perf_f - perf_0
-            msg = ( '[Trial {}] Analytic error obtained!\n'.format(trial) +
+            msg = ( '[Trial {}] High-resolution error obtained!\n'.format(trial) +
                     22 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_diff)
                    )
             print_msg(msg)
+
+            if combo['ref_col']:
+                err           = high_res_err_ind.col_max_err
+                high_res_errs += [err]
+            else: #if combo['ref_cell']
+                err           = high_res_err_ind.cell_max_err
+                high_res_errs += [err]
             
-            err       = anl_err_ind.col_max_err
-            anl_errs += [err]
-            
-            if do_plot_mesh and (trial%3 == 0):
+            if do_plot_mesh:
                 perf_0 = perf_counter()
                 msg = ( '[Trial {}] Plotting mesh...\n'.format(trial)
                        )
@@ -378,7 +307,7 @@ def main(dir_name = 'figs'):
                        )
                 print_msg(msg)
                 
-            if do_plot_mesh_p and (trial%3 == 0):
+            if do_plot_mesh_p:
                 perf_0 = perf_counter()
                 msg = ( '[Trial {}] Plotting mesh polynomial degree...\n'.format(trial)
                        )
@@ -404,7 +333,7 @@ def main(dir_name = 'figs'):
                        )
                 print_msg(msg)
                 
-            if do_plot_uh and (trial%3 == 0):
+            if do_plot_uh:
                 perf_0 = perf_counter()
                 msg = ( '[Trial {}] Plotting numerical solution...\n'.format(trial)
                        )
@@ -433,83 +362,16 @@ def main(dir_name = 'figs'):
                        )
                 print_msg(msg)
                 
-            if do_plot_u and (trial%3 == 0):
-                perf_0 = perf_counter()
-                msg = ( '[Trial {}] Plotting analytic solution...\n'.format(trial)
-                       )
-                print_msg(msg)
                 
-                u_proj = Projection(mesh, u)
-                file_name = 'u_xy_{}.png'.format(trial)
-                file_path = os.path.join(trial_dir, file_name)
-                plot_xy(mesh, u_proj, file_name = file_path)
-                
-                file_name = 'u_xth_{}.png'.format(trial)
-                file_path = os.path.join(trial_dir, file_name)
-                plot_xth(mesh, u_proj, file_name = file_path)
-                
-                file_name = 'u_yth_{}.png'.format(trial)
-                file_path = os.path.join(trial_dir, file_name)
-                plot_yth(mesh, u_proj, file_name = file_path)
-                
-                file_name = 'u_xyth_{}.png'.format(trial)
-                file_path = os.path.join(trial_dir, file_name)
-                plot_xyth(mesh, u_proj, file_name = file_path)
-                
-                perf_f = perf_counter()
-                perf_diff = perf_f - perf_0
-                msg = ( '[Trial {}] Analytic solution plotted!\n'.format(trial) +
-                        22 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_diff)
-                       )
-                print_msg(msg)
-                
-            if do_plot_diff and (trial%3 == 0):
-                perf_0 = perf_counter()
-                msg = ( '[Trial {}] Plotting difference in solutions...\n'.format(trial)
-                       )
-                print_msg(msg)
-                
-                u_vec     = u_proj.to_vector()
-                uh_vec    = uh_proj.to_vector()
-                diff_vec  = u_vec - uh_vec
-                diff_proj = to_projection(mesh, diff_vec)
-                
-                file_name = 'diff_xy_{}.png'.format(trial)
-                file_path = os.path.join(trial_dir, file_name)
-                plot_xy(mesh, diff_proj, file_name = file_path,
-                        cmap = 'bwr', scale = 'diff')
-                
-                file_name = 'diff_xth_{}.png'.format(trial)
-                file_path = os.path.join(trial_dir, file_name)
-                plot_xth(mesh, diff_proj, file_name = file_path,
-                         cmap = 'bwr', scale = 'diff')
-                
-                file_name = 'diff_yth_{}.png'.format(trial)
-                file_path = os.path.join(trial_dir, file_name)
-                plot_yth(mesh, diff_proj, file_name = file_path,
-                         cmap = 'bwr', scale = 'diff')
-                
-                file_name = 'diff_xyth_{}.png'.format(trial)
-                file_path = os.path.join(trial_dir, file_name)
-                plot_xyth(mesh, diff_proj, file_name = file_path,
-                          cmap = 'bwr', scale = 'diff')
-                
-                perf_f = perf_counter()
-                perf_diff = perf_f - perf_0
-                msg = ( '[Trial {}] Difference in solutions plotted!\n'.format(trial) +
-                        22 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_diff)
-                       )
-                print_msg(msg)
-                
-            if do_plot_err_ind and (trial%3 == 0):
+            if do_plot_err_ind:
                     perf_0 = perf_counter()
                     msg = ( '[Trial {}] Plotting analytic error indicator...\n'.format(trial)
                            )
                     print_msg(msg)
                 
-                    file_name = 'anl_err_ind.png'
+                    file_name = 'high_res_err_ind.png'
                     file_path = os.path.join(trial_dir, file_name)
-                    plot_error_indicator(mesh, anl_err_ind, file_name = file_path)
+                    plot_error_indicator(mesh, high_res_err_ind, file_name = file_path)
                     
                     perf_f = perf_counter()
                     perf_diff = perf_f - perf_0
@@ -524,11 +386,7 @@ def main(dir_name = 'figs'):
                 mesh.ref_mesh(kind = combo['col_ref_kind'],
                               form = combo['col_ref_form'])
             else:
-                if ref_type == 'amr-anl-ang': # Analytic angular error indicator
-                    err_ind = anl_err_ang(mesh, uh_proj, u_intg_xy, **combo)
-                elif ref_type == 'amr-anl-spt': # Analytic angular error indicator
-                    err_ind = anl_err_spt(mesh, uh_proj, u_intg_th, **combo)
-                elif ref_type == 'amr-jmp-ang': # Analytic angular error indicator
+                if ref_type == 'amr-jmp-ang': # Analytic angular error indicator
                     err_ind = cell_jump_err(mesh, uh_proj, **combo)
                 elif ref_type == 'amr-jmp-spt': # Analytic angular error indicator
                     err_ind = col_jump_err(mesh, uh_proj, **combo)
@@ -571,15 +429,15 @@ def main(dir_name = 'figs'):
                       '#F0E442', '#0072B2', '#D55E00', '#CC79A7',
                       '#882255']
             
-            ax.plot(ref_ndofs, anl_errs,
-                    label     = 'Analytic Error',
+            ax.plot(ref_ndofs, high_res_errs,
+                    label     = 'High-Resolution Error',
                     color     = colors[0],
                     linestyle = '--')
             
             ax.set_xscale('log', base = 2)
             ax.set_yscale('log', base = 10)
             
-            errs = anl_errs
+            errs = high_res_errs
             max_err = max(errs)
             min_err = min(errs)
             if np.log2(max_err) - np.log2(min_err) < 1:
@@ -602,7 +460,7 @@ def main(dir_name = 'figs'):
             plt.close(fig)
             
             combo_ndofs[combo_name]    = ref_ndofs
-            combo_anl_errs[combo_name] = anl_errs
+            combo_high_res_errs[combo_name] = high_res_errs
             
         perf_combo_f = perf_counter()
         perf_combo_dt = perf_combo_f - perf_combo_0
@@ -623,7 +481,7 @@ def main(dir_name = 'figs'):
         
         for cc in range(0, ncombo):
             combo_name = combo_names[cc]
-            ax.plot(combo_ndofs[combo_name], combo_anl_errs[combo_name],
+            ax.plot(combo_ndofs[combo_name], combo_high_res_errs[combo_name],
                     label     = combo_name,
                     color     = colors[cc],
                     linestyle = '--')
