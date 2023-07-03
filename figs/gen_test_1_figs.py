@@ -10,7 +10,7 @@ from dg.mesh import Mesh
 from dg.mesh.utils import plot_mesh, plot_mesh_p
 from dg.matrix import get_intr_mask, split_matrix, merge_vectors
 from dg.projection import Projection, to_projection
-from dg.projection.utils import plot_xy, plot_xth, plot_yth, plot_xyth
+from dg.projection.utils import plot_xy, plot_xth, plot_yth, plot_xyth, plot_th
 import dg.quadrature as qd
 from rt import rtdg
 from amr import anl_err, anl_err_ang, anl_err_spt, cell_jump_err, col_jump_err, \
@@ -34,7 +34,7 @@ def main(dir_name = 'figs'):
     # Maximum number of trials
     max_ntrial = 24
     # Minimum error before cut-off
-    min_err = 10.**(-7)
+    min_err = 10.**(-8)
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combo_0 = {'full_name'  : 'Uniform Angular h-Refinement',
                'short_name' : 'h-uni-ang',
@@ -58,73 +58,7 @@ def main(dir_name = 'figs'):
                'cell_ref_form' : None,
                'cell_ref_kind' : None,
                'cell_ref_tol'  : None}
-    combo_2 = {'full_name'  : 'Inhomogenous Isotropic Adaptive Angular h-Refinement',
-               'short_name' : 'h-ii-amr-anl-ang',
-               'ref_type'   : 'amr-anl-ang',
-               'ref_col'      : True,
-               'col_ref_form' : 'h',
-               'col_ref_kind' : 'ang',
-               'col_ref_tol'  : 0.9,
-               'ref_cell'      : False,
-               'cell_ref_form' : None,
-               'cell_ref_kind' : None,
-               'cell_ref_tol'  : None}
-    combo_3 = {'full_name'  : 'Inhomogenous Isotropic Adaptive Angular hp-Refinement',
-               'short_name' : 'hp-ii-amr-anl-ang',
-               'ref_type'   : 'amr-anl-ang',
-               'ref_col'      : True,
-               'col_ref_form' : 'hp',
-               'col_ref_kind' : 'ang',
-               'col_ref_tol'  : 0.9,
-               'ref_cell'      : False,
-               'cell_ref_form' : None,
-               'cell_ref_kind' : None,
-               'cell_ref_tol'  : None}
-    combo_4 = {'full_name'  : 'Inhomogenous Anisotropic Adaptive Angular h-Refinement',
-               'short_name' : 'h-ia-amr-anl-ang',
-               'ref_type'   : 'amr-anl-ang',
-               'ref_col'      : False,
-               'col_ref_form' : None,
-               'col_ref_kind' : None,
-               'col_ref_tol'  : None,
-               'ref_cell'      : True,
-               'cell_ref_form' : 'h',
-               'cell_ref_kind' : 'ang',
-               'cell_ref_tol'  : 0.9}
-    combo_5 = {'full_name'  : 'Inhomogenous Anisotropic Adaptive Angular hp-Refinement',
-               'short_name' : 'hp-ia-amr-anl-ang',
-               'ref_type'   : 'amr-anl-ang',
-               'ref_col'      : False,
-               'col_ref_form' : None,
-               'col_ref_kind' : None,
-               'col_ref_tol'  : None,
-               'ref_cell'      : True,
-               'cell_ref_form' : 'h',
-               'cell_ref_kind' : 'ang',
-               'cell_ref_tol'  : 0.9}
-    combo_6 = {'full_name'  : 'Inhomogenous Isotropic Adaptive Angular h-Refinement',
-               'short_name' : 'h-ii-amr-jmp-ang',
-               'ref_type'   : 'amr-jmp-ang',
-               'ref_col'      : True,
-               'col_ref_form' : 'h',
-               'col_ref_kind' : 'ang',
-               'col_ref_tol'  : 0.85,
-               'ref_cell'      : False,
-               'cell_ref_form' : None,
-               'cell_ref_kind' : None,
-               'cell_ref_tol'  : None}
-    combo_7 = {'full_name'  : 'Inhomogenous Isotropic Adaptive Angular hp-Refinement',
-               'short_name' : 'hp-ii-amr-jmp-ang',
-               'ref_type'   : 'amr-jmp-ang',
-               'ref_col'      : True,
-               'col_ref_form' : 'hp',
-               'col_ref_kind' : 'ang',
-               'col_ref_tol'  : 0.85,
-               'ref_cell'      : False,
-               'cell_ref_form' : None,
-               'cell_ref_kind' : None,
-               'cell_ref_tol'  : None}
-    combo_8 = {'full_name'  : 'Inhomogenous Anisotropic Adaptive Angular h-Refinement',
+    combo_2 = {'full_name'  : 'Inhomogenous Anisotropic Adaptive Angular h-Refinement',
                'short_name' : 'h-ia-amr-jmp-ang',
                'ref_type'   : 'amr-jmp-ang',
                'ref_col'      : False,
@@ -134,8 +68,8 @@ def main(dir_name = 'figs'):
                'ref_cell'      : True,
                'cell_ref_form' : 'h',
                'cell_ref_kind' : 'ang',
-               'cell_ref_tol'  : 0.85}
-    combo_9 = {'full_name'  : 'Inhomogenous Anisotropic Adaptive Angular hp-Refinement',
+               'cell_ref_tol'  : 0.90}
+    combo_3 = {'full_name'  : 'Inhomogenous Anisotropic Adaptive Angular hp-Refinement',
                'short_name' : 'hp-ia-amr-jmp-ang',
                'ref_type'   : 'amr-jmp-ang',
                'ref_col'      : False,
@@ -145,35 +79,13 @@ def main(dir_name = 'figs'):
                'ref_cell'      : True,
                'cell_ref_form' : 'hp',
                'cell_ref_kind' : 'ang',
-               'cell_ref_tol'  : 0.85}
-    combo_10 = {'full_name'  : 'Inhomogenous Anisotropic Adaptive Angular hp-Refinement',
-                'short_name' : 'hp-ia-amr-nneg-ang',
-                'ref_type'   : 'nneg',
-                'ref_col'      : False,
-                'col_ref_form' : None,
-                'col_ref_kind' : None,
-                'col_ref_tol'  : None,
-                'ref_cell'      : True,
-                'cell_ref_form' : 'hp',
-                'cell_ref_kind' : 'ang',
-                'cell_ref_tol'  : 0.0}
-    combo_11 = {'full_name'  : 'Inhomogenous Anisotropic Adaptive Angular hp-Refinement',
-                'short_name' : 'hp-ii-amr-nneg-ang',
-                'ref_type'   : 'nneg',
-                'ref_col'      : True,
-                'col_ref_form' : 'hp',
-                'col_ref_kind' : 'ang',
-                'col_ref_tol'  : 0.0,
-                'ref_cell'      : False,
-                'cell_ref_form' : None,
-                'cell_ref_kind' : None,
-                'cell_ref_tol'  : None}
+               'cell_ref_tol'  : 0.90}
     
     combos = [
         combo_0,
         combo_1,
-        combo_8,
-        combo_9
+        combo_2,
+        combo_3
     ]
     
     # Output options
@@ -295,6 +207,7 @@ def main(dir_name = 'figs'):
             
         # Solve the manufactured problem over several trials
         ref_ndofs = []
+        anl_err_dofs = []
         anl_errs  = []
         
         ndof  = mesh.get_ndof()
@@ -311,6 +224,7 @@ def main(dir_name = 'figs'):
         while (ndof < max_ndof) and (trial < max_ntrial) and (err > min_err):
             ndof = mesh.get_ndof()
             ref_ndofs += [ndof]
+            calc_anl_err = False
             
             perf_trial_0 = perf_counter()
             msg = '[Trial {}] Starting with {} of {} ndofs...\n'.format(trial, ndof, max_ndof)
@@ -335,22 +249,25 @@ def main(dir_name = 'figs'):
             print_msg(msg)
             
             # Caluclate analytic error
-            perf_0 = perf_counter()
-            msg = ( '[Trial {}] Obtaining analytic error...\n'.format(trial)
-                   )
-            print_msg(msg)
-            
-            anl_err_ind = anl_err(mesh, uh_proj, u)
-            
-            perf_f = perf_counter()
-            perf_diff = perf_f - perf_0
-            msg = ( '[Trial {}] Analytic error obtained!\n'.format(trial) +
-                    22 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_diff)
-                   )
-            print_msg(msg)
-            
-            err       = anl_err_ind.col_max_err
-            anl_errs += [err]
+            if (trial == 0) or (np.isclose(np.log2(ndof), np.round(np.log2(ndof), decimals = 1), atol = 1.e-4)):
+                perf_0 = perf_counter()
+                msg = ( '[Trial {}] Obtaining analytic error...\n'.format(trial)
+                       )
+                print_msg(msg)
+                
+                anl_err_ind = anl_err(mesh, uh_proj, u, ref_col = False, ref_cell = True)
+                
+                perf_f = perf_counter()
+                perf_diff = perf_f - perf_0
+                msg = ( '[Trial {}] Analytic error obtained!\n'.format(trial) +
+                        22 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_diff)
+                       )
+                print_msg(msg)
+                
+                err           = anl_err_ind.cell_max_err
+                anl_err_dofs += [ndof]
+                anl_errs     += [err]
+                calc_anl_err  = True
             
             if do_plot_mesh and (trial%3 == 0):
                 perf_0 = perf_counter()
@@ -409,6 +326,10 @@ def main(dir_name = 'figs'):
                 msg = ( '[Trial {}] Plotting numerical solution...\n'.format(trial)
                        )
                 print_msg(msg)
+
+                file_name = 'uh_th_{}.png'.format(trial)
+                file_path = os.path.join(trial_dir, file_name)
+                plot_th(mesh, uh_proj, file_name = file_path)
                 
                 file_name = 'uh_xy_{}.png'.format(trial)
                 file_path = os.path.join(trial_dir, file_name)
@@ -433,13 +354,18 @@ def main(dir_name = 'figs'):
                        )
                 print_msg(msg)
                 
-            if do_plot_u and (trial%3 == 0):
+            if do_plot_u and (trial%1 == 0):
                 perf_0 = perf_counter()
                 msg = ( '[Trial {}] Plotting analytic solution...\n'.format(trial)
                        )
                 print_msg(msg)
                 
                 u_proj = Projection(mesh, u)
+
+                file_name = 'u_th_{}.png'.format(trial)
+                file_path = os.path.join(trial_dir, file_name)
+                plot_th(mesh, u_proj, file_name = file_path)
+            
                 file_name = 'u_xy_{}.png'.format(trial)
                 file_path = os.path.join(trial_dir, file_name)
                 plot_xy(mesh, u_proj, file_name = file_path)
@@ -473,6 +399,10 @@ def main(dir_name = 'figs'):
                 uh_vec    = uh_proj.to_vector()
                 diff_vec  = u_vec - uh_vec
                 diff_proj = to_projection(mesh, diff_vec)
+
+                file_name = 'diff_th_{}.png'.format(trial)
+                file_path = os.path.join(trial_dir, file_name)
+                plot_th(mesh, diff_proj, file_name = file_path)
                 
                 file_name = 'diff_xy_{}.png'.format(trial)
                 file_path = os.path.join(trial_dir, file_name)
@@ -501,7 +431,7 @@ def main(dir_name = 'figs'):
                        )
                 print_msg(msg)
                 
-            if do_plot_err_ind and (trial%3 == 0):
+            if do_plot_err_ind and (trial%3 == 0) and calc_anl_err:
                     perf_0 = perf_counter()
                     msg = ( '[Trial {}] Plotting analytic error indicator...\n'.format(trial)
                            )
@@ -571,7 +501,7 @@ def main(dir_name = 'figs'):
                       '#F0E442', '#0072B2', '#D55E00', '#CC79A7',
                       '#882255']
             
-            ax.plot(ref_ndofs, anl_errs,
+            ax.plot(anl_err_dofs, anl_errs,
                     label     = 'Analytic Error',
                     color     = colors[0],
                     linestyle = '--')
@@ -601,7 +531,7 @@ def main(dir_name = 'figs'):
             plt.savefig(file_path, dpi = 300)
             plt.close(fig)
             
-            combo_ndofs[combo_name]    = ref_ndofs
+            combo_ndofs[combo_name]    = anl_err_dofs
             combo_anl_errs[combo_name] = anl_errs
             
         perf_combo_f = perf_counter()

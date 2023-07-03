@@ -100,9 +100,13 @@ def plot_xth(mesh, proj, file_name = None, **kwargs):
 
     ax.set_xlim([0, Lx])
     ax.set_ylim([0, Lth])
+
+    ax.set_xlabel('x')
+    ax.set_ylabel(r'$\theta$')
     
     if file_name:
         fig.set_size_inches(6.5, 6.5 * (Lx / Lth))
+        plt.tight_layout()
         plt.savefig(file_name, dpi = 300)
         plt.close(fig)
         

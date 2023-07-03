@@ -97,12 +97,17 @@ def plot_yth(mesh, proj, file_name = None, **kwargs):
         th_tick_labels[aa] = '{:.2f}\u03C0'.format(th_rad)
     ax.set_xticks(th_ticks)
     ax.set_xticklabels(th_tick_labels)
-
+    
     ax.set_xlim([0, Lth])
     ax.set_ylim([0, Ly])
     
+    ax.set_xlabel(r'$\theta$')
+    ax.set_ylabel('y')
+    
     if file_name:
         fig.set_size_inches(6.5, 6.5 * (Ly / Lth))
+        
+        plt.tight_layout()
         plt.savefig(file_name, dpi = 300)
         plt.close(fig)
         

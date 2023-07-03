@@ -85,8 +85,12 @@ def plot_xyth(mesh, proj, file_name = None, **kwargs):
     
     fig.colorbar(wedge_coll, ax = ax)
     
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+    
     if file_name:
         fig.set_size_inches(6.5, 6.5 * (Ly / Lx))
+        plt.tight_layout()
         plt.savefig(file_name, dpi = 300)
         plt.close(fig)
 

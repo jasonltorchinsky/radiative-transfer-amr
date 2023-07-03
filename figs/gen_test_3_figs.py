@@ -25,7 +25,7 @@ def main(dir_name = 'figs'):
     and different types of refinement.
     """
     
-    figs_dir = os.path.join(dir_name, 'test_2_figs')
+    figs_dir = os.path.join(dir_name, 'test_3_figs')
     os.makedirs(figs_dir, exist_ok = True)
     
     # Test parameters:
@@ -143,15 +143,14 @@ def main(dir_name = 'figs'):
             
             mesh = ref_by_ind(mesh, rand_err_ind)
             
-        # Test problem : No spatial dependence
+        # Test problem : Cloud layer
         def kappa_x(x):
-            return np.ones_like(x)
-        def kappa_y(y):
-            return np.ones_like(y)
+            return (1. / 32.) * (np.sin(2. * np.pi * x / Lx))**2 + 0.1
         def kappa(x, y):
-            return kappa_x(x) * kappa_y(y)
+            term_0 = (-1. / ((2. * (Ly * kappa_x(x))**2))) * (y - (Ly / 2.))**2
+            return 0.5 * (np.sign(np.exp(term_0) - 0.5) + 1.) + 0.1
         def sigma(x, y):
-            return 0.2 * kappa(x, y)
+            return 0.9 * kappa(x, y)
         g = 0.8
         def Phi_HG(Th):
             return (1. - g**2) / (1 + g**2 - 2. * g * np.cos(Th))**(3./2.)
@@ -171,7 +170,69 @@ def main(dir_name = 'figs'):
             else:
                 return 0.0
         dirac = [None, None, None]
-            
+
+        # Plot extinction coefficient, scattering coefficient, and scattering phase function
+        xx = np.linspace(0, Lx, num = 1000).reshape([1, 1000])
+        yy = np.linspace(0, Ly, num = 1000).reshape([1000, 1])
+        [XX, YY] = np.meshgrid(xx, yy)
+
+        th = np.linspace(0, 2. * np.pi, num = 360)
+
+        kappa_c = kappa(xx, yy)
+        sigma_c = sigma(xx, yy)
+        [vmin, vmax] = [0., max(np.amax(kappa_c), np.amax(sigma_c))]
+        rr = Phi(0, th)
+        
+        ## kappa
+        fig, ax = plt.subplots()
+        kappa_plot = ax.contourf(XX, YY, kappa_c, vmin = vmin, vmax = vmax)
+        ax.set_xlim([0, Lx])
+        ax.set_ylim([0, Ly])
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+        plt.colorbar(kappa_plot, ax = ax)
+        file_name = 'kappa.png'
+        file_path = os.path.join(combo_dir, file_name)
+        plt.tight_layout()
+        plt.savefig(file_path, dpi = 300)
+        plt.close(fig)
+
+        ## sigma
+        fig, ax = plt.subplots()
+        sigma_plot = ax.contourf(XX, YY, sigma_c, vmin = vmin, vmax = vmax)
+        ax.set_xlim([0, Lx])
+        ax.set_ylim([0, Ly])
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+        plt.colorbar(sigma_plot, ax = ax)
+        file_name = 'sigma.png'
+        file_path = os.path.join(combo_dir, file_name)
+        plt.tight_layout()
+        plt.savefig(file_path, dpi = 300)
+        plt.close(fig)
+
+        ## Phi
+        max_r = max(rr)
+        ntick = 2
+        r_ticks = np.linspace(max_r / ntick, max_r, ntick)
+        r_tick_labels = ['{:3.2f}'.format(r_tick) for r_tick in r_ticks]
+        th_ticks = np.linspace(0, 2. * np.pi, num = 8, endpoint = False)
+        th_tick_labels = [r'${:3.2f} \pi$'.format(th_tick/np.pi) for th_tick in th_ticks]
+        fig, ax = plt.subplots(subplot_kw = {'projection': 'polar'})
+        Phi_plot = ax.plot(th, rr, color = 'black')
+        ax.set_rlim([0, max_r])
+        ax.set_rticks(r_ticks, r_tick_labels)
+        ax.set_xlabel(r"$\theta - \theta'$")
+        ax.set_xticks(th_ticks, th_tick_labels)
+        file_name = 'Phi.png'
+        file_path = os.path.join(combo_dir, file_name)
+        plt.tight_layout()
+        plt.savefig(file_path, dpi = 300)
+        plt.close(fig)
+
+
+        quit()
+        
         # Solve the manufactured problem over several trials
         ref_ndofs = []
         high_res_errs  = []
