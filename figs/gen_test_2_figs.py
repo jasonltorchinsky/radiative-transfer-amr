@@ -276,7 +276,7 @@ def main(dir_name = 'figs'):
             print_msg(msg)
             
             # Caluclate high-resolution error
-            if (trial%1 == 0):
+            if (trial == 0) or (np.abs((ndof / prev_ndof) - 2.) < 0.05):
                 perf_0 = perf_counter()
                 msg = ( '[Trial {}] Obtaining high-resolution error...\n'.format(trial)
                        )

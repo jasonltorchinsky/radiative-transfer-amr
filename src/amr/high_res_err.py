@@ -3,6 +3,7 @@ import numpy as np
 from time import perf_counter
 
 from .Error_Indicator import Error_Indicator
+from .hp_steer import hp_steer_col, hp_steer_cell
 
 from dg.mesh import calc_col_key, calc_cell_key
 from dg.projection import push_forward, pull_back

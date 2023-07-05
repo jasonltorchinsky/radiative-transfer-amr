@@ -235,7 +235,7 @@ def main(dir_name = 'figs'):
             print_msg(msg)
             
             # Caluclate high-resolution error
-            if (trial%1 == 0):
+            if (trial == 0) or (np.abs((ndof / prev_ndof) - 2.) < 0.05):
                 perf_0 = perf_counter()
                 msg = ( '[Trial {}] Obtaining high-resolution error...\n'.format(trial)
                        )
@@ -243,7 +243,10 @@ def main(dir_name = 'figs'):
                 
                 high_res_err_ind = high_res_err(mesh, uh_proj,
                                                 kappa, sigma, Phi, [bcs, dirac], f,
-                                                **combo)
+                                                **combo,
+                                                solver = 'gmres',
+                                                precondition = True,
+                                                verbose = True)
                 
                 perf_f = perf_counter()
                 perf_diff = perf_f - perf_0
