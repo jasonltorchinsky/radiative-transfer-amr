@@ -162,7 +162,7 @@ def calc_intr_conv_matrix(mesh, **kwargs):
             
     # Global interior convection matrix is block-diagonal
     # with the column matrices as the blocks
-    intr_conv_mtx = block_diag(col_mtxs, format = 'csr')
+    intr_conv_mtx = block_diag(col_mtxs, format = 'csc')
     
     if kwargs['verbose']:
         tf = perf_counter()

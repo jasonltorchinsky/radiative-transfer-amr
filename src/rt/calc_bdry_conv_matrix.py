@@ -69,7 +69,7 @@ def calc_bdry_conv_matrix(mesh, **kwargs):
                 
     # Global boundary convection matrix is not block-diagonal
     # but we arranged the column matrices in the proper form
-    bdry_conv_mtx = bmat(col_mtxs, format = 'csr')
+    bdry_conv_mtx = bmat(col_mtxs, format = 'csc')
     
     if kwargs['verbose']:
         tf = perf_counter()

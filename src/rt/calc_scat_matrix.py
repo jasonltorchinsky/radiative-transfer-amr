@@ -140,7 +140,7 @@ def calc_scat_matrix_new(mesh, sigma, Phi, **kwargs):
 
     # Global scattering matrix is block-diagonal
     # with the column matrices as the blocks
-    scat_mtx = block_diag(col_mtxs, format = 'csr')
+    scat_mtx = block_diag(col_mtxs, format = 'csc')
 
     # Clean up some variables
     del col_mtxs
@@ -278,7 +278,7 @@ def calc_scat_matrix_old(mesh, sigma, Phi, **kwargs):
 
     # Global scattering matrix is block-diagonal
     # with the column matrices as the blocks
-    scat_mtx = block_diag(col_mtxs, format = 'csr')
+    scat_mtx = block_diag(col_mtxs, format = 'csc')
 
     # Clean up some variables
     del col_mtxs

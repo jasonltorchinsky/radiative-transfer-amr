@@ -32,9 +32,9 @@ def main(dir_name = 'figs'):
     # Maximum number of DOFs
     max_ndof = 2**18
     # Maximum number of trials
-    max_ntrial = 2
+    max_ntrial = 64
     # Minimum error before cut-off
-    min_err = 1.e-6
+    min_err = 1.e-10
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combo_0 = {'full_name'  : 'Uniform Angular h-Refinement',
                'short_name' : 'h-uni-all'}
@@ -47,7 +47,9 @@ def main(dir_name = 'figs'):
     
     combos = [
         combo_0,
-        combo_2
+        combo_1,
+        combo_2,
+        combo_3
     ]
     
     # Output options
@@ -208,7 +210,7 @@ def main(dir_name = 'figs'):
                 )
         print_msg(msg)
         
-        while (ndof < max_ndof) and (trial < max_ntrial) and (err > min_err):
+        while (ndof < max_ndof):# and (trial < max_ntrial) and (err > min_err):
             ndof = mesh.get_ndof()
             ref_ndofs += [ndof]
             
@@ -225,7 +227,9 @@ def main(dir_name = 'figs'):
                    )
             print_msg(msg)
             
-            uh_proj = rtdg(mesh, kappa, sigma, Phi, [bcs, dirac], f, verbose = True)
+            [uh_proj, info] = rtdg(mesh, kappa, sigma, Phi, [bcs, dirac], f,
+                                   verbose = True, solver = 'gmres',
+                                   precondition = True)
             
             perf_f = perf_counter()
             perf_diff = perf_f - perf_0
@@ -235,7 +239,7 @@ def main(dir_name = 'figs'):
             print_msg(msg)
             
             # Caluclate high-resolution error
-            if False:#(trial == 0) or (np.isclose(np.log2(ndof), np.round(np.log2(ndof), decimals = 1), atol = 1.e-4)):
+            if (tiral%1 == 0):
                 perf_0 = perf_counter()
                 msg = ( '[Trial {}] Obtaining high-resolution error...\n'.format(trial)
                        )

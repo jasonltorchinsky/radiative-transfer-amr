@@ -7,6 +7,7 @@ from time import perf_counter
 
 from .calc_mass_matrix import calc_mass_matrix
 from .calc_scat_matrix import calc_scat_matrix
+from .calc_precond_matrix import calc_precond_matrix
 from .calc_intr_conv_matrix import calc_intr_conv_matrix
 from .calc_bdry_conv_matrix import calc_bdry_conv_matrix
 from .calc_forcing_vec import calc_forcing_vec
@@ -28,15 +29,18 @@ def rtdg(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
                       'verbose' : False}
     kwargs = {**default_kwargs, **kwargs}
     
-    M_mass      = calc_mass_matrix(mesh, kappa, **kwargs)
-    M_scat      = calc_scat_matrix(mesh, sigma, Phi, **kwargs)
+    [M_mass_scat, M_pc] = calc_precond_matrix(mesh, kappa, sigma, Phi, **kwargs)
     M_intr_conv = calc_intr_conv_matrix(mesh, **kwargs)
     M_bdry_conv = calc_bdry_conv_matrix(mesh, **kwargs)
     
     M_conv = M_bdry_conv - M_intr_conv
-    M = M_conv + M_mass - M_scat
+    M = M_conv + M_mass_scat
     intr_mask = get_intr_mask(mesh)
-    [M_intr, M_bdry] = split_matrix(mesh, M, intr_mask)
+    [M_intr,    M_bdry] = split_matrix(mesh, M, intr_mask)
+    if kwargs['precondition']:
+        [M_pc, _]       = split_matrix(mesh, M_pc, intr_mask)
+    else:
+        M_pc = None
 
     # Make sure forcing function takes three arguments
     if f is None:
@@ -64,13 +68,6 @@ def rtdg(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     
     if kwargs['verbose']:
         t0 = perf_counter()
-        
-    # Calculate preconditioner
-    if kwargs['precondition']:
-        M_pc = inv(M_conv + M_mass)
-        [M_pc, _] = split_matrix(mesh, M_pc, intr_mask)
-    else:
-        M_pc = None
 
     tol = 1.e-13
     if kwargs['solver'] == 'bicg':
