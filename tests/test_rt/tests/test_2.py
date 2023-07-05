@@ -39,9 +39,9 @@ def test_2(dir_name = 'test_rt'):
     tol_spt = 0.90
     tol_ang = 0.90
     # Maximum number of DOFs
-    max_ndof = 2**14
+    max_ndof = 2**16
     # Maximum number of trials
-    max_ntrial = 8
+    max_ntrial = 20
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combos = [
         ['h',  'uni',     'ang'],
@@ -99,7 +99,7 @@ def test_2(dir_name = 'test_rt'):
                 # Get the base mesh, manufactured solution
                 [Lx, Ly]                   = [2., 3.]
                 pbcs                       = [False, False]
-                [ndof_x, ndof_y, ndof_th]  = [8, 8, 3]
+                [ndof_x, ndof_y, ndof_th]  = [8, 8, 4]
                 has_th                     = True
                 mesh = gen_mesh(Ls     = [Lx, Ly],
                                 pbcs   = pbcs,

@@ -6,7 +6,7 @@ from .Error_Indicator import Error_Indicator
 from .hp_steer import hp_steer_col, hp_steer_cell
 
 from dg.mesh import calc_col_key, calc_cell_key
-from dg.projection import push_forward, pull_back
+from dg.projection import Projection, push_forward, pull_back
 import dg.quadrature as qd
 from rt import rtdg
 
@@ -19,7 +19,7 @@ xsi_projs = {}
 def high_res_err(mesh, proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
     return high_res_err_hpref(mesh, proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs)
 
-def high_res_err_hpref(mesh, proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
+def high_res_err_hpref(mesh, uh, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
     """
     Create a high-resolution version of the mesh, solve the problem there,
     project the solution from the low-resolution mesh onto the high-resolution
@@ -40,13 +40,13 @@ def high_res_err_hpref(mesh, proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
     kwargs = {**default_kwargs, **kwargs}
     
     [bcs, dirac] = bcs_dirac
-
+    
     # Track maximum error(s) to calculate hp-steering only where needed
     col_max_err  = 0.
     col_ref_tol  = kwargs['col_ref_tol']
     cell_max_err = 0.
     cell_ref_tol = kwargs['cell_ref_tol']
-
+    
     # +2 the polynomial degree in each element, h- refine everything once
     add = 2
     mesh_hr = deepcopy(mesh)
@@ -55,26 +55,127 @@ def high_res_err_hpref(mesh, proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
         if col_hr.is_lf:
             col_hr.ndofs[0] += add
             col_hr.ndofs[1] += add
-
+            
             cell_hr_items = sorted(col_hr.cells.items())
             for cell_hr_key, cell_hr in cell_hr_items:
                 if cell_hr.is_lf:
                     cell_hr.ndofs[0] += add
-
+                    
     mesh_hr.ref_mesh(kind = 'all', form = 'h')
     col_hr_items = sorted(mesh_hr.cols.items())
-    
-    [proj_hr, info] = rtdg(mesh_hr, kappa, sigma, Phi, [bcs, dirac], f, **kwargs)
+
+    uh_lr = to_hr(mesh, mesh_hr, uh)
+    uh_lr_vec = uh_lr.to_vector()
+    [uh_hr, info] = rtdg(mesh_hr, kappa, sigma, Phi, [bcs, dirac], f,
+                         x0 = uh_lr_vec, tol = 1.e-6, **kwargs)
     
     err_ind = Error_Indicator(mesh, **kwargs)
     
-    # To get max-norm relative error, we need the maximal value of hr_proj
+    # To get max-norm relative error, we need the maximal value of hr_uh
     max_uh_hr = 0.
 
     # Get max_norm(u_hr - uh) by column
     if kwargs['verbose']:
         t0 = perf_counter()
         
+    for col_hr_key, col_hr in col_hr_items:
+        if col_hr.is_lf:
+            # Get key of lr column
+            [col_hr_i, col_hr_j] = col_hr.idx[:]
+            col_hr_lv = col_hr.lv
+            
+            col_idx = [int(col_hr_i/2), int(col_hr_j/2)]
+            # Get which child col_hr is of col
+            if int(col_hr_i/2) == col_hr_i/2:
+                i_str = '-'
+            else:
+                i_str = '+'
+
+            if int(col_hr_j/2) == col_hr_j/2:
+                j_str = '-'
+            else:
+                j_str = '+'
+            col_chld_str = i_str + j_str
+            
+            col_lv  = int(col_hr_lv - 1)
+            col_key = calc_col_key(col_idx, col_lv)
+            
+            col_err = 0.
+            cell_err = 0.
+            
+            cell_hr_items = sorted(col_hr.cells.items())
+            for cell_hr_key, cell_hr in cell_hr_items:
+                if cell_hr.is_lf:
+                    uh_lr_cell = uh_lr.cols[col_hr_key].cells[cell_hr_key].vals
+                    uh_hr_cell = uh_hr.cols[col_hr_key].cells[cell_hr_key].vals
+                    
+                    cell_err  = max(cell_err, np.amax(np.abs(uh_hr_cell - uh_lr_cell)))
+                    col_err   = max(col_err, cell_err)
+                    max_uh_hr = max(max_uh_hr, np.amax(np.abs(uh_hr_cell)))
+                    
+                    if kwargs['ref_cell']:
+                        err_ind.cols[col_key].cells[cell_key].err = cell_err
+                        cell_max_err = max(cell_max_err, cell_err)
+                        
+            if kwargs['ref_col']:
+                err_ind.cols[col_key].err = col_err
+                col_max_err = max(col_max_err, col_err)
+            
+    # Weight errors to be relative, and calculate hp-steering criteria
+    if kwargs['ref_col']:
+        col_max_err  /= max_uh_hr
+        col_ref_thrsh = col_ref_tol * col_max_err
+        err_ind.col_max_err = col_max_err
+
+    if kwargs['ref_cell']:
+        cell_max_err  /= max_uh_hr
+        cell_ref_thrsh = cell_ref_tol * cell_max_err
+        err_ind.cell_max_err = cell_max_err
+        
+    # Weight to be relative error
+    col_items = sorted(mesh.cols.items())
+    for col_key, col in col_items:
+        if col.is_lf:
+            if kwargs['ref_col']: # If we're refining columns
+                err_ind.cols[col_key].err /= max_uh_hr
+                if err_ind.cols[col_key].err >= col_ref_thrsh: # Does this one need to be refined?
+                    if err_ind.cols[col_key].ref_form == 'hp': # Does the form of refinement need to be chosen?
+                        err_ind.cols[col_key].ref_form = hp_steer_col(mesh, uh, col_key)
+                else: # Needn't be refined
+                    err_ind.cols[col_key].ref_form = None
+                        
+                
+            if kwargs['ref_cell']: # If we're refining cells
+                cell_items = sorted(col.cells.items())
+                for cell_key, cell in cell_items:
+                    if cell.is_lf:
+                        err_ind.cols[col_key].cells[cell_key].err /= max_uh_hr
+                        
+                        if err_ind.cols[col_key].cells[cell_key].err >= cell_ref_thrsh: # Does this one need to be refined?
+                            if err_ind.cols[col_key].cells[cell_key].ref_form == 'hp': # Does the form of refinement need to be chosen?
+                                err_ind.cols[col_key].cells[cell_key].ref_form = \
+                                    hp_steer_cell(mesh, uh, col_key, cell_key)
+                        else: # Needn't be refined
+                            err_ind.cols[col_key].cells[cell_key].ref_form = None
+
+    if kwargs['verbose']:
+        tf = perf_counter()
+        msg = (
+            'Hi-Res. Error Indicator Construction Time: {:8.4f} [s]\n'.format(tf - t0)
+            )
+        print_msg(msg)
+
+    return err_ind
+
+def to_hr(mesh, mesh_hr, uh):
+
+    def zero(x, y, th):
+        return 0
+
+    uh_hr = Projection(mesh_hr, zero)
+    
+    col_hr_items = sorted(mesh_hr.cols.items())
+    
     for col_hr_key, col_hr in col_hr_items:
         if col_hr.is_lf:
             # Get col in mesh that col_hr is contained in
@@ -187,10 +288,9 @@ def high_res_err_hpref(mesh, proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
                                 xsi_proj[aa, rr] = qd.lag_eval(thb, aa, thb_hr[rr])
                         xsi_projs[(nth, nth_hr, cell_chld_str)] = xsi_proj[:]
                     
-                    uh_cell  = proj.cols[col_key].cells[cell_key].vals
-                    uhr_cell = proj_hr.cols[col_hr_key].cells[cell_hr_key].vals
+                    uh_cell  = uh.cols[col_key].cells[cell_key].vals
                     
-                    uh_hr_cell = np.zeros_like(uhr_cell)
+                    uh_hr_cell = np.zeros([nx_hr, ny_hr, nth_hr])
                         
                     for pp in range(0, nx_hr):
                         for qq in range(0, ny_hr):
@@ -203,65 +303,10 @@ def high_res_err_hpref(mesh, proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
                                             xsi_ar = xsi_proj[aa, rr]
                                             uh_hr_cell[pp, qq, rr] += uh_cell[ii, jj, aa] \
                                                 * phi_ip * psi_jq * xsi_ar
-                            
-                    cell_err  = max(cell_err, np.amax(np.abs(uhr_cell - uh_hr_cell)))
-                    col_err   = max(col_err, cell_err)
-                    max_uh_hr = max(max_uh_hr, np.amax(np.abs(uhr_cell)))
+                                            
+                    uh_hr.cols[col_hr_key].cells[cell_hr_key].vals = uh_hr_cell[:,:,:]
                     
-                    if kwargs['ref_cell']:
-                        err_ind.cols[col_key].cells[cell_key].err = cell_err
-                        cell_max_err = max(cell_max_err, cell_err)
-                        
-            if kwargs['ref_col']:
-                err_ind.cols[col_key].err = col_err
-                col_max_err = max(col_max_err, col_err)
-            
-    # Weight errors to be relative, and calculate hp-steering criteria
-    if kwargs['ref_col']:
-        col_max_err  /= max_uh_hr
-        col_ref_thrsh = col_ref_tol * col_max_err
-        err_ind.col_max_err = col_max_err
-
-    if kwargs['ref_cell']:
-        cell_max_err  /= max_uh_hr
-        cell_ref_thrsh = cell_ref_tol * cell_max_err
-        err_ind.cell_max_err = cell_max_err
-        
-    # Weight to be relative error
-    col_items = sorted(mesh.cols.items())
-    for col_key, col in col_items:
-        if col.is_lf:
-            if kwargs['ref_col']: # If we're refining columns
-                err_ind.cols[col_key].err /= max_uh_hr
-                if err_ind.cols[col_key].err >= col_ref_thrsh: # Does this one need to be refined?
-                    if err_ind.cols[col_key].ref_form == 'hp': # Does the form of refinement need to be chosen?
-                        err_ind.cols[col_key].ref_form = hp_steer_col(mesh, proj, col_key)
-                else: # Needn't be refined
-                    err_ind.cols[col_key].ref_form = None
-                        
-                
-            if kwargs['ref_cell']: # If we're refining cells
-                cell_items = sorted(col.cells.items())
-                for cell_key, cell in cell_items:
-                    if cell.is_lf:
-                        err_ind.cols[col_key].cells[cell_key].err /= max_uh_hr
-                        
-                        if err_ind.cols[col_key].cells[cell_key].err >= cell_ref_thrsh: # Does this one need to be refined?
-                            if err_ind.cols[col_key].cells[cell_key].ref_form == 'hp': # Does the form of refinement need to be chosen?
-                                err_ind.cols[col_key].cells[cell_key].ref_form = \
-                                    hp_steer_cell(mesh, proj, col_key, cell_key)
-                        else: # Needn't be refined
-                            err_ind.cols[col_key].cells[cell_key].ref_form = None
-
-    if kwargs['verbose']:
-        tf = perf_counter()
-        msg = (
-            'Hi-Res. Error Indicator Construction Time: {:8.4f} [s]\n'.format(tf - t0)
-            )
-        print_msg(msg)
-
-    return err_ind
-
+    return uh_hr
 
 def high_res_err_pref(mesh, proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
     """

@@ -30,7 +30,7 @@ def main(dir_name = 'figs'):
     
     # Test parameters:
     # Maximum number of DOFs
-    max_ndof = 2**18
+    max_ndof = 2**15
     # Maximum number of trials
     max_ntrial = 64
     # Minimum error before cut-off
@@ -131,22 +131,8 @@ def main(dir_name = 'figs'):
         for _ in range(0, 2):
             mesh.ref_mesh(kind = 'ang', form = 'h')
             
-        for _ in range(0, 2):
+        for _ in range(0, 1):
             mesh.ref_mesh(kind = 'spt', form = 'h')
-            
-        # Randomly refine to start
-        for _ in range(0, 0):
-            kwargs = {'ref_col'      : True,
-                      'col_ref_form' : 'hp',
-                      'col_ref_kind' : 'spt',
-                      'col_ref_tol'  : 0.5,
-                      'ref_cell'      : True,
-                      'cell_ref_form' : 'hp',
-                      'cell_ref_kind' : 'ang',
-                      'cell_ref_tol'  : 0.5}
-            rand_err_ind = rand_err(mesh, **kwargs)
-            
-            mesh = ref_by_ind(mesh, rand_err_ind)
             
         # Manufactured solution
         def X(x):
@@ -172,7 +158,7 @@ def main(dir_name = 'figs'):
         def kappa(x, y):
             return kappa_x(x) * kappa_y(y)
         def sigma(x, y):
-            return 0.2 * kappa(x, y)
+            return 0.1 * kappa(x, y)
         g = 0.8
         def Phi_HG(Th):
             return (1. - g**2) / (1 + g**2 - 2. * g * np.cos(Th))**(3./2.)

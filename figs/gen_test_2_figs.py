@@ -129,22 +129,8 @@ def main(dir_name = 'figs'):
         for _ in range(0, 2):
             mesh.ref_mesh(kind = 'ang', form = 'h')
             
-        for _ in range(0, 2):
+        for _ in range(0, 1):
             mesh.ref_mesh(kind = 'spt', form = 'h')
-            
-        # Randomly refine to start
-        for _ in range(0, 0):
-            kwargs = {'ref_col'      : True,
-                      'col_ref_form' : 'hp',
-                      'col_ref_kind' : 'spt',
-                      'col_ref_tol'  : 0.5,
-                      'ref_cell'      : True,
-                      'cell_ref_form' : 'hp',
-                      'cell_ref_kind' : 'ang',
-                      'cell_ref_tol'  : 0.5}
-            rand_err_ind = rand_err(mesh, **kwargs)
-            
-            mesh = ref_by_ind(mesh, rand_err_ind)
             
         # Test problem : Clear sky with negligible scattering
         def kappa_x(x):
@@ -237,6 +223,7 @@ def main(dir_name = 'figs'):
         high_res_errs  = []
         
         ndof  = mesh.get_ndof()
+        prev_ndof = ndof
         trial = 0
         err   = 1.
         

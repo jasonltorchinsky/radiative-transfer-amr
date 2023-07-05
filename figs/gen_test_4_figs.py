@@ -115,7 +115,7 @@ def main(dir_name = 'figs'):
             return (1. / 32.) * (np.sin(2. * np.pi * x / Lx))**2 + 0.05
         def kappa(x, y):
             term_0 = (-1. / ((2. * (Ly * kappa_x(x))**2))) * (y - (Ly / 2.))**2
-            return 0.45 * (np.sign((4. * x * (Lx - x) / (Lx**2)) * np.exp(term_0) - 0.5) + 1.) + 0.1
+            return 0.45 * (np.sign((4. * x * (Lx - x) / (Lx**2)) * np.exp(term_0) - 0.4) + 1.) + 0.1
         def sigma(x, y):
             return 0.9 * kappa(x, y)
         g = 0.80

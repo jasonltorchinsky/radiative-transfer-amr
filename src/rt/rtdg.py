@@ -24,9 +24,12 @@ def rtdg(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     Solve the RT problem.
     """
     
-    default_kwargs = {'solver' : 'spsolve',
+    default_kwargs = {'solver'       : 'spsolve',
                       'precondition' : False,
-                      'verbose' : False}
+                      'verbose'      : False,
+                      'x0'           : None, # Includes boundary data
+                      'tol'          : 1.e-8
+                      } 
     kwargs = {**default_kwargs, **kwargs}
     
     [M_mass_scat, M_pc] = calc_precond_matrix(mesh, kappa, sigma, Phi, **kwargs)
@@ -69,25 +72,30 @@ def rtdg(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     if kwargs['verbose']:
         t0 = perf_counter()
 
-    tol = 1.e-13
+    tol = kwargs['tol']
+    if kwargs['x0'] is not None:
+        x0 = kwargs['x0']
+        x0 = x0[intr_mask]
+    else:
+        x0 = None
     if kwargs['solver'] == 'bicg':
-        [u_intr_vec, info] = bicg(A, b, tol = tol, M = M_pc)
+        [u_intr_vec, info] = bicg(    A, b, x0 = x0, tol = tol, M = M_pc)
     elif kwargs['solver'] == 'bicgstab':
-        [u_intr_vec, info] = bicgstab(A, b, tol = tol,  M = M_pc)
+        [u_intr_vec, info] = bicgstab(A, b, x0 = x0, tol = tol, M = M_pc)
     elif kwargs['solver'] == 'cg':
-        [u_intr_vec, info] = cg(A, b, tol = tol,  M = M_pc)
+        [u_intr_vec, info] = cg(      A, b, x0 = x0, tol = tol, M = M_pc)
     elif kwargs['solver'] == 'cgs':
-        [u_intr_vec, info] = cgs(A, b, tol = tol,  M = M_pc)
+        [u_intr_vec, info] = cgs(     A, b, x0 = x0, tol = tol, M = M_pc)
     elif kwargs['solver'] == 'gmres':
-        [u_intr_vec, info] = gmres(A, b, tol = tol,  M = M_pc)
+        [u_intr_vec, info] = gmres(   A, b, x0 = x0, tol = tol, M = M_pc)
     elif kwargs['solver'] == 'lgmres':
-        [u_intr_vec, info] = lgmres(A, b, tol = tol,  M = M_pc)
+        [u_intr_vec, info] = lgmres(  A, b, x0 = x0, tol = tol, M = M_pc)
     elif kwargs['solver'] == 'qmr':
-        [u_intr_vec, info] = qmr(A, b, tol = tol,  M1 = M_pc)
+        [u_intr_vec, info] = qmr(     A, b, x0 = x0, tol = tol, M1 = M_pc)
     elif kwargs['solver'] == 'gcrotmk':
-        [u_intr_vec, info] = gcrotmk(A, b, tol = tol,  M = M_pc)
+        [u_intr_vec, info] = gcrotmk( A, b, x0 = x0, tol = tol, M = M_pc)
     elif kwargs['solver'] == 'tfqmr':
-        [u_intr_vec, info] = tfqmr(A, b, tol = tol,  M = M_pc)
+        [u_intr_vec, info] = tfqmr(   A, b, x0 = x0, tol = tol, M = M_pc)
     elif kwargs['solver'] == 'spsolve':
         u_intr_vec = spsolve(A, b)
         info = 0
