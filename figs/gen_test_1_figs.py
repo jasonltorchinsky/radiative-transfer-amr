@@ -270,6 +270,7 @@ def main(dir_name = 'figs'):
         anl_errs  = []
         
         ndof  = mesh.get_ndof()
+        prev_ndof = ndof
         trial = 0
         err   = 1.
         
@@ -311,7 +312,7 @@ def main(dir_name = 'figs'):
             print_msg(msg)
             
             # Caluclate analytic error
-            if (trial%1 == 0):
+            if (trial == 0) or (np.abs((ndof / prev_ndof) - 2.) < 0.05):
                 perf_0 = perf_counter()
                 msg = ( '[Trial {}] Obtaining analytic error...\n'.format(trial)
                        )
@@ -330,6 +331,7 @@ def main(dir_name = 'figs'):
                 anl_err_dofs += [ndof]
                 anl_errs     += [err]
                 calc_anl_err  = True
+                prev_ndof     = ndof
             
             if do_plot_mesh and (trial%1 == 0):
                 perf_0 = perf_counter()

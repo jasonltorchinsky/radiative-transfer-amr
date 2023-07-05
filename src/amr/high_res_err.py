@@ -16,7 +16,7 @@ psi_projs = {}
 xsi_projs = {}
 
 def high_res_err(mesh, proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
-    return high_res_err_pref(mesh, proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs)
+    return high_res_err_hpref(mesh, proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs)
 
 def high_res_err_hpref(mesh, proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
     """
@@ -63,7 +63,7 @@ def high_res_err_hpref(mesh, proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
     mesh_hr.ref_mesh(kind = 'all', form = 'h')
     col_hr_items = sorted(mesh_hr.cols.items())
     
-    proj_hr = rtdg(mesh_hr, kappa, sigma, Phi, [bcs, dirac], f, **kwargs)
+    [proj_hr, info] = rtdg(mesh_hr, kappa, sigma, Phi, [bcs, dirac], f, **kwargs)
     
     err_ind = Error_Indicator(mesh, **kwargs)
     
@@ -298,7 +298,7 @@ def high_res_err_pref(mesh, proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
                 if cell_hr.is_lf:
                     cell_hr.ndofs[0] *= mult
                     
-    proj_hr = rtdg(mesh_hr, kappa, sigma, Phi, [bcs, dirac], f, **kwargs)
+    [proj_hr, info] = rtdg(mesh_hr, kappa, sigma, Phi, [bcs, dirac], f, **kwargs)
     
     # Track maximum error(s) to calculate hp-steering only where needed
     col_max_err  = 0.

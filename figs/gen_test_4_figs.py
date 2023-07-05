@@ -130,7 +130,7 @@ def main(dir_name = 'figs'):
         y_top = Ly
         def bcs(x, y, th):
             sth = 96.
-            if (yy == y_top):
+            if (y == y_top):
                 return np.exp(-((sth / (2. * np.pi)) * (th - (3. * np.pi / 2.)))**2)
             else:
                 return 0
