@@ -32,9 +32,9 @@ def main(dir_name = 'figs'):
     # Maximum number of DOFs
     max_ndof = 2**18
     # Maximum number of trials
-    max_ntrial = 24
+    max_ntrial = 128
     # Minimum error before cut-off
-    min_err = 10.**(-8)
+    min_err = 1.e-6
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combo_0 = {'full_name'  : 'Uniform Angular h-Refinement',
                'short_name' : 'h-uni-ang',
@@ -200,6 +200,67 @@ def main(dir_name = 'figs'):
         def u_intg_xy(x0, x1, y0, y1, th):
             [XY_intg, _] = dblquad(lambda x, y: XY(x, y), x0, x1, y0, y1)
             return XY_intg * Theta(th)
+
+        # Plot extinction coefficient, scattering coefficient, and scattering phase function
+        xx = np.linspace(0, Lx, num = 1000).reshape([1, 1000])
+        yy = np.linspace(0, Ly, num = 1000).reshape([1000, 1])
+        [XX, YY] = np.meshgrid(xx, yy)
+
+        th = np.linspace(0, 2. * np.pi, num = 360)
+
+        kappa_c = kappa(xx, yy)
+        sigma_c = sigma(xx, yy)
+        [vmin, vmax] = [0., max(np.amax(kappa_c), np.amax(sigma_c))]
+        rr = Phi(0, th)
+        
+        ## kappa
+        fig, ax = plt.subplots()
+        kappa_plot = ax.contourf(XX, YY, kappa_c, vmin = vmin, vmax = vmax)
+        ax.set_xlim([0, Lx])
+        ax.set_ylim([0, Ly])
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+        plt.colorbar(kappa_plot, ax = ax)
+        file_name = 'kappa.png'
+        file_path = os.path.join(combo_dir, file_name)
+        plt.tight_layout()
+        plt.savefig(file_path, dpi = 300)
+        plt.close(fig)
+
+        ## sigma
+        fig, ax = plt.subplots()
+        sigma_plot = ax.contourf(XX, YY, sigma_c, vmin = vmin, vmax = vmax)
+        ax.set_xlim([0, Lx])
+        ax.set_ylim([0, Ly])
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+        plt.colorbar(sigma_plot, ax = ax)
+        file_name = 'sigma.png'
+        file_path = os.path.join(combo_dir, file_name)
+        plt.tight_layout()
+        plt.savefig(file_path, dpi = 300)
+        plt.close(fig)
+
+        ## Phi
+        max_r = max(rr)
+        ntick = 2
+        r_ticks = np.linspace(max_r / ntick, max_r, ntick)
+        r_tick_labels = ['{:3.2f}'.format(r_tick) for r_tick in r_ticks]
+        th_ticks = np.linspace(0, 2. * np.pi, num = 8, endpoint = False)
+        th_tick_labels = [r'${:3.2f} \pi$'.format(th_tick/np.pi) for th_tick in th_ticks]
+        fig, ax = plt.subplots(subplot_kw = {'projection': 'polar'})
+        Phi_plot = ax.plot(th, rr, color = 'black')
+        ax.set_rlim([0, max_r])
+        ax.set_rticks(r_ticks, r_tick_labels)
+        ax.set_xlabel(r"$\theta - \theta'$")
+        ax.set_xticks(th_ticks, th_tick_labels)
+        file_name = 'Phi.png'
+        file_path = os.path.join(combo_dir, file_name)
+        plt.tight_layout()
+        plt.savefig(file_path, dpi = 300)
+        plt.close(fig)
+
+        quit()
         
         # Perform some uniform (angular or spatial) h-refinements to start
         for _ in range(0, 0):
@@ -221,13 +282,13 @@ def main(dir_name = 'figs'):
                 )
         print_msg(msg)
         
-        while (ndof < max_ndof) and (trial < max_ntrial) and (err > min_err):
+        while (err > min_err):#(ndof < max_ndof) and (trial < max_ntrial) and (err > min_err):
             ndof = mesh.get_ndof()
             ref_ndofs += [ndof]
             calc_anl_err = False
             
             perf_trial_0 = perf_counter()
-            msg = '[Trial {}] Starting with {} of {} ndofs...\n'.format(trial, ndof, max_ndof)
+            msg = '[Trial {}] Starting with {} of {} ndofs and error {:.4E}...\n'.format(trial, ndof, max_ndof, err)
             print_msg(msg)
             
             # Set up output directories
@@ -239,11 +300,13 @@ def main(dir_name = 'figs'):
                    )
             print_msg(msg)
             
-            uh_proj = rtdg(mesh, kappa, sigma, Phi, [bcs, dirac], f, verbose = True)
+            [uh_proj, info] = rtdg(mesh, kappa, sigma, Phi, [bcs, dirac], f, verbose = True,
+                                   solver = 'spsolve')
             
             perf_f = perf_counter()
             perf_diff = perf_f - perf_0
             msg = ( '[Trial {}] Numerical solution obtained!\n'.format(trial) +
+                    22 * ' ' + 'Solver Status: {}\n'.format(info) +
                     22 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_diff)
                    )
             print_msg(msg)

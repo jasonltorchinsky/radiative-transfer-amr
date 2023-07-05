@@ -32,57 +32,22 @@ def main(dir_name = 'figs'):
     # Maximum number of DOFs
     max_ndof = 2**18
     # Maximum number of trials
-    max_ntrial = 2
+    max_ntrial = 6
     # Minimum error before cut-off
-    min_err = 10.**(-7)
+    min_err = 1.e-6
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combo_0 = {'full_name'  : 'Uniform Angular h-Refinement',
-               'short_name' : 'h-uni-ang',
-               'ref_type'   : 'uni',
-               'ref_col'      : True,
-               'col_ref_form' : 'h',
-               'col_ref_kind' : 'ang',
-               'col_ref_tol'  : 0.0,
-               'ref_cell'      : False,
-               'cell_ref_form' : None,
-               'cell_ref_kind' : None,
-               'cell_ref_tol'  : None}
+               'short_name' : 'h-uni-all'}
     combo_1 = {'full_name'  : 'Uniform Angular p-Refinement',
-               'short_name' : 'p-uni-ang',
-               'ref_type'   : 'uni',
-               'ref_col'      : True,
-               'col_ref_form' : 'p',
-               'col_ref_kind' : 'ang',
-               'col_ref_tol'  : 0.0,
-               'ref_cell'      : False,
-               'cell_ref_form' : None,
-               'cell_ref_kind' : None,
-               'cell_ref_tol'  : None}
-    combo_3 = {'full_name'  : 'Inhomogenous Anisotropic Adaptive Angular h-Refinement',
-               'short_name' : 'h-ia-amr-jmp-ang',
-               'ref_type'   : 'amr-jmp-ang',
-               'ref_col'      : False,
-               'col_ref_form' : None,
-               'col_ref_kind' : None,
-               'col_ref_tol'  : None,
-               'ref_cell'      : True,
-               'cell_ref_form' : 'h',
-               'cell_ref_kind' : 'ang',
-               'cell_ref_tol'  : 0.85}
-    combo_4 = {'full_name'  : 'Inhomogenous Anisotropic Adaptive Angular hp-Refinement',
-               'short_name' : 'hp-ia-amr-jmp-ang',
-               'ref_type'   : 'amr-jmp-ang',
-               'ref_col'      : False,
-               'col_ref_form' : None,
-               'col_ref_kind' : None,
-               'col_ref_tol'  : None,
-               'ref_cell'      : True,
-               'cell_ref_form' : 'hp',
-               'cell_ref_kind' : 'ang',
-               'cell_ref_tol'  : 0.85}
+               'short_name' : 'p-uni-all'}
+    combo_2 = {'full_name'  : 'Inhomogenous Anisotropic Adaptive Angular h-Refinement',
+               'short_name' : 'h-amr-all',}
+    combo_3 = {'full_name'  : 'Inhomogenous Anisotropic Adaptive Angular hp-Refinement',
+               'short_name' : 'hp-amr-all'}
     
     combos = [
-        combo_0
+        combo_0,
+        combo_2
     ]
     
     # Output options
@@ -97,7 +62,7 @@ def main(dir_name = 'figs'):
     combo_high_res_errs = {}
     
     perf_all_0 = perf_counter()
-    msg = ( 'Generating test 2 figures...\n' )
+    msg = ( 'Generating test 3 figures...\n' )
     print_msg(msg)
     
     for combo in combos:
@@ -114,8 +79,8 @@ def main(dir_name = 'figs'):
         
         # Get the base mesh, manufactured solution
         [Lx, Ly]                   = [3., 2.]
-        pbcs                       = [False, False]
-        [ndof_x, ndof_y, ndof_th]  = [8, 8, 4]
+        pbcs                       = [True, False]
+        [ndof_x, ndof_y, ndof_th]  = [3, 3, 3]
         has_th                     = True
         
         mesh = Mesh(Ls     = [Lx, Ly],
@@ -143,32 +108,25 @@ def main(dir_name = 'figs'):
             
             mesh = ref_by_ind(mesh, rand_err_ind)
             
-        # Test problem : Cloud layer
+        # Test problem : Cloud layer with Rayleigh scattering
         def kappa_x(x):
             return (1. / 32.) * (np.sin(2. * np.pi * x / Lx))**2 + 0.1
         def kappa(x, y):
             term_0 = (-1. / ((2. * (Ly * kappa_x(x))**2))) * (y - (Ly / 2.))**2
-            return 0.5 * (np.sign(np.exp(term_0) - 0.5) + 1.) + 0.1
+            return 0.45 * (np.sign(np.exp(term_0) - 0.5) + 1.) + 0.1
         def sigma(x, y):
             return 0.9 * kappa(x, y)
-        g = 0.8
-        def Phi_HG(Th):
-            return (1. - g**2) / (1 + g**2 - 2. * g * np.cos(Th))**(3./2.)
-        [norm, abserr] = quad(lambda Th : Phi_HG(Th), 0., 2. * np.pi)
         def Phi(th, phi):
-            val = (1. - g**2) / (1 + g**2 - 2. * g * np.cos(th - phi))**(3./2.)
-            return val / norm
+            return (1. / (3. * np.pi)) * (1. + (np.cos(th - phi))**2)
         def f(x, y, th):
             return 0
         y_top = Ly
         def bcs(x, y, th):
-            dth = 0.5
-            ang_min = 3.0 * np.pi / 2.0 - dth / 2.0
-            ang_max = 3.0 * np.pi / 2.0 + dth / 2.0
-            if (y == y_top) and (ang_min <= th) and (th <= ang_max):
-                return 10.0
+            sth = 96.
+            if (y == y_top):
+                return np.exp(-((sth / (2. * np.pi)) * (th - (3. * np.pi / 2.)))**2)
             else:
-                return 0.0
+                return 0
         dirac = [None, None, None]
 
         # Plot extinction coefficient, scattering coefficient, and scattering phase function
@@ -229,9 +187,7 @@ def main(dir_name = 'figs'):
         plt.tight_layout()
         plt.savefig(file_path, dpi = 300)
         plt.close(fig)
-
-
-        quit()
+        
         
         # Solve the manufactured problem over several trials
         ref_ndofs = []
@@ -253,7 +209,7 @@ def main(dir_name = 'figs'):
             ref_ndofs += [ndof]
             
             perf_trial_0 = perf_counter()
-            msg = '[Trial {}] Starting with {} of {} ndofs...\n'.format(trial, ndof, max_ndof)
+            msg = '[Trial {}] Starting with {} of {} ndofs and error {:.4E}...\n'.format(trial, ndof, max_ndof, err)
             print_msg(msg)
             
             # Set up output directories
@@ -265,7 +221,7 @@ def main(dir_name = 'figs'):
                    )
             print_msg(msg)
             
-            uh_proj = rtdg(mesh, kappa, sigma, Phi, [bcs, dirac], f, verbose = True)
+            [uh_proj, info] = rtdg(mesh, kappa, sigma, Phi, [bcs, dirac], f, verbose = True)
             
             perf_f = perf_counter()
             perf_diff = perf_f - perf_0
@@ -275,7 +231,7 @@ def main(dir_name = 'figs'):
             print_msg(msg)
             
             # Caluclate high-resolution error
-            if (trial == 0) or (np.isclose(np.log2(ndof), np.round(np.log2(ndof), decimals = 1), atol = 1.e-4)):
+            if False:#(trial == 0) or (np.isclose(np.log2(ndof), np.round(np.log2(ndof), decimals = 1), atol = 1.e-4)):
                 perf_0 = perf_counter()
                 msg = ( '[Trial {}] Obtaining high-resolution error...\n'.format(trial)
                        )
@@ -385,7 +341,7 @@ def main(dir_name = 'figs'):
                 print_msg(msg)
                 
                 
-            if do_plot_err_ind:
+            if False:#do_plot_err_ind:
                     perf_0 = perf_counter()
                     msg = ( '[Trial {}] Plotting analytic error indicator...\n'.format(trial)
                            )
@@ -403,27 +359,44 @@ def main(dir_name = 'figs'):
                     print_msg(msg)
                 
             # Refine the mesh for the next trial
-            ref_type = combo['ref_type']
-            if ref_type == 'uni': # Uniform
-                mesh.ref_mesh(kind = combo['col_ref_kind'],
-                              form = combo['col_ref_form'])
-            else:
-                if ref_type == 'amr-jmp-ang': # Analytic angular error indicator
-                    err_ind = cell_jump_err(mesh, uh_proj, **combo)
-                elif ref_type == 'amr-jmp-spt': # Analytic angular error indicator
-                    err_ind = col_jump_err(mesh, uh_proj, **combo)
-                elif ref_type == 'nneg': # Non-negative error indicator
-                    err_ind = nneg_err(mesh, uh_proj, **combo)
-                    
+            if combo['short_name'] == 'h-uni-all':
+                mesh.ref_mesh(kind = 'all', form = 'h')
+            elif combo['short_name'] == 'p-uni-all':
+                mesh.ref_mesh(kind = 'all', form = 'p')
+            elif combo['short_name'] == 'h-amr-all':
+                kwargs_ang = {'ref_col'      : False,
+                              'col_ref_form' : None,
+                              'col_ref_kind' : None,
+                              'col_ref_tol'  : None,
+                              'ref_cell'      : True,
+                              'cell_ref_form' : 'h',
+                              'cell_ref_kind' : 'ang',
+                              'cell_ref_tol'  : 0.9}
+                err_ind_ang = cell_jump_err(mesh, uh_proj, **kwargs_ang)
+                
+                kwargs_spt = {'ref_col'      : True,
+                              'col_ref_form' : 'h',
+                              'col_ref_kind' : 'spt',
+                              'col_ref_tol'  : 0.85,
+                              'ref_cell'      : False,
+                              'cell_ref_form' : None,
+                              'cell_ref_kind' : None,
+                              'cell_ref_tol'  : None}
+                err_ind_spt = col_jump_err( mesh, uh_proj, **combo)
+                
                 if do_plot_err_ind:
                     perf_0 = perf_counter()
-                    msg = ( '[Trial {}] Plotting error indicator...\n'.format(trial)
+                    msg = ( '[Trial {}] Plotting error indicators...\n'.format(trial)
                            )
                     print_msg(msg)
-                
-                    file_name = 'err_ind.png'
+                    
+                    file_name = 'err_ind_ang.png'
                     file_path = os.path.join(trial_dir, file_name)
-                    plot_error_indicator(mesh, err_ind, file_name = file_path)
+                    plot_error_indicator(mesh, err_ind_ang, file_name = file_path)
+                    
+                    file_name = 'err_ind_spt.png'
+                    file_path = os.path.join(trial_dir, file_name)
+                    plot_error_indicator(mesh, err_ind_spt, file_name = file_path)
                     
                     perf_f = perf_counter()
                     perf_diff = perf_f - perf_0
@@ -432,7 +405,54 @@ def main(dir_name = 'figs'):
                            )
                     print_msg(msg)
                     
-                mesh = ref_by_ind(mesh, err_ind)
+                mesh = ref_by_ind(mesh, err_ind_ang)
+                mesh = ref_by_ind(mesh, err_ind_spt)
+                
+            elif combo['short_name'] == 'hp-amr-all':
+                kwargs_ang = {'ref_col'      : False,
+                              'col_ref_form' : None,
+                              'col_ref_kind' : None,
+                              'col_ref_tol'  : None,
+                              'ref_cell'      : True,
+                              'cell_ref_form' : 'hp',
+                              'cell_ref_kind' : 'ang',
+                              'cell_ref_tol'  : 0.9}
+                err_ind_ang = cell_jump_err(mesh, uh_proj, **kwargs_ang)
+                
+                kwargs_spt = {'ref_col'      : True,
+                              'col_ref_form' : 'hp',
+                              'col_ref_kind' : 'spt',
+                              'col_ref_tol'  : 0.85,
+                              'ref_cell'      : False,
+                              'cell_ref_form' : None,
+                              'cell_ref_kind' : None,
+                              'cell_ref_tol'  : None}
+                err_ind_spt = col_jump_err( mesh, uh_proj, **combo)
+                
+                if do_plot_err_ind:
+                    perf_0 = perf_counter()
+                    msg = ( '[Trial {}] Plotting error indicators...\n'.format(trial)
+                           )
+                    print_msg(msg)
+                    
+                    file_name = 'err_ind_ang.png'
+                    file_path = os.path.join(trial_dir, file_name)
+                    plot_error_indicator(mesh, err_ind_ang, file_name = file_path)
+                    
+                    file_name = 'err_ind_spt.png'
+                    file_path = os.path.join(trial_dir, file_name)
+                    plot_error_indicator(mesh, err_ind_spt, file_name = file_path)
+                    
+                    perf_f = perf_counter()
+                    perf_diff = perf_f - perf_0
+                    msg = ( '[Trial {}] Error indicator plotted!\n'.format(trial) +
+                            22 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_diff)
+                           )
+                    print_msg(msg)
+                    
+                mesh = ref_by_ind(mesh, err_ind_ang)
+                mesh = ref_by_ind(mesh, err_ind_spt)
+                
                 
             perf_trial_f    = perf_counter()
             perf_trial_diff = perf_trial_f - perf_trial_0

@@ -55,20 +55,20 @@ def anl_err_hr_L2(mesh, proj, anl_sol, **kwargs):
             if (ndof_x, ndof_x_hr) in phi_projs.keys():
                 phi_proj = phi_projs[(ndof_x, ndof_x_hr)][:]
             else:
-                [xxb, _, _, _, _, _]    = qd.quad_xyth(nnodes_x = ndof_x)
+                [xxb,    _, _, _, _, _] = qd.quad_xyth(nnodes_x = ndof_x)
                 
                 [xxb_hr, _, _, _, _, _] = qd.quad_xyth(nnodes_x = ndof_x_hr)
                 
                 phi_proj = np.zeros([ndof_x, ndof_x_hr])
                 for ii in range(0, ndof_x):
                     for pp in range(0, ndof_x_hr):
-                        phi_proj[ii, pp] =  qd.lag_eval(xxb, ii, xxb_hr[pp])
+                        phi_proj[ii, pp] = qd.lag_eval(xxb, ii, xxb_hr[pp])
                 phi_projs[(ndof_x, ndof_x_hr)] = phi_proj[:]
                 
             if (ndof_y, ndof_y_hr) in psi_projs.keys():
                 psi_proj = psi_projs[(ndof_y, ndof_y_hr)][:]
             else:
-                [_, _, yyb, __, _, _] = qd.quad_xyth(nnodes_y = ndof_y)
+                [_, _, yyb   , _, _, _] = qd.quad_xyth(nnodes_y = ndof_y)
                 
                 [_, _, yyb_hr, _, _, _] = qd.quad_xyth(nnodes_y = ndof_y_hr)
                 
@@ -81,10 +81,10 @@ def anl_err_hr_L2(mesh, proj, anl_sol, **kwargs):
             [xxb, wx, yyb, wy, _, _] = qd.quad_xyth(nnodes_x = ndof_x_hr,
                                                     nnodes_y = ndof_y_hr)
             
-            xxf = push_forward(x0, xf, xxb).reshape(ndof_x_hr, 1, 1)
-            wx  = wx.reshape(ndof_x_hr, 1, 1)
-            yyf = push_forward(y0, yf, yyb).reshape(1, ndof_y_hr, 1)
-            wy  = wy.reshape(1, ndof_y_hr, 1)
+            xxf = push_forward(x0, xf, xxb).reshape([ndof_x_hr, 1, 1])
+            wx  = wx.reshape([ndof_x_hr, 1, 1])
+            yyf = push_forward(y0, yf, yyb).reshape([1, ndof_y_hr, 1])
+            wy  = wy.reshape([1, ndof_y_hr, 1])
                 
             # Loop through cells to calculate error
             col_err    = 0.
@@ -102,9 +102,9 @@ def anl_err_hr_L2(mesh, proj, anl_sol, **kwargs):
                     if (ndof_th, ndof_th_hr) in xsi_projs.keys():
                         xsi_proj = xsi_projs[(ndof_th, ndof_th_hr)][:]
                     else:
-                        [_, _, _, _, thb,  _] = qd.quad_xyth(nnodes_th = ndof_th)
+                        [_, _, _, _, thb,    _] = qd.quad_xyth(nnodes_th = ndof_th)
                         
-                        [_, _, _, _, thb_hr,  _] = qd.quad_xyth(nnodes_th = ndof_th_hr)
+                        [_, _, _, _, thb_hr, _] = qd.quad_xyth(nnodes_th = ndof_th_hr)
                         
                         xsi_proj = np.zeros([ndof_th, ndof_th_hr])
                         for aa in range(0, ndof_th):
@@ -113,30 +113,31 @@ def anl_err_hr_L2(mesh, proj, anl_sol, **kwargs):
                         xsi_projs[(ndof_th, ndof_th_hr)] = xsi_proj[:]
                         
                     [_, _, _, _, thb, wth] = qd.quad_xyth(nnodes_th = ndof_th_hr)
-                    thf = push_forward(th0, th1, thb).reshape(1, 1, ndof_th_hr)
-                    wth = wth.reshape(1, 1, ndof_th_hr)
+                    thf = push_forward(th0, th1, thb).reshape([1, 1, ndof_th_hr])
+                    wth = wth.reshape([1, 1, ndof_th_hr])
                     
                     # Calculate error
                     u_cell  = anl_sol(xxf, yyf, thf)
                     uh_cell = proj.cols[col_key].cells[cell_key].vals
                     uh_cell_hr = np.zeros([ndof_x_hr, ndof_y_hr, ndof_th_hr])
-                    for ii in range(0, ndof_x):
-                        for jj in range(0, ndof_y):
-                            for aa in range(0, ndof_th):
-                                uh_ija = uh_cell[ii, jj, aa]
-                                for pp in range(0, ndof_x_hr):
+                    for pp in range(0, ndof_x_hr):
+                        for qq in range(0, ndof_y_hr):
+                            for rr in range(0, ndof_th_hr):
+                                for ii in range(0, ndof_x):
                                     phi_ip = phi_proj[ii, pp]
-                                    for qq in range(0, ndof_y_hr):
+                                    for jj in range(0, ndof_y):
                                         psi_jq = psi_proj[jj, qq]
-                                        for rr in range(0, ndof_th_hr):
+                                        for aa in range(0, ndof_th):
                                             xsi_ar = xsi_proj[aa, rr]
+                                            
+                                            uh_ija = uh_cell[ii, jj, aa]
                                             
                                             uh_cell_hr[pp, qq, rr] += uh_ija * phi_ip * psi_jq * xsi_ar
                     
-                    cell_err = np.sum((dx * dy * dth / 8.) * wx * wy * wth * (u_cell - uh_cell_hr)**2)
+                    cell_err = (dx * dy * dth / 8.) * np.sum(wx * wy * wth * (u_cell - uh_cell_hr)**2)
                     col_err += cell_err
                     
-                    u_intg  += np.sum((dx * dy * dth / 8.) * wx * wy * wth * (u_cell)**2)
+                    u_intg  += (dx * dy * dth / 8.) * np.sum(wx * wy * wth * (u_cell)**2)
                     
                     if kwargs['ref_cell']:
                         err_ind.cols[col_key].cells[cell_key].err = cell_err

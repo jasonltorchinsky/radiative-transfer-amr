@@ -72,30 +72,32 @@ def rtdg(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     else:
         M_pc = None
 
-        tol = 1.e-13
+    tol = 1.e-13
     if kwargs['solver'] == 'bicg':
-        [u_intr_vec, _] = bicg(A, b, tol = tol, M = M_pc)
+        [u_intr_vec, info] = bicg(A, b, tol = tol, M = M_pc)
     elif kwargs['solver'] == 'bicgstab':
-        [u_intr_vec, _] = bicgstab(A, b, tol = tol,  M = M_pc)
+        [u_intr_vec, info] = bicgstab(A, b, tol = tol,  M = M_pc)
     elif kwargs['solver'] == 'cg':
-        [u_intr_vec, _] = cg(A, b, tol = tol,  M = M_pc)
+        [u_intr_vec, info] = cg(A, b, tol = tol,  M = M_pc)
     elif kwargs['solver'] == 'cgs':
-        [u_intr_vec, _] = cgs(A, b, tol = tol,  M = M_pc)
+        [u_intr_vec, info] = cgs(A, b, tol = tol,  M = M_pc)
     elif kwargs['solver'] == 'gmres':
-        [u_intr_vec, _] = gmres(A, b, tol = tol,  M = M_pc)
+        [u_intr_vec, info] = gmres(A, b, tol = tol,  M = M_pc)
     elif kwargs['solver'] == 'lgmres':
-        [u_intr_vec, _] = lgmres(A, b, tol = tol,  M = M_pc)
+        [u_intr_vec, info] = lgmres(A, b, tol = tol,  M = M_pc)
     elif kwargs['solver'] == 'qmr':
-        [u_intr_vec, _] = qmr(A, b, tol = tol,  M1 = M_pc)
+        [u_intr_vec, info] = qmr(A, b, tol = tol,  M1 = M_pc)
     elif kwargs['solver'] == 'gcrotmk':
-        [u_intr_vec, _] = gcrotmk(A, b, tol = tol,  M = M_pc)
+        [u_intr_vec, info] = gcrotmk(A, b, tol = tol,  M = M_pc)
     elif kwargs['solver'] == 'tfqmr':
-        [u_intr_vec, _] = tfqmr(A, b, tol = tol,  M = M_pc)
+        [u_intr_vec, info] = tfqmr(A, b, tol = tol,  M = M_pc)
     elif kwargs['solver'] == 'spsolve':
         u_intr_vec = spsolve(A, b)
+        info = 0
     else:
         kwargs['solver'] = 'spsolve'
         u_intr_vec = spsolve(A, b)
+        info = 0
         
     if kwargs['verbose']:
         tf = perf_counter()
@@ -112,7 +114,7 @@ def rtdg(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     u_vec  = merge_vectors(u_intr_vec, bcs_vec, intr_mask)
     u_proj = to_projection(mesh, u_vec)
 
-    return u_proj
+    return [u_proj, info]
 
 def merge_vecs(intr_mask, intr_vec, bdry_vec):
     
