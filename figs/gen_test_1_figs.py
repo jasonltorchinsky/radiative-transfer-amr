@@ -13,8 +13,7 @@ from dg.projection import Projection, to_projection
 from dg.projection.utils import plot_xy, plot_xth, plot_yth, plot_xyth, plot_th
 import dg.quadrature as qd
 from rt import rtdg
-from amr import anl_err, anl_err_ang, anl_err_spt, cell_jump_err, col_jump_err, \
-    rand_err, high_res_err, low_res_err, nneg_err, ref_by_ind
+from amr import cell_jump_err, col_jump_err, ref_by_ind, total_anl_err
 from amr.utils import plot_error_indicator
 
 from utils import print_msg
@@ -30,9 +29,9 @@ def main(dir_name = 'figs'):
     
     # Test parameters:
     # Maximum number of DOFs
-    max_ndof = 2**15
+    max_ndof = 2**14
     # Maximum number of trials
-    max_ntrial = 64
+    max_ntrial = 3
     # Minimum error before cut-off
     min_err = 1.e-10
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
@@ -298,13 +297,13 @@ def main(dir_name = 'figs'):
             print_msg(msg)
             
             # Caluclate analytic error
-            if (trial == 0) or (np.abs((ndof / prev_ndof) - 2.) < 0.05):
+            if True:#(trial == 0) or (np.abs((ndof / prev_ndof) - 2.) < 0.05):
                 perf_0 = perf_counter()
                 msg = ( '[Trial {}] Obtaining analytic error...\n'.format(trial)
                        )
                 print_msg(msg)
                 
-                anl_err_ind = anl_err(mesh, uh_proj, u, ref_col = False, ref_cell = True)
+                anl_err = total_anl_err(mesh, uh_proj, u)
                 
                 perf_f = perf_counter()
                 perf_diff = perf_f - perf_0
@@ -313,7 +312,7 @@ def main(dir_name = 'figs'):
                        )
                 print_msg(msg)
                 
-                err           = anl_err_ind.cell_max_err
+                err           = anl_err
                 anl_err_dofs += [ndof]
                 anl_errs     += [err]
                 calc_anl_err  = True
@@ -345,7 +344,7 @@ def main(dir_name = 'figs'):
                        )
                 print_msg(msg)
                 
-            if do_plot_mesh_p and (trial%3 == 0):
+            if do_plot_mesh_p and (trial%1 == 0):
                 perf_0 = perf_counter()
                 msg = ( '[Trial {}] Plotting mesh polynomial degree...\n'.format(trial)
                        )
@@ -371,7 +370,7 @@ def main(dir_name = 'figs'):
                        )
                 print_msg(msg)
                 
-            if do_plot_uh and (trial%3 == 0):
+            if do_plot_uh and (trial%1 == 0):
                 perf_0 = perf_counter()
                 msg = ( '[Trial {}] Plotting numerical solution...\n'.format(trial)
                        )
@@ -439,7 +438,7 @@ def main(dir_name = 'figs'):
                        )
                 print_msg(msg)
                 
-            if do_plot_diff and (trial%3 == 0):
+            if do_plot_diff and (trial%1 == 0):
                 perf_0 = perf_counter()
                 msg = ( '[Trial {}] Plotting difference in solutions...\n'.format(trial)
                        )
@@ -480,23 +479,6 @@ def main(dir_name = 'figs'):
                         22 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_diff)
                        )
                 print_msg(msg)
-                
-            if do_plot_err_ind and (trial%3 == 0) and calc_anl_err:
-                    perf_0 = perf_counter()
-                    msg = ( '[Trial {}] Plotting analytic error indicator...\n'.format(trial)
-                           )
-                    print_msg(msg)
-                
-                    file_name = 'anl_err_ind.png'
-                    file_path = os.path.join(trial_dir, file_name)
-                    plot_error_indicator(mesh, anl_err_ind, file_name = file_path)
-                    
-                    perf_f = perf_counter()
-                    perf_diff = perf_f - perf_0
-                    msg = ( '[Trial {}] Analytic error indicator plotted!\n'.format(trial) +
-                            22 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_diff)
-                           )
-                    print_msg(msg)
                 
             # Refine the mesh for the next trial
             ref_type = combo['ref_type']

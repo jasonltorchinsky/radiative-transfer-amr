@@ -179,8 +179,8 @@ def intg_cell_bdry_xy(mesh, proj, col_key, cell_key):
         [_, w_x, _, w_y, _, _] = qd.quad_xyth(nnodes_x = ndof_x,
                                               nnodes_y = ndof_y)
 
-        w_x = w_x.reshape(ndof_x, 1)
-        w_y = w_y.reshape(1, ndof_y)
+        w_x = w_x.reshape(ndof_x, 1, 1)
+        w_y = w_y.reshape(1, ndof_y, 1)
         
         dcoeff = (dx * dy / 4.)
         
@@ -192,6 +192,10 @@ def intg_cell_bdry_xy(mesh, proj, col_key, cell_key):
             
             proj_cell  = proj_col.cells[cell_key]
             uh_cell    = proj_cell.vals
+
+            [_, _, _, _, _, thb] = qd.quad_xyth(nnodes_th = ndof_th)
+                    
+            uh_th = dcoeff * np.sum(w_x * w_y * uh_cell, axis = (0, 1))
         
             # Store spatial integral along each angular face
             # F = 0 => Bottom
@@ -199,11 +203,12 @@ def intg_cell_bdry_xy(mesh, proj, col_key, cell_key):
             
             for F in range(0, 2):
                 if F == 0:
-                    th_idx = 0
+                    thb_rr = -1.
                 else:
-                    th_idx = ndof_th - 1
+                    thb_rr = 1.
                     
-                cell_intg_xy[F] = np.sum(dcoeff * w_x * w_y * uh_cell[:, :, th_idx],
-                                         axis = (0, 1))
+                for aa in range(0, ndof_th):
+                    uh_end += uh_cell[aa] * qd.lag_eval(thb, aa, thb_rr)
+                cell_intg_xy[F] = uh_end
                                 
         return cell_intg_xy

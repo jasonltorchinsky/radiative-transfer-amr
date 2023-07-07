@@ -19,7 +19,7 @@ import dg.quadrature as qd
 from rt import calc_mass_matrix, calc_scat_matrix, \
     calc_intr_conv_matrix, calc_bdry_conv_matrix, \
     calc_forcing_vec
-from amr import anl_err, anl_err_ang, anl_err_spt, cell_jump_err, col_jump_err, \
+from amr import total_anl_err, anl_err_ang, anl_err_spt, cell_jump_err, col_jump_err, \
     rand_err, high_res_err, low_res_err, nneg_err, ref_by_ind
 from amr.utils import plot_error_indicator, plot_cell_jumps
 
@@ -39,13 +39,13 @@ def test_2(dir_name = 'test_rt'):
     tol_spt = 0.90
     tol_ang = 0.90
     # Maximum number of DOFs
-    max_ndof = 2**16
+    max_ndof = 2**14
     # Maximum number of trials
     max_ntrial = 20
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combos = [
-        ['h',  'uni',     'ang'],
-        ['h',  'amr-jmp', 'ang']
+        ['h', 'uni', 'ang'],
+        ['p', 'uni', 'ang']
     ]
     
     # Test Output Parameters
@@ -63,8 +63,8 @@ def test_2(dir_name = 'test_rt'):
     prob_nums = []
     for x_num in range(2, 3):
         for y_num in range(2, 3):
-            for th_num in range(3, 4):
-                for scat_num in range(2, 3):
+            for th_num in range(0, 4):
+                for scat_num in range(0, 3):
                     prob_nums += [[x_num, y_num, th_num, scat_num]]
     # Which sub-problems to solve
     sub_probs = ['comp']
@@ -228,51 +228,53 @@ def test_2(dir_name = 'test_rt'):
                     else:
                         kwargs = {}
                         
-                    anl_err_ind = anl_err(mesh, uh_proj, u, **kwargs)
-                    
-                    if ref_kind == 'spt':
-                        anl_errs += [anl_err_ind.col_max_err]
-                    elif ref_kind == 'ang':
-                        anl_errs += [anl_err_ind.cell_max_err]
-                    elif ref_kind == 'all':
-                        anl_errs += [max(anl_err_ind.col_max_err, anl_err_ind.cell_max_err)]
-                    else:
-                        anl_errs += [anl_err_ind.max_col_err]
+                    #anl_err_ind = anl_err(mesh, uh_proj, u, **kwargs)
+                    anl_err = total_anl_err(mesh, uh_proj, u)
+
+                    anl_errs += [anl_err]
+                    #if ref_kind == 'spt':
+                    #    anl_errs += [anl_err_ind.col_max_err]
+                    #elif ref_kind == 'ang':
+                    #    anl_errs += [anl_err_ind.cell_max_err]
+                    #elif ref_kind == 'all':
+                    #    anl_errs += [max(anl_err_ind.col_max_err, anl_err_ind.cell_max_err)]
+                    #else:
+                    #    anl_errs += [anl_err_ind.max_col_err]
                         
                     ## Analytic angularly-integrated error
-                    kwargs = {'ref_col'      : True,
-                              'col_ref_form' : ref_form,
-                              'col_ref_kind' : 'spt',
-                              'col_ref_tol'  : tol_spt,
-                              'ref_cell'      : False}
-                    anl_err_ind_spt = anl_err_spt(mesh, uh_proj, u_intg_th, **kwargs)
-                    anl_spt_errs += [anl_err_ind_spt.col_max_err]
+                    #kwargs = {'ref_col'      : True,
+                    #          'col_ref_form' : ref_form,
+                    #          'col_ref_kind' : 'spt',
+                    #          'col_ref_tol'  : tol_spt,
+                    #          'ref_cell'      : False}
+                    #anl_err_ind_spt = anl_err_spt(mesh, uh_proj, u_intg_th, **kwargs)
+                    #anl_spt_errs += [anl_err_ind_spt.col_max_err]
                     
                     ## Analytic spatially-integrated error
-                    kwargs = {'ref_col'      : False,
-                              'ref_cell'      : True,
-                              'cell_ref_form' : ref_form,
-                              'cell_ref_kind' : 'ang',
-                              'cell_ref_tol'  : tol_ang}
-                    anl_err_ind_ang = anl_err_ang(mesh, uh_proj, u_intg_xy, **kwargs)
-                    anl_ang_errs += [anl_err_ind_ang.cell_max_err]
+                    #kwargs = {'ref_col'      : False,
+                    #          'ref_cell'      : True,
+                    #          'cell_ref_form' : ref_form,
+                    #          'cell_ref_kind' : 'ang',
+                    #          'cell_ref_tol'  : tol_ang}
+                    #anl_err_ind_ang = anl_err_ang(mesh, uh_proj, u_intg_xy, **kwargs)
+                    #anl_ang_errs += [anl_err_ind_ang.cell_max_err]
                     
                     ## Jump error
-                    kwargs = {'ref_col'      : True,
-                              'col_ref_form' : ref_form,
-                              'col_ref_kind' : 'spt',
-                              'col_ref_tol'  : tol_spt,
-                              'ref_cell'      : False}
-                    jmp_err_ind_spt = col_jump_err(mesh, uh_proj, **kwargs)
-                    jmp_spt_errs += [jmp_err_ind_spt.col_max_err]
-
-                    kwargs = {'ref_col'      : False,
-                              'ref_cell'      : True,
-                              'cell_ref_form' : ref_form,
-                              'cell_ref_kind' : 'ang',
-                              'cell_ref_tol'  : tol_ang}
-                    jmp_err_ind_ang = cell_jump_err(mesh, uh_proj, **kwargs)
-                    jmp_ang_errs += [jmp_err_ind_ang.cell_max_err]
+                    #kwargs = {'ref_col'      : True,
+                    #          'col_ref_form' : ref_form,
+                    #          'col_ref_kind' : 'spt',
+                    #          'col_ref_tol'  : tol_spt,
+                    #          'ref_cell'      : False}
+                    #jmp_err_ind_spt = col_jump_err(mesh, uh_proj, **kwargs)
+                    #jmp_spt_errs += [jmp_err_ind_spt.col_max_err]
+                    
+                    #kwargs = {'ref_col'      : False,
+                    #          'ref_cell'      : True,
+                    #          'cell_ref_form' : ref_form,
+                    #          'cell_ref_kind' : 'ang',
+                    #          'cell_ref_tol'  : tol_ang}
+                    #jmp_err_ind_ang = cell_jump_err(mesh, uh_proj, **kwargs)
+                    #jmp_ang_errs += [jmp_err_ind_ang.cell_max_err]
                     
                     if do_plot_mesh_p:
                         file_name = 'mesh_3d_p_{}.png'.format(trial)
@@ -395,14 +397,6 @@ def test_2(dir_name = 'test_rt'):
                         
                         mesh = ref_by_ind(mesh, rand_err_ind)
                         
-                    elif ref_type == 'rng2':
-                        col_keys = list(mesh.cols.keys())
-                        ncol = len(col_keys)
-                        to_ref = np.random.choice(col_keys,
-                                                  max(1, int(ncol * (1. - tol_spt))),
-                                                  replace = False)
-                        for col_key in to_ref:
-                            mesh.ref_col(col_key, kind = 'ang', form = ref_form)
                     elif ref_type == 'nneg':
                         if ref_kind == 'spt':
                             kwargs = {'ref_col'      : True,
@@ -449,42 +443,42 @@ def test_2(dir_name = 'test_rt'):
                             color     = colors[0],
                             linestyle = '--')
                     
-                    ax.plot(ref_ndofs, anl_spt_errs,
-                            label     = 'Analytic Spatial Error',
-                            color     = colors[1],
-                            linestyle = '--')
+                    #ax.plot(ref_ndofs, anl_spt_errs,
+                    #        label     = 'Analytic Spatial Error',
+                    #        color     = colors[1],
+                    #        linestyle = '--')
                     
-                    ax.plot(ref_ndofs, anl_ang_errs,
-                            label     = 'Analytic Angular Error',
-                            color     = colors[2],
-                            linestyle = '--')
+                    #ax.plot(ref_ndofs, anl_ang_errs,
+                    #        label     = 'Analytic Angular Error',
+                    #        color     = colors[2],
+                    #        linestyle = '--')
                     
-                    ax.plot(ref_ndofs, jmp_spt_errs,
-                            label     = 'Column Jump Error',
-                            color     = colors[3],
-                            linestyle = '--')
+                    #ax.plot(ref_ndofs, jmp_spt_errs,
+                    #        label     = 'Column Jump Error',
+                    #        color     = colors[3],
+                    #        linestyle = '--')
                     
-                    ax.plot(ref_ndofs, jmp_ang_errs,
-                            label     = 'Cell Jump Error',
-                            color     = colors[4],
-                            linestyle = '--')
+                    #ax.plot(ref_ndofs, jmp_ang_errs,
+                    #        label     = 'Cell Jump Error',
+                    #        color     = colors[4],
+                    #        linestyle = '--')
                     
-                    if prob_name == 'comp' and do_calc_hi_res_err:
-                        ax.plot(ref_ndofs, hr_errs,
-                                label     = 'High-Resolution Error',
-                                color     = colors[5],
-                                linestyle = '-.')
+                    #if prob_name == 'comp' and do_calc_hi_res_err:
+                    #    ax.plot(ref_ndofs, hr_errs,
+                    #            label     = 'High-Resolution Error',
+                    #            color     = colors[5],
+                    #            linestyle = '-.')
 
-                    if prob_name == 'comp' and do_calc_low_res_err:
-                        ax.plot(ref_ndofs, lr_errs,
-                                label     = 'Low-Resolution Error',
-                                color     = colors[6],
-                                linestyle = '-.')
+                    #if prob_name == 'comp' and do_calc_low_res_err:
+                    #    ax.plot(ref_ndofs, lr_errs,
+                    #            label     = 'Low-Resolution Error',
+                    #            color     = colors[6],
+                    #            linestyle = '-.')
                     
                     ax.set_xscale('log', base = 2)
                     ax.set_yscale('log', base = 10)
                     
-                    errs = anl_errs + jmp_spt_errs + jmp_ang_errs #+ hr_errs + lr_errs
+                    errs = anl_errs #+ jmp_spt_errs + jmp_ang_errs #+ hr_errs + lr_errs
                     max_err = max(errs)
                     min_err = min(errs)
                     if np.log2(max_err) - np.log2(min_err) < 1:

@@ -10,3 +10,4 @@ from .low_res_err import low_res_err
 from .nneg_err import nneg_err
 from .rand_err import rand_err
 from .ref_by_ind import ref_by_ind
+from .total_anl_err import total_anl_err

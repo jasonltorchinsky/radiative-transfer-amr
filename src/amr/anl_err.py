@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.integrate import nquad
 
 from .Error_Indicator import Error_Indicator
 from .hp_steer import hp_steer_col, hp_steer_cell
@@ -10,8 +11,11 @@ phi_projs = {}
 psi_projs = {}
 xsi_projs = {}
 
+intg_u2 = None
+intg_u  = None
+
 def anl_err(mesh, proj, anl_sol, **kwargs):
-    return anl_err_hr_L2(mesh, proj, anl_sol, **kwargs)
+    return anl_err_L2(mesh, proj, anl_sol, **kwargs)
 
 def anl_err_hr_L2(mesh, proj, anl_sol, **kwargs):
     """
@@ -204,8 +208,18 @@ def anl_err_L2(mesh, proj, anl_sol, **kwargs):
     
     col_items = sorted(mesh.cols.items())
     
-    # Relative error is weighted by the integral of the analytic solution, u
-    u_intg = 0.
+    # Integrate th analytic solution and the square of the analytic solution here
+    if intg_u == None:
+        [Lx, Ly] = mesh.Ls[:]
+        [intg_u, _] = nquad(lambda x, y: anl_sol(x, y, th),
+                            [[0, Lx], [0, Ly], [0, 2. * np.pi]])
+    if intg_u2 == None:
+        [Lx, Ly] = mesh.Ls[:]
+        [intg_u2, _] = nquad(lambda x, y: (anl_sol(x, y, th))**2,
+                             [[0, Lx], [0, Ly], [0, 2. * np.pi]])
+
+    # Only part of the error left is intg_uuh
+    intg_uuh = 0.
     
     # Track maximum error(s) to calculate hp-steering only where needed
     col_max_err  = 0.
