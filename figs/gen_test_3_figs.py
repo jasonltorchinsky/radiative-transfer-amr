@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 from scipy.integrate import quad, dblquad
 from time import perf_counter
@@ -30,7 +31,7 @@ def main(dir_name = 'figs'):
     
     # Test parameters:
     # Maximum number of DOFs
-    max_ndof = 2**18
+    max_ndof = 2**13
     # Maximum number of trials
     max_ntrial = 64
     # Minimum error before cut-off
@@ -56,7 +57,7 @@ def main(dir_name = 'figs'):
     do_plot_mesh        = False
     do_plot_mesh_p      = True
     do_plot_uh          = True
-    do_plot_err_ind     = True
+    do_plot_err_ind     = False
     do_plot_errs        = True
     
     combo_names = []
@@ -90,7 +91,7 @@ def main(dir_name = 'figs'):
                     ndofs  = [ndof_x, ndof_y, ndof_th],
                     has_th = has_th)
         
-        for _ in range(0, 2):
+        for _ in range(0, 3):
             mesh.ref_mesh(kind = 'ang', form = 'h')
             
         for _ in range(0, 2):
@@ -111,15 +112,18 @@ def main(dir_name = 'figs'):
             mesh = ref_by_ind(mesh, rand_err_ind)
             
         # Test problem : Cloud layer with Rayleigh scattering
-        def kappa_x(x):
-            return (1. / 32.) * (np.sin(2. * np.pi * x / Lx))**2 + 0.1
         def kappa(x, y):
-            term_0 = (-1. / ((2. * (Ly * kappa_x(x))**2))) * (y - (Ly / 2.))**2
-            return 0.45 * (np.sign(np.exp(term_0) - 0.5) + 1.) + 0.1
+            term_0 = (-1. / ((2. * (Ly / 8.)**2))) * (y - (Ly / 2.))**2
+            return (4.5 * (np.sign(np.exp(term_0) - 0.5) + 1.) + 0.1) * np.ones_like(x)
         def sigma(x, y):
             return 0.9 * kappa(x, y)
+        g = 0.925
+        def Phi_HG(Th):
+            return (1. - g**2) / (1 + g**2 - 2. * g * np.cos(Th))**(3./2.)
+        [Phi_norm, abserr] = quad(lambda Th : Phi_HG(Th), 0., 2. * np.pi)
         def Phi(th, phi):
-            return (1. / (3. * np.pi)) * (1. + (np.cos(th - phi))**2)
+            val = (1. - g**2) / (1 + g**2 - 2. * g * np.cos(th - phi))**(3./2.)
+            return val / Phi_norm
         def f(x, y, th):
             return 0
         y_top = Ly
@@ -130,14 +134,14 @@ def main(dir_name = 'figs'):
             else:
                 return 0
         dirac = [None, None, None]
-
+        
         # Plot extinction coefficient, scattering coefficient, and scattering phase function
         xx = np.linspace(0, Lx, num = 1000).reshape([1, 1000])
         yy = np.linspace(0, Ly, num = 1000).reshape([1000, 1])
         [XX, YY] = np.meshgrid(xx, yy)
-
+        
         th = np.linspace(0, 2. * np.pi, num = 360)
-
+        
         kappa_c = kappa(xx, yy)
         sigma_c = sigma(xx, yy)
         [vmin, vmax] = [0., max(np.amax(kappa_c), np.amax(sigma_c))]
@@ -145,32 +149,38 @@ def main(dir_name = 'figs'):
         
         ## kappa
         fig, ax = plt.subplots()
-        kappa_plot = ax.contourf(XX, YY, kappa_c, vmin = vmin, vmax = vmax)
+        cmap = mpl.cm.gray
+        norm = mpl.colors.Normalize(vmin = vmin, vmax = vmax)
+        kappa_plot = ax.contourf(XX, YY, kappa_c, cmap = cmap, norm = norm)
         ax.set_xlim([0, Lx])
         ax.set_ylim([0, Ly])
         ax.set_xlabel('x')
         ax.set_ylabel('y')
-        plt.colorbar(kappa_plot, ax = ax)
-        file_name = 'kappa.png'
+        ax.set_title(r'$\kappa\left( x,\ y \right)$')
+        fig.colorbar(mpl.cm.ScalarMappable(norm = norm, cmap = cmap), ax = ax)
+        file_name = 'kappa_3.png'
         file_path = os.path.join(combo_dir, file_name)
         plt.tight_layout()
         plt.savefig(file_path, dpi = 300)
         plt.close(fig)
-
+        
         ## sigma
         fig, ax = plt.subplots()
-        sigma_plot = ax.contourf(XX, YY, sigma_c, vmin = vmin, vmax = vmax)
+        cmap = mpl.cm.gray
+        norm = mpl.colors.Normalize(vmin = vmin, vmax = vmax)
+        sigma_plot = ax.contourf(XX, YY, sigma_c, cmap = cmap, norm = norm)
         ax.set_xlim([0, Lx])
         ax.set_ylim([0, Ly])
         ax.set_xlabel('x')
         ax.set_ylabel('y')
-        plt.colorbar(sigma_plot, ax = ax)
-        file_name = 'sigma.png'
+        ax.set_title(r'$\sigma\left( x,\ y \right)$')
+        fig.colorbar(mpl.cm.ScalarMappable(norm = norm, cmap = cmap), ax = ax)
+        file_name = 'sigma_3.png'
         file_path = os.path.join(combo_dir, file_name)
         plt.tight_layout()
         plt.savefig(file_path, dpi = 300)
         plt.close(fig)
-
+        
         ## Phi
         max_r = max(rr)
         ntick = 2
@@ -184,12 +194,12 @@ def main(dir_name = 'figs'):
         ax.set_rticks(r_ticks, r_tick_labels)
         ax.set_xlabel(r"$\theta - \theta'$")
         ax.set_xticks(th_ticks, th_tick_labels)
-        file_name = 'Phi.png'
+        ax.set_title(r"$\Phi\left( \theta - \theta' \right)$")
+        file_name = 'Phi_3.png'
         file_path = os.path.join(combo_dir, file_name)
         plt.tight_layout()
         plt.savefig(file_path, dpi = 300)
         plt.close(fig)
-        
         
         # Solve the manufactured problem over several trials
         ref_ndofs = []
@@ -235,18 +245,19 @@ def main(dir_name = 'figs'):
             print_msg(msg)
             
             # Caluclate high-resolution error
-            if (trial == 0) or (np.abs((ndof / prev_ndof) - 2.) < 0.05):
+            if False:#(trial == 0) or (np.abs((ndof / prev_ndof) - 2.) < 0.05):
                 perf_0 = perf_counter()
                 msg = ( '[Trial {}] Obtaining high-resolution error...\n'.format(trial)
                        )
                 print_msg(msg)
                 
-                high_res_err_ind = high_res_err(mesh, uh_proj,
-                                                kappa, sigma, Phi, [bcs, dirac], f,
-                                                **combo,
-                                                solver = 'gmres',
-                                                precondition = True,
-                                                verbose = True)
+                hr_err = high_res_err(mesh, uh_proj,
+                                      kappa, sigma, Phi, [bcs, dirac], f,
+                                      **combo,
+                                      solver = 'gmres',
+                                      precondition = True,
+                                      verbose = True,
+                                      dir_name = figs_dir)
                 
                 perf_f = perf_counter()
                 perf_diff = perf_f - perf_0
@@ -254,13 +265,15 @@ def main(dir_name = 'figs'):
                         22 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_diff)
                        )
                 print_msg(msg)
+
+                high_res_errs += [hr_err]
                 
-                if combo['ref_col']:
-                    err           = high_res_err_ind.col_max_err
-                    high_res_errs += [err]
-                else: #if combo['ref_cell']
-                    err           = high_res_err_ind.cell_max_err
-                    high_res_errs += [err]
+                #if combo['ref_col']:
+                #    err           = high_res_err_ind.col_max_err
+                #    high_res_errs += [err]
+                #else: #if combo['ref_cell']
+                #    err           = high_res_err_ind.cell_max_err
+                #    high_res_errs += [err]
                     
             if do_plot_mesh:
                 perf_0 = perf_counter()
@@ -555,7 +568,7 @@ def main(dir_name = 'figs'):
         perf_all_f = perf_counter()
         perf_all_dt = perf_all_f - perf_all_0
         msg = (
-            'Test 1 figures generated!\n' +
+            'Test 3 figures generated!\n' +
             12 * ' ' + 'Time elapsed: {:08.3f} [s]\n'.format(perf_all_dt)
         )
         print_msg(msg)

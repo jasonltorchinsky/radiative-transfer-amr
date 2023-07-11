@@ -70,7 +70,7 @@ def plot_xyth(mesh, proj, file_name = None, **kwargs):
                     
                     wedge = Wedge((cx, cy), min(dx, dy)/2, deg0, deg1,
                                   facecolor = cmap(cell_mean),
-                                  edgecolor = 'black')
+                                  edgecolor = None)
                     wedges += [wedge]
                     wedge_color = cell_mean
                     wedge_colors += [wedge_color]
@@ -78,7 +78,7 @@ def plot_xyth(mesh, proj, file_name = None, **kwargs):
     rect_coll = PatchCollection(rects, match_original = True)
     ax.add_collection(rect_coll)
     
-    wedge_coll = PatchCollection(wedges, edgecolor = 'black', cmap = cmap)
+    wedge_coll = PatchCollection(wedges, edgecolor = None, cmap = cmap)
     wedge_coll.set_array(wedge_colors)
     wedge_coll.set_clim([vmin, vmax])
     ax.add_collection(wedge_coll)

@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 from scipy.integrate import quad, dblquad
 from time import perf_counter
@@ -30,7 +31,7 @@ def main(dir_name = 'figs'):
     
     # Test parameters:
     # Maximum number of DOFs
-    max_ndof = 2**18
+    max_ndof = 2**13
     # Maximum number of trials
     max_ntrial = 64
     # Minimum error before cut-off
@@ -112,10 +113,10 @@ def main(dir_name = 'figs'):
             
         # Test problem : Isolated cloud with Mie scattering
         def kappa_x(x):
-            return (1. / 32.) * (np.sin(2. * np.pi * x / Lx))**2 + 0.05
+            return (1. / 12.) * (np.sin(2. * np.pi * x / Lx))**2 + 0.05
         def kappa(x, y):
             term_0 = (-1. / ((2. * (Ly * kappa_x(x))**2))) * (y - (Ly / 2.))**2
-            return 0.45 * (np.sign((4. * x * (Lx - x) / (Lx**2)) * np.exp(term_0) - 0.4) + 1.) + 0.1
+            return 4.5 * (np.sign((4. * x * (Lx - x) / (Lx**2)) * np.exp(term_0) - 0.4) + 1.) + 0.1
         def sigma(x, y):
             return 0.9 * kappa(x, y)
         g = 0.80
@@ -150,32 +151,38 @@ def main(dir_name = 'figs'):
         
         ## kappa
         fig, ax = plt.subplots()
-        kappa_plot = ax.contourf(XX, YY, kappa_c, vmin = vmin, vmax = vmax)
+        cmap = mpl.cm.gray
+        norm = mpl.colors.Normalize(vmin = vmin, vmax = vmax)
+        kappa_plot = ax.contourf(XX, YY, kappa_c, cmap = cmap, norm = norm)
         ax.set_xlim([0, Lx])
         ax.set_ylim([0, Ly])
         ax.set_xlabel('x')
         ax.set_ylabel('y')
-        plt.colorbar(kappa_plot, ax = ax)
-        file_name = 'kappa.png'
+        ax.set_title(r'$\kappa\left( x,\ y \right)$')
+        fig.colorbar(mpl.cm.ScalarMappable(norm = norm, cmap = cmap), ax = ax)
+        file_name = 'kappa_4.png'
         file_path = os.path.join(combo_dir, file_name)
         plt.tight_layout()
         plt.savefig(file_path, dpi = 300)
         plt.close(fig)
-
+        
         ## sigma
         fig, ax = plt.subplots()
-        sigma_plot = ax.contourf(XX, YY, sigma_c, vmin = vmin, vmax = vmax)
+        cmap = mpl.cm.gray
+        norm = mpl.colors.Normalize(vmin = vmin, vmax = vmax)
+        sigma_plot = ax.contourf(XX, YY, sigma_c, cmap = cmap, norm = norm)
         ax.set_xlim([0, Lx])
         ax.set_ylim([0, Ly])
         ax.set_xlabel('x')
         ax.set_ylabel('y')
-        plt.colorbar(sigma_plot, ax = ax)
-        file_name = 'sigma.png'
+        ax.set_title(r'$\sigma\left( x,\ y \right)$')
+        fig.colorbar(mpl.cm.ScalarMappable(norm = norm, cmap = cmap), ax = ax)
+        file_name = 'sigma_4.png'
         file_path = os.path.join(combo_dir, file_name)
         plt.tight_layout()
         plt.savefig(file_path, dpi = 300)
         plt.close(fig)
-
+        
         ## Phi
         max_r = max(rr)
         ntick = 2
@@ -189,7 +196,8 @@ def main(dir_name = 'figs'):
         ax.set_rticks(r_ticks, r_tick_labels)
         ax.set_xlabel(r"$\theta - \theta'$")
         ax.set_xticks(th_ticks, th_tick_labels)
-        file_name = 'Phi.png'
+        ax.set_title(r"$\Phi\left( \theta - \theta' \right)$")
+        file_name = 'Phi_4.png'
         file_path = os.path.join(combo_dir, file_name)
         plt.tight_layout()
         plt.savefig(file_path, dpi = 300)
@@ -245,12 +253,13 @@ def main(dir_name = 'figs'):
                        )
                 print_msg(msg)
                 
-                high_res_err_ind = high_res_err(mesh, uh_proj,
-                                                kappa, sigma, Phi, [bcs, dirac], f,
-                                                **combo,
-                                                solver = 'gmres',
-                                                precondition = True,
-                                                verbose = True)
+                hhr_err = high_res_err(mesh, uh_proj,
+                                       kappa, sigma, Phi, [bcs, dirac], f,
+                                       **combo,
+                                       solver = 'gmres',
+                                       precondition = True,
+                                       verbose = True,
+                                       dir_name = figs_dir)
                 
                 perf_f = perf_counter()
                 perf_diff = perf_f - perf_0
@@ -259,12 +268,14 @@ def main(dir_name = 'figs'):
                        )
                 print_msg(msg)
                 
-                if combo['ref_col']:
-                    err           = high_res_err_ind.col_max_err
-                    high_res_errs += [err]
-                else: #if combo['ref_cell']
-                    err           = high_res_err_ind.cell_max_err
-                    high_res_errs += [err]
+                high_res_errs += [hr_err]
+                
+                #if combo['ref_col']:
+                #    err           = high_res_err_ind.col_max_err
+                #    high_res_errs += [err]
+                #else: #if combo['ref_cell']
+                #    err           = high_res_err_ind.cell_max_err
+                #    high_res_errs += [err]
                     
             if do_plot_mesh:
                 perf_0 = perf_counter()
@@ -558,7 +569,7 @@ def main(dir_name = 'figs'):
         perf_all_f = perf_counter()
         perf_all_dt = perf_all_f - perf_all_0
         msg = (
-            'Test 1 figures generated!\n' +
+            'Test 4 figures generated!\n' +
             12 * ' ' + 'Time elapsed: {:08.3f} [s]\n'.format(perf_all_dt)
         )
         print_msg(msg)

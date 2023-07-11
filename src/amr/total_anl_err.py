@@ -19,7 +19,6 @@ def total_anl_err(mesh, proj, anl_sol, **kwargs):
     # Integrate th analytic solution and the square of the analytic solution here
     global intg_u2
     if intg_u2 is None:
-        print('gotta get intg_u2')
         [Lx, Ly] = mesh.Ls[:]
         [intg_u2, _] = nquad(lambda x, y, th: (anl_sol(x, y, th))**2,
                              [[0, Lx], [0, Ly], [0, 2. * np.pi]])

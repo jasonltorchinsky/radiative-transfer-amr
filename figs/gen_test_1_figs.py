@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 from scipy.integrate import quad, dblquad
 from time import perf_counter
@@ -119,7 +120,7 @@ def main(dir_name = 'figs'):
         # Get the base mesh, manufactured solution
         [Lx, Ly]                   = [3., 2.]
         pbcs                       = [False, False]
-        [ndof_x, ndof_y, ndof_th]  = [8, 8, 4]
+        [ndof_x, ndof_y, ndof_th]  = [6, 6, 3]
         has_th                     = True
         
         mesh = Mesh(Ls     = [Lx, Ly],
@@ -155,16 +156,12 @@ def main(dir_name = 'figs'):
         def kappa_y(y):
             return np.exp(-y / Ly)
         def kappa(x, y):
-            return kappa_x(x) * kappa_y(y)
+            return 10. * kappa_x(x) * kappa_y(y)
         def sigma(x, y):
             return 0.1 * kappa(x, y)
-        g = 0.8
-        def Phi_HG(Th):
-            return (1. - g**2) / (1 + g**2 - 2. * g * np.cos(Th))**(3./2.)
-        [norm, abserr] = quad(lambda Th : Phi_HG(Th), 0., 2. * np.pi)
         def Phi(th, phi):
-            val = (1. - g**2) / (1 + g**2 - 2. * g * np.cos(th - phi))**(3./2.)
-            return val / norm
+            val = (1. / (3. * np.pi)) * (1. + (np.cos(th - phi))**2)
+            return val
         def f(x, y, th):
             # Propagation part
             prop = (np.cos(th) * dXdx(x) * Y(y) + np.sin(th) * X(x) * dYdy(y)) * Theta(th)
@@ -200,32 +197,38 @@ def main(dir_name = 'figs'):
         
         ## kappa
         fig, ax = plt.subplots()
-        kappa_plot = ax.contourf(XX, YY, kappa_c, vmin = vmin, vmax = vmax)
+        cmap = mpl.cm.gray
+        norm = mpl.colors.Normalize(vmin = vmin, vmax = vmax)
+        kappa_plot = ax.contourf(XX, YY, kappa_c, cmap = cmap, norm = norm)
         ax.set_xlim([0, Lx])
         ax.set_ylim([0, Ly])
         ax.set_xlabel('x')
         ax.set_ylabel('y')
-        plt.colorbar(kappa_plot, ax = ax)
-        file_name = 'kappa.png'
+        ax.set_title(r'$\kappa\left( x,\ y \right)$')
+        fig.colorbar(mpl.cm.ScalarMappable(norm = norm, cmap = cmap), ax = ax)
+        file_name = 'kappa_1.png'
         file_path = os.path.join(combo_dir, file_name)
         plt.tight_layout()
         plt.savefig(file_path, dpi = 300)
         plt.close(fig)
-
+        
         ## sigma
         fig, ax = plt.subplots()
-        sigma_plot = ax.contourf(XX, YY, sigma_c, vmin = vmin, vmax = vmax)
+        cmap = mpl.cm.gray
+        norm = mpl.colors.Normalize(vmin = vmin, vmax = vmax)
+        sigma_plot = ax.contourf(XX, YY, sigma_c, cmap = cmap, norm = norm)
         ax.set_xlim([0, Lx])
         ax.set_ylim([0, Ly])
         ax.set_xlabel('x')
         ax.set_ylabel('y')
-        plt.colorbar(sigma_plot, ax = ax)
-        file_name = 'sigma.png'
+        ax.set_title(r'$\sigma\left( x,\ y \right)$')
+        fig.colorbar(mpl.cm.ScalarMappable(norm = norm, cmap = cmap), ax = ax)
+        file_name = 'sigma_1.png'
         file_path = os.path.join(combo_dir, file_name)
         plt.tight_layout()
         plt.savefig(file_path, dpi = 300)
         plt.close(fig)
-
+        
         ## Phi
         max_r = max(rr)
         ntick = 2
@@ -239,12 +242,13 @@ def main(dir_name = 'figs'):
         ax.set_rticks(r_ticks, r_tick_labels)
         ax.set_xlabel(r"$\theta - \theta'$")
         ax.set_xticks(th_ticks, th_tick_labels)
-        file_name = 'Phi.png'
+        ax.set_title(r"$\Phi\left( \theta - \theta' \right)$")
+        file_name = 'Phi_1.png'
         file_path = os.path.join(combo_dir, file_name)
         plt.tight_layout()
         plt.savefig(file_path, dpi = 300)
         plt.close(fig)
-        
+
         # Perform some uniform (angular or spatial) h-refinements to start
         for _ in range(0, 0):
             mesh.ref_mesh(kind = 'all', form = 'h')
@@ -410,11 +414,11 @@ def main(dir_name = 'figs'):
                 print_msg(msg)
                 
                 u_proj = Projection(mesh, u)
-
+                
                 file_name = 'u_th_{}.png'.format(trial)
                 file_path = os.path.join(trial_dir, file_name)
                 plot_th(mesh, u_proj, file_name = file_path)
-            
+                
                 file_name = 'u_xy_{}.png'.format(trial)
                 file_path = os.path.join(trial_dir, file_name)
                 plot_xy(mesh, u_proj, file_name = file_path)

@@ -99,14 +99,12 @@ def test_2(dir_name = 'test_rt'):
                 # Get the base mesh, manufactured solution
                 [Lx, Ly]                   = [2., 3.]
                 pbcs                       = [False, False]
-                [ndof_x, ndof_y, ndof_th]  = [8, 8, 4]
+                [ndof_x, ndof_y, ndof_th]  = [8, 8, 2]
                 has_th                     = True
                 mesh = gen_mesh(Ls     = [Lx, Ly],
                                 pbcs   = pbcs,
                                 ndofs  = [ndof_x, ndof_y, ndof_th],
                                 has_th = has_th)
-                #for _ in range(0, 2):
-                #    mesh.ref_mesh('ang', 'h')
                 
                 [u, kappa, sigma, Phi, f,
                  u_intg_th, u_intg_xy] = get_cons_prob(prob_name = prob_name,

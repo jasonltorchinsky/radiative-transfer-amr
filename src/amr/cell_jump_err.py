@@ -193,7 +193,7 @@ def intg_cell_bdry_xy(mesh, proj, col_key, cell_key):
             proj_cell  = proj_col.cells[cell_key]
             uh_cell    = proj_cell.vals
 
-            [_, _, _, _, _, thb] = qd.quad_xyth(nnodes_th = ndof_th)
+            [_, _, _, _, thb, _] = qd.quad_xyth(nnodes_th = ndof_th)
                     
             uh_th = dcoeff * np.sum(w_x * w_y * uh_cell, axis = (0, 1))
         
@@ -207,8 +207,9 @@ def intg_cell_bdry_xy(mesh, proj, col_key, cell_key):
                 else:
                     thb_rr = 1.
                     
+                uh_end = 0.
                 for aa in range(0, ndof_th):
-                    uh_end += uh_cell[aa] * qd.lag_eval(thb, aa, thb_rr)
+                    uh_end += uh_th[aa] * qd.lag_eval(thb, aa, thb_rr)
                 cell_intg_xy[F] = uh_end
                                 
         return cell_intg_xy
