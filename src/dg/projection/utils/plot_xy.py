@@ -78,7 +78,9 @@ def plot_xy(mesh, proj, file_name = None, **kwargs):
                                vmin = vmin, vmax = vmax,
                                shading = 'gouraud')
             
-            rect = Rectangle((x0, y0), dx, dy, fill = False)
+            rect = Rectangle((x0, y0), dx, dy,
+                             facecolor = 'none',
+                             edgecolor = 'none')
             ax.add_patch(rect)
     
     fig.colorbar(pc)

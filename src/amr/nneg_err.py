@@ -13,11 +13,11 @@ def nneg_err(mesh, proj, **kwargs):
     default_kwargs = {'ref_col'      : True,
                       'col_ref_form' : 'hp',
                       'col_ref_kind' : 'spt',
-                      'col_ref_tol'  : 0.5,
+                      'col_ref_tol'  : 0.0,
                       'ref_cell'      : True,
                       'cell_ref_form' : 'hp',
                       'cell_ref_kind' : 'ang',
-                      'cell_ref_tol'  : 0.5}
+                      'cell_ref_tol'  : 0.0}
     kwargs = {**default_kwargs, **kwargs}
     
     err_ind = Error_Indicator(mesh, **kwargs)
@@ -25,7 +25,6 @@ def nneg_err(mesh, proj, **kwargs):
     col_items = sorted(mesh.cols.items())
 
     # Assign error of 1. to cols, cells with a negative value
-    tol = 0.0
     for col_key, col in col_items:
         if col.is_lf:
             if kwargs['ref_col']:
@@ -36,16 +35,16 @@ def nneg_err(mesh, proj, **kwargs):
             for cell_key, cell in cell_items:
                 if cell.is_lf:
                     uh_cell = proj.cols[col_key].cells[cell_key].vals
-                    cell_has_neg = np.any(uh_cell < tol)
-                    
-                    cell_err = int(cell_has_neg)
-
+                    if kwargs['ref_cell']:
+                        cell_has_neg = np.any(uh_cell < kwargs['cell_ref_tol'])
+                        cell_err = int(cell_has_neg)
+                        
                     if kwargs['ref_col']:
-                        col_has_neg = cell_has_neg or col_has_neg
+                        col_has_neg = col_has_neg or np.any(uh_cell < kwargs['col_ref_tol'])
                     
                     if kwargs['ref_cell']:
                         err_ind.cols[col_key].cells[cell_key].err = cell_err
-                        if cell_err >= kwargs['cell_ref_tol']:
+                        if cell_has_neg:
                             if kwargs['cell_ref_form'] == 'hp':
                                 err_ind.cols[col_key].cells[cell_key].ref_form = hp_steer_cell(mesh, proj, col_key, cell_key)
                         else:
@@ -53,7 +52,7 @@ def nneg_err(mesh, proj, **kwargs):
                             
             if kwargs['ref_col']:
                 err_ind.cols[col_key].err = int(col_has_neg)
-                if cell_err >= kwargs['col_ref_tol']:
+                if col_has_neg:
                     if kwargs['col_ref_form'] == 'hp':
                         err_ind.cols[col_key].ref_form = hp_steer_col(mesh, proj, col_key)
                     else:

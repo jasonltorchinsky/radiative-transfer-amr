@@ -33,9 +33,17 @@ def high_res_err_hr(mesh, proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
     Don't bother calculating the error indicator, just the error.
     """
 
-    default_kwargs = {'dir_name' : None,
-                      'uh_hr_file_name' : 'uh_hr.dat'}
+    default_kwargs = {'dir_name'        : None,
+                      'uh_hr_file_name' : 'uh_hr.dat',
+                      'ndof_x' : 8,
+                      'ndof_y' : 8,
+                      'ndof_th' : 16}
     kwargs = {**default_kwargs, **kwargs}
+
+
+    nx_hr  = kwargs['ndof_x']
+    ny_hr  = kwargs['ndof_y']
+    nth_hr = kwargs['ndof_th']
     
     uh = proj # Assign by reference
     
@@ -43,10 +51,10 @@ def high_res_err_hr(mesh, proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
     
     # Get high-resolution mesh
     if mesh_hr is None:
-        # 2X2 spatial elements, 4 angular elements, high p in each.
+        # 4X4 spatial elements, 8 angular elements, high p in each.
         mesh_hr = Mesh(Ls = mesh.Ls[:],
                        pbcs = mesh.pbcs[:],
-                       ndofs = [4, 4, 8],
+                       ndofs = [nx_hr, ny_hr, nth_hr],
                        has_th = True)
         for _ in range(0, 3):
             mesh_hr.ref_mesh(kind = 'ang', form = 'h')
@@ -64,8 +72,13 @@ def high_res_err_hr(mesh, proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
             uh_hr = to_projection(mesh_hr, uh_hr_vec)
         else:
             [bcs, dirac] = bcs_dirac
-            [uh_hr, info] = rtdg(mesh_hr, kappa, sigma, Phi, [bcs, dirac], f,
-                                 tol = 1.e-6, **kwargs)
+            ndof_hr = mesh_hr.get_ndof()
+            if ndof_hr <= 2**17:
+                [uh_hr, info] = rtdg(mesh_hr, kappa, sigma, Phi, [bcs, dirac], f,
+                                     solver = 'spsolve', **kwargs)
+            else:
+                [uh_hr, info] = rtdg(mesh_hr, kappa, sigma, Phi, [bcs, dirac], f,
+                                     **kwargs)
             uh_hr_vec = uh_hr.to_vector()
             uh_hr_file_path = os.path.join(kwargs['dir_name'], 'uh_hr.dat')
             uh_hr_vec.tofile(uh_hr_file_path)
@@ -99,7 +112,6 @@ def high_res_err_hr(mesh, proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
             if col_hr.is_lf:
                 [x0, y0, x1, y1] = col_hr.pos[:]
                 [dx, dy] = [x1 - x0, y1 - y0]
-                [nx_hr, ny_hr]   = col_hr.ndofs[:]
                 [_, wx_hr, _, wy_hr, _, _] = qd.quad_xyth(nnodes_x = nx_hr,
                                                           nnodes_y = ny_hr)
                 wx_hr = wx_hr.reshape([nx_hr, 1, 1])
@@ -112,7 +124,6 @@ def high_res_err_hr(mesh, proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
                     if cell_hr.is_lf:
                         [th0, th1] = cell_hr.pos[:]
                         dth        = th1 - th0
-                        [nth_hr]   = cell_hr.ndofs[:]
                         
                         [_, _, _, _, _, wth_hr] = qd.quad_xyth(nnodes_th = nth_hr)
                         
@@ -148,7 +159,6 @@ def high_res_err_hr(mesh, proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
                     [x0_hr, y0_hr, x1_hr, y1_hr] = col_hr.pos[:]
                     
                     if ((x0_hr <= xmid) and (xmid <= x1_hr)) and ((y0_hr <= ymid) and (ymid < y1_hr)):
-                        [nx_hr, ny_hr] = col_hr.ndofs[:]
                         [xxb_hr, _, yyb_hr, _, _, _] = qd.quad_xyth(nnodes_x = nx_hr,
                                                                     nnodes_y = ny_hr)
                         
@@ -184,7 +194,6 @@ def high_res_err_hr(mesh, proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
                                     [th0_hr, th1_hr] = cell_hr.pos[:]
                                     
                                     if ((th0_hr <= thmid) and (thmid <= th1_hr)):
-                                        [nth_hr] = cell_hr.ndofs[:]
                                         [_, _, _, _, thb_hr, _] = qd.quad_xyth(nnodes_th = nth_hr)
                                         
                                         thb_lr_hr = pull_back(th0, th1, thf)
@@ -211,7 +220,7 @@ def high_res_err_hr(mesh, proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
                                                                 
                                         hi_res_err += (dx * dy * dth / 8.) * np.sum(wx * wy * wth * (uh_hr_lr_cell - uh_lr_cell)**2)
                                         
-    return hi_res_err / intg_uh_hr2
+    return np.sqrt(hi_res_err / intg_uh_hr2)
 
 def high_res_err_hpref(mesh, uh, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
     """
