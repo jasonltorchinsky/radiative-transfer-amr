@@ -31,6 +31,17 @@ def rtdg(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
                       'tol'          : 1.e-8
                       } 
     kwargs = {**default_kwargs, **kwargs}
+
+    if kwargs['verbose']:
+        tf = perf_counter()
+        if kwargs['precondition']:
+            prec_str = 'Preconditioned-'
+        else:
+            prec_str = ''
+        msg = (
+            'DoFs: {}, Solver {}{}.\n'.format(mesh.get_ndof(), prec_str, kwargs['solver'])
+            )
+        print_msg(msg)
     
     [M_mass_scat, M_pc] = calc_precond_matrix(mesh, kappa, sigma, Phi, **kwargs)
     M_intr_conv = calc_intr_conv_matrix(mesh, **kwargs)

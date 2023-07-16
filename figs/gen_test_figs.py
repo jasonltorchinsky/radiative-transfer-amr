@@ -45,29 +45,25 @@ def main():
     figs_dir = os.path.join(dir_name, figs_dir_name)
     os.makedirs(figs_dir, exist_ok = True)
     
-    # Test parameters:
-    # Maximum number of DOFs
-    max_ndof = 2**15
-    # Maximum number of trials
-    max_ntrial = 16
-    # Minimum error before cut-off
-    min_err = 1.e-10
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
-    combo_0 = {'full_name'  : 'Uniform Angular h-Refinement',
-               'short_name' : 'h-uni-ang'}
-    combo_1 = {'full_name'  : 'Uniform Angular p-Refinement',
-               'short_name' : 'p-uni-ang'}
-    combo_2 = {'full_name'  : 'Inhomogenous Anisotropic Adaptive Angular h-Refinement',
-               'short_name' : 'h-amr-ang',}
-    combo_3 = {'full_name'  : 'Inhomogenous Anisotropic Adaptive Angular hp-Refinement',
-               'short_name' : 'hp-amr-ang'}
-    
-    combos = [
-        combo_0,
-        combo_1,
-        combo_2,
-        combo_3
-    ]
+    combo_uangh = {'full_name'  : 'Uniform Angular h-Refinement',
+                   'short_name' : 'h-uni-ang',
+                   'ref_kind'   : 'ang'}
+    combo_uangp = {'full_name'  : 'Uniform Angular p-Refinement',
+                   'short_name' : 'p-uni-ang',
+                   'ref_kind'   : 'ang'}
+    combo_aangh = {'full_name'  : 'Adaptive Angular h-Refinement',
+                   'short_name' : 'h-amr-ang',
+                   'ref_kind'   : 'ang'}
+    combo_aanghp = {'full_name'  : 'Adaptive Angular hp-Refinement',
+                    'short_name' : 'hp-amr-ang',
+                    'ref_kind'   : 'ang'}
+    combo_aspthp = {'full_name'  : 'Adaptive Spatial hp-Refinement',
+                    'short_name' : 'hp-amr-spt',
+                    'ref_kind'   : 'spt'}
+    combo_aallhp = {'full_name'  : 'Adaptive Spatio-Angular hp-Refinement',
+                    'short_name' : 'hp-amr-all',
+                    'ref_kind'    : 'all'}
     
     # Output options
     do_plot_mesh        = False
@@ -86,25 +82,180 @@ def main():
 
     # Parameters for mesh, and plot functions
     if test_num == 1:
-        [Lx, Ly]                   = [3., 2.]
-        pbcs                       = [False, False]
-        [ndof_x, ndof_y, ndof_th]  = [8, 8, 3]
-        has_th                     = True
+        # End-Combo Parameters
+        # Maximum number of DOFs
+        max_ndof = 2**17
+        # Maximum number of trials
+        max_ntrial = 128
+        # Minimum error before cut-off
+        min_err = 3.e-6
+        
+        # Each combo in test has same starting mesh, but we give specifics here for flexibility
+        [Lx, Ly] = [3., 2.]
+        pbcs     = [False, False]
+        ndofs    = [9, 9, 3]
+        has_th   = True
+        nref_ang = 3
+        nref_spt = 2
+        
+        # Uniform Angular h-Refinement
+        combo_uangh['Ls']       = [Lx, Ly]
+        combo_uangh['pbcs']     = pbcs
+        combo_uangh['ndofs']    = ndofs
+        combo_uangh['has_th']   = has_th
+        combo_uangh['nref_ang'] = nref_ang
+        combo_uangh['nref_spt'] = nref_spt
+        
+        # Uniform Angular p-Refinement
+        combo_uangp['Ls']       = [Lx, Ly]
+        combo_uangp['pbcs']     = pbcs
+        combo_uangp['ndofs']    = ndofs
+        combo_uangp['has_th']   = has_th
+        combo_uangp['nref_ang'] = nref_ang
+        combo_uangp['nref_spt'] = nref_spt
+        
+        # Adaptive Angular h-Refinement
+        combo_aangh['Ls']       = [Lx, Ly]
+        combo_aangh['pbcs']     = pbcs
+        combo_aangh['ndofs']    = ndofs
+        combo_aangh['has_th']   = has_th
+        combo_aangh['nref_ang'] = nref_ang
+        combo_aangh['nref_spt'] = nref_spt
+        
+        # Adaptive Angular hp-Refinement
+        combo_aanghp['Ls']       = [Lx, Ly]
+        combo_aanghp['pbcs']     = pbcs
+        combo_aanghp['ndofs']    = ndofs
+        combo_aanghp['has_th']   = has_th
+        combo_aanghp['nref_ang'] = nref_ang
+        combo_aanghp['nref_spt'] = nref_spt
+        
+        [ndof_x_hr, ndof_y_hr, ndof_th_hr] = [None, None, None]
+        combos = [
+            combo_uangh,
+            combo_uangp,
+            combo_aangh,
+            combo_aanghp
+        ]
+        
     elif test_num == 2:
-        [Lx, Ly]                   = [3., 2.]
-        pbcs                       = [True, False]
-        [ndof_x, ndof_y, ndof_th]  = [3, 3, 3]
-        has_th                     = True
+        # Each combo in test has same starting mesh, but we give specifics here fore flexibility
+        [Lx, Ly] = [3., 2.]
+        pbcs     = [True, False]
+        has_th   = True
+        
+        # Uniform Angular h-Refinement
+        combo_uangh['Ls']       = [Lx, Ly]
+        combo_uangh['pbcs']     = pbcs
+        combo_uangh['ndofs']    = [6, 6, 3]
+        combo_uangh['has_th']   = has_th
+        combo_uangh['nref_ang'] = 3
+        combo_uangh['nref_spt'] = 2
+        
+        # Uniform Angular p-Refinement
+        combo_uangp['Ls']       = [Lx, Ly]
+        combo_uangp['pbcs']     = pbcs
+        combo_uangp['ndofs']    = [4, 4, 3]
+        combo_uangp['has_th']   = has_th
+        combo_uangp['nref_ang'] = 3
+        combo_uangp['nref_spt'] = 2
+        
+        # Adaptive Angular h-Refinement
+        combo_aangh['Ls']       = [Lx, Ly]
+        combo_aangh['pbcs']     = pbcs
+        combo_aangh['ndofs']    = [4, 4, 3]
+        combo_aangh['has_th']   = has_th
+        combo_aangh['nref_ang'] = 3
+        combo_aangh['nref_spt'] = 2
+        
+        # Adaptive Angular hp-Refinement
+        combo_aanghp['Ls']       = [Lx, Ly]
+        combo_aanghp['pbcs']     = pbcs
+        combo_aanghp['ndofs']    = [4, 4, 3]
+        combo_aanghp['has_th']   = has_th
+        combo_aanghp['nref_ang'] = 3
+        combo_aanghp['nref_spt'] = 2
+        
+        [ndof_x_hr, ndof_y_hr, ndof_th_hr] = [None, None, None]
+        combos = [
+            combo_uangh,
+            combo_uangp,
+            combo_aangh,
+            combo_aanghp
+        ]
+        
     elif test_num == 3:
-        [Lx, Ly]                   = [3., 2.]
-        pbcs                       = [True, False]
-        [ndof_x, ndof_y, ndof_th]  = [3, 3, 3]
-        has_th                     = True
+        # Each combo in each test has a different starting mesh.
+        [Lx, Ly] = [3., 2.]
+        pbcs     = [True, False]
+        has_th   = True
+        
+        # Adaptive Spatial hp-Refinement
+        combo_aspthp['Ls']       = [Lx, Ly]
+        combo_aspthp['pbcs']     = pbcs
+        combo_aspthp['ndofs']    = [3, 3, 16]
+        combo_aspthp['has_th']   = has_th
+        combo_aspthp['nref_ang'] = 3
+        combo_aspthp['nref_spt'] = 2
+
+        # Adaptive Angular hp-Refinement
+        combo_aanghp['Ls']       = [Lx, Ly]
+        combo_aanghp['pbcs']     = pbcs
+        combo_aanghp['ndofs']    = [8, 8, 3]
+        combo_aanghp['has_th']   = has_th
+        combo_aanghp['nref_ang'] = 2
+        combo_aanghp['nref_spt'] = 3
+        
+        # Adaptive Spatio-Angular hp-Refinement
+        combo_aallhp['Ls']       = [Lx, Ly]
+        combo_aallhp['pbcs']     = pbcs
+        combo_aallhp['ndofs']    = [3, 3, 3]
+        combo_aallhp['has_th']   = has_th
+        combo_aallhp['nref_ang'] = 2
+        combo_aallhp['nref_spt'] = 2
+        
+        [ndof_x_hr, ndof_y_hr, ndof_th_hr] = [8, 8, 16]
+        combos = [
+            combo_aspthp,
+            combo_aanghp,
+            combo_aallhp
+        ]
+        
     elif test_num == 4:
-        [Lx, Ly]                   = [3., 2.]
-        pbcs                       = [True, False]
-        [ndof_x, ndof_y, ndof_th]  = [3, 3, 3]
-        has_th                     = True
+        # Each combo in each test has a different starting mesh.
+        [Lx, Ly] = [3., 2.]
+        pbcs     = [True, False]
+        has_th   = True
+        # Adaptive Spatial hp-Refinement
+        combo_aspthp['Ls']       = [Lx, Ly]
+        combo_aspthp['pbcs']     = pbcs
+        combo_aspthp['ndofs']    = [3, 3, 16]
+        combo_aspthp['has_th']   = has_th
+        combo_aspthp['nref_ang'] = 3
+        combo_aspthp['nref_spt'] = 2
+
+        # Adaptive Angular hp-Refinement
+        combo_aanghp['Ls']       = [Lx, Ly]
+        combo_aanghp['pbcs']     = pbcs
+        combo_aanghp['ndofs']    = [8, 8, 3]
+        combo_aanghp['has_th']   = has_th
+        combo_aanghp['nref_ang'] = 2
+        combo_aanghp['nref_spt'] = 3
+        
+        # Adaptive Spatio-Angular hp-Refinement
+        combo_aallhp['Ls']       = [Lx, Ly]
+        combo_aallhp['pbcs']     = pbcs
+        combo_aallhp['ndofs']    = [3, 3, 3]
+        combo_aallhp['has_th']   = has_th
+        combo_aallhp['nref_ang'] = 2
+        combo_aallhp['nref_spt'] = 2
+        
+        [ndof_x_hr, ndof_y_hr, ndof_th_hr] = [8, 8, 16]
+        combos = [
+            combo_aspthp,
+            combo_aanghp,
+            combo_aallhp
+        ]
 
     if test_num == 1:
         # Manufactured solution
@@ -174,7 +325,7 @@ def main():
         def kappa_y(y):
             return np.ones_like(y)
         def kappa(x, y):
-            return 0.1 * kappa_x(x) * kappa_y(y)
+            return 2.5 * kappa_x(x) * kappa_y(y)
 
         def sigma(x, y):
             return 0.9 * kappa(x, y)
@@ -209,9 +360,9 @@ def main():
             return np.ones_like(x)
         Ay = 0.5
         fy = 1. / Ly
-        deltay = 0.05
+        deltay = 0.5
         def kappa_y(y):
-            return (2. * Ay / np.pi) * np.arctan(np.sin(2. * np.pi * fy * (y - Ly / 4.)) / deltay) + 0.5
+            return (2. * Ay / np.pi) * np.arctan(np.sin(2. * np.pi * fy * (y - Ly / 3.)) / deltay) + 0.5
         def kappa(x, y):
             return 9. * kappa_x(x) * kappa_y(y) + 0.1
         
@@ -246,14 +397,14 @@ def main():
 
         Ax = 0.5
         fx = 1. / Lx
-        deltax = 0.05
+        deltax = 0.5
         def kappa_x(x):
-            return (2. * Ax / np.pi) * np.arctan(np.sin(2. * np.pi * fx * (x - Lx / 4.)) / deltax) + 0.5
+            return (2. * Ax / np.pi) * np.arctan(np.sin(2. * np.pi * fx * (x - Lx / 3.)) / deltax) + 0.5
         Ay = 0.5
         fy = 1. / Ly
-        deltay = 0.05
+        deltay = 0.5
         def kappa_y(y):
-            return (2. * Ay / np.pi) * np.arctan(np.sin(2. * np.pi * fy * (y - Ly / 4.)) / deltay) + 0.5
+            return (2. * Ay / np.pi) * np.arctan(np.sin(2. * np.pi * fy * (y - Ly / 3.)) / deltay) + 0.5
         def kappa(x, y):
             return 9. * kappa_x(x) * kappa_y(y) + 0.1
 
@@ -304,15 +455,15 @@ def main():
         perf_setup_0 = perf_counter()
         
         # Get the base mesh
-        mesh = Mesh(Ls     = [Lx, Ly],
-                    pbcs   = pbcs,
-                    ndofs  = [ndof_x, ndof_y, ndof_th],
-                    has_th = has_th)
+        mesh = Mesh(Ls     = combo['Ls'],
+                    pbcs   = combo['pbcs'],
+                    ndofs  = combo['ndofs'],
+                    has_th = combo['has_th'])
         
-        for _ in range(0, 3):
+        for _ in range(0, combo['nref_ang']):
             mesh.ref_mesh(kind = 'ang', form = 'h')
             
-        for _ in range(0, 2):
+        for _ in range(0, combo['nref_spt']):
             mesh.ref_mesh(kind = 'spt', form = 'h')
         
         # Solve the problem over several trials
@@ -331,7 +482,7 @@ def main():
                 )
         print_msg(msg)
         
-        while (ndof < max_ndof) and (trial < max_ntrial) and (err > min_err):
+        while (ndof < max_ndof):# and (trial < max_ntrial):# and (err > min_err):
             ndof   = mesh.get_ndof()
             ndofs += [ndof]
             
@@ -347,9 +498,6 @@ def main():
                 err_kind = 'anl'
             elif test_num == 2:
                 err_kind = 'hr'
-                err_ndof_x = ndof_x
-                err_ndox_y = ndof_y
-                err_ndof_th = 56
             elif test_num == 3:
                 err_kind = 'hr'
             elif test_num == 4:
@@ -357,7 +505,10 @@ def main():
                 
             uh_proj = get_soln(mesh, kappa, sigma, Phi, [bcs, dirac], f, trial)
             err     = get_err(mesh, uh_proj, u, kappa, sigma, Phi, [bcs, dirac], f,
-                              trial, figs_dir, err_kind = err_kind)
+                              trial, trial_dir, err_kind = err_kind,
+                              ndof_x = ndof_x_hr, ndof_y = ndof_y_hr, ndof_th = ndof_th_hr,
+                              nref_ang = combo['nref_ang'], nref_spt = combo['nref_spt'],
+                              ref_kind = combo['ref_kind'])
             errs   += [err]
             
             if do_plot_mesh:
@@ -442,6 +593,89 @@ def main():
                     gen_err_ind_plot(mesh, err_ind_ang, trial, trial_dir, 'err_ind_ang.png')
                     
                 mesh = ref_by_ind(mesh, err_ind_ang)
+                
+            elif combo['short_name'] == 'hp-amr-spt':
+                uh_vec = uh_proj.to_vector()
+                neg_tol = -0.01
+                if np.any(uh_vec < neg_tol):
+                    kwargs_spt = {'ref_col'      : True,
+                                  'col_ref_form' : 'h',
+                                  'col_ref_kind' : 'spt',
+                                  'col_ref_tol'  : neg_tol,
+                                  'ref_cell'      : False,
+                                  'cell_ref_form' : None,
+                                  'cell_ref_kind' : None,
+                                  'cell_ref_tol'  : None}
+                    err_ind_spt = nneg_err(mesh, uh_proj, **kwargs_spt)
+                else:
+                    kwargs_spt = {'ref_col'      : True,
+                                  'col_ref_form' : 'h',
+                                  'col_ref_kind' : 'spt',
+                                  'col_ref_tol'  : 0.9,
+                                  'ref_cell'      : False,
+                                  'cell_ref_form' : None,
+                                  'cell_ref_kind' : None,
+                                  'cell_ref_tol'  : None}
+                    
+                    err_ind_spt = col_jump_err(mesh, uh_proj, **kwargs_spt)
+                
+                if do_plot_err_ind:
+                    gen_err_ind_plot(mesh, err_ind_spt, trial, trial_dir, 'err_ind_spt.png')
+                    
+                mesh = ref_by_ind(mesh, err_ind_spt)
+                
+            elif combo['short_name'] == 'hp-amr-all':
+                uh_vec = uh_proj.to_vector()
+                neg_tol = -0.01
+                if np.any(uh_vec < neg_tol):
+                    kwargs_spt = {'ref_col'      : True,
+                                  'col_ref_form' : 'h',
+                                  'col_ref_kind' : 'spt',
+                                  'col_ref_tol'  : neg_tol,
+                                  'ref_cell'      : False,
+                                  'cell_ref_form' : None,
+                                  'cell_ref_kind' : None,
+                                  'cell_ref_tol'  : None}
+                    err_ind_spt = nneg_err(mesh, uh_proj, **kwargs_spt)
+
+                    kwargs_ang = {'ref_col'      : False,
+                                  'col_ref_form' : None,
+                                  'col_ref_kind' : None,
+                                  'col_ref_tol'  : None,
+                                  'ref_cell'      : True,
+                                  'cell_ref_form' : 'h',
+                                  'cell_ref_kind' : 'ang',
+                                  'cell_ref_tol'  : neg_tol}
+                    err_ind_ang = nneg_err(mesh, uh_proj, **kwargs_ang)
+                else:
+                    kwargs_spt = {'ref_col'      : True,
+                                  'col_ref_form' : 'hp',
+                                  'col_ref_kind' : 'spt',
+                                  'col_ref_tol'  : 0.9,
+                                  'ref_cell'      : False,
+                                  'cell_ref_form' : None,
+                                  'cell_ref_kind' : None,
+                                  'cell_ref_tol'  : None}
+                    
+                    err_ind_spt = col_jump_err(mesh, uh_proj, **kwargs_spt)
+                    
+                    kwargs_ang = {'ref_col'      : False,
+                                  'col_ref_form' : None,
+                                  'col_ref_kind' : None,
+                                  'col_ref_tol'  : None,
+                                  'ref_cell'      : True,
+                                  'cell_ref_form' : 'hp',
+                                  'cell_ref_kind' : 'ang',
+                                  'cell_ref_tol'  : 0.9}
+                    
+                    err_ind_ang = cell_jump_err(mesh, uh_proj, **kwargs_ang)
+                
+                if do_plot_err_ind:
+                    gen_err_ind_plot(mesh, err_ind_spt, trial, trial_dir, 'err_ind_spt.png')
+                    gen_err_ind_plot(mesh, err_ind_ang, trial, trial_dir, 'err_ind_ang.png')
+                    
+                mesh = ref_by_ind(mesh, err_ind_ang)
+                mesh = ref_by_ind(mesh, err_ind_spt)
                 
             perf_trial_f    = perf_counter()
             perf_trial_diff = perf_trial_f - perf_trial_0
@@ -594,7 +828,7 @@ def gen_kappa_sigma_plots(Ls, kappa, sigma, figs_dir, file_names):
     # kappa Plot
     fig, ax = plt.subplots()
     
-    kappa_plot = ax.contourf(XX, YY, kappa_c, cmap = cmap, norm = norm)
+    kappa_plot = ax.contourf(XX, YY, kappa_c, levels = 16, cmap = cmap, norm = norm)
     
     ax.set_xlim([0, Lx])
     ax.set_ylim([0, Ly])
@@ -614,7 +848,7 @@ def gen_kappa_sigma_plots(Ls, kappa, sigma, figs_dir, file_names):
     # sigma Plot
     fig, ax = plt.subplots()
     
-    kappa_plot = ax.contourf(XX, YY, sigma_c, cmap = cmap, norm = norm)
+    kappa_plot = ax.contourf(XX, YY, sigma_c, levels = 16, cmap = cmap, norm = norm)
     
     ax.set_xlim([0, Lx])
     ax.set_ylim([0, Ly])

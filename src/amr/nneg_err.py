@@ -55,8 +55,8 @@ def nneg_err(mesh, proj, **kwargs):
                 if col_has_neg:
                     if kwargs['col_ref_form'] == 'hp':
                         err_ind.cols[col_key].ref_form = hp_steer_col(mesh, proj, col_key)
-                    else:
-                        err_ind.cols[col_key].ref_form = None
+                else:
+                    err_ind.cols[col_key].ref_form = None
                         
     if kwargs['ref_col']:
         err_ind.col_max_err = 1.

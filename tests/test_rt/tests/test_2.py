@@ -35,13 +35,15 @@ def test_2(dir_name = 'test_rt'):
     os.makedirs(test_dir, exist_ok = True)
     
     # Test parameters:
-     # AMR Refinement Tolerance
+    # AMR Refinement Tolerance
     tol_spt = 0.90
     tol_ang = 0.90
     # Maximum number of DOFs
     max_ndof = 2**16
     # Maximum number of trials
     max_ntrial = 64
+    # Minimum Error
+    err_min = 10**(-14)
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combos = [
         ['h', 'uni', 'ang'],
@@ -131,7 +133,8 @@ def test_2(dir_name = 'test_rt'):
                 
                 ndof  = mesh.get_ndof()
                 trial = 0
-                while (ndof < max_ndof) and (trial < max_ntrial):
+                err   = 1
+                while (ndof < max_ndof) and (trial < max_ntrial) and (err > err_min):
                     ndof = mesh.get_ndof()
                     ref_ndofs += [ndof]
                     
@@ -187,6 +190,9 @@ def test_2(dir_name = 'test_rt'):
                         
                     [M_intr, M_bdry] = split_matrix(mesh, M, intr_mask)
                     
+                    A = M_intr
+                    b = f_vec_intr - M_bdry @ bcs_vec
+                    
                     uh_vec_intr = spsolve(M_intr, f_vec_intr - M_bdry @ bcs_vec)
                     
                     perf_soln_f    = perf_counter()
@@ -228,6 +234,7 @@ def test_2(dir_name = 'test_rt'):
                         
                     #anl_err_ind = anl_err(mesh, uh_proj, u, **kwargs)
                     anl_err = total_anl_err(mesh, uh_proj, u)
+                    err = anl_err
 
                     anl_errs += [anl_err]
                     #if ref_kind == 'spt':
