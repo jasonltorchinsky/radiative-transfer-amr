@@ -1,84 +1,109 @@
-import numpy as np
-from scipy.sparse import coo_matrix, csr_matrix, block_diag, bmat
-from time import perf_counter
+import numpy        as np
+import petsc4py
+import scipy.sparse as sp
+import sys
+from   mpi4py       import MPI
+from   petsc4py     import PETSc
+from   time         import perf_counter
 
 from .get_Ex  import get_Ex
 from .get_Ey  import get_Ey
 from .get_Eth import get_Eth
 
-from dg.matrix import get_idx_map, get_col_idxs, get_cell_idxs
-import dg.mesh as ji_mesh
-from dg.projection import push_forward, pull_back
+import dg.mesh       as ji_mesh
+import dg.matrix     as mat
+import dg.projection as proj
 import dg.quadrature as qd
-
-from utils import print_msg
+import utils
 
 def calc_bdry_conv_matrix(mesh, **kwargs):
 
-    default_kwargs = {'verbose' : False}
+    default_kwargs = {'verbose'  : False, # Print info while executing
+                      'blocking' : True   # Synchronize ranks before exiting
+                      }
     kwargs = {**default_kwargs, **kwargs}
+
+    # Initialize parallel communicators
+    MPI_comm = MPI.COMM_WORLD
+    
+    petsc4py.init()
+    comm      = PETSc.COMM_WORLD
+    comm_rank = comm.getRank()
+    comm_size = comm.getSize()
     
     if kwargs['verbose']:
         t0 = perf_counter()
-    
-    # Variables that are the same throughout the loops
-    col_items = sorted(mesh.cols.items())
-    
-    # Create column indexing for constructing global mass matrix
-    [ncols, col_idxs] = get_col_idxs(mesh)
-    col_mtxs = [[None] * ncols for C in range(0, ncols)] # We have to assemble a
-               # lot on inter-column interaction matrices,
-               # so the construction is a bit more difficult.
-    
-    # The local-column matrices come in two kinds: M^CC and M^CC'.
-    # The M^CC have to be constructed in four parts: M^CC_F.
-    # The M^CC' can be constructed in one part.
-    # We loop through each column C, then through each face F of C.
-    # For each face, loop through each element K of C.
-    # Depending on K, we contribute to M^CC_F or M^CC'.
-    # Hold all four M^CC_F, add them together after all of the loops.
-    for col_key_0, col_0 in col_items:
-        if col_0.is_lf:
-            # Use _0 to refer to column C
-            # Later, use _1 to refer to column C'
-            col_idx_0 = col_idxs[col_key_0]
-
-            # Loop through the faces of C
-            for F in range(0, 4):
-                [col_mtx_00, [col_key_1, col_mtx_01], [col_key_2, col_mtx_02]] = \
-                    calc_col_matrix(mesh, col_key_0, F)
+        msg = (
+            'Constructing Boundary Propagation Matrix...\n'
+            )
+        utils.print_msg(msg)
+        
+    # Calculate these matrices in serial
+    if comm_rank == 0:
+        # Variables that are the same throughout the loops
+        col_items = sorted(mesh.cols.items())
+        
+        # Create column indexing for constructing global mass matrix
+        [ncols, col_idxs] = proj.get_col_idxs(mesh)
+        col_mtxs = [[None] * ncols for C in range(0, ncols)] # We have to assemble a
+        # lot on inter-column interaction matrices,
+        # so the construction is a bit more difficult.
+        
+        # The local-column matrices come in two kinds: M^CC and M^CC'.
+        # The M^CC have to be constructed in four parts: M^CC_F.
+        # The M^CC' can be constructed in one part.
+        # We loop through each column C, then through each face F of C.
+        # For each face, loop through each element K of C.
+        # Depending on K, we contribute to M^CC_F or M^CC'.
+        # Hold all four M^CC_F, add them together after all of the loops.
+        for col_key_0, col_0 in col_items:
+            if col_0.is_lf:
+                # Use _0 to refer to column C
+                # Later, use _1 to refer to column C'
+                col_idx_0 = col_idxs[col_key_0]
                 
-                # The intra-column matrix may already exist. If so, add to it.
-                if col_mtxs[col_idx_0][col_idx_0] is None:
-                    col_mtxs[col_idx_0][col_idx_0] = col_mtx_00
-                else:                        
-                    col_mtxs[col_idx_0][col_idx_0] += col_mtx_00
-                
-                if col_key_1 is not None:
-                    col_idx_1 = col_idxs[col_key_1]
-                    if col_mtxs[col_idx_0][col_idx_1] is None:
-                        col_mtxs[col_idx_0][col_idx_1] = col_mtx_01
+                # Loop through the faces of C
+                for F in range(0, 4):
+                    [col_mtx_00, [col_key_1, col_mtx_01], [col_key_2, col_mtx_02]] = \
+                        calc_col_matrix(mesh, col_key_0, F)
+                    
+                    # The intra-column matrix may already exist. If so, add to it.
+                    if col_mtxs[col_idx_0][col_idx_0] is None:
+                        col_mtxs[col_idx_0][col_idx_0] = col_mtx_00
                     else:                        
-                        col_mtxs[col_idx_0][col_idx_1] += col_mtx_01
-                if col_key_2 is not None:
-                    col_idx_2 = col_idxs[col_key_2]
-                    if col_mtxs[col_idx_0][col_idx_2] is None:
-                        col_mtxs[col_idx_0][col_idx_2] = col_mtx_02
-                    else:                        
-                        col_mtxs[col_idx_0][col_idx_2] += col_mtx_02
+                        col_mtxs[col_idx_0][col_idx_0] += col_mtx_00
+                        
+                    if col_key_1 is not None:
+                        col_idx_1 = col_idxs[col_key_1]
+                        if col_mtxs[col_idx_0][col_idx_1] is None:
+                            col_mtxs[col_idx_0][col_idx_1] = col_mtx_01
+                        else:                        
+                            col_mtxs[col_idx_0][col_idx_1] += col_mtx_01
+                    if col_key_2 is not None:
+                        col_idx_2 = col_idxs[col_key_2]
+                        if col_mtxs[col_idx_0][col_idx_2] is None:
+                            col_mtxs[col_idx_0][col_idx_2] = col_mtx_02
+                        else:                        
+                            col_mtxs[col_idx_0][col_idx_2] += col_mtx_02
                 
-    # Global boundary convection matrix is not block-diagonal
-    # but we arranged the column matrices in the proper form
-    bdry_conv_mtx = bmat(col_mtxs, format = 'csc')
+        # Global boundary convection matrix is not block-diagonal
+        # but we arranged the column matrices in the proper form
+        bdry_conv_mtx = sp.bmat(col_mtxs, format = 'csr')
+        
+    else:
+        bdry_conv_mtx = 0
     
     if kwargs['verbose']:
         tf = perf_counter()
         msg = (
-            'Boundary Convection Matrix Construction Time: {:8.4f} [s]\n'.format(tf - t0)
-            )
-        print_msg(msg)
-
+            'Constructed Boundary Propagation Matrix\n' +
+            12 * ' '  + 'Time Elapsed: {:8.4f} [s]\n'.format(tf - t0)
+        )
+        utils.print_msg(msg)
     
+    if kwargs['blocking']:        
+        MPI_comm.Barrier()
+        
     return bdry_conv_mtx
 
 def calc_col_matrix(mesh, col_key_0, F):
@@ -94,7 +119,7 @@ def calc_col_matrix(mesh, col_key_0, F):
     [dx_0, dy_0]             = [x1_0 - x0_0, y1_0 - y0_0]
     [nx_0, ny_0]             = col_0.ndofs
     [_, wx_0, _, wy_0, _, _] = qd.quad_xyth(nnodes_x = nx_0, nnodes_y = ny_0)
-    [nc_0, cell_idxs_0]      = get_cell_idxs(mesh, col_key_0)
+    [nc_0, cell_idxs_0]      = proj.get_cell_idxs(mesh, col_key_0)
     cell_mtxs_00             = [None] * nc_0
 
     # Get neighboring columns along face F
@@ -105,7 +130,7 @@ def calc_col_matrix(mesh, col_key_0, F):
         [x0_1, y0_1, x1_1, y1_1] = col_1.pos[:]
         [dx_1, dy_1]             = [x1_1 - x0_1, y1_1 - y0_1]
         [nx_1, ny_1]             = col_1.ndofs[:]
-        [nc_1, cell_idxs_1]      = get_cell_idxs(mesh, col_key_1)
+        [nc_1, cell_idxs_1]      = proj.get_cell_idxs(mesh, col_key_1)
         cell_mtxs_01             = [[None] * nc_1 for K in range(0, nc_0)]
         if (F%2 == 0): # Construct E^K'K,y_jq
             E_x_01 = None
@@ -128,7 +153,7 @@ def calc_col_matrix(mesh, col_key_0, F):
         [x0_2, y0_2, x1_2, y1_2] = col_2.pos[:]
         [dx_2, dy_2]             = [x1_2 - x0_2, y1_2 - y0_2]
         [nx_2, ny_2]             = col_2.ndofs[:]
-        [nc_2, cell_idxs_2]      = get_cell_idxs(mesh, col_key_2)
+        [nc_2, cell_idxs_2]      = proj.get_cell_idxs(mesh, col_key_2)
         cell_mtxs_02             = [[None] * nc_2 for K in range(0, nc_0)]
         if (F%2 == 0): # Construct E^K'K,y_jq
             E_x_02 = None
@@ -155,7 +180,7 @@ def calc_col_matrix(mesh, col_key_0, F):
             cell_ndof_0 = nx_0 * ny_0 * nth_0
 
             cell_mtxs_00[cell_idx_0] = \
-                coo_matrix((cell_ndof_0, cell_ndof_0))
+                sp.coo_matrix((cell_ndof_0, cell_ndof_0))
             
             if cell_items_1 is not None:
                 for cell_key_1, cell_1 in cell_items_1:
@@ -165,7 +190,7 @@ def calc_col_matrix(mesh, col_key_0, F):
                         cell_ndof_1 = nx_1 * ny_1 * nth_1
                         
                         cell_mtxs_01[cell_idx_0][cell_idx_1] = \
-                            coo_matrix((cell_ndof_0, cell_ndof_1))
+                            sp.coo_matrix((cell_ndof_0, cell_ndof_1))
                         
             if cell_items_2 is not None:
                 for cell_key_2, cell_2 in cell_items_2:
@@ -175,7 +200,7 @@ def calc_col_matrix(mesh, col_key_0, F):
                         cell_ndof_2 = nx_2 * ny_2 * nth_2
                         
                         cell_mtxs_02[cell_idx_0][cell_idx_2] = \
-                            coo_matrix((cell_ndof_0, cell_ndof_2))
+                            sp.coo_matrix((cell_ndof_0, cell_ndof_2))
                     
     # Loop through cells of column C
     # For each cell in column C, we loop through the neighboring cells K^(n)
@@ -208,11 +233,11 @@ def calc_col_matrix(mesh, col_key_0, F):
             # the neighboring column/cell
             if is_Fp:
                 [_, _, _, _, thb_0, wth_0] = qd.quad_xyth(nnodes_th = nth_0)
-                thf = push_forward(th0_0, th1_0, thb_0)
+                thf = proj.push_forward(th0_0, th1_0, thb_0)
                 Th_F = Theta_F(thf, F)
 
-                alpha = get_idx_map(nx_0, ny_0, nth_0)
-                beta  = get_idx_map(nx_0, ny_0, nth_0)
+                alpha = mat.get_idx_map(nx_0, ny_0, nth_0)
+                beta  = mat.get_idx_map(nx_0, ny_0, nth_0)
                 
                 
                 if (F%2 == 0):
@@ -266,7 +291,7 @@ def calc_col_matrix(mesh, col_key_0, F):
                                 idx += 1
                 
                 cell_mtxs_00[cell_idx_0] = \
-                    coo_matrix((vlist, (alphalist, betalist)),
+                    sp.coo_matrix((vlist, (alphalist, betalist)),
                                shape = (cell_ndof_0, cell_ndof_0))
 
                 cell_mtxs_00[cell_idx_0].eliminate_zeros()
@@ -285,8 +310,8 @@ def calc_col_matrix(mesh, col_key_0, F):
                                 [nth_1]     = cell_1.ndofs[:]
                                 cell_ndof_1 = nx_1 * ny_1 * nth_1
                                 
-                                alpha = get_idx_map(nx_0, ny_0, nth_0)
-                                beta  = get_idx_map(nx_1, ny_1, nth_1)
+                                alpha = mat.get_idx_map(nx_0, ny_0, nth_0)
+                                beta  = mat.get_idx_map(nx_1, ny_1, nth_1)
                                 
                                 E_th = get_Eth(mesh,
                                                col_key_0, cell_key_0,
@@ -356,7 +381,7 @@ def calc_col_matrix(mesh, col_key_0, F):
                                                         idx += 1
                                                         
                                 cell_mtxs_01[cell_idx_0][cell_idx_1] = \
-                                    coo_matrix((vlist, (alphalist, betalist)),
+                                    sp.coo_matrix((vlist, (alphalist, betalist)),
                                                shape = (cell_ndof_0, cell_ndof_1))
                                 
                                 cell_mtxs_01[cell_idx_0][cell_idx_1].eliminate_zeros()
@@ -374,8 +399,8 @@ def calc_col_matrix(mesh, col_key_0, F):
                                 [nth_2]     = cell_2.ndofs[:]
                                 cell_ndof_2 = nx_2 * ny_2 * nth_2
                                 
-                                alpha = get_idx_map(nx_0, ny_0, nth_0)
-                                beta  = get_idx_map(nx_2, ny_2, nth_2)
+                                alpha = mat.get_idx_map(nx_0, ny_0, nth_0)
+                                beta  = mat.get_idx_map(nx_2, ny_2, nth_2)
                                 
                                 E_th = get_Eth(mesh,
                                                col_key_0, cell_key_0,
@@ -444,19 +469,19 @@ def calc_col_matrix(mesh, col_key_0, F):
                                                         vlist[idx]     = val
                                                         idx += 1
                                 cell_mtxs_02[cell_idx_0][cell_idx_2] = \
-                                    coo_matrix((vlist, (alphalist, betalist)),
+                                    sp.coo_matrix((vlist, (alphalist, betalist)),
                                                shape = (cell_ndof_0, cell_ndof_2))
                         
                                 cell_mtxs_02[cell_idx_0][cell_idx_2].eliminate_zeros()
                 
-    col_mtx_00 = block_diag(cell_mtxs_00, format = 'coo')
+    col_mtx_00 = sp.block_diag(cell_mtxs_00, format = 'coo')
     if col_1 is not None:
-        col_mtx_01 = bmat(cell_mtxs_01, format = 'coo')
+        col_mtx_01 = sp.bmat(cell_mtxs_01, format = 'coo')
     else:
         col_mtx_01 = None
     
     if col_2 is not None:
-        col_mtx_02 = bmat(cell_mtxs_02, format = 'coo')
+        col_mtx_02 = sp.bmat(cell_mtxs_02, format = 'coo')
     else:
         col_mtx_02 = None
 

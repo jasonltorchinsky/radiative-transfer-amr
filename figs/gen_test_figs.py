@@ -1,5 +1,8 @@
 import argparse
+from mpi4py import MPI
 import numpy as np
+import petsc4py
+from petsc4py import PETSc
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from scipy.integrate import quad, dblquad
@@ -19,13 +22,23 @@ from amr import cell_jump_err, col_jump_err, rand_err, high_res_err, \
     nneg_err, ref_by_ind, total_anl_err
 from amr.utils import plot_error_indicator
 
-from utils import print_msg
+import utils
 
 def main():
     """
     Solves constructed ("manufactured") problems, with options for sub-problems
     and different types of refinement.
     """
+    
+    petsc4py.init()
+    
+    # MPI COMM for communicating data
+    MPI_comm = MPI.COMM_WORLD
+    
+    #PETSc COMM for parallel matrix construction, solves
+    comm = PETSc.COMM_WORLD
+    comm_rank = comm.getRank()
+    comm_size = comm.getSize()
     
     parser_desc = 'Determine which tests to run and where to put output.'
     parser = argparse.ArgumentParser(description = parser_desc)
@@ -43,7 +56,8 @@ def main():
     
     figs_dir_name = 'test_{}_figs'.format(test_num)
     figs_dir = os.path.join(dir_name, figs_dir_name)
-    os.makedirs(figs_dir, exist_ok = True)
+    if comm_rank == 0:
+        os.makedirs(figs_dir, exist_ok = True)
     
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combo_uangh = {'full_name'  : 'Uniform Angular h-Refinement',
@@ -78,22 +92,22 @@ def main():
     
     perf_all_0 = perf_counter()
     msg = ( 'Generating test {} figures...\n'.format(test_num) )
-    print_msg(msg)
+    utils.print_msg(msg)
 
     # Parameters for mesh, and plot functions
     if test_num == 1:
         # End-Combo Parameters
         # Maximum number of DOFs
-        max_ndof = 2**17
+        max_ndof = 2**16
         # Maximum number of trials
-        max_ntrial = 128
+        max_ntrial = 5
         # Minimum error before cut-off
         min_err = 3.e-6
         
         # Each combo in test has same starting mesh, but we give specifics here for flexibility
         [Lx, Ly] = [3., 2.]
         pbcs     = [False, False]
-        ndofs    = [9, 9, 3]
+        ndofs    = [3, 3, 3]
         has_th   = True
         nref_ang = 3
         nref_spt = 2
@@ -133,9 +147,9 @@ def main():
         [ndof_x_hr, ndof_y_hr, ndof_th_hr] = [None, None, None]
         combos = [
             combo_uangh,
-            combo_uangp,
-            combo_aangh,
-            combo_aanghp
+            #combo_uangp,
+            #combo_aangh,
+            #combo_aanghp
         ]
         
     elif test_num == 2:
@@ -432,24 +446,26 @@ def main():
                 return 0
         dirac = [None, None, None]
     
-    # Plot extinction coefficient, scattering coefficient, and scattering phase function 
-    kappa_file_name = 'kappa_{}.png'.format(test_num)
-    sigma_file_name = 'sigma_{}.png'.format(test_num)
-    Phi_file_name   = 'Phi_{}.png'.format(test_num)
-    gen_kappa_sigma_plots([Lx, Ly], kappa, sigma, figs_dir,
-                          [kappa_file_name, sigma_file_name])
-    gen_Phi_plot(Phi, figs_dir, Phi_file_name)
-    if test_num == 1:
-        gen_u_plot([Lx, Ly], u, figs_dir)
+    # Plot extinction coefficient, scattering coefficient, and scattering phase function
+    if comm_rank == 0 and False:
+        kappa_file_name = 'kappa_{}.png'.format(test_num)
+        sigma_file_name = 'sigma_{}.png'.format(test_num)
+        Phi_file_name   = 'Phi_{}.png'.format(test_num)
+        gen_kappa_sigma_plots([Lx, Ly], kappa, sigma, figs_dir,
+                              [kappa_file_name, sigma_file_name])
+        gen_Phi_plot(Phi, figs_dir, Phi_file_name)
+        if test_num == 1:
+            gen_u_plot([Lx, Ly], u, figs_dir)
     
     for combo in combos:
         combo_name = combo['short_name']
         combo_names += [combo_name]
         combo_dir = os.path.join(figs_dir, combo_name)
-        os.makedirs(combo_dir, exist_ok = True)
+        if comm_rank == 0:
+            os.makedirs(combo_dir, exist_ok = True)
         
         msg = ( 'Starting combination {}...\n'.format(combo['full_name']) )
-        print_msg(msg)
+        utils.print_msg(msg)
         
         perf_combo_0 = perf_counter()
         perf_setup_0 = perf_counter()
@@ -479,20 +495,21 @@ def main():
         perf_setup_diff = perf_setup_f - perf_setup_0
         msg = ( 'Combination {} setup complete!\n'.format(combo['full_name']) +
                 12 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_setup_diff)
-                )
-        print_msg(msg)
+               )
+        utils.print_msg(msg)
         
-        while (ndof < max_ndof):# and (trial < max_ntrial):# and (err > min_err):
+        while (ndof < max_ndof) and (trial < max_ntrial):# and (err > min_err):
             ndof   = mesh.get_ndof()
             ndofs += [ndof]
             
             perf_trial_0 = perf_counter()
             msg = '[Trial {}] Starting with {} of {} ndofs and error {:.4E}...\n'.format(trial, ndof, max_ndof, err)
-            print_msg(msg)
+            utils.print_msg(msg)
             
             # Set up output directories
             trial_dir = os.path.join(combo_dir, 'trial_{}'.format(trial))
-            os.makedirs(trial_dir, exist_ok = True)
+            if comm_rank == 0:
+                os.makedirs(trial_dir, exist_ok = True)
 
             if test_num == 1:
                 err_kind = 'anl'
@@ -506,20 +523,24 @@ def main():
             uh_proj = get_soln(mesh, kappa, sigma, Phi, [bcs, dirac], f, trial)
             err     = get_err(mesh, uh_proj, u, kappa, sigma, Phi, [bcs, dirac], f,
                               trial, trial_dir, err_kind = err_kind,
-                              ndof_x = ndof_x_hr, ndof_y = ndof_y_hr, ndof_th = ndof_th_hr,
-                              nref_ang = combo['nref_ang'], nref_spt = combo['nref_spt'],
+                              ndof_x = ndof_x_hr,
+                              ndof_y = ndof_y_hr,
+                              ndof_th = ndof_th_hr,
+                              nref_ang = combo['nref_ang'],
+                              nref_spt = combo['nref_spt'],
                               ref_kind = combo['ref_kind'])
             errs   += [err]
-            
-            if do_plot_mesh:
-                gen_mesh_plot(mesh, trial, trial_dir)
-                
-            if do_plot_mesh_p:
-                gen_mesh_plot_p(mesh, trial, trial_dir)
-                
-            if do_plot_uh:
-                gen_uh_plot(mesh, uh_proj, trial, trial_dir)
-                
+
+            if comm_rank == 0 and False:
+                if do_plot_mesh:
+                    gen_mesh_plot(mesh, trial, trial_dir)
+                    
+                if do_plot_mesh_p:
+                    gen_mesh_plot_p(mesh, trial, trial_dir)
+                    
+                if do_plot_uh:
+                    gen_uh_plot(mesh, uh_proj, trial, trial_dir)
+                    
             # Refine the mesh for the next trial
             if test_num == 1:
                 neg_tol = -0.01
@@ -683,41 +704,107 @@ def main():
                 '[Trial {}] Trial completed!\n'.format(trial) +
                 22 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_trial_diff)
             )
-            print_msg(msg)
+            utils.print_msg(msg)
             
             trial += 1
+
+        if comm_rank == 0:
+            if do_plot_errs:
+                fig, ax = plt.subplots()
+                
+                colors = ['#000000', '#E69F00', '#56B4E9', '#009E73',
+                          '#F0E442', '#0072B2', '#D55E00', '#CC79A7',
+                          '#882255']
+                
+                ax.scatter(ndofs, errs,
+                           label = None,
+                           color = colors[0])
+                
+                # Get best-fit line
+                [a, b] = np.polyfit(np.log10(ndofs), np.log10(errs), 1)
+                xx = np.logspace(np.log10(ndofs[0]), np.log10(ndofs[-1]))
+                yy = 10**b * xx**a
+                ax.plot(xx, yy,
+                        label = '{} High-Res.: {:4.2f}'.format(combo_name, a),
+                        color = colors[0],
+                        linestyle = '--'
+                        )
+                
+                ax.set_xscale('log', base = 10)
+                ax.set_yscale('log', base = 10)
+                
+                err_max = max(errs)
+                err_min = min(errs)
+                if np.log10(err_max) - np.log10(err_min) < 1:
+                    ymin = 10**(np.floor(np.log10(err_min)))
+                    ymax = 10**(np.ceil(np.log10(err_max)))
+                    ax.set_ylim([ymin, ymax])
+                    
+                ax.set_xlabel('Total Degrees of Freedom')
+                if test_num == 1:
+                    ax.set_ylabel(r'$\sqrt{\frac{\int_{\mathcal{S}} \int_{\Omega} \left( u - u_{hp} \right)^2\,d\vec{x}\,d\hat{s}}{\int_{\mathcal{S}} \int_{\Omega} \left( u \right)^2\,d\vec{x}\,d\hat{s}}}$')
+                elif test_num == 2:
+                    ax.set_ylabel(r'$\sqrt{\frac{\int_{\mathcal{S}} \int_{\Omega} \left( u_{hr} - u_{hp} \right)^2\,d\vec{x}\,d\hat{s}}{\int_{\mathcal{S}} \int_{\Omega} \left( u \right)^2\,d\vec{x}\,d\hat{s}}}$')
+                elif test_num == 3:
+                    ax.set_ylabel(r'$\sqrt{\frac{\int_{\mathcal{S}} \int_{\Omega} \left( u_{hr} - u_{hp} \right)^2\,d\vec{x}\,d\hat{s}}{\int_{\mathcal{S}} \int_{\Omega} \left( u \right)^2\,d\vec{x}\,d\hat{s}}}$')
+                elif test_num == 3:
+                    ax.set_ylabel(r'$\sqrt{\frac{\int_{\mathcal{S}} \int_{\Omega} \left( u_{hr} - u_{hp} \right)^2\,d\vec{x}\,d\hat{s}}{\int_{\mathcal{S}} \int_{\Omega} \left( u \right)^2\,d\vec{x}\,d\hat{s}}}$')
             
+                ax.legend()
+                
+                title_str = ( '{} Convergence Rate'.format(combo['full_name']) )
+                ax.set_title(title_str)
+                
+                file_name = 'convergence.png'
+                file_path = os.path.join(combo_dir, file_name)
+                fig.set_size_inches(6.5, 6.5)
+                plt.tight_layout()
+                plt.savefig(file_path, dpi = 300)
+                plt.close(fig)
+                
+                combo_ndofs[combo_name] = ndofs
+                combo_errs[combo_name]  = errs
+                
+            perf_combo_f = perf_counter()
+            perf_combo_dt = perf_combo_f - perf_combo_0
+            msg = (
+                'Combination {} complete!\n'.format(combo['full_name']) +
+                12 * ' ' + 'Time elapsed: {:08.3f} [s]\n'.format(perf_combo_dt)
+            )
+            utils.print_msg(msg, blocking = False)
+    if comm_rank == 0:
         if do_plot_errs:
             fig, ax = plt.subplots()
+            
+            ncombo = len(combos)
             
             colors = ['#000000', '#E69F00', '#56B4E9', '#009E73',
                       '#F0E442', '#0072B2', '#D55E00', '#CC79A7',
                       '#882255']
             
-            ax.scatter(ndofs, errs,
-                       label = None,
-                       color = colors[0])
-            
-            # Get best-fit line
-            [a, b] = np.polyfit(np.log10(ndofs), np.log10(errs), 1)
-            xx = np.logspace(np.log10(ndofs[0]), np.log10(ndofs[-1]))
-            yy = 10**b * xx**a
-            ax.plot(xx, yy,
-                    label = '{} High-Res.: {:4.2f}'.format(combo_name, a),
-                    color = colors[0],
-                    linestyle = '--'
-                    )
+            for cc in range(0, ncombo):
+                combo_name = combo_names[cc]
+                ndofs = combo_ndofs[combo_name]
+                errs  = combo_errs[combo_name]
+                ax.scatter(ndofs, errs,
+                           label     = None,
+                           color     = colors[cc])
+                
+                # Get best-fit line
+                [a, b] = np.polyfit(np.log10(ndofs), np.log10(errs), 1)
+                xx = np.logspace(np.log10(ndofs[0]), np.log10(ndofs[-1]))
+                yy = 10**b * xx**a
+                ax.plot(xx, yy,
+                        label = '{}: {:4.2f}'.format(combo_name, a),
+                        color = colors[cc],
+                        linestyle = '--'
+                        )
+                
+            ax.legend()
             
             ax.set_xscale('log', base = 10)
             ax.set_yscale('log', base = 10)
             
-            err_max = max(errs)
-            err_min = min(errs)
-            if np.log10(err_max) - np.log10(err_min) < 1:
-                ymin = 10**(np.floor(np.log10(err_min)))
-                ymax = 10**(np.ceil(np.log10(err_max)))
-                ax.set_ylim([ymin, ymax])
-                
             ax.set_xlabel('Total Degrees of Freedom')
             if test_num == 1:
                 ax.set_ylabel(r'$\sqrt{\frac{\int_{\mathcal{S}} \int_{\Omega} \left( u - u_{hp} \right)^2\,d\vec{x}\,d\hat{s}}{\int_{\mathcal{S}} \int_{\Omega} \left( u \right)^2\,d\vec{x}\,d\hat{s}}}$')
@@ -727,89 +814,24 @@ def main():
                 ax.set_ylabel(r'$\sqrt{\frac{\int_{\mathcal{S}} \int_{\Omega} \left( u_{hr} - u_{hp} \right)^2\,d\vec{x}\,d\hat{s}}{\int_{\mathcal{S}} \int_{\Omega} \left( u \right)^2\,d\vec{x}\,d\hat{s}}}$')
             elif test_num == 3:
                 ax.set_ylabel(r'$\sqrt{\frac{\int_{\mathcal{S}} \int_{\Omega} \left( u_{hr} - u_{hp} \right)^2\,d\vec{x}\,d\hat{s}}{\int_{\mathcal{S}} \int_{\Omega} \left( u \right)^2\,d\vec{x}\,d\hat{s}}}$')
-            
-            ax.legend()
                 
-            title_str = ( '{} Convergence Rate'.format(combo['full_name']) )
+            title_str = ( 'Convergence Rate' )
             ax.set_title(title_str)
             
             file_name = 'convergence.png'
-            file_path = os.path.join(combo_dir, file_name)
+            file_path = os.path.join(figs_dir, file_name)
             fig.set_size_inches(6.5, 6.5)
             plt.tight_layout()
             plt.savefig(file_path, dpi = 300)
             plt.close(fig)
             
-            combo_ndofs[combo_name] = ndofs
-            combo_errs[combo_name]  = errs
-            
-        perf_combo_f = perf_counter()
-        perf_combo_dt = perf_combo_f - perf_combo_0
-        msg = (
-            'Combination {} complete!\n'.format(combo['full_name']) +
-            12 * ' ' + 'Time elapsed: {:08.3f} [s]\n'.format(perf_combo_dt)
-        )
-        print_msg(msg)
-        
-    if do_plot_errs:
-        fig, ax = plt.subplots()
-        
-        ncombo = len(combos)
-        
-        colors = ['#000000', '#E69F00', '#56B4E9', '#009E73',
-                  '#F0E442', '#0072B2', '#D55E00', '#CC79A7',
-                  '#882255']
-        
-        for cc in range(0, ncombo):
-            combo_name = combo_names[cc]
-            ndofs = combo_ndofs[combo_name]
-            errs  = combo_errs[combo_name]
-            ax.scatter(ndofs, errs,
-                    label     = None,
-                    color     = colors[cc])
-            
-            # Get best-fit line
-            [a, b] = np.polyfit(np.log10(ndofs), np.log10(errs), 1)
-            xx = np.logspace(np.log10(ndofs[0]), np.log10(ndofs[-1]))
-            yy = 10**b * xx**a
-            ax.plot(xx, yy,
-                    label = '{}: {:4.2f}'.format(combo_name, a),
-                    color = colors[cc],
-                    linestyle = '--'
-                    )
-            
-        ax.legend()
-        
-        ax.set_xscale('log', base = 10)
-        ax.set_yscale('log', base = 10)
-        
-        ax.set_xlabel('Total Degrees of Freedom')
-        if test_num == 1:
-            ax.set_ylabel(r'$\sqrt{\frac{\int_{\mathcal{S}} \int_{\Omega} \left( u - u_{hp} \right)^2\,d\vec{x}\,d\hat{s}}{\int_{\mathcal{S}} \int_{\Omega} \left( u \right)^2\,d\vec{x}\,d\hat{s}}}$')
-        elif test_num == 2:
-            ax.set_ylabel(r'$\sqrt{\frac{\int_{\mathcal{S}} \int_{\Omega} \left( u_{hr} - u_{hp} \right)^2\,d\vec{x}\,d\hat{s}}{\int_{\mathcal{S}} \int_{\Omega} \left( u \right)^2\,d\vec{x}\,d\hat{s}}}$')
-        elif test_num == 3:
-            ax.set_ylabel(r'$\sqrt{\frac{\int_{\mathcal{S}} \int_{\Omega} \left( u_{hr} - u_{hp} \right)^2\,d\vec{x}\,d\hat{s}}{\int_{\mathcal{S}} \int_{\Omega} \left( u \right)^2\,d\vec{x}\,d\hat{s}}}$')
-        elif test_num == 3:
-            ax.set_ylabel(r'$\sqrt{\frac{\int_{\mathcal{S}} \int_{\Omega} \left( u_{hr} - u_{hp} \right)^2\,d\vec{x}\,d\hat{s}}{\int_{\mathcal{S}} \int_{\Omega} \left( u \right)^2\,d\vec{x}\,d\hat{s}}}$')
-        
-        title_str = ( 'Convergence Rate' )
-        ax.set_title(title_str)
-        
-        file_name = 'convergence.png'
-        file_path = os.path.join(figs_dir, file_name)
-        fig.set_size_inches(6.5, 6.5)
-        plt.tight_layout()
-        plt.savefig(file_path, dpi = 300)
-        plt.close(fig)
-        
         perf_all_f = perf_counter()
         perf_all_dt = perf_all_f - perf_all_0
         msg = (
             'Test {} figures generated!\n'.format(test_num) +
             12 * ' ' + 'Time elapsed: {:08.3f} [s]\n'.format(perf_all_dt)
         )
-        print_msg(msg)
+        utils.print_msg(msg, blocking = False)
 
 def gen_kappa_sigma_plots(Ls, kappa, sigma, figs_dir, file_names):
     [Lx, Ly] = Ls[:]
@@ -896,7 +918,7 @@ def gen_u_plot(Ls, u, figs_dir):
     perf_0 = perf_counter()
     msg = ( 'Plotting analytic solution...\n'
            )
-    print_msg(msg)
+    utils.print_msg(msg)
 
     mesh = Mesh(Ls     = Ls[:],
                 pbcs   = [False, False],
@@ -939,31 +961,24 @@ def gen_u_plot(Ls, u, figs_dir):
     msg = ( 'Analytic solution plotted!\n' +
             22 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_diff)
            )
-    print_msg(msg)
+    utils.print_msg(msg)
     
     
 def get_soln(mesh, kappa, sigma, Phi, bcs_dirac, f, trial):
     perf_0 = perf_counter()
     msg = ( '[Trial {}] Obtaining numerical solution...\n'.format(trial)
            )
-    print_msg(msg)
+    utils.print_msg(msg)
 
-    # For a small number of DOFs, 'spsolve' is faster.
-    ndof = mesh.get_ndof()
-    if ndof <= 2**16:
-        [uh_proj, info] = rtdg(mesh, kappa, sigma, Phi, bcs_dirac, f,
-                               verbose = True, solver = 'spsolve')
-    else:
-        [uh_proj, info] = rtdg(mesh, kappa, sigma, Phi, bcs_dirac, f,
-                               verbose = True, solver = 'gmres',
-                               precondition = True)
+    [uh_proj, info] = rtdg(mesh, kappa, sigma, Phi, bcs_dirac, f,
+                           verbose = True)
         
     perf_f = perf_counter()
     perf_diff = perf_f - perf_0
     msg = ( '[Trial {}] Numerical solution obtained! : Exit Code {} \n'.format(trial, info) +
             22 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_diff)
            )
-    print_msg(msg)
+    utils.print_msg(msg)
 
     return uh_proj
 
@@ -976,7 +991,7 @@ def get_err(mesh, uh_proj, u, kappa, sigma, Phi, bcs_dirac, f, trial, figs_dir, 
     perf_0 = perf_counter()
     msg = ( '[Trial {}] Obtaining error...\n'.format(trial)
            )
-    print_msg(msg)
+    utils.print_msg(msg)
 
     if err_kind == 'anl':
         err = total_anl_err(mesh, uh_proj, u)
@@ -994,7 +1009,7 @@ def get_err(mesh, uh_proj, u, kappa, sigma, Phi, bcs_dirac, f, trial, figs_dir, 
     msg = ( '[Trial {}] Error obtained! : {:.4E}\n'.format(trial, err) +
             22 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_diff)
            )
-    print_msg(msg)
+    utils.print_msg(msg)
 
     return err
 
@@ -1002,7 +1017,7 @@ def gen_mesh_plot(mesh, trial, trial_dir):
     perf_0 = perf_counter()
     msg = ( '[Trial {}] Plotting mesh...\n'.format(trial)
            )
-    print_msg(msg)
+    utils.print_msg(msg)
     
     file_name = 'mesh_3d_{}.png'.format(trial)
     file_path = os.path.join(trial_dir, file_name)
@@ -1022,13 +1037,13 @@ def gen_mesh_plot(mesh, trial, trial_dir):
     msg = ( '[Trial {}] Mesh plotted!\n'.format(trial) +
             22 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_diff)
            )
-    print_msg(msg)
+    utils.print_msg(msg)
 
 def gen_mesh_plot_p(mesh, trial, trial_dir):
     perf_0 = perf_counter()
     msg = ( '[Trial {}] Plotting mesh polynomial degree...\n'.format(trial)
            )
-    print_msg(msg)
+    utils.print_msg(msg)
     
     file_name = 'mesh_3d_p_{}.png'.format(trial)
     file_path = os.path.join(trial_dir, file_name)
@@ -1048,13 +1063,13 @@ def gen_mesh_plot_p(mesh, trial, trial_dir):
     msg = ( '[Trial {}] Mesh polynomial degree plotted!\n'.format(trial) +
             22 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_diff)
            )
-    print_msg(msg)
+    utils.print_msg(msg)
     
 def gen_uh_plot(mesh, uh_proj, trial, trial_dir):
     perf_0 = perf_counter()
     msg = ( '[Trial {}] Plotting numerical solution...\n'.format(trial)
            )
-    print_msg(msg)
+    utils.print_msg(msg)
     
     file_name = 'uh_th_{}.png'.format(trial)
     file_path = os.path.join(trial_dir, file_name)
@@ -1081,13 +1096,13 @@ def gen_uh_plot(mesh, uh_proj, trial, trial_dir):
     msg = ( '[Trial {}] Numerical solution plotted!\n'.format(trial) +
             22 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_diff)
            )
-    print_msg(msg)
+    utils.print_msg(msg)
     
 def gen_err_ind_plot(mesh, err_ind, trial, trial_dir, file_name):
     perf_0 = perf_counter()
     msg = ( '[Trial {}] Plotting error indicators...\n'.format(trial)
            )
-    print_msg(msg)
+    utils.print_msg(msg)
     
     file_path = os.path.join(trial_dir, file_name)
     plot_error_indicator(mesh, err_ind, file_name = file_path)
@@ -1097,7 +1112,7 @@ def gen_err_ind_plot(mesh, err_ind, trial, trial_dir, file_name):
     msg = ( '[Trial {}] Error indicator plotted!\n'.format(trial) +
             22 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_diff)
            )
-    print_msg(msg)
+    utils.print_msg(msg)
     
 if __name__ == '__main__':
     main()
