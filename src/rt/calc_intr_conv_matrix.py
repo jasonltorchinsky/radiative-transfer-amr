@@ -120,18 +120,17 @@ def calc_intr_conv_matrix(mesh, **kwargs):
                                         alphalist_ipar[idx] = alpha(ii, qq, aa)
                                         betalist_ipar[idx]  = beta( ii, jj, aa)
                                         
-                                        vlist_ipar[idx] = dcoeff * wxi_wyj * wth_sinth_a \
-                                            * ddy_psi_qj
+                                        vlist_ipar[idx] = dcoeff * wxi_wyj \
+                                            * wth_sinth_a * ddy_psi_qj
                                         
                                         idx += 1
                                         
                         delta_ipar = sp.coo_matrix((vlist_ipar,
-                                                 (alphalist_ipar, betalist_ipar)),
-                                                shape = (cell_ndof, cell_ndof))
-                        
+                                                    (alphalist_ipar, betalist_ipar)),
+                                                   shape = (cell_ndof, cell_ndof))
                         
                         # Set up arrays for  delta_jq * delta_ar term
-                        cell_ndof_jqar = ndof_x**2 * ndof_y * ndof_th                    
+                        cell_ndof_jqar = ndof_x**2 * ndof_y * ndof_th
                         alphalist_jqar = np.zeros([cell_ndof_jqar], dtype = np.int32)
                         betalist_jqar  = np.zeros([cell_ndof_jqar], dtype = np.int32)
                         vlist_jqar     = np.zeros([cell_ndof_jqar])

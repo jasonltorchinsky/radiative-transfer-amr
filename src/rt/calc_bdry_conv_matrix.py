@@ -178,7 +178,7 @@ def calc_col_matrix(mesh, col_key_0, F):
             cell_idx_0  = cell_idxs_0[cell_key_0]
             [nth_0]     = cell_0.ndofs[:]
             cell_ndof_0 = nx_0 * ny_0 * nth_0
-
+            
             cell_mtxs_00[cell_idx_0] = \
                 sp.coo_matrix((cell_ndof_0, cell_ndof_0))
             
@@ -221,13 +221,13 @@ def calc_col_matrix(mesh, col_key_0, F):
                       ((S_quad_0 == 1) and (F == 1 or F == 2)) or
                       ((S_quad_0 == 2) and (F == 2 or F == 3)) or
                       ((S_quad_0 == 3) and (F == 3 or F == 0)) )
-
+            
             # Calculate values common across all cell matrices
             if (F%2 == 0):
                 dcoeff = dy_0 * dth_0 / 4.
             else: # F%2 == 1
                 dcoeff = dx_0 * dth_0 / 4.
-
+                
             # If we're in Fp we contribute to M^CC and use the first formula
             # Otherwise we have the option of using the quadrature rule from
             # the neighboring column/cell
@@ -235,10 +235,9 @@ def calc_col_matrix(mesh, col_key_0, F):
                 [_, _, _, _, thb_0, wth_0] = qd.quad_xyth(nnodes_th = nth_0)
                 thf = proj.push_forward(th0_0, th1_0, thb_0)
                 Th_F = Theta_F(thf, F)
-
+                
                 alpha = mat.get_idx_map(nx_0, ny_0, nth_0)
                 beta  = mat.get_idx_map(nx_0, ny_0, nth_0)
-                
                 
                 if (F%2 == 0):
                     alphalist = np.zeros([ny_0 * nth_0], dtype = np.int32)
@@ -256,7 +255,7 @@ def calc_col_matrix(mesh, col_key_0, F):
                         for aa in range(0, nth_0):
                             wth_a = wth_0[aa]
                             Th_F_a = Th_F[aa]
-
+                            
                             val = dcoeff * wy_j * wth_a * Th_F_a
                             if np.abs(val) > tol:
                                 alphalist[idx] = alpha(x_idx, jj, aa)
@@ -293,9 +292,9 @@ def calc_col_matrix(mesh, col_key_0, F):
                 cell_mtxs_00[cell_idx_0] = \
                     sp.coo_matrix((vlist, (alphalist, betalist)),
                                shape = (cell_ndof_0, cell_ndof_0))
-
+                
                 cell_mtxs_00[cell_idx_0].eliminate_zeros()
-    
+                
             else: # no is_Fp
                 if col_key_1 is not None:
                     nhbr_cell_keys = ji_mesh.get_cell_nhbr_in_col(mesh,
@@ -479,12 +478,12 @@ def calc_col_matrix(mesh, col_key_0, F):
         col_mtx_01 = sp.bmat(cell_mtxs_01, format = 'coo')
     else:
         col_mtx_01 = None
-    
+        
     if col_2 is not None:
         col_mtx_02 = sp.bmat(cell_mtxs_02, format = 'coo')
     else:
         col_mtx_02 = None
-
+        
     return [col_mtx_00, [col_key_1, col_mtx_01], [col_key_2, col_mtx_02]]
 
 def Theta_F(theta, F):

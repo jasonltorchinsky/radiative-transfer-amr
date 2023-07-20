@@ -46,35 +46,33 @@ def rtdg(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     [M_mass_scat, M_pc] = calc_precond_matrix(mesh, kappa, sigma, Phi, **kwargs)
     M_intr_conv         = calc_intr_conv_matrix(mesh, **kwargs)
     M_bdry_conv         = calc_bdry_conv_matrix(mesh, **kwargs)
+    M_conv = M_bdry_conv - M_intr_conv
+    M = M_conv + M_mass_scat
+    intr_mask = mat.get_intr_mask(mesh)
+    [M_intr, M_bdry] = mat.split_matrix(mesh, M, intr_mask)
+    
+    if kwargs['precondition']:
+        [M_pc, _] = mat.split_matrix(mesh, M_pc, intr_mask)
+    else:
+        M_pc = None
+        
+    # Make sure forcing function takes three arguments
+    if f is None:
+        def forcing(x, y, th):
+            return 0
+    if len(signature(f).parameters) == 1:
+        def forcing(x, y, th):
+            return f(x)
+    elif len(signature(f).parameters) == 2:
+        def forcing(x, y, th):
+            return f(x, y)
+    elif len(signature(f).parameters) == 3:
+        def forcing(x, y, th):
+            return f(x, y, th)
+    bcs_vec = calc_bcs_vec(mesh, bcs_dirac)
+    bdry_mask = np.invert(intr_mask)
+    
     if comm_rank == 0:
-        M_conv = M_bdry_conv - M_intr_conv
-        M = M_conv + M_mass_scat
-        intr_mask = mat.get_intr_mask(mesh)
-        [M_intr, M_bdry] = mat.split_matrix(mesh, M, intr_mask)
-        
-        if kwargs['precondition']:
-            [M_pc, _] = mat.split_matrix(mesh, M_pc, intr_mask)
-        else:
-            M_pc = None
-            
-        # Make sure forcing function takes three arguments
-        if f is None:
-            def forcing(x, y, th):
-                return 0
-        if len(signature(f).parameters) == 1:
-            def forcing(x, y, th):
-                return f(x)
-        elif len(signature(f).parameters) == 2:
-            def forcing(x, y, th):
-                return f(x, y)
-        elif len(signature(f).parameters) == 3:
-            def forcing(x, y, th):
-                return f(x, y, th)
-            
-        bcs_vec = calc_bcs_vec(mesh, bcs_dirac)
-        
-        bdry_mask = np.invert(intr_mask)
-        
         f_vec = calc_forcing_vec(mesh, forcing)
         f_intr_vec = f_vec[intr_mask]
 
@@ -90,11 +88,13 @@ def rtdg(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     M_local = None
     f_local = None
     
-    MPI_comm.Barrier()
-    
     ## Convert the system to parallel
     if kwargs['verbose']:
         t0 = perf_counter()
+        msg = (
+            'Setting up and performing solve...\n'
+            )
+        utils.print_msg(msg)
         
     # Create PETSc sparse matrix
     M_MPI = PETSc.Mat()

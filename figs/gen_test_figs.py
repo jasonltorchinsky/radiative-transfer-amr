@@ -557,7 +557,6 @@ def main():
                 mesh.ref_mesh(kind = 'ang', form = 'p')
             elif combo['short_name'] == 'h-amr-ang':
                 uh_vec = uh_proj.to_vector()
-                neg_tol = -0.01
                 if np.any(uh_vec < neg_tol):
                     kwargs_ang = {'ref_col'      : False,
                                   'col_ref_form' : None,
@@ -707,7 +706,7 @@ def main():
             utils.print_msg(msg)
             
             trial += 1
-
+            
         if comm_rank == 0:
             if do_plot_errs:
                 fig, ax = plt.subplots()
@@ -831,7 +830,7 @@ def main():
             'Test {} figures generated!\n'.format(test_num) +
             12 * ' ' + 'Time elapsed: {:08.3f} [s]\n'.format(perf_all_dt)
         )
-        utils.print_msg(msg, blocking = False)
+        utils.print_msg(msg)
 
 def gen_kappa_sigma_plots(Ls, kappa, sigma, figs_dir, file_names):
     [Lx, Ly] = Ls[:]
