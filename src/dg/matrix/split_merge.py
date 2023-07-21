@@ -41,8 +41,8 @@ def split_matrix(mesh, mat, intr_mask):
         intr_mtx  = extract_cols_csc(mrows_mtx, intr_mask)
         bdry_mtx  = extract_cols_csc(mrows_mtx, bdry_mask)
     else:
-        intr_mask = None
-        bdry_mtx  = None
+        intr_mtx = np.zeros([1])
+        bdry_mtx = np.zeros([1])
     return [intr_mtx, bdry_mtx]
     
 def merge_vectors(intr_vec, bdry_vec, intr_mask):

@@ -386,7 +386,7 @@ def gen_u_plot(Ls, u, figs_dir):
     perf_0 = perf_counter()
     msg = ( 'Plotting analytic solution...\n'
            )
-    utils.print_msg(msg)
+    utils.print_msg(msg, blocking = False)
 
     mesh = ji_mesh.Mesh(Ls     = Ls[:],
                         pbcs   = [False, False],
@@ -401,28 +401,26 @@ def gen_u_plot(Ls, u, figs_dir):
     file_paths = []
     is_file_paths = []
     for file_name in file_names:
-        file_path     = os.path.join(figs_dir, file_name)
-        file_paths   += [file_path]
-        is_file_path += [os.path.isfile(file_path)]
+        file_path      = os.path.join(figs_dir, file_name)
+        file_paths    += [file_path]
+        is_file_paths += [os.path.isfile(file_path)]
         
-    if not all(is_file_path):
+    if not all(is_file_paths):
         u_proj = proj.Projection(mesh, u)
-
-    for file_path in file_paths:
-        ## FIX THIS
-        if not os.path.isfile(file_path):
+        
+        if not os.path.isfile(file_path[0]):
             proj.utils.plot_th(mesh, u_proj, file_name = file_path)
             
-        if not os.path.isfile(file_path):
+        if not os.path.isfile(file_path[1]):
             proj.utils.plot_xy(mesh, u_proj, file_name = file_path)
             
-        if not os.path.isfile(file_path):
+        if not os.path.isfile(file_path[2]):
             proj.utils.plot_xth(mesh, u_proj, file_name = file_path)
             
-        if not os.path.isfile(file_path):
+        if not os.path.isfile(file_path[3]):
             proj.utils.plot_yth(mesh, u_proj, file_name = file_path)
-        
-        if not os.path.isfile(file_path):
+            
+        if not os.path.isfile(file_path[4]):
             proj.utils.plot_xyth(mesh, u_proj, file_name = file_path)
     
     perf_f = perf_counter()
@@ -430,7 +428,7 @@ def gen_u_plot(Ls, u, figs_dir):
     msg = ( 'Analytic solution plotted!\n' +
             22 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_diff)
            )
-    utils.print_msg(msg)
+    utils.print_msg(msg, blocking = False)
     
     
 def get_soln(mesh, kappa, sigma, Phi, bcs_dirac, f, trial):

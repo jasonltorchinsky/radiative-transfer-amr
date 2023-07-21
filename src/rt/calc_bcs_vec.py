@@ -17,8 +17,9 @@ def calc_bcs_vec(mesh, bcs_dirac, **kwargs):
     having the BCs function handle having the correct values on the boundary.
     """
     
-    default_kwargs = {'verbose'      : False, # Print info while executing
-                      'precondition' : False  # Calculate PC matrix
+    default_kwargs = {'precondition' : False, # Calculate PC matrix
+                      'verbose'      : False, # Print info while executing
+                      'blocking'     : True   # Synchronize ranks before exiting
                       } 
     kwargs = {**default_kwargs, **kwargs}
     
@@ -29,6 +30,13 @@ def calc_bcs_vec(mesh, bcs_dirac, **kwargs):
     comm      = PETSc.COMM_WORLD
     comm_rank = comm.getRank()
     comm_size = comm.getSize()
+
+    if kwargs['verbose']:
+        t0 = perf_counter()
+        msg = (
+            'Constructing Boundary Conditions Vector...\n'
+            )
+        utils.print_msg(msg)
     
     if comm_rank == 0:
         [bcs, dirac] = bcs_dirac
@@ -38,7 +46,7 @@ def calc_bcs_vec(mesh, bcs_dirac, **kwargs):
         
         # Create column indexing for constructing global bcs vector
         col_items         = sorted(mesh.cols.items())
-        [ncol, col_idxs]  = get_col_idxs(mesh)
+        [ncol, col_idxs]  = mat.get_col_idxs(mesh)
         bcs_col_vecs      = [None] * ncol # Global vector is a 1-D vector
         
         # Unpack f into a column vectors
@@ -52,12 +60,12 @@ def calc_bcs_vec(mesh, bcs_dirac, **kwargs):
                 [xxb, _, yyb, _, _, _] = qd.quad_xyth(nnodes_x = ndof_x,
                                                       nnodes_y = ndof_y)
                 
-                xxf = push_forward(x0, x1, xxb)
-                yyf = push_forward(y0, y1, yyb)
+                xxf = proj.push_forward(x0, x1, xxb)
+                yyf = proj.push_forward(y0, y1, yyb)
                 
                 # Create cell indexing for constructing column bcs vector
                 cell_items         = sorted(col.cells.items())
-                [ncell, cell_idxs] = get_cell_idxs(mesh, col_key)
+                [ncell, cell_idxs] = mat.get_cell_idxs(mesh, col_key)
                 bcs_cell_vecs      = [None] * ncell # Column forcing vector is a 1-D vector
                 
                 for cell_key, cell in cell_items:
@@ -67,11 +75,11 @@ def calc_bcs_vec(mesh, bcs_dirac, **kwargs):
                         [th0, th1] = cell.pos
                         [ndof_th]  = cell.ndofs
                         
-                        beta = get_idx_map(ndof_x, ndof_y, ndof_th)
+                        beta = mat.get_idx_map(ndof_x, ndof_y, ndof_th)
                         
                         [_, _, _, _, thb, _] = qd.quad_xyth(nnodes_th = ndof_th)
                     
-                        thf  = push_forward(th0, th1, thb)
+                        thf  = proj.push_forward(th0, th1, thb)
                         
                         # List of entries, values for constructing the cell mask
                         cell_ndof  = ndof_x * ndof_y * ndof_th
@@ -155,5 +163,16 @@ def calc_bcs_vec(mesh, bcs_dirac, **kwargs):
         bcs_vec = bcs_vec[bdry_mask]
     else:
         bcs_vec = None
+        
+    if kwargs['verbose']:
+        tf = perf_counter()
+        msg = (
+            'Constructed Boundary Conditions Vector\n' +
+            12 * ' '  + 'Time Elapsed: {:8.4f} [s]\n'.format(tf - t0)
+        )
+        utils.print_msg(msg)
+    
+    if kwargs['blocking']:        
+        MPI_comm.Barrier()
     
     return bcs_vec

@@ -46,9 +46,9 @@ def rtdg(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     [M_mass_scat, M_pc] = calc_precond_matrix(mesh, kappa, sigma, Phi, **kwargs)
     M_intr_conv         = calc_intr_conv_matrix(mesh, **kwargs)
     M_bdry_conv         = calc_bdry_conv_matrix(mesh, **kwargs)
-    M_conv = M_bdry_conv - M_intr_conv
-    M = M_conv + M_mass_scat
-    intr_mask = mat.get_intr_mask(mesh)
+    M_conv    = M_bdry_conv - M_intr_conv
+    M         = M_conv + M_mass_scat
+    intr_mask = mat.get_intr_mask(mesh, **kwargs)
     [M_intr, M_bdry] = mat.split_matrix(mesh, M, intr_mask)
     
     if kwargs['precondition']:
@@ -69,13 +69,12 @@ def rtdg(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     elif len(signature(f).parameters) == 3:
         def forcing(x, y, th):
             return f(x, y, th)
-    bcs_vec = calc_bcs_vec(mesh, bcs_dirac)
-    bdry_mask = np.invert(intr_mask)
+    bcs_vec    = calc_bcs_vec(mesh, bcs_dirac, **kwargs)
+    bdry_mask  = np.invert(intr_mask)
+    f_vec      = calc_forcing_vec(mesh, forcing, **kwargs)
+    f_intr_vec = f_vec[intr_mask]
     
     if comm_rank == 0:
-        f_vec = calc_forcing_vec(mesh, forcing)
-        f_intr_vec = f_vec[intr_mask]
-
         M_global = M_intr
         f_global = f_intr_vec - M_bdry @ bcs_vec
 

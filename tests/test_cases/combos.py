@@ -9,7 +9,7 @@ h_uni_ang  = {'full_name'  : 'Uniform Angular h-Refinement',
               'ref_kind'   : 'ang',
               'ndofs'      : [8, 8, 3],
               'nref_ang'   : 2,
-              'nref_spt'   : 3}
+              'nref_spt'   : 1}
 
 p_uni_ang  = {'full_name'  : 'Uniform Angular p-Refinement',
               'short_name' : 'p-uni-ang',

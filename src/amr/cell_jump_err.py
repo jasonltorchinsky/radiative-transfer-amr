@@ -67,9 +67,9 @@ def cell_jump_err(mesh, proj, **kwargs):
                         cell_intg_xy_0 = cell_intg_xys[(col_key, cell_key_0)][F]
                         cell_intg_xy_1 = cell_intg_xys[(col_key, cell_key_1)][(F+1)%2]
                         
-                        cell_err += (cell_intg_xy_0 - cell_intg_xy_1)**2
+                        cell_err += ((1. / dA) * (cell_intg_xy_0 - cell_intg_xy_1))**2
                         
-                    cell_err = np.sqrt((1. / dA) * cell_err)
+                    cell_err = np.sqrt(cell_err)
                     cell_max_err = max(cell_max_err, cell_err)
                     if kwargs['ref_cell']:
                         err_ind.cols[col_key].cells[cell_key_0].err = cell_err
