@@ -11,11 +11,13 @@ import dg.matrix     as mat
 import dg.projection as proj
 import utils
 
-from .calc_precond_matrix   import calc_precond_matrix
-from .calc_intr_conv_matrix import calc_intr_conv_matrix
+from .calc_bcs_vec          import calc_bcs_vec
 from .calc_bdry_conv_matrix import calc_bdry_conv_matrix
 from .calc_forcing_vec      import calc_forcing_vec
-from .calc_bcs_vec          import calc_bcs_vec
+from .calc_intr_conv_matrix import calc_intr_conv_matrix
+from .calc_mass_matrix      import calc_mass_matrix
+from .calc_precond_matrix   import calc_precond_matrix
+from .calc_scat_matrix      import calc_scat_matrix
 
 def rtdg(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     """
@@ -77,11 +79,11 @@ def rtdg(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     if comm_rank == 0:
         M_global = M_intr
         f_global = f_intr_vec - M_bdry @ bcs_vec
-
+        
         n_global = np.size(f_global)
     else:
         n_global = None
-
+        
     MPI_comm.Barrier()
     n_global = MPI_comm.bcast(n_global, root = 0)
     M_local = None
@@ -166,8 +168,11 @@ def rtdg(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     
     u_local = u_MPI[ii_0:ii_f]
     u_global = MPI_comm.gather(u_local, root = 0)
+    
+    # Check against spsolve
     if comm_rank == 0:
         u_intr_vec = np.concatenate(u_global)
+        u_intr_vec_sp = sp.linalg.spsolve(M_global, f_global)
     
     if kwargs['verbose']:
         tf = perf_counter()

@@ -6,13 +6,15 @@ from matplotlib.collections import PatchCollection
 def plot_mesh_p(mesh, file_name = None, **kwargs):
     
     default_kwargs = {'label_cells' : False,
-                      'plot_dim' : 2}
+                      'plot_dim' : 2,
+                      'blocking'    : False # Defualt to non-blokcig behavior for plotting
+                      }
     kwargs = {**default_kwargs, **kwargs}
     
     if kwargs['plot_dim'] == 2:
         ax = plot_mesh_p_2d(mesh, file_name = file_name, **kwargs)
     elif kwargs['plot_dim'] == 3:
-        ax = plot_mesh_p_3d(mesh, file_name = file_name)
+        ax = plot_mesh_p_3d(mesh, file_name = file_name, **kwargs)
     else:
         print('Unable to plot mesh that is not 2D nor 3D')
         # TODO: Add more error handling
@@ -21,7 +23,9 @@ def plot_mesh_p(mesh, file_name = None, **kwargs):
 
 def plot_mesh_p_2d(mesh, file_name = None, **kwargs):
     
-    default_kwargs = {'label_cells': False}
+    default_kwargs = {'label_cells': False,
+                      'blocking'    : False # Defualt to non-blokcig behavior for plotting
+                      }
     kwargs = {**default_kwargs, **kwargs}
     
     fig, ax = plt.subplots()
@@ -80,8 +84,13 @@ def plot_mesh_p_2d(mesh, file_name = None, **kwargs):
                 
     return ax
 
-def plot_mesh_p_3d(mesh, file_name = None):
-
+def plot_mesh_p_3d(mesh, file_name = None, **kwargs):
+                      
+    default_kwargs = {'label_cells': False,
+                      'blocking'    : False # Defualt to non-blokcig behavior for plotting
+                      }
+    kwargs = {**default_kwargs, **kwargs}
+                      
     fig, ax = plt.subplots()
         
     [Lx, Ly] = mesh.Ls[:]

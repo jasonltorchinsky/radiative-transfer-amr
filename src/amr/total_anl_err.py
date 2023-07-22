@@ -7,77 +7,25 @@ import scipy.integrate as integrate
 import dg.projection as proj
 import dg.quadrature as qd
 
-intg_u2 = None
+intg_u2  = {}
 phi_mtxs = {}
 psi_mtxs = {}
 xsi_mtxs = {}
 
 def total_anl_err(mesh, num_sol, anl_sol, **kwargs):
-    return total_anl_err_hr(mesh, num_sol, anl_sol, **kwargs)
+    if kwargs['res_coeff'] == 1:
+        return total_anl_err_lr(mesh, num_sol, anl_sol, **kwargs)
+    else:
+        return total_anl_err_hr(mesh, num_sol, anl_sol, **kwargs)
 
 def total_anl_err_lr(mesh, num_sol, anl_sol, **kwargs):
     """
     Calculate the L2-error by cell (and column), weighted to be the relative error.
     """
     
-    default_kwargs = {}
-    kwargs = {**default_kwargs, **kwargs}
-    
-    col_items = sorted(mesh.cols.items())
-    
-    # Integrate th analytic solution and the square of the analytic solution here
-    global intg_u2
-    if intg_u2 is None:
-        [Lx, Ly] = mesh.Ls[:]
-        [intg_u2, _] = nquad(lambda x, y, th: (anl_sol(x, y, th))**2,
-                             [[0, Lx], [0, Ly], [0, 2. * np.pi]])
-
-    err = 0.
-    # Calculate the errors
-    for col_key, col in col_items:
-        if col.is_lf:
-            # Column information for quadrature
-            [x0, y0, x1, y1] = col.pos[:]
-            [dx, dy]         = [x1 - x0, y1 - y0]
-            [ndof_x, ndof_y] = col.ndofs[:]
-            
-            [xxb, wx, yyb, wy, _, _] = qd.quad_xyth(nnodes_x = ndof_x,
-                                                    nnodes_y = ndof_y)
-            
-            xxf = proj.push_forward(x0, x1, xxb).reshape(ndof_x, 1, 1)
-            wx  = wx.reshape(ndof_x, 1, 1)
-            yyf = proj.push_forward(y0, y1, yyb).reshape(1, ndof_y, 1)
-            wy  = wy.reshape(1, ndof_y, 1)
-            
-            # Loop through cells to calculate error
-            cell_items = sorted(col.cells.items())
-            for cell_key, cell in cell_items:
-                if cell.is_lf:
-                    # Cell information for quadrature
-                    [th0, th1] = cell.pos[:]
-                    dth = th1 - th0
-                    [ndof_th]  = cell.ndofs[:]
-                    
-                    [_, _, _, _, thb, wth] = qd.quad_xyth(nnodes_th = ndof_th)
-                    
-                    thf = proj.push_forward(th0, th1, thb).reshape(1, 1, ndof_th)
-                    wth = wth.reshape(1, 1, ndof_th)
-                    
-                    # Calculate error
-                    uh_cell = num_sol.cols[col_key].cells[cell_key].vals
-                    u_cell  = anl_sol(xxf, yyf, thf)
-                    
-                    err += (dx * dy * dth / 8.) \
-                        * np.sum(wx * wy * wth * (u_cell - uh_cell)**2)
-                    
-    return np.sqrt(err/intg_u2)
-
-def total_anl_err_hr(mesh, num_sol, anl_sol, **kwargs):
-    """
-    Calculate the L2-error by cell (and column), weighted to be the relative error.
-    """
-    
-    default_kwargs = {'blocking' : True   # Synchronize ranks before exiting
+    default_kwargs = {'res_coeff' : 1,   # Factor to multiply DoFs
+                      'key'       : ' ', # Key to hold intg_u2
+                      'blocking'  : True # Synchronize ranks before exiting
                       }
     kwargs = {**default_kwargs, **kwargs}
     
@@ -94,9 +42,88 @@ def total_anl_err_hr(mesh, num_sol, anl_sol, **kwargs):
         
         # Integrate th analytic solution and the square of the analytic solution here
         global intg_u2
-        if intg_u2 is None:
+        if kwargs['key'] not in intg_u2.keys():
             [Lx, Ly] = mesh.Ls[:]
-            [intg_u2, _] = integrate.nquad(lambda x, y, th: (anl_sol(x, y, th))**2,
+            [intg_u2[kwargs['key']], _] = integrate.nquad(lambda x, y, th: (anl_sol(x, y, th))**2,
+                                           [[0, Lx], [0, Ly], [0, 2. * np.pi]])
+            
+        err = 0.
+        # Calculate the errors
+        for col_key, col in col_items:
+            if col.is_lf:
+                # Column information for quadrature
+                [x0, y0, x1, y1] = col.pos[:]
+                [dx, dy]         = [x1 - x0, y1 - y0]
+                [ndof_x, ndof_y] = col.ndofs[:]
+                
+                [xxb, wx, yyb, wy, _, _] = qd.quad_xyth(nnodes_x = ndof_x,
+                                                        nnodes_y = ndof_y)
+                
+                xxf = proj.push_forward(x0, x1, xxb).reshape([ndof_x, 1, 1])
+                yyf = proj.push_forward(y0, y1, yyb).reshape([1, ndof_y, 1])
+                
+                wx = wx.reshape([ndof_x, 1, 1])
+                wy = wy.reshape([1, ndof_y, 1])
+                
+                # Loop through cells to calculate error
+                cell_items = sorted(col.cells.items())
+                for cell_key, cell in cell_items:
+                    if cell.is_lf:
+                        # Cell information for quadrature
+                        [th0, th1] = cell.pos[:]
+                        dth = th1 - th0
+                        [ndof_th]  = cell.ndofs[:]
+                        
+                        [_, _, _, _, thb, wth] = qd.quad_xyth(nnodes_th = ndof_th)
+                        
+                        thf = proj.push_forward(th0, th1, thb).reshape([1, 1, ndof_th])
+                        wth = wth.reshape([1, 1, ndof_th])
+                        
+                        # Calculate error
+                        u_cell  = anl_sol(xxf, yyf, thf)
+                        uh_cell = num_sol.cols[col_key].cells[cell_key].vals[:, :, :]
+                        
+                        err += (dx * dy * dth / 8.) * np.sum(wx * wy * wth * (u_cell - uh_cell)**2)
+                    
+        err = np.sqrt(err/intg_u2[kwargs['key']])
+    else:
+        err = 0
+
+    err = MPI_comm.bcast(err, root = 0)
+
+    if kwargs['blocking']:
+        MPI_comm.Barrier()
+
+    return err
+
+def total_anl_err_hr(mesh, num_sol, anl_sol, **kwargs):
+    """
+    Calculate the L2-error by cell (and column), weighted to be the relative error.
+    """
+    
+    default_kwargs = {'res_coeff' : 3,   # Factor to multiply DoFs
+                      'blocking'  : True # Synchronize ranks before exiting
+                      }
+    kwargs = {**default_kwargs, **kwargs}
+    
+    # Initialize parallel communicators
+    MPI_comm = MPI.COMM_WORLD
+    
+    petsc4py.init()
+    comm      = PETSc.COMM_WORLD
+    comm_rank = comm.getRank()
+    comm_size = comm.getSize()
+
+    res_coeff = kwargs['res_coeff']
+    
+    if comm_rank == 0:
+        col_items = sorted(mesh.cols.items())
+        
+        # Integrate th analytic solution and the square of the analytic solution here
+        global intg_u2
+        if kwargs['key'] not in intg_u2.keys():
+            [Lx, Ly] = mesh.Ls[:]
+            [intg_u2[kwargs['key']], _] = integrate.nquad(lambda x, y, th: (anl_sol(x, y, th))**2,
                                            [[0, Lx], [0, Ly], [0, 2. * np.pi]])
             
         err = 0.
@@ -111,7 +138,7 @@ def total_anl_err_hr(mesh, num_sol, anl_sol, **kwargs):
                 [xxb, _, yyb, _, _, _] = qd.quad_xyth(nnodes_x = ndof_x,
                                                       nnodes_y = ndof_y)
                 
-                [ndof_x_hr, ndof_y_hr] = [3 * ndof_x, 3 * ndof_y]
+                [ndof_x_hr, ndof_y_hr] = [res_coeff * ndof_x, res_coeff * ndof_y]
                 
                 [xxb_hr, wx_hr, yyb_hr, wy_hr, _, _] = qd.quad_xyth(nnodes_x = ndof_x_hr,
                                                                     nnodes_y = ndof_y_hr)
@@ -151,7 +178,7 @@ def total_anl_err_hr(mesh, num_sol, anl_sol, **kwargs):
                         
                         [_, _, _, _, thb, _] = qd.quad_xyth(nnodes_th = ndof_th)
                         
-                        [ndof_th_hr]  = [3 * ndof_th]
+                        [ndof_th_hr]  = [res_coeff * ndof_th]
                         
                         [_, _, _, _, thb_hr, wth_hr] = qd.quad_xyth(nnodes_th = ndof_th_hr)
                         
@@ -185,9 +212,11 @@ def total_anl_err_hr(mesh, num_sol, anl_sol, **kwargs):
                     
                         err += (dx * dy * dth / 8.) * np.sum(wx_hr * wy_hr * wth_hr * (u_cell - uh_hr_cell)**2)
                     
-        err = np.sqrt(err/intg_u2)
+        err = np.sqrt(err/intg_u2[kwargs['key']])
     else:
         err = 0
+
+    err = MPI_comm.bcast(err, root = 0)
 
     if kwargs['blocking']:
         MPI_comm.Barrier()

@@ -37,11 +37,11 @@ def calc_bcs_vec(mesh, bcs_dirac, **kwargs):
             'Constructing Boundary Conditions Vector...\n'
             )
         utils.print_msg(msg)
-    
+        
     if comm_rank == 0:
         [bcs, dirac] = bcs_dirac
         
-        intr_mask = mat.get_intr_mask(mesh)
+        intr_mask = mat.get_intr_mask(mesh, blocking = False)
         bdry_mask = np.invert(intr_mask)
         
         # Create column indexing for constructing global bcs vector
@@ -162,7 +162,7 @@ def calc_bcs_vec(mesh, bcs_dirac, **kwargs):
         bcs_vec = np.concatenate(bcs_col_vecs, axis = None)
         bcs_vec = bcs_vec[bdry_mask]
     else:
-        bcs_vec = None
+        bcs_vec = np.zeros([1])
         
     if kwargs['verbose']:
         tf = perf_counter()

@@ -5,6 +5,7 @@ from   mpi4py       import MPI
 from   petsc4py     import PETSc
 from   time         import perf_counter
 
+import utils
 from   .get_idxs    import get_idx_map, get_col_idxs, get_cell_idxs
 
 def get_intr_mask(mesh, **kwargs):
@@ -104,7 +105,7 @@ def get_intr_mask(mesh, **kwargs):
                 
         global_mask = np.concatenate(col_masks, axis = None)
     else:
-        global_mask = np.zeros([1])
+        global_mask = 0
 
     if kwargs['verbose']:
         tf = perf_counter()

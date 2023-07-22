@@ -169,8 +169,8 @@ def calc_intr_conv_matrix(mesh, **kwargs):
                                         idx += 1
                                         
                         delta_jqar = sp.coo_matrix((vlist_jqar,
-                                                 (alphalist_jqar, betalist_jqar)),
-                                                shape = (cell_ndof, cell_ndof))
+                                                    (alphalist_jqar, betalist_jqar)),
+                                                   shape = (cell_ndof, cell_ndof))
                         
                         cell_mtxs[cell_idx] = delta_ipar + delta_jqar
                         

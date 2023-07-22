@@ -1,3 +1,4 @@
+import json
 import matplotlib        as mpl
 import matplotlib.pyplot as plt
 import numpy             as np
@@ -41,9 +42,9 @@ def test_3(dir_name = 'test_rt'):
     # Maximum number of DOFs
     max_ndof = 2**16
     # Maximum number of trials
-    max_ntrial = 3
+    max_ntrial = 8
     # Minimum Error
-    err_min = 10**(-14)
+    err_min = 1.e-6
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combos = [
         h_uni_ang
@@ -69,7 +70,7 @@ def test_3(dir_name = 'test_rt'):
                 for scat_num in range(0, 3):
                     prob_nums += [[x_num, y_num, th_num, scat_num]]
                     
-    for prob_num in [[2, 2, 3, 0]]:
+    for prob_num in [[2, 2, 3, 2]]:
         prob_dir = os.path.join(test_dir, str(prob_num))
         os.makedirs(prob_dir, exist_ok = True)
         
@@ -79,14 +80,15 @@ def test_3(dir_name = 'test_rt'):
         utils.print_msg(msg)
         
         combo_ndofs = {}
-        combo_anl_errs = {}
-        combo_hr_errs  = {}
+        combo_errs  = {}
         
         for combo in combos:
             combo_str = combo['short_name']
+            combo_name = combo_str
             combo_dir = os.path.join(prob_dir, combo_str)
             os.makedirs(combo_dir, exist_ok = True)
             
+            perf_combo_0 = perf_counter()
             msg = ( 'Starting combination {}...\n'.format(combo_str) )
             utils.print_msg(msg)
             
@@ -152,20 +154,22 @@ def test_3(dir_name = 'test_rt'):
                 err     = get_err(mesh, uh_proj, u, kappa, sigma, Phi,
                                   bcs_dirac, f,
                                   trial, trial_dir,
-                                  nref_ang = combo['nref_ang'],
-                                  nref_spt = combo['nref_spt'],
-                                  ref_kind = combo['ref_kind'])
+                                  nref_ang  = combo['nref_ang'],
+                                  nref_spt  = combo['nref_spt'],
+                                  ref_kind  = combo['ref_kind'],
+                                  res_coeff = 1,
+                                  key       = tuple(prob_num))
                 errs += [err]
                 
                 if comm_rank == 0:
                     if do_plot_mesh:
-                        gen_mesh_plot(mesh, trial, trial_dir)
+                        gen_mesh_plot(mesh, trial, trial_dir, blocking = False)
                         
                     if do_plot_mesh_p:
-                        gen_mesh_plot_p(mesh, trial, trial_dir)
+                        gen_mesh_plot_p(mesh, trial, trial_dir, blocking = False)
                         
                     if do_plot_uh:
-                        gen_uh_plot(mesh, uh_proj, trial, trial_dir)
+                        gen_uh_plot(mesh, uh_proj, trial, trial_dir, blocking = False)
                         
                 if   combo['short_name'] == 'h-uni-ang':
                     mesh.ref_mesh(kind = 'ang', form = 'h')
@@ -245,6 +249,15 @@ def test_3(dir_name = 'test_rt'):
             utils.print_msg(msg)
             
         if comm_rank == 0:
+            # Write error results to files
+            file_name = 'combo_errs.txt'
+            file_path = os.path.join(prob_dir, file_name)
+            json.dump(combo_errs, open(file_path, 'w'))
+            
+            file_name = 'combo_ndofs.txt'
+            file_path = os.path.join(prob_dir, file_name)
+            json.dump(combo_ndofs, open(file_path, 'w'))
+            
             if do_plot_errs:
                 fig, ax = plt.subplots()
                 
@@ -253,6 +266,8 @@ def test_3(dir_name = 'test_rt'):
                 colors = ['#000000', '#E69F00', '#56B4E9', '#009E73',
                           '#F0E442', '#0072B2', '#D55E00', '#CC79A7',
                           '#882255']
+                
+                combo_names = list(combo_ndofs.keys())
                 
                 for cc in range(0, ncombo):
                     combo_name = combo_names[cc]
@@ -287,7 +302,7 @@ def test_3(dir_name = 'test_rt'):
                 ax.set_title(title_str)
                 
                 file_name = 'convergence.png'
-                file_path = os.path.join(figs_dir, file_name)
+                file_path = os.path.join(prob_dir, file_name)
                 fig.set_size_inches(6.5, 6.5)
                 plt.tight_layout()
                 plt.savefig(file_path, dpi = 300)
@@ -408,20 +423,20 @@ def gen_u_plot(Ls, u, figs_dir):
     if not all(is_file_paths):
         u_proj = proj.Projection(mesh, u)
         
-        if not os.path.isfile(file_path[0]):
-            proj.utils.plot_th(mesh, u_proj, file_name = file_path)
+        if not os.path.isfile(file_paths[0]):
+            proj.utils.plot_th(mesh, u_proj, file_name = file_paths[0])
             
-        if not os.path.isfile(file_path[1]):
-            proj.utils.plot_xy(mesh, u_proj, file_name = file_path)
+        if not os.path.isfile(file_paths[1]):
+            proj.utils.plot_xy(mesh, u_proj, file_name = file_paths[1])
             
-        if not os.path.isfile(file_path[2]):
-            proj.utils.plot_xth(mesh, u_proj, file_name = file_path)
+        if not os.path.isfile(file_paths[2]):
+            proj.utils.plot_xth(mesh, u_proj, file_name = file_paths[2])
             
-        if not os.path.isfile(file_path[3]):
-            proj.utils.plot_yth(mesh, u_proj, file_name = file_path)
+        if not os.path.isfile(file_paths[3]):
+            proj.utils.plot_yth(mesh, u_proj, file_name = file_paths[3])
             
-        if not os.path.isfile(file_path[4]):
-            proj.utils.plot_xyth(mesh, u_proj, file_name = file_path)
+        if not os.path.isfile(file_paths[4]):
+            proj.utils.plot_xyth(mesh, u_proj, file_name = file_paths[4])
     
     perf_f = perf_counter()
     perf_diff = perf_f - perf_0
@@ -454,9 +469,7 @@ def get_soln(mesh, kappa, sigma, Phi, bcs_dirac, f, trial):
 
 def get_err(mesh, uh_proj, u, kappa, sigma, Phi, bcs_dirac, f,
             trial, figs_dir, **kwargs):
-    default_kwargs = {'ndof_x' : 8,
-                      'ndof_y' : 8,
-                      'ndof_th' : 16}
+    default_kwargs = {'res_coeff' : 1}
     kwargs = {**default_kwargs, **kwargs}
     
     perf_0 = perf_counter()
@@ -464,7 +477,7 @@ def get_err(mesh, uh_proj, u, kappa, sigma, Phi, bcs_dirac, f,
            )
     utils.print_msg(msg)
     
-    err = amr.total_anl_err(mesh, uh_proj, u)
+    err = amr.total_anl_err(mesh, uh_proj, u, **kwargs)
     
     perf_f = perf_counter()
     perf_diff = perf_f - perf_0
@@ -476,11 +489,16 @@ def get_err(mesh, uh_proj, u, kappa, sigma, Phi, bcs_dirac, f,
     
     return err
 
-def gen_mesh_plot(mesh, trial, trial_dir):
+def gen_mesh_plot(mesh, trial, trial_dir, **kwargs):
+    
+    default_kwargs = {'blocking' : False # Default to non-blokcig behavior for plotting
+                      }
+    kwargs = {**default_kwargs, **kwargs}
+
     perf_0 = perf_counter()
     msg = ( '[Trial {}] Plotting mesh...\n'.format(trial)
            )
-    utils.print_msg(msg)
+    utils.print_msg(msg, **kwargs)
     
     file_name = 'mesh_3d_{}.png'.format(trial)
     file_path = os.path.join(trial_dir, file_name)
@@ -500,13 +518,18 @@ def gen_mesh_plot(mesh, trial, trial_dir):
     msg = ( '[Trial {}] Mesh plotted!\n'.format(trial) +
             22 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_diff)
            )
-    utils.print_msg(msg)
+    utils.print_msg(msg, **kwargs)
 
-def gen_mesh_plot_p(mesh, trial, trial_dir):
+def gen_mesh_plot_p(mesh, trial, trial_dir, **kwargs):
+
+    default_kwargs = {'blocking' : False # Default to non-blokcig behavior for plotting
+                      }
+    kwargs = {**default_kwargs, **kwargs}
+    
     perf_0 = perf_counter()
     msg = ( '[Trial {}] Plotting mesh polynomial degree...\n'.format(trial)
            )
-    utils.print_msg(msg)
+    utils.print_msg(msg, **kwargs)
     
     file_name = 'mesh_3d_p_{}.png'.format(trial)
     file_path = os.path.join(trial_dir, file_name)
@@ -526,14 +549,19 @@ def gen_mesh_plot_p(mesh, trial, trial_dir):
     msg = ( '[Trial {}] Mesh polynomial degree plotted!\n'.format(trial) +
             22 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_diff)
            )
-    utils.print_msg(msg)
+    utils.print_msg(msg, **kwargs)
     
-def gen_uh_plot(mesh, uh_proj, trial, trial_dir):
+def gen_uh_plot(mesh, uh_proj, trial, trial_dir, **kwargs):
+    
+    default_kwargs = {'blocking' : False # Default to non-blokcig behavior for plotting
+                      }
+    kwargs = {**default_kwargs, **kwargs}
+    
     perf_0 = perf_counter()
     msg = (
         '[Trial {}] Plotting numerical solution...\n'.format(trial)
     )
-    utils.print_msg(msg)
+    utils.print_msg(msg, **kwargs)
     
     file_name = 'uh_th_{}.png'.format(trial)
     file_path = os.path.join(trial_dir, file_name)
@@ -561,14 +589,19 @@ def gen_uh_plot(mesh, uh_proj, trial, trial_dir):
         '[Trial {}] Numerical solution plotted!\n'.format(trial) +
         22 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_diff)
     )
-    utils.print_msg(msg)
+    utils.print_msg(msg, **kwargs)
     
-def gen_err_ind_plot(mesh, err_ind, trial, trial_dir, file_name):
+def gen_err_ind_plot(mesh, err_ind, trial, trial_dir, file_name, **kwargs):
+    
+    default_kwargs = {'blocking' : False # Default to non-blokcig behavior for plotting
+                      }
+    kwargs = {**default_kwargs, **kwargs}
+    
     perf_0 = perf_counter()
     msg = (
         '[Trial {}] Plotting error indicators...\n'.format(trial)
     )
-    utils.print_msg(msg)
+    utils.print_msg(msg, **kwargs)
     
     file_path = os.path.join(trial_dir, file_name)
     amr.utils.plot_error_indicator(mesh, err_ind, file_name = file_path)
@@ -579,4 +612,4 @@ def gen_err_ind_plot(mesh, err_ind, trial, trial_dir, file_name):
         '[Trial {}] Error indicator plotted!\n'.format(trial) +
         22 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_diff)
     )
-    utils.print_msg(msg)
+    utils.print_msg(msg, **kwargs)
