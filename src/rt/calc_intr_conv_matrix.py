@@ -1,5 +1,7 @@
+import gc
 import numpy        as np
 import petsc4py
+import psutil
 import scipy.sparse as sp
 from   mpi4py       import MPI
 from   petsc4py     import PETSc
@@ -27,6 +29,15 @@ def calc_intr_conv_matrix(mesh, **kwargs):
     comm      = PETSc.COMM_WORLD
     comm_rank = comm.getRank()
     comm_size = comm.getSize()
+    
+    # If using too much memory, reset the saved matrices
+    used_mem = psutil.virtual_memory()[2]
+    if used_mem >= 80:
+        global ddy_psis, ddx_phis
+        del ddy_psis, ddx_phis
+        gc.collect()
+        ddy_psis = {}
+        ddx_phis = {}
     
     if kwargs['verbose']:
         t0 = perf_counter()

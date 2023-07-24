@@ -1,6 +1,8 @@
 import copy
+import gc
 import numpy               as np
 import petsc4py
+import psutil
 import scipy.sparse        as sp
 import scipy.sparse.linalg as spla
 import sys
@@ -35,6 +37,14 @@ def calc_precond_matrix(mesh, kappa, sigma, Phi, **kwargs):
     comm      = PETSc.COMM_WORLD
     comm_rank = comm.getRank()
     comm_size = comm.getSize()
+    
+    # If using too much memory, reset the saved matrices
+    used_mem = psutil.virtual_memory()[2]
+    if used_mem >= 80:
+        global prev_col_mtxs
+        del prev_col_mtxs
+        gc.collect()
+        prev_col_mtxs = {}
     
     if kwargs['verbose']:
         t0 = perf_counter()

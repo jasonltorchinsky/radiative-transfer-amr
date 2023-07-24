@@ -38,8 +38,8 @@ def split_matrix(mesh, mat, intr_mask):
         mrows_mtx = extract_rows_csr(mtx, intr_mask)
         mrows_mtx = mrows_mtx.tocsc()
         
-        intr_mtx  = extract_cols_csc(mrows_mtx, intr_mask)
-        bdry_mtx  = extract_cols_csc(mrows_mtx, bdry_mask)
+        intr_mtx  = extract_cols_csc(mrows_mtx, intr_mask).tocsr()
+        bdry_mtx  = extract_cols_csc(mrows_mtx, bdry_mask).tocsr()
     else:
         intr_mtx = np.zeros([1])
         bdry_mtx = np.zeros([1])

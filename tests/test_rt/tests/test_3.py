@@ -4,12 +4,11 @@ import matplotlib.pyplot as plt
 import numpy             as np
 import os
 import petsc4py
+import psutil
 import sys
 from   mpi4py   import MPI
 from   petsc4py import PETSc
 from   time     import perf_counter
-
-from test_cases import get_cons_prob, h_uni_ang
 
 import dg.matrix     as mat
 import dg.mesh       as ji_mesh
@@ -18,6 +17,10 @@ import dg.quadrature as qd
 import rt
 import amr
 import utils
+from   test_cases    import get_cons_prob, h_uni_ang, p_uni_ang, hp_uni_ang, \
+    h_uni_spt, p_uni_spt, hp_uni_spt, h_uni_all, p_uni_all, hp_uni_all, \
+    h_amr_ang, p_amr_ang, hp_amr_ang, h_amr_spt, p_amr_spt, hp_amr_spt, \
+    h_amr_all, p_amr_all, hp_amr_all
 
 def test_3(dir_name = 'test_rt'):
     """
@@ -40,14 +43,16 @@ def test_3(dir_name = 'test_rt'):
 
     ## Test stopping parameters
     # Maximum number of DOFs
-    max_ndof = 2**16
+    max_ndof = 2**17
     # Maximum number of trials
-    max_ntrial = 8
+    max_ntrial = 16
     # Minimum Error
-    err_min = 1.e-6
+    min_err = 1.e-7
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combos = [
-        h_uni_ang
+        hp_amr_ang,
+        hp_amr_spt,
+        hp_amr_all
     ]
     
     # Test Output Parameters
@@ -56,17 +61,14 @@ def test_3(dir_name = 'test_rt'):
     do_plot_uh          = True
     do_plot_u           = True
     do_plot_diff        = True
-    do_plot_anl_err_ind = False
-    do_plot_sol_vecs    = False
-    do_calc_hi_res_err  = False
-    do_calc_low_res_err = False
+    do_plot_err_ind     = True
     do_plot_errs        = True
 
     # Which problems to solve
     prob_nums = []
-    for x_num in range(2, 3):
-        for y_num in range(2, 3):
-            for th_num in range(0, 4):
+    for x_num in range(2, 4):
+        for y_num in range(2, 4):
+            for th_num in range(3, 4):
                 for scat_num in range(0, 3):
                     prob_nums += [[x_num, y_num, th_num, scat_num]]
                     
@@ -83,9 +85,9 @@ def test_3(dir_name = 'test_rt'):
         combo_errs  = {}
         
         for combo in combos:
-            combo_str = combo['short_name']
+            combo_str  = combo['short_name']
             combo_name = combo_str
-            combo_dir = os.path.join(prob_dir, combo_str)
+            combo_dir  = os.path.join(prob_dir, combo_str)
             os.makedirs(combo_dir, exist_ok = True)
             
             perf_combo_0 = perf_counter()
@@ -128,20 +130,36 @@ def test_3(dir_name = 'test_rt'):
             ndofs = []
             errs  = []
             
-            ndof  = mesh.get_ndof()
+            if comm_rank == 0:
+                ndof = mesh.get_ndof()
+                ndof = MPI_comm.bcast(ndof, root = 0)
+            else:
+                ndof = None
+                ndof = MPI_comm.bcast(ndof, root = 0)
             trial = 0
             err   = 1.
-            while ((ndof < max_ndof)
-                   and (trial <= max_ntrial)
-                   and (err > err_min)):
-                ndof = mesh.get_ndof()
+            mem_used = psutil.virtual_memory()[2]
+            while (((ndof < max_ndof)
+                    and (trial <= max_ntrial)
+                    and (err > min_err)
+                    and (mem_used <= 95.))
+                   or (trial <= 1)):
+                
+                mem_used = psutil.virtual_memory()[2]
+                if comm_rank == 0:
+                    ndof = mesh.get_ndof()
+                    ndof = MPI_comm.bcast(ndof, root = 0)
+                else:
+                    ndof = None
+                    ndof = MPI_comm.bcast(ndof, root = 0)
                 ndofs += [ndof]
                 
                 perf_trial_0 = perf_counter()
                 msg = (
-                    '[Trial {}] Starting with '.format(trial) +
-                    '{} of {} DoFs and '.format(ndof, max_ndof) +
-                    'error {:.2E} of {:.2E}...\n'.format(err, err_min)
+                    '[Trial {}] Starting with: '.format(trial) +
+                    '{} of {} DoFs and\n'.format(ndof, max_ndof) +
+                    37 * ' ' + 'error {:.2E} of {:.2E}\n'.format(err, min_err) +
+                    37 * ' ' + 'RAM Memory % Used: {}\n'.format(mem_used)
                 )
                 utils.print_msg(msg)
                 
@@ -162,6 +180,15 @@ def test_3(dir_name = 'test_rt'):
                 errs += [err]
                 
                 if comm_rank == 0:
+                    # Write error results to files as we go along
+                    file_name = 'errs.txt'
+                    file_path = os.path.join(combo_dir, file_name)
+                    json.dump(errs, open(file_path, 'w'))
+                    
+                    file_name = 'ndofs.txt'
+                    file_path = os.path.join(combo_dir, file_name)
+                    json.dump(ndofs, open(file_path, 'w'))
+                    
                     if do_plot_mesh:
                         gen_mesh_plot(mesh, trial, trial_dir, blocking = False)
                         
@@ -176,18 +203,109 @@ def test_3(dir_name = 'test_rt'):
                 elif combo['short_name'] == 'p-uni-ang':
                     for _ in range(0, 3):
                         mesh.ref_mesh(kind = 'ang', form = 'p')
+                elif combo['short_name'] == 'hp-uni-ang':
+                    for _ in range(0, 2):
+                        mesh.ref_mesh(kind = 'ang', form = 'p')
+                    mesh.ref_mesh(kind = 'ang', form = 'h')
+                elif combo['short_name'] == 'h-uni-spt':
+                    mesh.ref_mesh(kind = 'spt', form = 'h')
+                elif combo['short_name'] == 'p-uni-spt':
+                    for _ in range(0, 3):
+                        mesh.ref_mesh(kind = 'spt', form = 'p')
+                elif combo['short_name'] == 'hp-uni-spt':
+                    for _ in range(0, 2):
+                        mesh.ref_mesh(kind = 'spt', form = 'p')
+                    mesh.ref_mesh(kind = 'spt', form = 'h')
+                elif combo['short_name'] == 'h-uni-all':
+                    mesh.ref_mesh(kind = 'all', form = 'h')
+                elif combo['short_name'] == 'p-uni-all':
+                    for _ in range(0, 3):
+                        mesh.ref_mesh(kind = 'all', form = 'p')
+                elif combo['short_name'] == 'hp-uni-all':
+                    for _ in range(0, 2):
+                        mesh.ref_mesh(kind = 'all', form = 'p')
+                    mesh.ref_mesh(kind = 'all', form = 'h')
+                elif ((combo['short_name'] == 'h-amr-ang')
+                      or (combo['short_name'] == 'p-amr-ang')
+                      or (combo['short_name'] == 'hp-amr-ang')):
+                    if comm_rank == 0:
+                        uh_vec = uh_proj.to_vector()
+                        if np.any(uh_vec < combo['kwargs_ang_nneg']['cell_ref_tol']):
+                            kwargs_ang  = combo['kwargs_ang_nneg']
+                            err_ind_ang = amr.nneg_err(mesh, uh_proj, **kwargs_ang)
+                        else:
+                            kwargs_ang  = combo['kwargs_ang_jmp']
+                            err_ind_ang = amr.cell_jump_err(mesh, uh_proj, **kwargs_ang)
+                        if do_plot_err_ind:
+                            gen_err_ind_plot(mesh, err_ind_ang, trial, trial_dir, 'err_ind_ang.png')
+                        mesh = amr.ref_by_ind(mesh, err_ind_ang)
+                elif ((combo['short_name'] == 'h-amr-spt')
+                      or (combo['short_name'] == 'p-amr-spt')
+                      or (combo['short_name'] == 'hp-amr-spt')):
+                    if comm_rank == 0:
+                        uh_vec = uh_proj.to_vector()
+                        if np.any(uh_vec < combo['kwargs_spt_nneg']['col_ref_tol']):
+                            kwargs_spt  = combo['kwargs_spt_nneg']
+                            err_ind_spt = amr.nneg_err(mesh, uh_proj, **kwargs_spt)
+                        else:
+                            kwargs_spt  = combo['kwargs_spt_jmp']
+                            err_ind_spt = amr.col_jump_err(mesh, uh_proj, **kwargs_spt)
+                        if do_plot_err_ind:
+                            gen_err_ind_plot(mesh, err_ind_spt, trial, trial_dir, 'err_ind_spt.png')
+                        mesh = amr.ref_by_ind(mesh, err_ind_spt)
+                elif ((combo['short_name'] == 'h-amr-all')
+                      or (combo['short_name'] == 'p-amr-all')
+                      or (combo['short_name'] == 'hp-amr-all')):
+                    if comm_rank == 0:
+                        uh_vec = uh_proj.to_vector()
+                        if np.any(uh_vec < combo['kwargs_ang_nneg']['cell_ref_tol']):
+                            kwargs_ang  = combo['kwargs_ang_nneg']
+                            err_ind_ang = amr.nneg_err(mesh, uh_proj, **kwargs_ang)
+                        else:
+                            kwargs_ang  = combo['kwargs_ang_jmp']
+                            err_ind_ang = amr.cell_jump_err(mesh, uh_proj, **kwargs_ang)
+                        if np.any(uh_vec < combo['kwargs_spt_nneg']['col_ref_tol']):
+                            kwargs_spt  = combo['kwargs_spt_nneg']
+                            err_ind_spt = amr.nneg_err(mesh, uh_proj, **kwargs_spt)
+                        else:
+                            kwargs_spt  = combo['kwargs_spt_jmp']
+                            err_ind_spt = amr.col_jump_err(mesh, uh_proj, **kwargs_spt)
+                        if do_plot_err_ind:
+                            gen_err_ind_plot(mesh, err_ind_ang, trial, trial_dir, 'err_ind_ang.png')
+                            gen_err_ind_plot(mesh, err_ind_spt, trial, trial_dir, 'err_ind_spt.png')
+                        mesh = amr.ref_by_ind(mesh, err_ind_ang)
+                        mesh = amr.ref_by_ind(mesh, err_ind_spt)
                         
                 perf_trial_f    = perf_counter()
                 perf_trial_diff = perf_trial_f - perf_trial_0
+                if comm_rank == 0:
+                    ndof = mesh.get_ndof()
+                    ndof = MPI_comm.bcast(ndof, root = 0)
+                else:
+                    ndof = None
+                    ndof = MPI_comm.bcast(ndof, root = 0)
+                mem_used = psutil.virtual_memory()[2]
                 msg = (
-                    '[Trial {}] Trial completed! '.format(trial) +
-                    'Time Elapsed: {:08.3f} [s]\n'.format(perf_trial_diff)
+                    '[Trial {}] Trial completed!\n'.format(trial) +
+                    12 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_trial_diff) +
+                    12 * ' ' + 'Next trial: {} of {} DoFs and\n'.format(ndof, max_ndof) +
+                    24 * ' ' + 'error {:.2E} of {:.2E}\n'.format(err, min_err) +
+                    24 * ' ' + 'RAM Memory % Used: {}\n'.format(mem_used)
                 )
                 utils.print_msg(msg)
                 
                 trial += 1
                 
             if comm_rank == 0:
+                # Write error results to files
+                file_name = 'errs.txt'
+                file_path = os.path.join(combo_dir, file_name)
+                json.dump(errs, open(file_path, 'w'))
+                
+                file_name = 'ndofs.txt'
+                file_path = os.path.join(combo_dir, file_name)
+                json.dump(ndofs, open(file_path, 'w'))
+                
                 if do_plot_errs:
                     fig, ax = plt.subplots()
                     
@@ -239,7 +357,7 @@ def test_3(dir_name = 'test_rt'):
                     
             combo_ndofs[combo_name] = ndofs
             combo_errs[combo_name]  = errs
-                
+            
             perf_combo_f = perf_counter()
             perf_combo_dt = perf_combo_f - perf_combo_0
             msg = (
@@ -250,11 +368,11 @@ def test_3(dir_name = 'test_rt'):
             
         if comm_rank == 0:
             # Write error results to files
-            file_name = 'combo_errs.txt'
+            file_name = 'errs.txt'
             file_path = os.path.join(prob_dir, file_name)
             json.dump(combo_errs, open(file_path, 'w'))
             
-            file_name = 'combo_ndofs.txt'
+            file_name = 'ndofs.txt'
             file_path = os.path.join(prob_dir, file_name)
             json.dump(combo_ndofs, open(file_path, 'w'))
             
@@ -307,7 +425,7 @@ def test_3(dir_name = 'test_rt'):
                 plt.tight_layout()
                 plt.savefig(file_path, dpi = 300)
                 plt.close(fig)
-
+                
 def gen_kappa_sigma_plots(Ls, kappa, sigma, figs_dir, file_names):
     [Lx, Ly] = Ls[:]
     
@@ -441,7 +559,7 @@ def gen_u_plot(Ls, u, figs_dir):
     perf_f = perf_counter()
     perf_diff = perf_f - perf_0
     msg = ( 'Analytic solution plotted!\n' +
-            22 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_diff)
+            12 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_diff)
            )
     utils.print_msg(msg, blocking = False)
     

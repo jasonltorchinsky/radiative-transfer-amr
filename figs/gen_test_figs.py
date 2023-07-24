@@ -1,28 +1,34 @@
 import argparse
-from mpi4py import MPI
-import numpy as np
-import petsc4py
-from petsc4py import PETSc
-import matplotlib as mpl
+import gc
+import json
+import matplotlib        as mpl
 import matplotlib.pyplot as plt
-from scipy.integrate import quad, dblquad
-from time import perf_counter
-import os, sys
-
+import numpy             as np
+import os
+import petsc4py
+import psutil
+import sys
+from   mpi4py          import MPI
+from   petsc4py        import PETSc
+from   scipy.integrate import quad, dblquad
+from   time            import perf_counter
 
 sys.path.append('../src')
-from dg.mesh import Mesh
-from dg.mesh.utils import plot_mesh, plot_mesh_p
-from dg.matrix import get_intr_mask, split_matrix, merge_vectors
-from dg.projection import Projection, to_projection
-from dg.projection.utils import plot_xy, plot_xth, plot_yth, plot_xyth, plot_th
+import amr
+import amr.utils
+import dg.matrix     as mat
+import dg.mesh       as ji_mesh
+import dg.mesh.utils
+import dg.projection as proj
 import dg.quadrature as qd
-from rt import rtdg
-from amr import cell_jump_err, col_jump_err, rand_err, high_res_err, \
-    nneg_err, ref_by_ind, total_anl_err
-from amr.utils import plot_error_indicator
-
+import rt
 import utils
+from   test_combos   import h_uni_ang, p_uni_ang, hp_uni_ang, \
+    h_uni_spt, p_uni_spt, hp_uni_spt, \
+    h_uni_all, p_uni_all, hp_uni_all, \
+    h_amr_ang, p_amr_ang, hp_amr_ang, \
+    h_amr_spt, p_amr_spt, hp_amr_spt, \
+    h_amr_all, p_amr_all, hp_amr_all
 
 def main():
     """
@@ -56,28 +62,7 @@ def main():
     
     figs_dir_name = 'test_{}_figs'.format(test_num)
     figs_dir = os.path.join(dir_name, figs_dir_name)
-    if comm_rank == 0:
-        os.makedirs(figs_dir, exist_ok = True)
-    
-    # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
-    combo_uangh = {'full_name'  : 'Uniform Angular h-Refinement',
-                   'short_name' : 'h-uni-ang',
-                   'ref_kind'   : 'ang'}
-    combo_uangp = {'full_name'  : 'Uniform Angular p-Refinement',
-                   'short_name' : 'p-uni-ang',
-                   'ref_kind'   : 'ang'}
-    combo_aangh = {'full_name'  : 'Adaptive Angular h-Refinement',
-                   'short_name' : 'h-amr-ang',
-                   'ref_kind'   : 'ang'}
-    combo_aanghp = {'full_name'  : 'Adaptive Angular hp-Refinement',
-                    'short_name' : 'hp-amr-ang',
-                    'ref_kind'   : 'ang'}
-    combo_aspthp = {'full_name'  : 'Adaptive Spatial hp-Refinement',
-                    'short_name' : 'hp-amr-spt',
-                    'ref_kind'   : 'spt'}
-    combo_aallhp = {'full_name'  : 'Adaptive Spatio-Angular hp-Refinement',
-                    'short_name' : 'hp-amr-all',
-                    'ref_kind'    : 'all'}
+    os.makedirs(figs_dir, exist_ok = True)
     
     # Output options
     do_plot_mesh        = False
@@ -98,179 +83,168 @@ def main():
     if test_num == 1:
         # End-Combo Parameters
         # Maximum number of DOFs
-        max_ndof = 2**16
+        max_ndof = 2**18
         # Maximum number of trials
-        max_ntrial = 5
+        max_ntrial = 32
         # Minimum error before cut-off
-        min_err = 3.e-6
+        min_err = 1.e-7
+        # Maximum memory usage
+        max_mem = 95
         
         # Each combo in test has same starting mesh, but we give specifics here for flexibility
         [Lx, Ly] = [3., 2.]
         pbcs     = [False, False]
-        ndofs    = [3, 3, 3]
         has_th   = True
-        nref_ang = 3
-        nref_spt = 2
         
         # Uniform Angular h-Refinement
-        combo_uangh['Ls']       = [Lx, Ly]
-        combo_uangh['pbcs']     = pbcs
-        combo_uangh['ndofs']    = ndofs
-        combo_uangh['has_th']   = has_th
-        combo_uangh['nref_ang'] = nref_ang
-        combo_uangh['nref_spt'] = nref_spt
+        h_uni_ang['Ls']     = [Lx, Ly]
+        h_uni_ang['pbcs']   = pbcs
+        h_uni_ang['has_th'] = has_th
         
         # Uniform Angular p-Refinement
-        combo_uangp['Ls']       = [Lx, Ly]
-        combo_uangp['pbcs']     = pbcs
-        combo_uangp['ndofs']    = ndofs
-        combo_uangp['has_th']   = has_th
-        combo_uangp['nref_ang'] = nref_ang
-        combo_uangp['nref_spt'] = nref_spt
+        p_uni_ang['Ls']     = [Lx, Ly]
+        p_uni_ang['pbcs']   = pbcs
+        p_uni_ang['has_th'] = has_th
         
         # Adaptive Angular h-Refinement
-        combo_aangh['Ls']       = [Lx, Ly]
-        combo_aangh['pbcs']     = pbcs
-        combo_aangh['ndofs']    = ndofs
-        combo_aangh['has_th']   = has_th
-        combo_aangh['nref_ang'] = nref_ang
-        combo_aangh['nref_spt'] = nref_spt
+        h_amr_ang['Ls']     = [Lx, Ly]
+        h_amr_ang['pbcs']   = pbcs
+        h_amr_ang['has_th'] = has_th
         
         # Adaptive Angular hp-Refinement
-        combo_aanghp['Ls']       = [Lx, Ly]
-        combo_aanghp['pbcs']     = pbcs
-        combo_aanghp['ndofs']    = ndofs
-        combo_aanghp['has_th']   = has_th
-        combo_aanghp['nref_ang'] = nref_ang
-        combo_aanghp['nref_spt'] = nref_spt
+        hp_amr_ang['Ls']     = [Lx, Ly]
+        hp_amr_ang['pbcs']   = pbcs
+        hp_amr_ang['has_th'] = has_th
         
         [ndof_x_hr, ndof_y_hr, ndof_th_hr] = [None, None, None]
         combos = [
-            combo_uangh,
-            #combo_uangp,
-            #combo_aangh,
-            #combo_aanghp
+            h_uni_ang,
+            p_uni_ang,
+            h_amr_ang,
+            hp_amr_ang
         ]
         
     elif test_num == 2:
-        # Each combo in test has same starting mesh, but we give specifics here fore flexibility
+        # End-Combo Parameters
+        # Maximum number of DOFs
+        max_ndof = 2**16
+        # Maximum number of trials
+        max_ntrial = 1
+        # Minimum error before cut-off
+        min_err = 3.e-6
+        # Maximum memory usage
+        max_mem = 95
+        
+        # Each combo in test has same starting mesh, but we give specifics here for flexibility
         [Lx, Ly] = [3., 2.]
         pbcs     = [True, False]
         has_th   = True
         
         # Uniform Angular h-Refinement
-        combo_uangh['Ls']       = [Lx, Ly]
-        combo_uangh['pbcs']     = pbcs
-        combo_uangh['ndofs']    = [6, 6, 3]
-        combo_uangh['has_th']   = has_th
-        combo_uangh['nref_ang'] = 3
-        combo_uangh['nref_spt'] = 2
+        h_uni_ang['Ls']     = [Lx, Ly]
+        h_uni_ang['pbcs']   = pbcs
+        h_uni_ang['has_th'] = has_th
         
         # Uniform Angular p-Refinement
-        combo_uangp['Ls']       = [Lx, Ly]
-        combo_uangp['pbcs']     = pbcs
-        combo_uangp['ndofs']    = [4, 4, 3]
-        combo_uangp['has_th']   = has_th
-        combo_uangp['nref_ang'] = 3
-        combo_uangp['nref_spt'] = 2
+        p_uni_ang['Ls']     = [Lx, Ly]
+        p_uni_ang['pbcs']   = pbcs
+        p_uni_ang['has_th'] = has_th
         
         # Adaptive Angular h-Refinement
-        combo_aangh['Ls']       = [Lx, Ly]
-        combo_aangh['pbcs']     = pbcs
-        combo_aangh['ndofs']    = [4, 4, 3]
-        combo_aangh['has_th']   = has_th
-        combo_aangh['nref_ang'] = 3
-        combo_aangh['nref_spt'] = 2
+        h_amr_ang['Ls']     = [Lx, Ly]
+        h_amr_ang['pbcs']   = pbcs
+        h_amr_ang['has_th'] = has_th
         
         # Adaptive Angular hp-Refinement
-        combo_aanghp['Ls']       = [Lx, Ly]
-        combo_aanghp['pbcs']     = pbcs
-        combo_aanghp['ndofs']    = [4, 4, 3]
-        combo_aanghp['has_th']   = has_th
-        combo_aanghp['nref_ang'] = 3
-        combo_aanghp['nref_spt'] = 2
+        hp_amr_ang['Ls']     = [Lx, Ly]
+        hp_amr_ang['pbcs']   = pbcs
+        hp_amr_ang['has_th'] = has_th
         
         [ndof_x_hr, ndof_y_hr, ndof_th_hr] = [None, None, None]
         combos = [
-            combo_uangh,
-            combo_uangp,
-            combo_aangh,
-            combo_aanghp
+            h_uni_ang,
+            p_uni_ang,
+            h_amr_ang,
+            hp_amr_ang
         ]
         
     elif test_num == 3:
-        # Each combo in each test has a different starting mesh.
+        # End-Combo Parameters
+        # Maximum number of DOFs
+        max_ndof = 2**16
+        # Maximum number of trials
+        max_ntrial = 1
+        # Minimum error before cut-off
+        min_err = 3.e-6
+        # Maximum memory usage
+        max_mem = 95
+        
+        # Each combo in test has same starting mesh, but we give specifics here for flexibility
         [Lx, Ly] = [3., 2.]
         pbcs     = [True, False]
         has_th   = True
         
-        # Adaptive Spatial hp-Refinement
-        combo_aspthp['Ls']       = [Lx, Ly]
-        combo_aspthp['pbcs']     = pbcs
-        combo_aspthp['ndofs']    = [3, 3, 16]
-        combo_aspthp['has_th']   = has_th
-        combo_aspthp['nref_ang'] = 3
-        combo_aspthp['nref_spt'] = 2
+        # Adaptive Angular hp-Refinement
+        hp_amr_spt['Ls']     = [Lx, Ly]
+        hp_amr_spt['pbcs']   = pbcs
+        hp_amr_spt['has_th'] = has_th
+        
+        # Adaptive Angular hp-Refinement
+        hp_amr_ang['Ls']     = [Lx, Ly]
+        hp_amr_ang['pbcs']   = pbcs
+        hp_amr_ang['has_th'] = has_th
 
         # Adaptive Angular hp-Refinement
-        combo_aanghp['Ls']       = [Lx, Ly]
-        combo_aanghp['pbcs']     = pbcs
-        combo_aanghp['ndofs']    = [8, 8, 3]
-        combo_aanghp['has_th']   = has_th
-        combo_aanghp['nref_ang'] = 2
-        combo_aanghp['nref_spt'] = 3
+        hp_amr_all['Ls']     = [Lx, Ly]
+        hp_amr_all['pbcs']   = pbcs
+        hp_amr_all['has_th'] = has_th
         
-        # Adaptive Spatio-Angular hp-Refinement
-        combo_aallhp['Ls']       = [Lx, Ly]
-        combo_aallhp['pbcs']     = pbcs
-        combo_aallhp['ndofs']    = [3, 3, 3]
-        combo_aallhp['has_th']   = has_th
-        combo_aallhp['nref_ang'] = 2
-        combo_aallhp['nref_spt'] = 2
-        
-        [ndof_x_hr, ndof_y_hr, ndof_th_hr] = [8, 8, 16]
+        [ndof_x_hr, ndof_y_hr, ndof_th_hr] = [None, None, None]
         combos = [
-            combo_aspthp,
-            combo_aanghp,
-            combo_aallhp
+            hp_amr_spt,
+            hp_amr_ang,
+            sp_amr_all
         ]
         
     elif test_num == 4:
-        # Each combo in each test has a different starting mesh.
+        # End-Combo Parameters
+        # Maximum number of DOFs
+        max_ndof = 2**16
+        # Maximum number of trials
+        max_ntrial = 1
+        # Minimum error before cut-off
+        min_err = 3.e-6
+        # Maximum memory usage
+        max_mem = 95
+        
+        # Each combo in test has same starting mesh, but we give specifics here for flexibility
         [Lx, Ly] = [3., 2.]
         pbcs     = [True, False]
         has_th   = True
-        # Adaptive Spatial hp-Refinement
-        combo_aspthp['Ls']       = [Lx, Ly]
-        combo_aspthp['pbcs']     = pbcs
-        combo_aspthp['ndofs']    = [3, 3, 16]
-        combo_aspthp['has_th']   = has_th
-        combo_aspthp['nref_ang'] = 3
-        combo_aspthp['nref_spt'] = 2
+        
+        # Adaptive Angular hp-Refinement
+        hp_amr_spt['Ls']     = [Lx, Ly]
+        hp_amr_spt['pbcs']   = pbcs
+        hp_amr_spt['has_th'] = has_th
+        
+        # Adaptive Angular hp-Refinement
+        hp_amr_ang['Ls']     = [Lx, Ly]
+        hp_amr_ang['pbcs']   = pbcs
+        hp_amr_ang['has_th'] = has_th
 
         # Adaptive Angular hp-Refinement
-        combo_aanghp['Ls']       = [Lx, Ly]
-        combo_aanghp['pbcs']     = pbcs
-        combo_aanghp['ndofs']    = [8, 8, 3]
-        combo_aanghp['has_th']   = has_th
-        combo_aanghp['nref_ang'] = 2
-        combo_aanghp['nref_spt'] = 3
+        hp_amr_all['Ls']     = [Lx, Ly]
+        hp_amr_all['pbcs']   = pbcs
+        hp_amr_all['has_th'] = has_th
         
-        # Adaptive Spatio-Angular hp-Refinement
-        combo_aallhp['Ls']       = [Lx, Ly]
-        combo_aallhp['pbcs']     = pbcs
-        combo_aallhp['ndofs']    = [3, 3, 3]
-        combo_aallhp['has_th']   = has_th
-        combo_aallhp['nref_ang'] = 2
-        combo_aallhp['nref_spt'] = 2
-        
-        [ndof_x_hr, ndof_y_hr, ndof_th_hr] = [8, 8, 16]
+        [ndof_x_hr, ndof_y_hr, ndof_th_hr] = [None, None, None]
         combos = [
-            combo_aspthp,
-            combo_aanghp,
-            combo_aallhp
+            hp_amr_spt,
+            hp_amr_ang,
+            sp_amr_all
         ]
-
+        
+    # Extinction coefficient, etc. for each test
     if test_num == 1:
         # Manufactured solution
         def X(x):
@@ -317,6 +291,7 @@ def main():
         def bcs(x, y, th):
             return u(x, y, th)
         dirac = [None, None, None]
+        bcs_dirac = [bcs, dirac]
         
         def u_intg_th(x, y, th0, th1):
             [Theta_intg, _] = quad(lambda th: Theta(th), th0, th1,
@@ -365,6 +340,7 @@ def main():
             else:
                 return 0
         dirac = [None, None, None]
+        bcs_dirac = [bcs, dirac]
         
     elif test_num == 3:
         # Test problem : Horizontally Homogeneous
@@ -404,6 +380,7 @@ def main():
             else:
                 return 0
         dirac = [None, None, None]
+        bcs_dirac = [bcs, dirac]
         
     elif test_num == 4:
         # Test problem : Spatially inhomogeneous
@@ -445,9 +422,10 @@ def main():
             else:
                 return 0
         dirac = [None, None, None]
+        bcs_dirac = [bcs, dirac]
     
     # Plot extinction coefficient, scattering coefficient, and scattering phase function
-    if comm_rank == 0 and False:
+    if comm_rank == 0:
         kappa_file_name = 'kappa_{}.png'.format(test_num)
         sigma_file_name = 'sigma_{}.png'.format(test_num)
         Phi_file_name   = 'Phi_{}.png'.format(test_num)
@@ -456,13 +434,13 @@ def main():
         gen_Phi_plot(Phi, figs_dir, Phi_file_name)
         if test_num == 1:
             gen_u_plot([Lx, Ly], u, figs_dir)
+    MPI_comm.Barrier()
     
     for combo in combos:
         combo_name = combo['short_name']
         combo_names += [combo_name]
         combo_dir = os.path.join(figs_dir, combo_name)
-        if comm_rank == 0:
-            os.makedirs(combo_dir, exist_ok = True)
+        os.makedirs(combo_dir, exist_ok = True)
         
         msg = ( 'Starting combination {}...\n'.format(combo['full_name']) )
         utils.print_msg(msg)
@@ -471,25 +449,35 @@ def main():
         perf_setup_0 = perf_counter()
         
         # Get the base mesh
-        mesh = Mesh(Ls     = combo['Ls'],
-                    pbcs   = combo['pbcs'],
-                    ndofs  = combo['ndofs'],
-                    has_th = combo['has_th'])
-        
-        for _ in range(0, combo['nref_ang']):
-            mesh.ref_mesh(kind = 'ang', form = 'h')
+        if comm_rank == 0:
+            mesh = ji_mesh.Mesh(Ls     = combo['Ls'],
+                                pbcs   = combo['pbcs'],
+                                ndofs  = combo['ndofs'],
+                                has_th = combo['has_th'])
             
-        for _ in range(0, combo['nref_spt']):
-            mesh.ref_mesh(kind = 'spt', form = 'h')
+            for _ in range(0, combo['nref_ang']):
+                mesh.ref_mesh(kind = 'ang', form = 'h')
+                
+            for _ in range(0, combo['nref_spt']):
+                mesh.ref_mesh(kind = 'spt', form = 'h')
+        else:
+            mesh = None
+        MPI_comm.Barrier()
         
         # Solve the problem over several trials
         ndofs = []
         errs  = []
         
-        ndof      = mesh.get_ndof()
+        if comm_rank == 0:
+            ndof = mesh.get_ndof()
+            ndof = MPI_comm.bcast(ndof, root = 0)
+        else:
+            ndof = None
+            ndof = MPI_comm.bcast(ndof, root = 0)
         prev_ndof = ndof
         trial = 0
         err   = 1.
+        mem_used = psutil.virtual_memory()[2]
         
         perf_setup_f = perf_counter()
         perf_setup_diff = perf_setup_f - perf_setup_0
@@ -498,19 +486,33 @@ def main():
                )
         utils.print_msg(msg)
         
-        while (ndof < max_ndof) and (trial < max_ntrial):# and (err > min_err):
-            ndof   = mesh.get_ndof()
+        while (((ndof < max_ndof)
+                and (trial <= max_ntrial)
+                and (err > min_err)
+                and (mem_used <= 95.))
+               or (trial <= 1)):
+            mem_used = psutil.virtual_memory()[2]
+            if comm_rank == 0:
+                ndof = mesh.get_ndof()
+                ndof = MPI_comm.bcast(ndof, root = 0)
+            else:
+                ndof = None
+                ndof = MPI_comm.bcast(ndof, root = 0)
             ndofs += [ndof]
             
             perf_trial_0 = perf_counter()
-            msg = '[Trial {}] Starting with {} of {} ndofs and error {:.4E}...\n'.format(trial, ndof, max_ndof, err)
+            msg = (
+                '[Trial {}] Starting with: '.format(trial) +
+                '{} of {} DoFs and\n'.format(ndof, max_ndof) +
+                37 * ' ' + 'error {:.2E} of {:.2E}\n'.format(err, min_err) +
+                37 * ' ' + 'RAM Memory % Used: {}\n'.format(mem_used)
+            )
             utils.print_msg(msg)
             
             # Set up output directories
             trial_dir = os.path.join(combo_dir, 'trial_{}'.format(trial))
-            if comm_rank == 0:
-                os.makedirs(trial_dir, exist_ok = True)
-
+            os.makedirs(trial_dir, exist_ok = True)
+            
             if test_num == 1:
                 err_kind = 'anl'
             elif test_num == 2:
@@ -520,194 +522,155 @@ def main():
             elif test_num == 4:
                 err_kind = 'hr'
                 
-            uh_proj = get_soln(mesh, kappa, sigma, Phi, [bcs, dirac], f, trial)
-            err     = get_err(mesh, uh_proj, u, kappa, sigma, Phi, [bcs, dirac], f,
-                              trial, trial_dir, err_kind = err_kind,
-                              ndof_x = ndof_x_hr,
-                              ndof_y = ndof_y_hr,
-                              ndof_th = ndof_th_hr,
-                              nref_ang = combo['nref_ang'],
-                              nref_spt = combo['nref_spt'],
-                              ref_kind = combo['ref_kind'])
-            errs   += [err]
-
-            if comm_rank == 0 and False:
+            uh_proj = get_soln(mesh, kappa, sigma, Phi, bcs_dirac, f,
+                               trial)
+            err     = get_err(mesh, uh_proj, u, kappa, sigma, Phi,
+                              bcs_dirac, f,
+                              trial, trial_dir,
+                              nref_ang  = combo['nref_ang'],
+                              nref_spt  = combo['nref_spt'],
+                              ref_kind  = combo['ref_kind'],
+                              res_coeff = 1,
+                              key       = test_num,
+                              err_kind  = err_kind)
+            errs += [err]
+            
+            if comm_rank == 0:
+                # Write error results to files as we go along
+                file_name = 'errs.txt'
+                file_path = os.path.join(combo_dir, file_name)
+                json.dump(errs, open(file_path, 'w'))
+                
+                file_name = 'ndofs.txt'
+                file_path = os.path.join(combo_dir, file_name)
+                json.dump(ndofs, open(file_path, 'w'))
+                
                 if do_plot_mesh:
-                    gen_mesh_plot(mesh, trial, trial_dir)
+                    gen_mesh_plot(mesh, trial, trial_dir, blocking = False)
                     
                 if do_plot_mesh_p:
-                    gen_mesh_plot_p(mesh, trial, trial_dir)
+                    gen_mesh_plot_p(mesh, trial, trial_dir, blocking = False)
                     
                 if do_plot_uh:
-                    gen_uh_plot(mesh, uh_proj, trial, trial_dir)
+                    gen_uh_plot(mesh, uh_proj, trial, trial_dir, blocking = False)
                     
-            # Refine the mesh for the next trial
-            if test_num == 1:
-                neg_tol = -0.01
-            elif test_num == 2:
-                neg_tol = -0.01
-            elif test_num == 3:
-                neg_tol = -0.01
-            elif test_num == 4:
-                neg_tol = -0.01
-                    
-            if combo['short_name'] == 'h-uni-ang':
-                mesh.ref_mesh(kind = 'ang', form = 'h')
+            if   combo['short_name'] == 'h-uni-ang':
+                if comm_rank == 0:
+                    mesh.ref_mesh(kind = 'ang', form = 'h')
             elif combo['short_name'] == 'p-uni-ang':
-                mesh.ref_mesh(kind = 'ang', form = 'p')
-            elif combo['short_name'] == 'h-amr-ang':
-                uh_vec = uh_proj.to_vector()
-                if np.any(uh_vec < neg_tol):
-                    kwargs_ang = {'ref_col'      : False,
-                                  'col_ref_form' : None,
-                                  'col_ref_kind' : None,
-                                  'col_ref_tol'  : None,
-                                  'ref_cell'      : True,
-                                  'cell_ref_form' : 'h',
-                                  'cell_ref_kind' : 'ang',
-                                  'cell_ref_tol'  : neg_tol}
-                    err_ind_ang = nneg_err(mesh, uh_proj, **kwargs_ang)
-                else:
-                    kwargs_ang = {'ref_col'      : False,
-                                  'col_ref_form' : None,
-                                  'col_ref_kind' : None,
-                                  'col_ref_tol'  : None,
-                                  'ref_cell'      : True,
-                                  'cell_ref_form' : 'h',
-                                  'cell_ref_kind' : 'ang',
-                                  'cell_ref_tol'  : 0.9}
+                if comm_rank == 0:
+                    for _ in range(0, 3):
+                        mesh.ref_mesh(kind = 'ang', form = 'p')
+            elif combo['short_name'] == 'hp-uni-ang':
+                if comm_rank == 0:
+                    for _ in range(0, 2):
+                        mesh.ref_mesh(kind = 'ang', form = 'p')
+                    mesh.ref_mesh(kind = 'ang', form = 'h')
+            elif combo['short_name'] == 'h-uni-spt':
+                if comm_rank == 0:
+                    mesh.ref_mesh(kind = 'spt', form = 'h')
+            elif combo['short_name'] == 'p-uni-spt':
+                if comm_rank == 0:
+                    for _ in range(0, 3):
+                        mesh.ref_mesh(kind = 'spt', form = 'p')
+            elif combo['short_name'] == 'hp-uni-spt':
+                if comm_rank == 0:
+                    for _ in range(0, 2):
+                        mesh.ref_mesh(kind = 'spt', form = 'p')
+                    mesh.ref_mesh(kind = 'spt', form = 'h')
+            elif combo['short_name'] == 'h-uni-all':
+                if comm_rank == 0:
+                    mesh.ref_mesh(kind = 'all', form = 'h')
+            elif combo['short_name'] == 'p-uni-all':
+                if comm_rank == 0:
+                    for _ in range(0, 3):
+                        mesh.ref_mesh(kind = 'all', form = 'p')
+            elif combo['short_name'] == 'hp-uni-all':
+                if comm_rank == 0:
+                    for _ in range(0, 2):
+                        mesh.ref_mesh(kind = 'all', form = 'p')
+                    mesh.ref_mesh(kind = 'all', form = 'h')
+            elif ((combo['short_name'] == 'h-amr-ang')
+                  or (combo['short_name'] == 'p-amr-ang')
+                  or (combo['short_name'] == 'hp-amr-ang')):
+                if comm_rank == 0:
+                    uh_vec = uh_proj.to_vector()
+                    if np.any(uh_vec < combo['kwargs_ang_nneg']['cell_ref_tol']):
+                        kwargs_ang  = combo['kwargs_ang_nneg']
+                        err_ind_ang = amr.nneg_err(mesh, uh_proj, **kwargs_ang)
+                    else:
+                        kwargs_ang  = combo['kwargs_ang_jmp']
+                        err_ind_ang = amr.cell_jump_err(mesh, uh_proj, **kwargs_ang)
+                    if do_plot_err_ind:
+                        gen_err_ind_plot(mesh, err_ind_ang, trial, trial_dir, 'err_ind_ang.png')
+                    mesh = amr.ref_by_ind(mesh, err_ind_ang)
+            elif ((combo['short_name'] == 'h-amr-spt')
+                  or (combo['short_name'] == 'p-amr-spt')
+                  or (combo['short_name'] == 'hp-amr-spt')):
+                if comm_rank == 0:
+                    uh_vec = uh_proj.to_vector()
+                    if np.any(uh_vec < combo['kwargs_spt_nneg']['col_ref_tol']):
+                        kwargs_spt  = combo['kwargs_spt_nneg']
+                        err_ind_spt = amr.nneg_err(mesh, uh_proj, **kwargs_spt)
+                    else:
+                        kwargs_spt  = combo['kwargs_spt_jmp']
+                        err_ind_spt = amr.col_jump_err(mesh, uh_proj, **kwargs_spt)
+                    if do_plot_err_ind:
+                        gen_err_ind_plot(mesh, err_ind_spt, trial, trial_dir, 'err_ind_spt.png')
+                    mesh = amr.ref_by_ind(mesh, err_ind_spt)
+            elif ((combo['short_name'] == 'h-amr-all')
+                  or (combo['short_name'] == 'p-amr-all')
+                  or (combo['short_name'] == 'hp-amr-all')):
+                if comm_rank == 0:
+                    uh_vec = uh_proj.to_vector()
+                    if np.any(uh_vec < combo['kwargs_ang_nneg']['cell_ref_tol']):
+                        kwargs_ang  = combo['kwargs_ang_nneg']
+                        err_ind_ang = amr.nneg_err(mesh, uh_proj, **kwargs_ang)
+                    else:
+                        kwargs_ang  = combo['kwargs_ang_jmp']
+                        err_ind_ang = amr.cell_jump_err(mesh, uh_proj, **kwargs_ang)
+                    if np.any(uh_vec < combo['kwargs_spt_nneg']['col_ref_tol']):
+                        kwargs_spt  = combo['kwargs_spt_nneg']
+                        err_ind_spt = amr.nneg_err(mesh, uh_proj, **kwargs_spt)
+                    else:
+                        kwargs_spt  = combo['kwargs_spt_jmp']
+                        err_ind_spt = amr.col_jump_err(mesh, uh_proj, **kwargs_spt)
+                    if do_plot_err_ind:
+                        gen_err_ind_plot(mesh, err_ind_ang, trial, trial_dir, 'err_ind_ang.png')
+                        gen_err_ind_plot(mesh, err_ind_spt, trial, trial_dir, 'err_ind_spt.png')
+                    mesh = amr.ref_by_ind(mesh, err_ind_ang)
+                    mesh = amr.ref_by_ind(mesh, err_ind_spt)
                     
-                    err_ind_ang = cell_jump_err(mesh, uh_proj, **kwargs_ang)
-                
-                if do_plot_err_ind:
-                    gen_err_ind_plot(mesh, err_ind_ang, trial, trial_dir, 'err_ind_ang.png')
-                    
-                mesh = ref_by_ind(mesh, err_ind_ang)
-                
-            elif combo['short_name'] == 'hp-amr-ang':
-                uh_vec = uh_proj.to_vector()
-                neg_tol = -0.01
-                if np.any(uh_vec < neg_tol):
-                    kwargs_ang = {'ref_col'      : False,
-                                  'col_ref_form' : None,
-                                  'col_ref_kind' : None,
-                                  'col_ref_tol'  : None,
-                                  'ref_cell'      : True,
-                                  'cell_ref_form' : 'h',
-                                  'cell_ref_kind' : 'ang',
-                                  'cell_ref_tol'  : neg_tol}
-                    err_ind_ang = nneg_err(mesh, uh_proj, **kwargs_ang)
-                else:
-                    kwargs_ang = {'ref_col'      : False,
-                                  'col_ref_form' : None,
-                                  'col_ref_kind' : None,
-                                  'col_ref_tol'  : None,
-                                  'ref_cell'      : True,
-                                  'cell_ref_form' : 'hp',
-                                  'cell_ref_kind' : 'ang',
-                                  'cell_ref_tol'  : 0.9}
-                    
-                    err_ind_ang = cell_jump_err(mesh, uh_proj, **kwargs_ang)
-                
-                if do_plot_err_ind:
-                    gen_err_ind_plot(mesh, err_ind_ang, trial, trial_dir, 'err_ind_ang.png')
-                    
-                mesh = ref_by_ind(mesh, err_ind_ang)
-                
-            elif combo['short_name'] == 'hp-amr-spt':
-                uh_vec = uh_proj.to_vector()
-                neg_tol = -0.01
-                if np.any(uh_vec < neg_tol):
-                    kwargs_spt = {'ref_col'      : True,
-                                  'col_ref_form' : 'h',
-                                  'col_ref_kind' : 'spt',
-                                  'col_ref_tol'  : neg_tol,
-                                  'ref_cell'      : False,
-                                  'cell_ref_form' : None,
-                                  'cell_ref_kind' : None,
-                                  'cell_ref_tol'  : None}
-                    err_ind_spt = nneg_err(mesh, uh_proj, **kwargs_spt)
-                else:
-                    kwargs_spt = {'ref_col'      : True,
-                                  'col_ref_form' : 'h',
-                                  'col_ref_kind' : 'spt',
-                                  'col_ref_tol'  : 0.9,
-                                  'ref_cell'      : False,
-                                  'cell_ref_form' : None,
-                                  'cell_ref_kind' : None,
-                                  'cell_ref_tol'  : None}
-                    
-                    err_ind_spt = col_jump_err(mesh, uh_proj, **kwargs_spt)
-                
-                if do_plot_err_ind:
-                    gen_err_ind_plot(mesh, err_ind_spt, trial, trial_dir, 'err_ind_spt.png')
-                    
-                mesh = ref_by_ind(mesh, err_ind_spt)
-                
-            elif combo['short_name'] == 'hp-amr-all':
-                uh_vec = uh_proj.to_vector()
-                neg_tol = -0.01
-                if np.any(uh_vec < neg_tol):
-                    kwargs_spt = {'ref_col'      : True,
-                                  'col_ref_form' : 'h',
-                                  'col_ref_kind' : 'spt',
-                                  'col_ref_tol'  : neg_tol,
-                                  'ref_cell'      : False,
-                                  'cell_ref_form' : None,
-                                  'cell_ref_kind' : None,
-                                  'cell_ref_tol'  : None}
-                    err_ind_spt = nneg_err(mesh, uh_proj, **kwargs_spt)
-
-                    kwargs_ang = {'ref_col'      : False,
-                                  'col_ref_form' : None,
-                                  'col_ref_kind' : None,
-                                  'col_ref_tol'  : None,
-                                  'ref_cell'      : True,
-                                  'cell_ref_form' : 'h',
-                                  'cell_ref_kind' : 'ang',
-                                  'cell_ref_tol'  : neg_tol}
-                    err_ind_ang = nneg_err(mesh, uh_proj, **kwargs_ang)
-                else:
-                    kwargs_spt = {'ref_col'      : True,
-                                  'col_ref_form' : 'hp',
-                                  'col_ref_kind' : 'spt',
-                                  'col_ref_tol'  : 0.9,
-                                  'ref_cell'      : False,
-                                  'cell_ref_form' : None,
-                                  'cell_ref_kind' : None,
-                                  'cell_ref_tol'  : None}
-                    
-                    err_ind_spt = col_jump_err(mesh, uh_proj, **kwargs_spt)
-                    
-                    kwargs_ang = {'ref_col'      : False,
-                                  'col_ref_form' : None,
-                                  'col_ref_kind' : None,
-                                  'col_ref_tol'  : None,
-                                  'ref_cell'      : True,
-                                  'cell_ref_form' : 'hp',
-                                  'cell_ref_kind' : 'ang',
-                                  'cell_ref_tol'  : 0.9}
-                    
-                    err_ind_ang = cell_jump_err(mesh, uh_proj, **kwargs_ang)
-                
-                if do_plot_err_ind:
-                    gen_err_ind_plot(mesh, err_ind_spt, trial, trial_dir, 'err_ind_spt.png')
-                    gen_err_ind_plot(mesh, err_ind_ang, trial, trial_dir, 'err_ind_ang.png')
-                    
-                mesh = ref_by_ind(mesh, err_ind_ang)
-                mesh = ref_by_ind(mesh, err_ind_spt)
-                
             perf_trial_f    = perf_counter()
             perf_trial_diff = perf_trial_f - perf_trial_0
+            if comm_rank == 0:
+                ndof = mesh.get_ndof()
+                ndof = MPI_comm.bcast(ndof, root = 0)
+            else:
+                ndof = None
+                ndof = MPI_comm.bcast(ndof, root = 0)
+            mem_used = psutil.virtual_memory()[2]
             msg = (
                 '[Trial {}] Trial completed!\n'.format(trial) +
-                22 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_trial_diff)
+                12 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_trial_diff) +
+                12 * ' ' + 'Next trial: {} of {} DoFs and\n'.format(ndof, max_ndof) +
+                24 * ' ' + 'error {:.2E} of {:.2E}\n'.format(err, min_err) +
+                24 * ' ' + 'RAM Memory % Used: {}\n'.format(mem_used)
             )
             utils.print_msg(msg)
             
             trial += 1
             
         if comm_rank == 0:
+            # Write error results to files as we go along
+            file_name = 'errs.txt'
+            file_path = os.path.join(combo_dir, file_name)
+            json.dump(errs, open(file_path, 'w'))
+            
+            file_name = 'ndofs.txt'
+            file_path = os.path.join(combo_dir, file_name)
+            json.dump(ndofs, open(file_path, 'w'))
+            
             if do_plot_errs:
                 fig, ax = plt.subplots()
                 
@@ -771,6 +734,11 @@ def main():
                 12 * ' ' + 'Time elapsed: {:08.3f} [s]\n'.format(perf_combo_dt)
             )
             utils.print_msg(msg, blocking = False)
+            
+        # Clear some variables to reduce memory usage
+        del mesh, uh_proj
+        gc.collect()
+        
     if comm_rank == 0:
         if do_plot_errs:
             fig, ax = plt.subplots()
@@ -831,7 +799,7 @@ def main():
             12 * ' ' + 'Time elapsed: {:08.3f} [s]\n'.format(perf_all_dt)
         )
         utils.print_msg(msg)
-
+        
 def gen_kappa_sigma_plots(Ls, kappa, sigma, figs_dir, file_names):
     [Lx, Ly] = Ls[:]
     
@@ -845,146 +813,156 @@ def gen_kappa_sigma_plots(Ls, kappa, sigma, figs_dir, file_names):
     
     cmap = mpl.cm.gray
     norm = mpl.colors.Normalize(vmin = vmin, vmax = vmax)
-
+    
     # kappa Plot
-    fig, ax = plt.subplots()
-    
-    kappa_plot = ax.contourf(XX, YY, kappa_c, levels = 16, cmap = cmap, norm = norm)
-    
-    ax.set_xlim([0, Lx])
-    ax.set_ylim([0, Ly])
-    
-    ax.set_xlabel('x')
-    ax.set_ylabel('y')
-    ax.set_title(r'$\kappa\left( x,\ y \right)$')
-    
-    fig.colorbar(mpl.cm.ScalarMappable(norm = norm, cmap = cmap), ax = ax)
-    
     file_path = os.path.join(figs_dir, file_names[0])
-    plt.tight_layout()
-    plt.savefig(file_path, dpi = 300)
-    
-    plt.close(fig)
+    if not os.path.isfile(file_path):
+        fig, ax = plt.subplots()
+        
+        kappa_plot = ax.contourf(XX, YY, kappa_c, levels = 16,
+                                 cmap = cmap, norm = norm)
+        
+        ax.set_xlim([0, Lx])
+        ax.set_ylim([0, Ly])
+        
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+        ax.set_title(r'$\kappa\left( x,\ y \right)$')
+        
+        fig.colorbar(mpl.cm.ScalarMappable(norm = norm, cmap = cmap), ax = ax)
+        
+        file_path = os.path.join(figs_dir, file_names[0])
+        plt.tight_layout()
+        plt.savefig(file_path, dpi = 300)
+        
+        plt.close(fig)
 
     # sigma Plot
-    fig, ax = plt.subplots()
-    
-    kappa_plot = ax.contourf(XX, YY, sigma_c, levels = 16, cmap = cmap, norm = norm)
-    
-    ax.set_xlim([0, Lx])
-    ax.set_ylim([0, Ly])
-    
-    ax.set_xlabel('x')
-    ax.set_ylabel('y')
-    ax.set_title(r'$\sigma\left( x,\ y \right)$')
-    
-    fig.colorbar(mpl.cm.ScalarMappable(norm = norm, cmap = cmap), ax = ax)
-    
     file_path = os.path.join(figs_dir, file_names[1])
-    plt.tight_layout()
-    plt.savefig(file_path, dpi = 300)
-    
-    plt.close(fig)
+    if not os.path.isfile(file_path):
+        fig, ax = plt.subplots()
+        
+        kappa_plot = ax.contourf(XX, YY, sigma_c, levels = 16,
+                                 cmap = cmap, norm = norm)
+        
+        ax.set_xlim([0, Lx])
+        ax.set_ylim([0, Ly])
+        
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+        ax.set_title(r'$\sigma\left( x,\ y \right)$')
+        
+        fig.colorbar(mpl.cm.ScalarMappable(norm = norm, cmap = cmap), ax = ax)
+        
+        plt.tight_layout()
+        plt.savefig(file_path, dpi = 300)
+        
+        plt.close(fig)
     
 def gen_Phi_plot(Phi, figs_dir, file_name):
-    th = np.linspace(0, 2. * np.pi, num = 720)
-    rr = Phi(0, th)
-    
-    max_r = max(rr)
-    ntick = 2
-    r_ticks = np.linspace(max_r / ntick, max_r, ntick)
-    r_tick_labels = ['{:3.2f}'.format(r_tick) for r_tick in r_ticks]
-    th_ticks = np.linspace(0, 2. * np.pi, num = 8, endpoint = False)
-    th_tick_labels = [r'${:3.2f} \pi$'.format(th_tick/np.pi) for th_tick in th_ticks]
-    
-    fig, ax = plt.subplots(subplot_kw = {'projection': 'polar'})
-    
-    Phi_plot = ax.plot(th, rr, color = 'black')
-    
-    ax.set_rlim([0, max_r])
-    ax.set_rticks(r_ticks, r_tick_labels)
-    ax.set_xlabel(r"$\theta - \theta'$")
-    ax.set_xticks(th_ticks, th_tick_labels)
-    ax.set_title(r"$\Phi\left( \theta - \theta' \right)$")
     
     file_path = os.path.join(figs_dir, file_name)
-    plt.tight_layout()
-    plt.savefig(file_path, dpi = 300)
-    
-    plt.close(fig)
+    if not os.path.isfile(file_path):
+        th = np.linspace(0, 2. * np.pi, num = 720)
+        rr = Phi(0, th)
+        
+        max_r = np.amax(rr)
+        ntick = 2
+        r_ticks = np.linspace(max_r / ntick, max_r, ntick)
+        r_tick_labels = ['{:3.2f}'.format(r_tick) for r_tick in r_ticks]
+        th_ticks = np.linspace(0, 2. * np.pi, num = 8, endpoint = False)
+        th_tick_labels = [r'${:3.2f} \pi$'.format(th_tick/np.pi)
+                          for th_tick in th_ticks]
+        
+        fig, ax = plt.subplots(subplot_kw = {'projection': 'polar'})
+        
+        Phi_plot = ax.plot(th, rr, color = 'black')
+        
+        ax.set_rlim([0, max_r])
+        ax.set_rticks(r_ticks, r_tick_labels)
+        ax.set_xlabel(r"$\theta - \theta'$")
+        ax.set_xticks(th_ticks, th_tick_labels)
+        ax.set_title(r"$\Phi\left( \theta - \theta' \right)$")
+        
+        plt.tight_layout()
+        plt.savefig(file_path, dpi = 300)
+        
+        plt.close(fig)
     
 def gen_u_plot(Ls, u, figs_dir):
     perf_0 = perf_counter()
     msg = ( 'Plotting analytic solution...\n'
            )
-    utils.print_msg(msg)
+    utils.print_msg(msg, blocking = False)
 
-    mesh = Mesh(Ls     = Ls[:],
-                pbcs   = [False, False],
-                ndofs  = [8, 8, 8],
-                has_th = True)
+    mesh = ji_mesh.Mesh(Ls     = Ls[:],
+                        pbcs   = [False, False],
+                        ndofs  = [8, 8, 8],
+                        has_th = True)
     for _ in range(0, 4):
         mesh.ref_mesh(kind = 'ang', form = 'h')
     for _ in range(0, 4):
         mesh.ref_mesh(kind = 'spt', form = 'h')
-
-    u_proj = Projection(mesh, u)
-    
-    file_name = 'u_th.png'
-    file_path = os.path.join(figs_dir, file_name)
-    if not os.path.isfile(file_path):
-        plot_th(mesh, u_proj, file_name = file_path)
-    
-    file_name = 'u_xy.png'
-    file_path = os.path.join(figs_dir, file_name)
-    if not os.path.isfile(file_path):
-        plot_xy(mesh, u_proj, file_name = file_path)
-    
-    file_name = 'u_xth.png'
-    file_path = os.path.join(figs_dir, file_name)
-    if not os.path.isfile(file_path):
-        plot_xth(mesh, u_proj, file_name = file_path)
-    
-    file_name = 'u_yth.png'
-    file_path = os.path.join(figs_dir, file_name)
-    if not os.path.isfile(file_path):
-        plot_yth(mesh, u_proj, file_name = file_path)
-    
-    file_name = 'u_xyth.png'
-    file_path = os.path.join(figs_dir, file_name)
-    if not os.path.isfile(file_path):
-        plot_xyth(mesh, u_proj, file_name = file_path)
+        
+    file_names = ['u_th.png', 'u_xy.png', 'u_xth.png', 'u_yth.png', 'u_xyth.png']
+    file_paths = []
+    is_file_paths = []
+    for file_name in file_names:
+        file_path      = os.path.join(figs_dir, file_name)
+        file_paths    += [file_path]
+        is_file_paths += [os.path.isfile(file_path)]
+        
+    if not all(is_file_paths):
+        u_proj = proj.Projection(mesh, u)
+        
+        if not os.path.isfile(file_paths[0]):
+            proj.utils.plot_th(mesh, u_proj, file_name = file_paths[0])
+            
+        if not os.path.isfile(file_paths[1]):
+            proj.utils.plot_xy(mesh, u_proj, file_name = file_paths[1])
+            
+        if not os.path.isfile(file_paths[2]):
+            proj.utils.plot_xth(mesh, u_proj, file_name = file_paths[2])
+            
+        if not os.path.isfile(file_paths[3]):
+            proj.utils.plot_yth(mesh, u_proj, file_name = file_paths[3])
+            
+        if not os.path.isfile(file_paths[4]):
+            proj.utils.plot_xyth(mesh, u_proj, file_name = file_paths[4])
     
     perf_f = perf_counter()
     perf_diff = perf_f - perf_0
     msg = ( 'Analytic solution plotted!\n' +
-            22 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_diff)
+            12 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_diff)
            )
-    utils.print_msg(msg)
+    utils.print_msg(msg, blocking = False)
     
     
 def get_soln(mesh, kappa, sigma, Phi, bcs_dirac, f, trial):
     perf_0 = perf_counter()
-    msg = ( '[Trial {}] Obtaining numerical solution...\n'.format(trial)
-           )
+    msg = (
+        '[Trial {}] Obtaining numerical solution...\n'.format(trial)
+    )
     utils.print_msg(msg)
 
-    [uh_proj, info] = rtdg(mesh, kappa, sigma, Phi, bcs_dirac, f,
-                           verbose = True)
+    [uh_proj, info] = rt.rtdg(mesh, kappa, sigma, Phi, bcs_dirac, f,
+                              verbose = True)
         
     perf_f = perf_counter()
     perf_diff = perf_f - perf_0
-    msg = ( '[Trial {}] Numerical solution obtained! : Exit Code {} \n'.format(trial, info) +
-            22 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_diff)
-           )
+    msg = (
+        '[Trial {}] Numerical solution obtained! : '.format(trial) +
+        'Exit Code {} \n'.format(info) +
+        22 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_diff)
+    )
     utils.print_msg(msg)
 
     return uh_proj
 
-def get_err(mesh, uh_proj, u, kappa, sigma, Phi, bcs_dirac, f, trial, figs_dir, err_kind, **kwargs):
-    default_kwargs = {'ndof_x' : 8,
-                      'ndof_y' : 8,
-                      'ndof_th' : 16}
+def get_err(mesh, uh_proj, u, kappa, sigma, Phi, bcs_dirac, f,
+            trial, figs_dir, **kwargs):
+    default_kwargs = {'res_coeff' : 1,
+                      'err_kind' : 'anl'}
     kwargs = {**default_kwargs, **kwargs}
     
     perf_0 = perf_counter()
@@ -992,11 +970,9 @@ def get_err(mesh, uh_proj, u, kappa, sigma, Phi, bcs_dirac, f, trial, figs_dir, 
            )
     utils.print_msg(msg)
 
-    if err_kind == 'anl':
-        err = total_anl_err(mesh, uh_proj, u)
-    elif err_kind == 'hr':
-        # High-resolution error uses a different solver depending on the number of
-        # DOFs in the high-resolution mesh.
+    if kwargs['err_kind'] == 'anl':
+        err = amr.total_anl_err(mesh, uh_proj, u, **kwargs)
+    elif kwargs['err_kind'] == 'hr':
         err = high_res_err(mesh, uh_proj,
                            kappa, sigma, Phi, bcs_dirac, f,
                            verbose = True,
@@ -1005,113 +981,138 @@ def get_err(mesh, uh_proj, u, kappa, sigma, Phi, bcs_dirac, f, trial, figs_dir, 
     
     perf_f = perf_counter()
     perf_diff = perf_f - perf_0
-    msg = ( '[Trial {}] Error obtained! : {:.4E}\n'.format(trial, err) +
-            22 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_diff)
-           )
+    msg = (
+        '[Trial {}] Error obtained! : {:.4E}\n'.format(trial, err) +
+        22 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_diff)
+    )
     utils.print_msg(msg)
-
+    
     return err
 
-def gen_mesh_plot(mesh, trial, trial_dir):
+def gen_mesh_plot(mesh, trial, trial_dir, **kwargs):
+    
+    default_kwargs = {'blocking' : False # Default to non-blokcig behavior for plotting
+                      }
+    kwargs = {**default_kwargs, **kwargs}
+
     perf_0 = perf_counter()
     msg = ( '[Trial {}] Plotting mesh...\n'.format(trial)
            )
-    utils.print_msg(msg)
+    utils.print_msg(msg, **kwargs)
     
     file_name = 'mesh_3d_{}.png'.format(trial)
     file_path = os.path.join(trial_dir, file_name)
-    plot_mesh(mesh      = mesh,
-              file_name = file_path,
-              plot_dim  = 3)
+    ji_mesh.utils.plot_mesh(mesh      = mesh,
+                            file_name = file_path,
+                            plot_dim  = 3)
     
     file_name = 'mesh_2d_{}.png'.format(trial)
     file_path = os.path.join(trial_dir, file_name)
-    plot_mesh(mesh        = mesh,
-              file_name   = file_path,
-              plot_dim    = 2,
-              label_cells = (trial <= 2))
+    ji_mesh.utils.plot_mesh(mesh        = mesh,
+                            file_name   = file_path,
+                            plot_dim    = 2,
+                            label_cells = (trial <= 2))
     
     perf_f = perf_counter()
     perf_diff = perf_f - perf_0
     msg = ( '[Trial {}] Mesh plotted!\n'.format(trial) +
             22 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_diff)
            )
-    utils.print_msg(msg)
+    utils.print_msg(msg, **kwargs)
 
-def gen_mesh_plot_p(mesh, trial, trial_dir):
+def gen_mesh_plot_p(mesh, trial, trial_dir, **kwargs):
+
+    default_kwargs = {'blocking' : False # Default to non-blokcig behavior for plotting
+                      }
+    kwargs = {**default_kwargs, **kwargs}
+    
     perf_0 = perf_counter()
     msg = ( '[Trial {}] Plotting mesh polynomial degree...\n'.format(trial)
            )
-    utils.print_msg(msg)
+    utils.print_msg(msg, **kwargs)
     
     file_name = 'mesh_3d_p_{}.png'.format(trial)
     file_path = os.path.join(trial_dir, file_name)
-    plot_mesh_p(mesh        = mesh,
-                file_name   = file_path,
-                plot_dim    = 3)
+    ji_mesh.utils.plot_mesh_p(mesh        = mesh,
+                              file_name   = file_path,
+                              plot_dim    = 3)
     
     file_name = 'mesh_2d_p_{}.png'.format(trial)
     file_path = os.path.join(trial_dir, file_name)
-    plot_mesh_p(mesh        = mesh,
-                file_name   = file_path,
-                plot_dim    = 2,
-                label_cells = (trial <= 3))
+    ji_mesh.utils.plot_mesh_p(mesh        = mesh,
+                              file_name   = file_path,
+                              plot_dim    = 2,
+                              label_cells = (trial <= 3))
     
     perf_f = perf_counter()
     perf_diff = perf_f - perf_0
     msg = ( '[Trial {}] Mesh polynomial degree plotted!\n'.format(trial) +
             22 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_diff)
            )
-    utils.print_msg(msg)
+    utils.print_msg(msg, **kwargs)
     
-def gen_uh_plot(mesh, uh_proj, trial, trial_dir):
+def gen_uh_plot(mesh, uh_proj, trial, trial_dir, **kwargs):
+    
+    default_kwargs = {'blocking' : False # Default to non-blokcig behavior for plotting
+                      }
+    kwargs = {**default_kwargs, **kwargs}
+    
     perf_0 = perf_counter()
-    msg = ( '[Trial {}] Plotting numerical solution...\n'.format(trial)
-           )
-    utils.print_msg(msg)
+    msg = (
+        '[Trial {}] Plotting numerical solution...\n'.format(trial)
+    )
+    utils.print_msg(msg, **kwargs)
     
     file_name = 'uh_th_{}.png'.format(trial)
     file_path = os.path.join(trial_dir, file_name)
-    plot_th(mesh, uh_proj, file_name = file_path)
+    proj.utils.plot_th(mesh, uh_proj, file_name = file_path)
     
     file_name = 'uh_xy_{}.png'.format(trial)
     file_path = os.path.join(trial_dir, file_name)
-    plot_xy(mesh, uh_proj, file_name = file_path)
+    proj.utils.plot_xy(mesh, uh_proj, file_name = file_path)
     
     file_name = 'uh_xth_{}.png'.format(trial)
     file_path = os.path.join(trial_dir, file_name)
-    plot_xth(mesh, uh_proj, file_name = file_path)
+    proj.utils.plot_xth(mesh, uh_proj, file_name = file_path)
     
     file_name = 'uh_yth_{}.png'.format(trial)
     file_path = os.path.join(trial_dir, file_name)
-    plot_yth(mesh, uh_proj, file_name = file_path)
+    proj.utils.plot_yth(mesh, uh_proj, file_name = file_path)
     
     file_name = 'uh_xyth_{}.png'.format(trial)
     file_path = os.path.join(trial_dir, file_name)
-    plot_xyth(mesh, uh_proj, file_name = file_path)
+    proj.utils.plot_xyth(mesh, uh_proj, file_name = file_path)
     
     perf_f = perf_counter()
     perf_diff = perf_f - perf_0
-    msg = ( '[Trial {}] Numerical solution plotted!\n'.format(trial) +
-            22 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_diff)
-           )
-    utils.print_msg(msg)
+    msg = (
+        '[Trial {}] Numerical solution plotted!\n'.format(trial) +
+        22 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_diff)
+    )
+    utils.print_msg(msg, **kwargs)
     
-def gen_err_ind_plot(mesh, err_ind, trial, trial_dir, file_name):
+def gen_err_ind_plot(mesh, err_ind, trial, trial_dir, file_name, **kwargs):
+    
+    default_kwargs = {'blocking' : False # Default to non-blokcig behavior for plotting
+                      }
+    kwargs = {**default_kwargs, **kwargs}
+    
     perf_0 = perf_counter()
-    msg = ( '[Trial {}] Plotting error indicators...\n'.format(trial)
-           )
-    utils.print_msg(msg)
+    msg = (
+        '[Trial {}] Plotting error indicators...\n'.format(trial)
+    )
+    utils.print_msg(msg, **kwargs)
     
     file_path = os.path.join(trial_dir, file_name)
-    plot_error_indicator(mesh, err_ind, file_name = file_path)
+    amr.utils.plot_error_indicator(mesh, err_ind, file_name = file_path)
     
     perf_f = perf_counter()
     perf_diff = perf_f - perf_0
-    msg = ( '[Trial {}] Error indicator plotted!\n'.format(trial) +
-            22 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_diff)
-           )
-    utils.print_msg(msg)
-    
+    msg = (
+        '[Trial {}] Error indicator plotted!\n'.format(trial) +
+        22 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_diff)
+    )
+    utils.print_msg(msg, **kwargs)
+
 if __name__ == '__main__':
     main()

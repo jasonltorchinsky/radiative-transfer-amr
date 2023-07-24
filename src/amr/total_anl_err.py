@@ -138,7 +138,7 @@ def total_anl_err_hr(mesh, num_sol, anl_sol, **kwargs):
                 [xxb, _, yyb, _, _, _] = qd.quad_xyth(nnodes_x = ndof_x,
                                                       nnodes_y = ndof_y)
                 
-                [ndof_x_hr, ndof_y_hr] = [res_coeff * ndof_x, res_coeff * ndof_y]
+                [ndof_x_hr, ndof_y_hr] = [int(res_coeff * ndof_x), int(res_coeff * ndof_y)]
                 
                 [xxb_hr, wx_hr, yyb_hr, wy_hr, _, _] = qd.quad_xyth(nnodes_x = ndof_x_hr,
                                                                     nnodes_y = ndof_y_hr)
@@ -178,7 +178,7 @@ def total_anl_err_hr(mesh, num_sol, anl_sol, **kwargs):
                         
                         [_, _, _, _, thb, _] = qd.quad_xyth(nnodes_th = ndof_th)
                         
-                        [ndof_th_hr]  = [res_coeff * ndof_th]
+                        [ndof_th_hr]  = [int(res_coeff * ndof_th)]
                         
                         [_, _, _, _, thb_hr, wth_hr] = qd.quad_xyth(nnodes_th = ndof_th_hr)
                         

@@ -1,6 +1,9 @@
-import numpy        as     np
+import gc
+import numpy               as np
 import petsc4py
-import scipy.sparse as     sp
+import psutil
+import scipy.sparse        as sp
+import scipy.sparse.linalg as spla
 import sys
 from   mpi4py       import MPI
 from   petsc4py     import PETSc
@@ -38,11 +41,17 @@ def rtdg(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     comm_size = comm.getSize()
     
     if kwargs['verbose']:
-        t0  = perf_counter()
+        if comm_rank == 0:
+            ndof = mesh.get_ndof()
+            ndof = MPI_comm.bcast(ndof, root = 0)
+        else:
+            ndof = None
+            ndof = MPI_comm.bcast(ndof, root = 0)
         msg = (
-            'Initiating solve with {} DoFs...\n'.format(mesh.get_ndof())
+            'Initiating solve with {} DoFs...\n'.format(ndof)
             )
         utils.print_msg(msg)
+        t0  = perf_counter()
             
     # Calculate A, b of Ax=b in serial
     [M_mass_scat, M_pc] = calc_precond_matrix(mesh, kappa, sigma, Phi, **kwargs)
@@ -57,6 +66,12 @@ def rtdg(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
         [M_pc, _] = mat.split_matrix(mesh, M_pc, intr_mask)
     else:
         M_pc = None
+        
+    # If using too much memory, delete used matrices
+    used_mem = psutil.virtual_memory()[2]
+    if used_mem >= 80:
+        del M_mass_scat, M_intr_conv, M_bdry_conv, M
+        gc.collect()
         
     # Make sure forcing function takes three arguments
     if f is None:
@@ -93,7 +108,7 @@ def rtdg(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     if kwargs['verbose']:
         t0 = perf_counter()
         msg = (
-            'Setting up and performing solve...\n'
+            'Setting up solve...\n'
             )
         utils.print_msg(msg)
         
@@ -146,8 +161,8 @@ def rtdg(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     # Create LHS, RHS vectors and fill them in
     u_MPI, f_MPI = M_MPI.createVecs()
     u_MPI.set(0)
-    (II, _, VV) = sp.find(f_local)
-    nnz_local    = np.size(II)
+    (_, II, VV) = sp.find(f_local)
+    nnz_local   = np.size(II)
     for idx in range(0, nnz_local):
         ii = II[idx]
         vv = VV[idx]
@@ -156,28 +171,57 @@ def rtdg(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
         
     f_MPI.assemblyBegin()
     f_MPI.assemblyEnd()
+
+    if kwargs['verbose']:
+        tf = perf_counter()
+        msg = (
+            'Solve set up.\n' +
+            12 * ' ' + 'Time Elapsed: {:8.4f} [s]\n'.format(tf - t0)
+            )
+        utils.print_msg(msg)
+
+    if kwargs['verbose']:
+        t0 = perf_counter()
+        msg = (
+            'Executing solve...\n'
+            )
+        utils.print_msg(msg)
     
     # Create the linear system solver
     ksp = PETSc.KSP()
     ksp.create(comm = comm)
-    ksp.setType('lgmres')
+    ksp.setType('gmres')
     ksp.setOperators(M_MPI)
+    ksp.setTolerances(rtol = 1.e-10, atol   = 1.e-50,
+                      divtol = 1.e7, max_it = int(2**16))
+    
+    pc = ksp.getPC()
+    pc.setType('lu')
+    
     ksp.setFromOptions()
     
     ksp.solve(f_MPI, u_MPI)
+    info = ksp.getConvergedReason()
+
     
-    u_local = u_MPI[ii_0:ii_f]
-    u_global = MPI_comm.gather(u_local, root = 0)
-    
-    # Check against spsolve
-    if comm_rank == 0:
-        u_intr_vec = np.concatenate(u_global)
-        u_intr_vec_sp = sp.linalg.spsolve(M_global, f_global)
-    
+    if info > 0:
+        u_local = u_MPI[ii_0:ii_f]
+        u_global = MPI_comm.gather(u_local, root = 0)
+        
+        if comm_rank == 0:
+            u_intr_vec = np.concatenate(u_global)
+    else: # Iterative solver failed, go to direct solve
+        msg = (
+            'Parallel iterative solve failed. Attempting direct solve...\n'
+            )
+        utils.print_msg(msg)
+        if comm_rank == 0:
+            u_intr_vec = spla.spsolve(M_global, f_global)
+            
     if kwargs['verbose']:
         tf = perf_counter()
         msg = (
-            'Solve Completed.\n' +
+            'Solve Completed. Exit Code: {}\n'.format(info) +
             12 * ' ' + 'Time Elapsed: {:8.4f} [s]\n'.format(tf - t0)
             )
         utils.print_msg(msg)
@@ -188,8 +232,7 @@ def rtdg(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     else:
         u_proj = None
         
-    u_proj = MPI_comm.bcast(u_proj, root = 0)
-    info = 0
+    #u_proj = MPI_comm.bcast(u_proj, root = 0)
     
     return [u_proj, info]
 

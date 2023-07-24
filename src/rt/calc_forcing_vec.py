@@ -34,9 +34,16 @@ def calc_forcing_vec(mesh, f, **kwargs):
             'Constructing Forcing Vector...\n'
             )
         utils.print_msg(msg)
-
+        
     # Split the problem into parts dependent on size of communicator
-    n_global = mesh.get_ndof()
+    if comm_rank == 0:
+        n_global = mesh.get_ndof()
+        n_global = MPI_comm.bcast(n_global, root = 0)
+        mesh     = MPI_comm.bcast(mesh, root = 0)
+    else:
+        n_global = None
+        n_global = MPI_comm.bcast(n_global, root = 0)
+        mesh     = MPI_comm.bcast(mesh, root = 0)
     col_keys = list(sorted(mesh.cols.keys()))
     n_col = len(col_keys)
     p_col_keys = np.array_split(col_keys, comm_size)
