@@ -1,8 +1,8 @@
 import numpy           as np
 import petsc4py
+import scipy.integrate as integrate
 from   mpi4py          import MPI
 from   petsc4py        import PETSc
-import scipy.integrate as integrate
 
 import dg.projection as proj
 import dg.quadrature as qd
@@ -214,11 +214,11 @@ def total_anl_err_hr(mesh, num_sol, anl_sol, **kwargs):
                     
         err = np.sqrt(err/intg_u2[kwargs['key']])
     else:
-        err = 0
-
+        err = 0.
+        
     err = MPI_comm.bcast(err, root = 0)
-
+    
     if kwargs['blocking']:
         MPI_comm.Barrier()
-
+        
     return err

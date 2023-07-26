@@ -85,9 +85,9 @@ def main():
         # Maximum number of DOFs
         max_ndof = 2**18
         # Maximum number of trials
-        max_ntrial = 32
+        max_ntrial = 256
         # Minimum error before cut-off
-        min_err = 1.e-7
+        min_err = 1.e-6
         # Maximum memory usage
         max_mem = 95
         
@@ -118,20 +118,20 @@ def main():
         
         [ndof_x_hr, ndof_y_hr, ndof_th_hr] = [None, None, None]
         combos = [
-            h_uni_ang,
-            p_uni_ang,
-            h_amr_ang,
+            #h_uni_ang,
+            #p_uni_ang,
+            #h_amr_ang,
             hp_amr_ang
         ]
         
     elif test_num == 2:
         # End-Combo Parameters
         # Maximum number of DOFs
-        max_ndof = 2**16
+        max_ndof = 2**18
         # Maximum number of trials
-        max_ntrial = 1
+        max_ntrial = 256
         # Minimum error before cut-off
-        min_err = 3.e-6
+        min_err = 1.e-6
         # Maximum memory usage
         max_mem = 95
         
@@ -162,20 +162,20 @@ def main():
         
         [ndof_x_hr, ndof_y_hr, ndof_th_hr] = [None, None, None]
         combos = [
-            h_uni_ang,
-            p_uni_ang,
-            h_amr_ang,
+            #h_uni_ang,
+            #p_uni_ang,
+            #h_amr_ang,
             hp_amr_ang
         ]
         
     elif test_num == 3:
         # End-Combo Parameters
         # Maximum number of DOFs
-        max_ndof = 2**16
+        max_ndof = 2**18
         # Maximum number of trials
-        max_ntrial = 1
+        max_ntrial = 256
         # Minimum error before cut-off
-        min_err = 3.e-6
+        min_err = 1.e-6
         # Maximum memory usage
         max_mem = 95
         
@@ -201,19 +201,19 @@ def main():
         
         [ndof_x_hr, ndof_y_hr, ndof_th_hr] = [None, None, None]
         combos = [
-            hp_amr_spt,
+            #hp_amr_spt,
             hp_amr_ang,
-            sp_amr_all
+            #hp_amr_all
         ]
         
     elif test_num == 4:
         # End-Combo Parameters
         # Maximum number of DOFs
-        max_ndof = 2**16
+        max_ndof = 2**18
         # Maximum number of trials
-        max_ntrial = 1
+        max_ntrial = 256
         # Minimum error before cut-off
-        min_err = 3.e-6
+        min_err = 1.e-6
         # Maximum memory usage
         max_mem = 95
         
@@ -239,9 +239,9 @@ def main():
         
         [ndof_x_hr, ndof_y_hr, ndof_th_hr] = [None, None, None]
         combos = [
-            hp_amr_spt,
-            hp_amr_ang,
-            sp_amr_all
+            #hp_amr_spt,
+            #hp_amr_ang,
+            hp_amr_all
         ]
         
     # Extinction coefficient, etc. for each test
@@ -513,6 +513,24 @@ def main():
             trial_dir = os.path.join(combo_dir, 'trial_{}'.format(trial))
             os.makedirs(trial_dir, exist_ok = True)
             
+            # Plot mesh
+            if comm_rank == 0:
+                if do_plot_mesh:
+                    gen_mesh_plot(mesh, trial, trial_dir, blocking = False)
+                    
+                if do_plot_mesh_p:
+                    gen_mesh_plot_p(mesh, trial, trial_dir, blocking = False)
+                    
+            # Get and plot numerical solution
+            uh_proj = get_soln(mesh, kappa, sigma, Phi, bcs_dirac, f,
+                               trial)
+            PETSc.garbage_cleanup()
+            if comm_rank == 0:
+                if do_plot_uh:
+                    gen_uh_plot(mesh, uh_proj, trial, trial_dir, blocking = False)
+            MPI_comm.barrier()
+
+            # Get error and save it to file
             if test_num == 1:
                 err_kind = 'anl'
             elif test_num == 2:
@@ -522,8 +540,6 @@ def main():
             elif test_num == 4:
                 err_kind = 'hr'
                 
-            uh_proj = get_soln(mesh, kappa, sigma, Phi, bcs_dirac, f,
-                               trial)
             err     = get_err(mesh, uh_proj, u, kappa, sigma, Phi,
                               bcs_dirac, f,
                               trial, trial_dir,
@@ -533,6 +549,7 @@ def main():
                               res_coeff = 1,
                               key       = test_num,
                               err_kind  = err_kind)
+            PETSc.garbage_cleanup()
             errs += [err]
             
             if comm_rank == 0:
@@ -545,15 +562,7 @@ def main():
                 file_path = os.path.join(combo_dir, file_name)
                 json.dump(ndofs, open(file_path, 'w'))
                 
-                if do_plot_mesh:
-                    gen_mesh_plot(mesh, trial, trial_dir, blocking = False)
-                    
-                if do_plot_mesh_p:
-                    gen_mesh_plot_p(mesh, trial, trial_dir, blocking = False)
-                    
-                if do_plot_uh:
-                    gen_uh_plot(mesh, uh_proj, trial, trial_dir, blocking = False)
-                    
+            # Refine the mesh, plot error indicators along the way
             if   combo['short_name'] == 'h-uni-ang':
                 if comm_rank == 0:
                     mesh.ref_mesh(kind = 'ang', form = 'h')
@@ -717,7 +726,7 @@ def main():
                 title_str = ( '{} Convergence Rate'.format(combo['full_name']) )
                 ax.set_title(title_str)
                 
-                file_name = 'convergence.png'
+                file_name = 'convergence_{}.png'.format(test_num)
                 file_path = os.path.join(combo_dir, file_name)
                 fig.set_size_inches(6.5, 6.5)
                 plt.tight_layout()
@@ -785,7 +794,7 @@ def main():
             title_str = ( 'Convergence Rate' )
             ax.set_title(title_str)
             
-            file_name = 'convergence.png'
+            file_name = 'convergence_{}.png'.format(test_num)
             file_path = os.path.join(figs_dir, file_name)
             fig.set_size_inches(6.5, 6.5)
             plt.tight_layout()
@@ -973,11 +982,11 @@ def get_err(mesh, uh_proj, u, kappa, sigma, Phi, bcs_dirac, f,
     if kwargs['err_kind'] == 'anl':
         err = amr.total_anl_err(mesh, uh_proj, u, **kwargs)
     elif kwargs['err_kind'] == 'hr':
-        err = high_res_err(mesh, uh_proj,
-                           kappa, sigma, Phi, bcs_dirac, f,
-                           verbose = True,
-                           dir_name = figs_dir,
-                           **kwargs)
+        err = amr.high_res_err(mesh, uh_proj,
+                               kappa, sigma, Phi, bcs_dirac, f,
+                               verbose = True,
+                               dir_name = figs_dir,
+                               **kwargs)
     
     perf_f = perf_counter()
     perf_diff = perf_f - perf_0

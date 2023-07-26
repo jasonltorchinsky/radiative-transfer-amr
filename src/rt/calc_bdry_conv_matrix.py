@@ -17,12 +17,15 @@ import dg.quadrature as qd
 import utils
 
 def calc_bdry_conv_matrix(mesh, **kwargs):
+    return calc_bdry_conv_matrix_seq(mesh, **kwargs)
 
+def calc_bdry_conv_matrix_seq(mesh, **kwargs):
+    
     default_kwargs = {'verbose'  : False, # Print info while executing
                       'blocking' : True   # Synchronize ranks before exiting
                       }
     kwargs = {**default_kwargs, **kwargs}
-
+    
     # Initialize parallel communicators
     MPI_comm = MPI.COMM_WORLD
     
@@ -105,6 +108,143 @@ def calc_bdry_conv_matrix(mesh, **kwargs):
         MPI_comm.Barrier()
         
     return bdry_conv_mtx
+
+def calc_bdry_conv_matrix_mpi(mesh, **kwargs):
+    
+    default_kwargs = {'verbose'  : False, # Print info while executing
+                      'blocking' : True   # Synchronize ranks before exiting
+                      }
+    kwargs = {**default_kwargs, **kwargs}
+    
+    # Initialize parallel communicators
+    MPI_comm = MPI.COMM_WORLD
+    
+    petsc4py.init()
+    comm      = PETSc.COMM_WORLD
+    comm_rank = comm.getRank()
+    comm_size = comm.getSize()
+
+    if comm_rank == 0:
+        n_global = mesh.get_ndof()
+    else:
+        n_global = None
+    n_global = MPI_comm.bcast(n_global, root = 0)
+    
+    if kwargs['verbose']:
+        t0 = perf_counter()
+        msg = (
+            'Constructing Boundary Propagation Matrix...\n'
+            )
+        utils.print_msg(msg)
+        
+    # Calculate these matrices in serial, and then we'll split them
+    if comm_rank == 0:
+        # Variables that are the same throughout the loops
+        col_items = sorted(mesh.cols.items())
+        
+        # Create column indexing for constructing global mass matrix
+        [ncols, col_idxs] = proj.get_col_idxs(mesh)
+        col_mtxs = [[None] * ncols for C in range(0, ncols)] # We have to assemble a
+        # lot on inter-column interaction matrices,
+        # so the construction is a bit more difficult.
+        
+        # The local-column matrices come in two kinds: M^CC and M^CC'.
+        # The M^CC have to be constructed in four parts: M^CC_F.
+        # The M^CC' can be constructed in one part.
+        # We loop through each column C, then through each face F of C.
+        # For each face, loop through each element K of C.
+        # Depending on K, we contribute to M^CC_F or M^CC'.
+        # Hold all four M^CC_F, add them together after all of the loops.
+        for col_key_0, col_0 in col_items:
+            if col_0.is_lf:
+                # Use _0 to refer to column C
+                # Later, use _1 to refer to column C'
+                col_idx_0 = col_idxs[col_key_0]
+                
+                # Loop through the faces of C
+                for F in range(0, 4):
+                    [col_mtx_00, [col_key_1, col_mtx_01], [col_key_2, col_mtx_02]] = \
+                        calc_col_matrix(mesh, col_key_0, F)
+                    
+                    # The intra-column matrix may already exist. If so, add to it.
+                    if col_mtxs[col_idx_0][col_idx_0] is None:
+                        col_mtxs[col_idx_0][col_idx_0] = col_mtx_00
+                    else:                        
+                        col_mtxs[col_idx_0][col_idx_0] += col_mtx_00
+                        
+                    if col_key_1 is not None:
+                        col_idx_1 = col_idxs[col_key_1]
+                        if col_mtxs[col_idx_0][col_idx_1] is None:
+                            col_mtxs[col_idx_0][col_idx_1] = col_mtx_01
+                        else:                        
+                            col_mtxs[col_idx_0][col_idx_1] += col_mtx_01
+                    if col_key_2 is not None:
+                        col_idx_2 = col_idxs[col_key_2]
+                        if col_mtxs[col_idx_0][col_idx_2] is None:
+                            col_mtxs[col_idx_0][col_idx_2] = col_mtx_02
+                        else:                        
+                            col_mtxs[col_idx_0][col_idx_2] += col_mtx_02
+                
+        # Global boundary convection matrix is not block-diagonal
+        # but we arranged the column matrices in the proper form
+        bdry_conv_mtx = sp.bmat(col_mtxs, format = 'csr')
+        
+    else:
+        bdry_conv_mtx = None
+    
+    if kwargs['verbose']:
+        tf = perf_counter()
+        msg = (
+            'Constructed Boundary Propagation Matrix\n' +
+            12 * ' '  + 'Time Elapsed: {:8.4f} [s]\n'.format(tf - t0)
+        )
+        utils.print_msg(msg)
+        
+    if kwargs['verbose']:
+        t0 = perf_counter()
+        msg = (
+            'Scattering Boundary Propagation Matrix...\n'
+            )
+        utils.print_msg(msg)
+        
+    # Create PETSc sparse matrix
+    M_MPI = PETSc.Mat()
+    M_MPI.createAIJ(size = [n_global, n_global], comm = comm)
+    
+    o_rngs = M_MPI.getOwnershipRanges()
+    ii_0 = o_rngs[comm_rank]
+    ii_f = o_rngs[comm_rank+1]
+    if comm_rank == 0:
+        # Communicate global information
+        for rank in range(1, comm_size):
+            ii_0_else = o_rngs[rank]
+            ii_f_else = o_rngs[rank+1]
+            MPI_comm.send(bdry_conv_mtx[ii_0_else:ii_f_else, :],
+                          dest = rank)
+        M_local = M_global[ii_0:ii_f, :]
+        
+    else:
+        M_local = MPI_comm.recv(source = 0)
+        
+    # Put A_local into the shared matrix
+    (II, JJ, VV) = sp.find(M_local)
+    nnz_local    = np.size(II)
+    for idx in range(0, nnz_local):
+        ii = II[idx]
+        jj = JJ[idx]
+        vv = VV[idx]
+        
+        M_MPI[ii + ii_0, jj] = vv
+        
+    # Communicate off-rank values and setup internal data structures for
+    # performing parallel operations
+    M_MPI.assemblyBegin()
+    M_MPI.assemblyEnd()
+    
+    if kwargs['blocking']:        
+        MPI_comm.Barrier()
+        
+    return M_MPI
 
 def calc_col_matrix(mesh, col_key_0, F):
     """
