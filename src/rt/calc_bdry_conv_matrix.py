@@ -17,7 +17,7 @@ import dg.quadrature as qd
 import utils
 
 def calc_bdry_conv_matrix(mesh, **kwargs):
-    return calc_bdry_conv_matrix_seq(mesh, **kwargs)
+    return calc_bdry_conv_matrix_mpi(mesh, **kwargs)
 
 def calc_bdry_conv_matrix_seq(mesh, **kwargs):
     
@@ -221,7 +221,7 @@ def calc_bdry_conv_matrix_mpi(mesh, **kwargs):
             ii_f_else = o_rngs[rank+1]
             MPI_comm.send(bdry_conv_mtx[ii_0_else:ii_f_else, :],
                           dest = rank)
-        M_local = M_global[ii_0:ii_f, :]
+        M_local = bdry_conv_mtx[ii_0:ii_f, :]
         
     else:
         M_local = MPI_comm.recv(source = 0)

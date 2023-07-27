@@ -10,6 +10,9 @@ import dg.quadrature as qd
 import utils
 
 def calc_forcing_vec(mesh, f, **kwargs):
+    return calc_forcing_vec_mpi(mesh, f, **kwargs)
+
+def calc_forcing_vec_seq(mesh, f, **kwargs):
     """
     Create the global vector corresponding to the forcing term f.
     """
@@ -135,6 +138,141 @@ def calc_forcing_vec(mesh, f, **kwargs):
         MPI_comm.Barrier()
     
     return f_vec
+
+def calc_forcing_vec_mpi(mesh, f, **kwargs):
+    """
+    Create the global vector corresponding to the forcing term f.
+    """
+
+    default_kwargs = {'precondition' : False, # Calculate PC matrix
+                      'verbose'      : False, # Print info while executing
+                      'blocking'     : True   # Synchronize ranks before exiting
+                      } 
+    kwargs = {**default_kwargs, **kwargs}
+    
+    # Initialize parallel communicators
+    MPI_comm = MPI.COMM_WORLD
+    
+    petsc4py.init()
+    PETSc_comm = PETSc.COMM_WORLD
+    comm_rank  = PETSc_comm.getRank()
+    comm_size  = PETSc_comm.getSize()
+    
+    if kwargs['verbose']:
+        t0 = perf_counter()
+        msg = (
+            'Constructing Forcing Vector...\n'
+            )
+        utils.print_msg(msg)
+        
+    # Share information that is stored on root process
+    mesh     = MPI_comm.bcast(mesh, root = 0)
+    n_global = mesh.get_ndof()
+    
+    # Split the problem into parts dependent on size of COMM_WORLD.
+    col_keys_global = list(sorted(mesh.cols.keys()))
+    col_keys_local  = np.array_split(col_keys_global, comm_size)[comm_rank].astype(np.int32)
+    
+    # Get the start indices for each column matrix
+    col_st_idxs = {col_keys_global[0] : 0}
+    col_ndofs   = {}
+    
+    dof_count = 0
+    for cc in range(1, len(col_keys_global)):
+        col_key      = col_keys_global[cc]
+        prev_col_key = col_keys_global[cc - 1]
+        prev_col     = mesh.cols[prev_col_key]
+        if prev_col.is_lf:
+            prev_col_ndof    = 0
+            [ndof_x, ndof_y] = prev_col.ndofs[:]
+            
+            cell_items = sorted(prev_col.cells.items())
+            for cell_key, cell in cell_items:
+                if cell.is_lf:
+                    [ndof_th]    = cell.ndofs[:]
+                    dof_count   += ndof_x * ndof_y * ndof_th
+            col_st_idxs[col_key] = dof_count
+    col_ndofs[col_keys_global[-1]] = n_global - dof_count
+    
+    # Create PETSc sparse matrix
+    v_MPI = PETSc.Vec()
+    v_MPI.createMPI(size = n_global, comm = PETSc_comm)
+    for col_key in col_keys_local:
+        col_vec     = calc_col_vec(mesh, col_key, f, **kwargs)
+        col_st_idx  = col_st_idxs[col_key]
+        nnz_idxs    = np.where(np.abs(col_vec) > 0)[0].astype(np.int32)
+        for idx in nnz_idxs:
+            v_MPI[idx] = col_vec[idx]
+    v_MPI.assemblyBegin()
+    v_MPI.assemblyEnd()
+    
+    if kwargs['verbose']:
+        tf = perf_counter()
+        msg = (
+            'Constructed Forcing Vector\n' +
+            12 * ' '  + 'Time Elapsed: {:8.4f} [s]\n'.format(tf - t0)
+        )
+        utils.print_msg(msg)
+    
+    if kwargs['blocking']:        
+        MPI_comm.Barrier()
+    
+    return v_MPI
+
+def calc_col_vec(mesh, col_key, f, **kwargs):
+    
+    col = mesh.cols[col_key]
+    if col.is_lf:
+        # Get column information, quadrature weights
+        [x0, y0, x1, y1] = col.pos
+        [dx, dy]         = [x1 - x0, y1 - y0]
+        [nx, ny] = col.ndofs
+        
+        [xxb, w_x, yyb, w_y, _, _] = qd.quad_xyth(nnodes_x = nx,
+                                                  nnodes_y = ny)
+        
+        xxf = proj.push_forward(x0, x1, xxb)
+        yyf = proj.push_forward(y0, y1, yyb)
+        
+        # Get size of column vector
+        col_ndof = 0
+        cell_items = sorted(col.cells.items())                
+        for cell_key, cell in cell_items:
+            if cell.is_lf:
+                [nth]     = cell.ndofs[:]
+                col_ndof += nx * ny * nth
+                
+        col_vec = np.zeros([col_ndof])
+        
+        idx = 0                
+        for cell_key, cell in cell_items:
+            if cell.is_lf:
+                # Get cell information, quadrature weights
+                [th0, th1] = cell.pos
+                dth        = th1 - th0
+                [nth]      = cell.ndofs[:]
+                
+                [_, _, _, _, thb, w_th] = qd.quad_xyth(nnodes_th = nth)
+                
+                thf = proj.push_forward(th0, th1, thb)
+                
+                dcoeff = dx * dy * dth / 8.
+                
+                # List of entries, values for constructing the cell mask
+                cell_ndof  = nx * ny * nth
+                f_cell_vec = np.zeros([cell_ndof])
+                for ii in range(0, nx):
+                    wx_i = w_x[ii]
+                    for jj in range(0, ny):
+                        wy_j = w_y[jj]
+                        for aa in range(0, nth):
+                            wth_a = w_th[aa]
+                            f_ija = f(xxf[ii], yyf[jj], thf[aa])
+                            
+                            col_vec[idx] = dcoeff * wx_i * wy_j * wth_a * f_ija
+                            idx += 1
+                            
+    return col_vec
 
 def calc_forcing_vec_old(mesh, f, **kwargs):
     """

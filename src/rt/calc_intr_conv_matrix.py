@@ -16,7 +16,7 @@ ddy_psis = {}
 ddx_phis = {}
 
 def calc_intr_conv_matrix(mesh, **kwargs):
-    return calc_intr_conv_matrix_seq(mesh, **kwargs)
+    return calc_intr_conv_matrix_mpi(mesh, **kwargs)
 
 def calc_intr_conv_matrix_seq(mesh, **kwargs):
 
@@ -222,8 +222,8 @@ def calc_intr_conv_matrix_mpi(mesh, **kwargs):
     
     petsc4py.init()
     PETSc_comm = PETSc.COMM_WORLD
-    comm_rank  = comm.getRank()
-    comm_size  = comm.getSize()
+    comm_rank  = PETSc_comm.getRank()
+    comm_size  = PETSc_comm.getSize()
     
     if kwargs['verbose']:
         t0 = perf_counter()
@@ -238,10 +238,11 @@ def calc_intr_conv_matrix_mpi(mesh, **kwargs):
     
     # Split the problem into parts dependent on size of COMM_WORLD.
     col_keys_global = list(sorted(mesh.cols.keys()))
-    col_keys_local  = np.array_split(col_keys, comm_size)[comm_rank].astype(np.int32)
+    col_keys_local  = np.array_split(col_keys_global, comm_size)[comm_rank].astype(np.int32)
     
     # Get the start indices for each column matrix
     col_st_idxs = {col_keys_global[0] : 0}
+    col_ndofs   = {}
     
     dof_count = 0
     for cc in range(1, len(col_keys_global)):
@@ -262,12 +263,11 @@ def calc_intr_conv_matrix_mpi(mesh, **kwargs):
     
     # Create PETSc sparse matrix
     M_MPI = PETSc.Mat()
-    MPI.createAIJ(size = [n_global, n_global], comm = PETSc_comm)
+    M_MPI.createAIJ(size = [n_global, n_global], comm = PETSc_comm)
 
     # We assemble the column matrices using the block construction of scipy
     for col_key in col_keys_local:
-        col_mtx      = calc_col_matrix(mesh, col_key, kappa,
-                                       sigma, Phi, **kwargs)
+        col_mtx      = calc_col_matrix(mesh, col_key, **kwargs)
         col_st_idx   = col_st_idxs[col_key]
         (II, JJ, VV) = sp.find(col_mtx)
         nnz_local = np.size(II)
@@ -295,7 +295,7 @@ def calc_intr_conv_matrix_mpi(mesh, **kwargs):
         
     return M_MPI
 
-def calc_col_mtx(mesh, col_key, **kwargs):
+def calc_col_matrix(mesh, col_key, **kwargs):
         
     col = mesh.cols[col_key]
     if col.is_lf:
@@ -433,9 +433,6 @@ def calc_col_mtx(mesh, col_key, **kwargs):
         col_mtx = sp.block_diag(cell_mtxs, format = 'csr')
         
     else:
-        col_mtx = 0
-        
-    if kwargs['blocking']:
-        MPI_comm.Barrier()
+        col_mtx = None
         
     return col_mtx

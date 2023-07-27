@@ -156,10 +156,11 @@ def get_intr_mask_mpi(mesh, **kwargs):
     
     # Split the problem into parts dependent on size of COMM_WORLD.
     col_keys_global = list(sorted(mesh.cols.keys()))
-    col_keys_local  = np.array_split(col_keys, comm_size)[comm_rank].astype(np.int32)
+    col_keys_local  = np.array_split(col_keys_global, comm_size)[comm_rank].astype(np.int32)
     
     # Get the start indices for each column matrix
     col_st_idxs = {col_keys_global[0] : 0}
+    col_ndofs   = {}
     
     dof_count = 0
     for cc in range(1, len(col_keys_global)):
@@ -177,11 +178,9 @@ def get_intr_mask_mpi(mesh, **kwargs):
                     dof_count   += ndof_x * ndof_y * ndof_th
             col_st_idxs[col_key] = dof_count
     col_ndofs[col_keys_global[-1]] = n_global - dof_count
-                    
-    n_locals = MPI_comm.allgather(n_local)
-    start_idx = int(np.sum(n_locals[:comm_rank]))
-    bdry_vec_local = np.zeros(n_local)
     
+    [ncells, cell_idxs] = get_cell_idxs(mesh, col_key)
+    cell_masks = [None] * ncells # Column mask is a 1-D vector
     idx = 0
     for col_key in col_keys_local:
         col = mesh.cols[col_key]
@@ -243,8 +242,10 @@ def get_intr_mask_mpi(mesh, **kwargs):
                 
         global_mask = np.concatenate(col_masks, axis = None)
     else:
-        global_mask = 0
-
+        global_mask = None
+    
+    global_mask = MPI_comm.bcast(global_mask, root = 0)
+    
     if kwargs['verbose']:
         tf = perf_counter()
         msg = (

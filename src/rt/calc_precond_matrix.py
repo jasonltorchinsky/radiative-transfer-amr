@@ -18,7 +18,7 @@ import utils
 prev_col_mtxs = {}
 
 def calc_precond_matrix(mesh, kappa, sigma, Phi, **kwargs):
-    return calc_precond_matrix_seq(mesh, kappa, sigma, Phi, **kwargs)
+    return calc_precond_matrix_mpi(mesh, kappa, sigma, Phi, **kwargs)
 
 def calc_precond_matrix_seq(mesh, kappa, sigma, Phi, **kwargs):
     """
@@ -261,8 +261,8 @@ def calc_precond_matrix_mpi(mesh, kappa, sigma, Phi, **kwargs):
     
     petsc4py.init()
     PETSc_comm = PETSc.COMM_WORLD
-    comm_rank  = comm.getRank()
-    comm_size  = comm.getSize()
+    comm_rank  = PETSc_comm.getRank()
+    comm_size  = PETSc_comm.getSize()
     
     if kwargs['verbose']:
         t0 = perf_counter()
@@ -277,10 +277,11 @@ def calc_precond_matrix_mpi(mesh, kappa, sigma, Phi, **kwargs):
     
     # Split the problem into parts dependent on size of COMM_WORLD.
     col_keys_global = list(sorted(mesh.cols.keys()))
-    col_keys_local  = np.array_split(col_keys, comm_size)[comm_rank].astype(np.int32)
+    col_keys_local  = np.array_split(col_keys_global, comm_size)[comm_rank].astype(np.int32)
     
     # Get the start indices for each column matrix
     col_st_idxs = {col_keys_global[0] : 0}
+    col_ndofs   = {}
     
     dof_count = 0
     for cc in range(1, len(col_keys_global)):
@@ -301,7 +302,7 @@ def calc_precond_matrix_mpi(mesh, kappa, sigma, Phi, **kwargs):
     
     # Create PETSc sparse matrix
     M_MPI = PETSc.Mat()
-    MPI.createAIJ(size = [n_global, n_global], comm = PETSc_comm)
+    M_MPI.createAIJ(size = [n_global, n_global], comm = PETSc_comm)
 
     # We assemble the column matrices using the block construction of scipy
     for col_key in col_keys_local:
