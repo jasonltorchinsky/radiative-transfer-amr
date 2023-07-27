@@ -83,7 +83,7 @@ def main():
     if test_num == 1:
         # End-Combo Parameters
         # Maximum number of DOFs
-        max_ndof = 2**18
+        max_ndof = 2**19
         # Maximum number of trials
         max_ntrial = 256
         # Minimum error before cut-off
@@ -118,10 +118,10 @@ def main():
         
         [ndof_x_hr, ndof_y_hr, ndof_th_hr] = [None, None, None]
         combos = [
-            h_uni_ang,
-            #p_uni_ang,
-            #h_amr_ang,
-            #hp_amr_ang
+            #h_uni_ang,
+            p_uni_ang,
+            h_amr_ang,
+            hp_amr_ang
         ]
         
     elif test_num == 2:
@@ -162,10 +162,10 @@ def main():
         
         [ndof_x_hr, ndof_y_hr, ndof_th_hr] = [None, None, None]
         combos = [
-            #h_uni_ang,
-            #p_uni_ang,
+            h_uni_ang,
+            p_uni_ang,
             h_amr_ang,
-            #hp_amr_ang
+            hp_amr_ang
         ]
         
     elif test_num == 3:

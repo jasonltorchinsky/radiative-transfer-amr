@@ -60,10 +60,10 @@ def rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
             
     # Calculate
     [M_mass_scat, _] = calc_precond_matrix(mesh, kappa, sigma, Phi, **kwargs)
-    M_intr_conv      = calc_intr_conv_matrix(mesh, **kwargs)
-    M_bdry_conv      = calc_bdry_conv_matrix(mesh, **kwargs)
-    M_conv    = M_bdry_conv - M_intr_conv
-    M         = M_conv + M_mass_scat
+    M_intr_conv = calc_intr_conv_matrix(mesh, **kwargs)
+    M_bdry_conv = calc_bdry_conv_matrix(mesh, **kwargs)
+    M_conv = M_bdry_conv - M_intr_conv
+    M      = M_conv + M_mass_scat
     intr_mask = mat.get_intr_mask(mesh, **kwargs)
     [M_intr, M_bdry] = mat.split_matrix(mesh, M, intr_mask)
     
@@ -85,7 +85,7 @@ def rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     elif len(inspect.signature(f).parameters) == 3:
         def forcing(x, y, th):
             return f(x, y, th)
-    f_vec      = calc_forcing_vec(mesh, forcing, **kwargs)
+    f_vec           = calc_forcing_vec(mesh, forcing, **kwargs)
     [f_vec_intr, _] = mat.split_vector(mesh, f_vec, intr_mask)
     
     bcs_vec    = calc_bcs_vec(mesh, bcs_dirac, **kwargs)

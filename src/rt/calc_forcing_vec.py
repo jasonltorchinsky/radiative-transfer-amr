@@ -202,7 +202,7 @@ def calc_forcing_vec_mpi(mesh, f, **kwargs):
         col_st_idx  = col_st_idxs[col_key]
         nnz_idxs    = np.where(np.abs(col_vec) > 0)[0].astype(np.int32)
         for idx in nnz_idxs:
-            v_MPI[idx] = col_vec[idx]
+            v_MPI[col_st_idx + idx] = col_vec[idx]
     v_MPI.assemblyBegin()
     v_MPI.assemblyEnd()
     

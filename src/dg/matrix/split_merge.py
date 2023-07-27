@@ -56,11 +56,15 @@ def split_matrix_mpi(mesh, M_MPI, global_intr_mask):
     comm      = PETSc.COMM_WORLD
     comm_rank = comm.getRank()
     comm_size = comm.getSize()
-
+    
     # Get idxs of intr, bdry DoFs
     global_intr_idxs = np.where(global_intr_mask)[0].astype(np.int32)
     global_bdry_idxs = np.where(np.invert(global_intr_mask))[0].astype(np.int32)
-
+    
+    # Broadcast to other ranks
+    global_intr_idxs = MPI_comm.bcast(global_intr_idxs, root = 0)
+    global_bdry_idxs = MPI_comm.bcast(global_bdry_idxs, root = 0)
+    
     ii_0, ii_f = M_MPI.getOwnershipRange()
     local_intr_idxs  = global_intr_idxs[(global_intr_idxs >= ii_0)
                                         * (global_intr_idxs < ii_f)]
@@ -91,6 +95,10 @@ def split_vector_mpi(mesh, v_MPI, global_intr_mask):
     # Get idxs of intr, bdry DoFs
     global_intr_idxs = np.where(global_intr_mask)[0].astype(np.int32)
     global_bdry_idxs = np.where(np.invert(global_intr_mask))[0].astype(np.int32)
+
+    # Broadcast to other ranks
+    global_intr_idxs = MPI_comm.bcast(global_intr_idxs, root = 0)
+    global_bdry_idxs = MPI_comm.bcast(global_bdry_idxs, root = 0)
 
     ii_0, ii_f       = v_MPI.getOwnershipRange()
     local_intr_idxs  = global_intr_idxs[(global_intr_idxs >= ii_0)
