@@ -2,6 +2,7 @@ import copy
 import gc
 import inspect
 import numpy               as np
+import matplotlib.pyplot   as plt
 import petsc4py
 import psutil
 import scipy.sparse        as sp
@@ -107,28 +108,66 @@ def rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
         utils.print_msg(msg)
         
     # Create the linear system solver
+    ksp_type = 'lgmres'
     ksp = PETSc.KSP()
     ksp.create(comm = PETSc_comm)
-    ksp.setType('lgmres')
+    ksp.setType(ksp_type)
     ksp.setOperators(M_intr)
-    ksp.setTolerances(rtol = 1.e-10, atol = 1.e-50, divtol = 1.e7)
+    ksp.setTolerances(rtol   = 1.e-10, atol   = 1.e-6,
+                      divtol = 1.e7,   max_it = int(2**14))
     
     pc = ksp.getPC()
-    pc.setType('lu')
+    pc.setType('none')
     
     ksp.setFromOptions()
     
+    ksp.setConvergenceHistory()
     ksp.solve(rhs_vec, lhs_vec)
     info = ksp.getConvergedReason()
+    residuals = ksp.getConvergenceHistory()
+    
+    PETSc.garbage_cleanup()
+    
+    if comm_rank == 0:
+        fig, ax = plt.subplots()
+        plt.semilogy(residuals)
+        ax.set_title(ksp_type)
+        file_name = 'residuals.png'
+        #plt.tight_layout()
+        plt.savefig(file_name, dpi = 300)
+        plt.close(fig)
+    MPI_comm.barrier()
+    
+    if info < 0:
+        pc_type = 'lu'
+        msg = (
+            'Iterative solve {} failed.\n'.format(ksp_type) +
+            12 * ' ' + 'Converged Reason: {}\n'.format(info) +
+            12 * ' ' + 'Iteration count:  {}\n'.format(np.size(residuals)) +
+            12 * ' ' + 'Final residual:   {:.4E}\n'.format(residuals[-1]) +
+            12 * ' ' + 'Attempting direct {} solve...\n'.format(pc_type)
+        )
+        utils.print_msg(msg)
+        
+        pc.setType(pc_type)
+        
+        ksp.setFromOptions()
+        
+        ksp.setConvergenceHistory()
+        ksp.solve(rhs_vec, lhs_vec)
+        info = ksp.getConvergedReason()
+        residuals = ksp.getConvergenceHistory()
     
     if kwargs['verbose']:
         tf = perf_counter()
         msg = (
             'Solve Completed. Converged Reason: {}\n'.format(info) +
-            12 * ' ' + 'Time Elapsed: {:8.4f} [s]\n'.format(tf - t0)
+            12 * ' ' + 'Iteration count: {}\n'.format(np.size(residuals)) +
+            12 * ' ' + 'Final residual:  {:.4E}\n'.format(residuals[-1]) +
+            12 * ' ' + 'Time Elapsed:   {:8.4f} [s]\n'.format(tf - t0)
         )
         utils.print_msg(msg)
-        
+    
     uh_vec  = mat.merge_vectors(lhs_vec, bcs_vec_bdry, intr_mask)
     if comm_rank == 0:
         uh_proj = proj.to_projection(mesh, uh_vec)

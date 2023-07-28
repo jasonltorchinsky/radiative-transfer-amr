@@ -104,7 +104,7 @@ def high_res_err(mesh, uh_proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
             
         if kwargs['verbose']:
             msg = (
-                'Integrating  high-resolution solution...\n'
+                'Integrating high-resolution solution...\n'
             )
             utils.print_msg(msg, blocking = False)
             t0 = time.perf_counter()

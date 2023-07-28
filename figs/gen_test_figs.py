@@ -162,8 +162,8 @@ def main():
         
         [ndof_x_hr, ndof_y_hr, ndof_th_hr] = [None, None, None]
         combos = [
-            h_uni_ang,
-            p_uni_ang,
+            #h_uni_ang,
+            #p_uni_ang,
             h_amr_ang,
             hp_amr_ang
         ]
@@ -202,8 +202,8 @@ def main():
         [ndof_x_hr, ndof_y_hr, ndof_th_hr] = [None, None, None]
         combos = [
             #hp_amr_spt,
-            hp_amr_ang,
-            #hp_amr_all
+            #hp_amr_ang,
+            hp_amr_all
         ]
         
     elif test_num == 4:
@@ -240,8 +240,8 @@ def main():
         [ndof_x_hr, ndof_y_hr, ndof_th_hr] = [None, None, None]
         combos = [
             #hp_amr_spt,
-            #hp_amr_ang,
-            hp_amr_all
+            hp_amr_ang,
+            #hp_amr_all
         ]
         
     # Extinction coefficient, etc. for each test
