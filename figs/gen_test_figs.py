@@ -31,11 +31,6 @@ from   test_combos   import h_uni_ang, p_uni_ang, hp_uni_ang, \
     h_amr_all, p_amr_all, hp_amr_all
 
 def main():
-    """
-    Solves constructed ("manufactured") problems, with options for sub-problems
-    and different types of refinement.
-    """
-    
     petsc4py.init()
     
     # MPI COMM for communicating data
@@ -100,26 +95,45 @@ def main():
         h_uni_ang['Ls']     = [Lx, Ly]
         h_uni_ang['pbcs']   = pbcs
         h_uni_ang['has_th'] = has_th
+        h_uni_ang['ndof_x_hr']  = 8
+        h_uni_ang['ndof_y_hr']  = 8
+        h_uni_ang['ndof_th_hr'] = 32
+        h_uni_ang['spt_res_offset'] = 0
+        h_uni_ang['ang_res_offset'] = 2
         
         # Uniform Angular p-Refinement
         p_uni_ang['Ls']     = [Lx, Ly]
         p_uni_ang['pbcs']   = pbcs
         p_uni_ang['has_th'] = has_th
+        p_uni_ang['ndof_x_hr']  = 8
+        p_uni_ang['ndof_y_hr']  = 8
+        p_uni_ang['ndof_th_hr'] = 32
+        p_uni_ang['spt_res_offset'] = 0
+        p_uni_ang['ang_res_offset'] = 2
         
         # Adaptive Angular h-Refinement
         h_amr_ang['Ls']     = [Lx, Ly]
         h_amr_ang['pbcs']   = pbcs
         h_amr_ang['has_th'] = has_th
+        h_amr_ang['ndof_x_hr']  = 8
+        h_amr_ang['ndof_y_hr']  = 8
+        h_amr_ang['ndof_th_hr'] = 32
+        h_amr_ang['spt_res_offset'] = 0
+        h_amr_ang['ang_res_offset'] = 2
         
         # Adaptive Angular hp-Refinement
         hp_amr_ang['Ls']     = [Lx, Ly]
         hp_amr_ang['pbcs']   = pbcs
         hp_amr_ang['has_th'] = has_th
+        hp_amr_ang['ndof_x_hr']  = 8
+        hp_amr_ang['ndof_y_hr']  = 8
+        hp_amr_ang['ndof_th_hr'] = 32
+        hp_amr_ang['spt_res_offset'] = 0
+        hp_amr_ang['ang_res_offset'] = 2
         
-        [ndof_x_hr, ndof_y_hr, ndof_th_hr] = [None, None, None]
         combos = [
             #h_uni_ang,
-            p_uni_ang,
+            #p_uni_ang,
             h_amr_ang,
             hp_amr_ang
         ]
@@ -127,7 +141,7 @@ def main():
     elif test_num == 2:
         # End-Combo Parameters
         # Maximum number of DOFs
-        max_ndof = 2**18
+        max_ndof = 2**19
         # Maximum number of trials
         max_ntrial = 256
         # Minimum error before cut-off
@@ -144,26 +158,45 @@ def main():
         h_uni_ang['Ls']     = [Lx, Ly]
         h_uni_ang['pbcs']   = pbcs
         h_uni_ang['has_th'] = has_th
+        h_uni_ang['ndof_x_hr']  = 8
+        h_uni_ang['ndof_y_hr']  = 8
+        h_uni_ang['ndof_th_hr'] = 32
+        h_uni_ang['spt_res_offset'] = 0
+        h_uni_ang['ang_res_offset'] = 2
         
         # Uniform Angular p-Refinement
         p_uni_ang['Ls']     = [Lx, Ly]
         p_uni_ang['pbcs']   = pbcs
         p_uni_ang['has_th'] = has_th
+        p_uni_ang['ndof_x_hr']  = 8
+        p_uni_ang['ndof_y_hr']  = 8
+        p_uni_ang['ndof_th_hr'] = 32
+        p_uni_ang['spt_res_offset'] = 0
+        p_uni_ang['ang_res_offset'] = 2
         
         # Adaptive Angular h-Refinement
         h_amr_ang['Ls']     = [Lx, Ly]
         h_amr_ang['pbcs']   = pbcs
         h_amr_ang['has_th'] = has_th
+        h_amr_ang['ndof_x_hr']  = 8
+        h_amr_ang['ndof_y_hr']  = 8
+        h_amr_ang['ndof_th_hr'] = 32
+        h_amr_ang['spt_res_offset'] = 0
+        h_amr_ang['ang_res_offset'] = 2
         
         # Adaptive Angular hp-Refinement
         hp_amr_ang['Ls']     = [Lx, Ly]
         hp_amr_ang['pbcs']   = pbcs
         hp_amr_ang['has_th'] = has_th
+        hp_amr_ang['ndof_x_hr']  = 8
+        hp_amr_ang['ndof_y_hr']  = 8
+        hp_amr_ang['ndof_th_hr'] = 32
+        hp_amr_ang['spt_res_offset'] = 0
+        hp_amr_ang['ang_res_offset'] = 2
         
-        [ndof_x_hr, ndof_y_hr, ndof_th_hr] = [None, None, None]
         combos = [
-            #h_uni_ang,
-            #p_uni_ang,
+            h_uni_ang,
+            p_uni_ang,
             h_amr_ang,
             hp_amr_ang
         ]
@@ -184,25 +217,50 @@ def main():
         pbcs     = [True, False]
         has_th   = True
         
-        # Adaptive Angular hp-Refinement
+        # Adaptive Spatial hp-Refinement, Uniform Angular p-Refinement
         hp_amr_spt['Ls']     = [Lx, Ly]
         hp_amr_spt['pbcs']   = pbcs
         hp_amr_spt['has_th'] = has_th
+        hp_amr_spt['ndofs']  = [6, 6, 6]
+        hp_amr_spt['nref_ang'] = 3
+        hp_amr_spt['nref_spt'] = 2
+        hp_amr_spt['ref_kind'] = 'all'
+        hp_amr_spt['ndof_x_hr']  = 16
+        hp_amr_spt['ndof_y_hr']  = 16
+        hp_amr_spt['ndof_th_hr'] = 16
+        hp_amr_spt['spt_res_offset'] = 1
+        hp_amr_spt['ang_res_offset'] = 1
         
-        # Adaptive Angular hp-Refinement
+        # Adaptive Angular hp-Refinement, Uniform Spatial p-Refinement
         hp_amr_ang['Ls']     = [Lx, Ly]
         hp_amr_ang['pbcs']   = pbcs
         hp_amr_ang['has_th'] = has_th
-
-        # Adaptive Angular hp-Refinement
+        hp_amr_ang['ndofs']  = [6, 6, 6]
+        hp_amr_ang['nref_ang'] = 3
+        hp_amr_ang['nref_spt'] = 2
+        hp_amr_ang['ref_kind'] = 'all'
+        hp_amr_ang['ndof_x_hr']  = 16
+        hp_amr_ang['ndof_y_hr']  = 16
+        hp_amr_ang['ndof_th_hr'] = 16
+        hp_amr_ang['spt_res_offset'] = 1
+        hp_amr_ang['ang_res_offset'] = 1
+        
+        # Adaptive Spatio-Angular hp-Refinement
         hp_amr_all['Ls']     = [Lx, Ly]
         hp_amr_all['pbcs']   = pbcs
         hp_amr_all['has_th'] = has_th
+        hp_amr_all['ndofs']  = [6, 6, 6]
+        hp_amr_all['nref_ang'] = 3
+        hp_amr_all['nref_spt'] = 2
+        hp_amr_all['ndof_x_hr']  = 16
+        hp_amr_all['ndof_y_hr']  = 16
+        hp_amr_all['ndof_th_hr'] = 16
+        hp_amr_all['spt_res_offset'] = 1
+        hp_amr_all['ang_res_offset'] = 1
         
-        [ndof_x_hr, ndof_y_hr, ndof_th_hr] = [None, None, None]
         combos = [
-            #hp_amr_spt,
-            #hp_amr_ang,
+            hp_amr_spt,
+            hp_amr_ang,
             hp_amr_all
         ]
         
@@ -222,26 +280,51 @@ def main():
         pbcs     = [True, False]
         has_th   = True
         
-        # Adaptive Angular hp-Refinement
+        # Adaptive Spatial hp-Refinement, Uniform Angular p-Refinement
         hp_amr_spt['Ls']     = [Lx, Ly]
         hp_amr_spt['pbcs']   = pbcs
         hp_amr_spt['has_th'] = has_th
+        hp_amr_spt['ndofs']  = [4, 4, 4]
+        hp_amr_spt['nref_ang'] = 3
+        hp_amr_spt['nref_spt'] = 2
+        hp_amr_spt['ref_kind'] = 'all'
+        hp_amr_spt['ndof_x_hr']  = 16
+        hp_amr_spt['ndof_y_hr']  = 16
+        hp_amr_spt['ndof_th_hr'] = 16
+        hp_amr_spt['spt_res_offset'] = 1
+        hp_amr_spt['ang_res_offset'] = 1
         
-        # Adaptive Angular hp-Refinement
+        # Adaptive Angular hp-Refinement, Uniform Spatial p-Refinement
         hp_amr_ang['Ls']     = [Lx, Ly]
         hp_amr_ang['pbcs']   = pbcs
         hp_amr_ang['has_th'] = has_th
-
-        # Adaptive Angular hp-Refinement
+        hp_amr_ang['ndofs']  = [4, 4, 4]
+        hp_amr_ang['nref_ang'] = 3
+        hp_amr_ang['nref_spt'] = 2
+        hp_amr_ang['ref_kind'] = 'all'
+        hp_amr_ang['ndof_x_hr']  = 16
+        hp_amr_ang['ndof_y_hr']  = 16
+        hp_amr_ang['ndof_th_hr'] = 16
+        hp_amr_ang['spt_res_offset'] = 1
+        hp_amr_ang['ang_res_offset'] = 1
+        
+        # Adaptive Spatio-Angular hp-Refinement
         hp_amr_all['Ls']     = [Lx, Ly]
         hp_amr_all['pbcs']   = pbcs
         hp_amr_all['has_th'] = has_th
+        hp_amr_all['ndofs']  = [4, 4, 4]
+        hp_amr_all['nref_ang'] = 3
+        hp_amr_all['nref_spt'] = 2
+        hp_amr_all['ndof_x_hr']  = 16
+        hp_amr_all['ndof_y_hr']  = 16
+        hp_amr_all['ndof_th_hr'] = 16
+        hp_amr_all['spt_res_offset'] = 1
+        hp_amr_all['ang_res_offset'] = 1
         
-        [ndof_x_hr, ndof_y_hr, ndof_th_hr] = [None, None, None]
         combos = [
-            #hp_amr_spt,
+            hp_amr_spt,
             hp_amr_ang,
-            #hp_amr_all
+            hp_amr_all
         ]
         
     # Extinction coefficient, etc. for each test
@@ -314,12 +397,12 @@ def main():
         def kappa_y(y):
             return np.ones_like(y)
         def kappa(x, y):
-            return 2.5 * kappa_x(x) * kappa_y(y)
+            return 10. * kappa_x(x) * kappa_y(y)
 
         def sigma(x, y):
             return 0.9 * kappa(x, y)
 
-        g = 0.925
+        g = 0.800
         def Phi_HG(Th):
             return (1. - g**2) / (1 + g**2 - 2. * g * np.cos(Th))**(3./2.)
         [Phi_norm, abserr] = quad(lambda Th : Phi_HG(Th), 0., 2. * np.pi,
@@ -359,7 +442,7 @@ def main():
         def sigma(x, y):
             return 0.9 * kappa(x, y)
         
-        g = 0.925
+        g = 0.875
         def Phi_HG(Th):
             return (1. - g**2) / (1 + g**2 - 2. * g * np.cos(Th))**(3./2.)
         [Phi_norm, abserr] = quad(lambda Th : Phi_HG(Th), 0., 2. * np.pi,
@@ -402,7 +485,7 @@ def main():
         def sigma(x, y):
             return 0.9 * kappa(x, y)
 
-        g = 0.80
+        g = 0.9
         def Phi_HG(Th):
             return (1. - g**2) / (1 + g**2 - 2. * g * np.cos(Th))**(3./2.)
         [Phi_norm, abserr] = quad(lambda Th : Phi_HG(Th), 0., 2. * np.pi,
@@ -467,7 +550,8 @@ def main():
         # Solve the problem over several trials
         ndofs = []
         errs  = []
-        
+
+        # Parameters for stopping an experiment
         if comm_rank == 0:
             ndof = mesh.get_ndof()
             ndof = MPI_comm.bcast(ndof, root = 0)
@@ -478,6 +562,8 @@ def main():
         trial = 0
         err   = 1.
         mem_used = psutil.virtual_memory()[2]
+        # Parameters for how often to calculate error
+        prev_err_ndof = 1
         
         perf_setup_f = perf_counter()
         perf_setup_diff = perf_setup_f - perf_setup_0
@@ -498,7 +584,6 @@ def main():
             else:
                 ndof = None
                 ndof = MPI_comm.bcast(ndof, root = 0)
-            ndofs += [ndof]
             
             perf_trial_0 = perf_counter()
             msg = (
@@ -530,37 +615,46 @@ def main():
                     gen_uh_plot(mesh, uh_proj, trial, trial_dir, blocking = False)
             MPI_comm.barrier()
 
-            # Get error and save it to file
-            if test_num == 1:
-                err_kind = 'anl'
-            elif test_num == 2:
-                err_kind = 'hr'
-            elif test_num == 3:
-                err_kind = 'hr'
-            elif test_num == 4:
-                err_kind = 'hr'
-                
-            err     = get_err(mesh, uh_proj, u, kappa, sigma, Phi,
+            # Get error and save it to file every so often
+            if ((ndof / prev_err_ndof) >= 1.1 or (max_ndof / ndof) < 1.05):
+                if test_num == 1:
+                    err_kind = 'anl'
+                elif test_num == 2:
+                    err_kind = 'hr'
+                elif test_num == 3:
+                    err_kind = 'hr'
+                elif test_num == 4:
+                    err_kind = 'hr'
+                    
+                err = get_err(mesh, uh_proj, u, kappa, sigma, Phi,
                               bcs_dirac, f,
                               trial, trial_dir,
                               nref_ang  = combo['nref_ang'],
                               nref_spt  = combo['nref_spt'],
                               ref_kind  = combo['ref_kind'],
-                              res_coeff = 1,
+                              ndof_x_hr  = combo['ndof_x_hr'],
+                              ndof_y_hr  = combo['ndof_y_hr'],
+                              ndof_th_hr = combo['ndof_th_hr'],
+                              spt_res_offset = combo['spt_res_offset'],
+                              ang_res_offset = combo['ang_res_offset'],
                               key       = test_num,
-                              err_kind  = err_kind)
-            PETSc.garbage_cleanup()
-            errs += [err]
-            
-            if comm_rank == 0:
-                # Write error results to files as we go along
-                file_name = 'errs.txt'
-                file_path = os.path.join(combo_dir, file_name)
-                json.dump(errs, open(file_path, 'w'))
+                              err_kind  = err_kind,
+                              file_path = figs_dir)
+                PETSc.garbage_cleanup()
                 
-                file_name = 'ndofs.txt'
-                file_path = os.path.join(combo_dir, file_name)
-                json.dump(ndofs, open(file_path, 'w'))
+                ndofs += [ndof]
+                errs  += [err]
+                prev_err_ndof = ndof
+                
+                if comm_rank == 0:
+                    # Write error results to files as we go along
+                    file_name = 'errs.txt'
+                    file_path = os.path.join(combo_dir, file_name)
+                    json.dump(errs, open(file_path, 'w'))
+                    
+                    file_name = 'ndofs.txt'
+                    file_path = os.path.join(combo_dir, file_name)
+                    json.dump(ndofs, open(file_path, 'w'))
                 
             # Refine the mesh, plot error indicators along the way
             if   combo['short_name'] == 'h-uni-ang':
@@ -603,47 +697,177 @@ def main():
                   or (combo['short_name'] == 'p-amr-ang')
                   or (combo['short_name'] == 'hp-amr-ang')):
                 if comm_rank == 0:
-                    uh_vec = uh_proj.to_vector()
-                    if np.any(uh_vec < combo['kwargs_ang_nneg']['cell_ref_tol']):
-                        kwargs_ang  = combo['kwargs_ang_nneg']
-                        err_ind_ang = amr.nneg_err(mesh, uh_proj, **kwargs_ang)
+                    # Get angular non-negative error indicator
+                    kwargs_ang_nneg  = combo['kwargs_ang_nneg']
+                    nneg_ang_err_ind = amr.nneg_err_ang(mesh, uh_proj,
+                                                        **kwargs_ang_nneg)
+                    if nneg_ang_err_ind.cell_max_err < kwargs_ang_nneg['cell_ref_tol']:
+                        err_ind_ang = nneg_ang_err_ind
+                        ref_str = 'ang_nneg'
                     else:
-                        kwargs_ang  = combo['kwargs_ang_jmp']
-                        err_ind_ang = amr.cell_jump_err(mesh, uh_proj, **kwargs_ang)
+                        kwargs_ang_jmp  = combo['kwargs_ang_jmp']
+                        err_ind_ang     = amr.cell_jump_err(mesh, uh_proj,
+                                                            **kwargs_ang_jmp)
+                        ref_str = 'ang_jmp'
                     if do_plot_err_ind:
                         gen_err_ind_plot(mesh, err_ind_ang, trial, trial_dir, 'err_ind_ang.png')
-                    mesh = amr.ref_by_ind(mesh, err_ind_ang)
+                    err_ind = err_ind_ang
+                    if combo['ref_kind'] == 'all' and ref_str != 'ang_nneg':
+                        # Don't bother refining spatially if we have negative error
+                        # in angle
+                        
+                        # Check if we need to refine spatially
+                        # Which is uniform spatial p-refinement
+                        col_ref_tol = 1. # Want uniform refinement
+                        kwargs_spt_nneg = {'ref_col'      : True,
+                                           'col_ref_form' : 'p',
+                                           'col_ref_kind' : 'spt',
+                                           'col_ref_tol'  : col_ref_tol,
+                                           'ref_cell'      : False,
+                                           'cell_ref_form' : None,
+                                           'cell_ref_kind' : None,
+                                           'cell_ref_tol'  : None}
+                        nneg_spt_err_ind = amr.nneg_err_spt(mesh, uh_proj,
+                                                            **kwargs_spt_nneg)
+                        col_max_err = nneg_spt_err_ind.col_max_err
+                        if col_max_err < kwargs_ang_nneg['cell_ref_tol']:
+                            err_ind_spt = nneg_spt_err_ind
+                            
+                            # If we hit this branch, then we would be refining angularly from the jump error
+                            # And we prioritize eliminating negative values
+                            ref_str = 'spt_nneg'
+                            err_ind = err_ind_spt
+                        else:
+                            col_ref_tol = -1. # Want uniform refinement
+                            kwargs_spt_jmp ={'ref_col'      : True,
+                                             'col_ref_form' : 'p',
+                                             'col_ref_kind' : 'spt',
+                                             'col_ref_tol'  : col_ref_tol,
+                                             'ref_cell'      : False,
+                                             'cell_ref_form' : None,
+                                             'cell_ref_kind' : None,
+                                             'cell_ref_tol'  : None}
+                            err_ind_spt     = amr.col_jump_err(mesh, uh_proj,
+                                                               **kwargs_spt_jmp)
+                            # If we hit this branch, we need to see if spatial
+                            # or angular jumps are larger
+                            if err_ind_spt.col_max_err > 1.0 * err_ind_ang.cell_max_err:
+                                ref_str = 'spt_jmp'
+                                err_ind = err_ind_spt
+                        if do_plot_err_ind:
+                            gen_err_ind_plot(mesh, err_ind_spt, trial, trial_dir, 'err_ind_spt.png')
+                    msg = (
+                        '[Trial {}] Refining cause: {}\n'.format(trial, ref_str)
+                        )
+                    utils.print_msg(msg, blocking = False)
+                    mesh = amr.ref_by_ind(mesh, err_ind)
+                    
             elif ((combo['short_name'] == 'h-amr-spt')
                   or (combo['short_name'] == 'p-amr-spt')
                   or (combo['short_name'] == 'hp-amr-spt')):
                 if comm_rank == 0:
-                    uh_vec = uh_proj.to_vector()
-                    if np.any(uh_vec < combo['kwargs_spt_nneg']['col_ref_tol']):
-                        kwargs_spt  = combo['kwargs_spt_nneg']
-                        err_ind_spt = amr.nneg_err(mesh, uh_proj, **kwargs_spt)
+                    # Get spatial non-negative error indicator
+                    kwargs_spt_nneg  = combo['kwargs_spt_nneg']
+                    nneg_spt_err_ind = amr.nneg_err_spt(mesh, uh_proj,
+                                                   **kwargs_spt_nneg)
+                    if nneg_spt_err_ind.col_max_err < kwargs_spt_nneg['col_ref_tol']:
+                        err_ind_spt = nneg_spt_err_ind
+                        ref_str = 'spt_nneg'
                     else:
-                        kwargs_spt  = combo['kwargs_spt_jmp']
-                        err_ind_spt = amr.col_jump_err(mesh, uh_proj, **kwargs_spt)
+                        kwargs_spt_jmp  = combo['kwargs_spt_jmp']
+                        err_ind_spt     = amr.col_jump_err(mesh, uh_proj,
+                                                           **kwargs_spt_jmp)
+                        ref_str = 'spt_jmp'
                     if do_plot_err_ind:
                         gen_err_ind_plot(mesh, err_ind_spt, trial, trial_dir, 'err_ind_spt.png')
-                    mesh = amr.ref_by_ind(mesh, err_ind_spt)
+                    err_ind = err_ind_spt
+                    if combo['ref_kind'] == 'all' and ref_str != 'spt_nneg':
+                        # Don't bother refining angularly if we have negative error
+                        # in space
+                        
+                        cell_ref_tol = 1. # Want uniform refinement
+                        kwargs_ang_nneg = {'ref_col'      : False,
+                                           'col_ref_form' : None,
+                                           'col_ref_kind' : None,
+                                           'col_ref_tol'  : None,
+                                           'ref_cell'      : True,
+                                           'cell_ref_form' : 'p',
+                                           'cell_ref_kind' : 'ang',
+                                           'cell_ref_tol'  : cell_ref_tol}
+                        nneg_ang_err_ind = amr.nneg_err_spt(mesh, uh_proj,
+                                                            **kwargs_ang_nneg)
+                        cell_max_err = nneg_ang_err_ind.cell_max_err
+                        if cell_max_err < kwargs_spt_nneg['col_ref_tol']:
+                            err_ind_ang = nneg_ang_err_ind
+                            
+                            # If we hit this branch, then we would be refining spatially from the jump error
+                            # And we prioritize eliminating negative values
+                            ref_str = 'ang_nneg'
+                            err_ind = err_ind_ang
+                        else:
+                            cell_ref_tol = -1. # Want uniform refinement
+                            kwargs_ang_jmp = {'ref_col'      : False,
+                                              'col_ref_form' : None,
+                                              'col_ref_kind' : None,
+                                              'col_ref_tol'  : None,
+                                              'ref_cell'      : True,
+                                              'cell_ref_form' : 'p',
+                                              'cell_ref_kind' : 'ang',
+                                              'cell_ref_tol'  : cell_ref_tol}
+                            err_ind_ang    = amr.cell_jump_err(mesh, uh_proj,
+                                                               **kwargs_ang_jmp)
+                            # If we hit this branch, we need to see if spatial
+                            # or angular jumps are larger
+                            if err_ind_ang.cell_max_err > 1.0 * err_ind_spt.col_max_err:
+                                ref_str = 'ang_jmp'
+                                err_ind = err_ind_ang
+                        if do_plot_err_ind:
+                            gen_err_ind_plot(mesh, err_ind_ang, trial, trial_dir, 'err_ind_ang.png')
+                    msg = (
+                        '[Trial {}] Refining cause: {}\n'.format(trial, ref_str)
+                        )
+                    utils.print_msg(msg, blocking = False)
+                    mesh = amr.ref_by_ind(mesh, err_ind)
+                    
             elif ((combo['short_name'] == 'h-amr-all')
                   or (combo['short_name'] == 'p-amr-all')
                   or (combo['short_name'] == 'hp-amr-all')):
                 if comm_rank == 0:
-                    uh_vec = uh_proj.to_vector()
-                    if np.any(uh_vec < combo['kwargs_ang_nneg']['cell_ref_tol']):
-                        kwargs_ang  = combo['kwargs_ang_nneg']
-                        err_ind_ang = amr.nneg_err(mesh, uh_proj, **kwargs_ang)
+                    # Get angular non-negative error indicator
+                    kwargs_ang_nneg  = combo['kwargs_ang_nneg']
+                    nneg_ang_err_ind = amr.nneg_err_ang(mesh, uh_proj,
+                                                        **kwargs_ang_nneg)
+                    if nneg_ang_err_ind.cell_max_err < kwargs_ang_nneg['cell_ref_tol']:
+                        msg = (
+                            '[Trial {}] Refining angularly via angular non-negative error...\n'.format(trial)
+                        )
+                        err_ind_ang = nneg_ang_err_ind
                     else:
-                        kwargs_ang  = combo['kwargs_ang_jmp']
-                        err_ind_ang = amr.cell_jump_err(mesh, uh_proj, **kwargs_ang)
-                    if np.any(uh_vec < combo['kwargs_spt_nneg']['col_ref_tol']):
-                        kwargs_spt  = combo['kwargs_spt_nneg']
-                        err_ind_spt = amr.nneg_err(mesh, uh_proj, **kwargs_spt)
+                        msg = (
+                            '[Trial {}] Refining angularly via cell-jump error...\n'.format(trial)
+                        )
+                        kwargs_ang_jmp  = combo['kwargs_ang_jmp']
+                        err_ind_ang     = amr.cell_jump_err(mesh, uh_proj,
+                                                            **kwargs_ang_jmp)
+                    utils.print_msg(msg, blocking = False)
+                    
+                    # Get spatial non-negative error indicator
+                    kwargs_spt_nneg  = combo['kwargs_spt_nneg']
+                    nneg_spt_err_ind = amr.nneg_err_spt(mesh, uh_proj,
+                                                   **kwargs_spt_nneg)
+                    if nneg_spt_err_ind.col_max_err < kwargs_spt_nneg['coll_ref_tol']:
+                        msg = (
+                            '[Trial {}] Refining spatially via spatial non-negative error...\n'.format(trial)
+                        )
+                        err_ind_spt = nneg_spt_err_ind
                     else:
-                        kwargs_spt  = combo['kwargs_spt_jmp']
-                        err_ind_spt = amr.col_jump_err(mesh, uh_proj, **kwargs_spt)
+                        msg = (
+                            '[Trial {}] Refining spatially via column-jump error...\n'.format(trial)
+                        )
+                        kwargs_spt_jmp  = combo['kwargs_spt_jmp']
+                        err_ind_spt     = amr.col_jump_err(mesh, uh_proj, **kwargs_spt_jmp)
+                    utils.print_msg(msg, blocking = False)
+                    
                     if do_plot_err_ind:
                         gen_err_ind_plot(mesh, err_ind_ang, trial, trial_dir, 'err_ind_ang.png')
                         gen_err_ind_plot(mesh, err_ind_spt, trial, trial_dir, 'err_ind_spt.png')

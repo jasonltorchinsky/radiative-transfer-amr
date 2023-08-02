@@ -45,12 +45,18 @@ def plot_error_indicator_by_column(mesh, err_ind, file_name = None, **kwargs):
     ax.set_ylim([0, Ly])
     
     # Get colorbar min/max
-    [vmin, vmax] = [10.**10, err_ind.col_max_err]
     col_items = sorted(mesh.cols.items())
-    for col_key, col in col_items:
-        if col.is_lf:
-            vmin = min(vmin, err_ind.cols[col_key].err)
-            
+    if err_ind.col_max_err > 0:
+        [vmin, vmax] = [10.**10, err_ind.col_max_err]
+        for col_key, col in col_items:
+            if col.is_lf:
+                vmin = min(vmin, err_ind.cols[col_key].err)
+    else:
+        [vmin, vmax] = [err_ind.col_max_err, -10.**10]
+        cmap         = cmap.reversed()
+        for col_key, col in col_items:
+            if col.is_lf:
+                vmax = max(vmax, err_ind.cols[col_key].err)   
     rects = []
     rect_colors = []
     for col_key, col in col_items:
@@ -99,14 +105,24 @@ def plot_error_indicator_by_cell(mesh, err_ind, file_name = None, **kwargs):
     ax.set_ylim([0, Ly])
     
     # Get colorbar min/max
-    [vmin, vmax] = [10.**10, err_ind.cell_max_err]
     col_items = sorted(mesh.cols.items())
-    for col_key, col in col_items:
-        if col.is_lf:
-            cell_items = sorted(col.cells.items())
-            for cell_key, cell in cell_items:
-                if cell.is_lf:
-                    vmin = min(vmin, err_ind.cols[col_key].cells[cell_key].err)
+    if err_ind.cell_max_err > 0:
+        [vmin, vmax] = [10.**10, err_ind.cell_max_err]
+        for col_key, col in col_items:
+            if col.is_lf:
+                cell_items = sorted(col.cells.items())
+                for cell_key, cell in cell_items:
+                    if cell.is_lf:
+                        vmin = min(vmin, err_ind.cols[col_key].cells[cell_key].err)
+    else:
+        [vmin, vmax] = [err_ind.cell_max_err, -10.**10]
+        cmap         = cmap.reversed()
+        for col_key, col in col_items:
+            if col.is_lf:
+                cell_items = sorted(col.cells.items())
+                for cell_key, cell in cell_items:
+                    if cell.is_lf:
+                        vmax = max(vmax, err_ind.cols[col_key].cells[cell_key].err)
 
     wedges = []
     wedge_colors = []

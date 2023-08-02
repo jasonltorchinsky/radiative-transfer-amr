@@ -255,7 +255,7 @@ def calc_precond_matrix_mpi(mesh, kappa, sigma, Phi, **kwargs):
                       'blocking'     : True   # Synchronize ranks before exiting
                       }
     kwargs = {**default_kwargs, **kwargs}
-
+    
     # Initialize parallel communicators
     MPI_comm = MPI.COMM_WORLD
     

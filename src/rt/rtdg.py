@@ -113,8 +113,8 @@ def rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     ksp.create(comm = PETSc_comm)
     ksp.setType(ksp_type)
     ksp.setOperators(M_intr)
-    ksp.setTolerances(rtol   = 1.e-10, atol   = 1.e-6,
-                      divtol = 1.e7,   max_it = int(2**14))
+    ksp.setTolerances(rtol   = 1.e-10, atol   = 1.e-8,
+                      divtol = 1.e7,   max_it = 2500)
     
     pc = ksp.getPC()
     pc.setType('none')
@@ -140,11 +140,16 @@ def rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     
     if info < 0:
         pc_type = 'lu'
+        n_res = np.size(residuals)
+        if n_res > 1:
+            res_f = residuals[n_res - 1]
+        else:
+            res_f = -1.
         msg = (
             'Iterative solve {} failed.\n'.format(ksp_type) +
             12 * ' ' + 'Converged Reason: {}\n'.format(info) +
-            12 * ' ' + 'Iteration count:  {}\n'.format(np.size(residuals)) +
-            12 * ' ' + 'Final residual:   {:.4E}\n'.format(residuals[-1]) +
+            12 * ' ' + 'Iteration count:  {}\n'.format(n_res) +
+            12 * ' ' + 'Final residual:   {:.4E}\n'.format(res_f) +
             12 * ' ' + 'Attempting direct {} solve...\n'.format(pc_type)
         )
         utils.print_msg(msg)
@@ -160,10 +165,15 @@ def rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     
     if kwargs['verbose']:
         tf = perf_counter()
+        n_res = np.size(residuals)
+        if n_res > 1:
+            res_f = residuals[n_res - 1]
+        else:
+            res_f = -1
         msg = (
             'Solve Completed. Converged Reason: {}\n'.format(info) +
-            12 * ' ' + 'Iteration count: {}\n'.format(np.size(residuals)) +
-            12 * ' ' + 'Final residual:  {:.4E}\n'.format(residuals[-1]) +
+            12 * ' ' + 'Iteration count:  {}\n'.format(n_res) +
+            12 * ' ' + 'Final residual:   {:.4E}\n'.format(res_f) +
             12 * ' ' + 'Time Elapsed:   {:8.4f} [s]\n'.format(tf - t0)
         )
         utils.print_msg(msg)
