@@ -23,7 +23,7 @@ def plot_mesh_p(mesh, file_name = None, **kwargs):
 
 def plot_mesh_p_2d(mesh, file_name = None, **kwargs):
     
-    default_kwargs = {'label_cells': False,
+    default_kwargs = {'label_cells' : False,
                       'blocking'    : False # Defualt to non-blokcig behavior for plotting
                       }
     kwargs = {**default_kwargs, **kwargs}
@@ -75,6 +75,8 @@ def plot_mesh_p_2d(mesh, file_name = None, **kwargs):
 
     ax.set_xlabel('x')
     ax.set_ylabel('y')
+    title_str = 'Total Number of DoFs: {}'.format(mesh.get_ndof())
+    ax.set_title(title_str)
     
     if file_name:
         fig.set_size_inches(6.5, 6.5 * (Ly / Lx))
@@ -156,6 +158,8 @@ def plot_mesh_p_3d(mesh, file_name = None, **kwargs):
 
     ax.set_xlabel('x')
     ax.set_ylabel('y')
+    title_str = 'Total Number of DoFs: {}'.format(mesh.get_ndof())
+    ax.set_title(title_str)
     
     if file_name:
         fig.set_size_inches(6.5, 6.5 * (Ly / Lx))

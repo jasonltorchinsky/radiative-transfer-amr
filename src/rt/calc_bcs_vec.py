@@ -263,8 +263,115 @@ def calc_bcs_vec_mpi(mesh, bcs_dirac, **kwargs):
         
     return v_MPI
 
-def calc_col_vec(mesh, col_key, bcs_dirac, **kwargs):
+def calc_col_vec_new(mesh, col_key, bcs_dirac, **kwargs):
+    
+    col = mesh.cols[col_key]
+    if col.is_lf:
+        [bcs, dirac] = bcs_dirac
+        
+        # Get column information, quadrature weights
+        [x0, y0, x1, y1] = col.pos[:]
+        [dx, dy]         = [x1 - x0, y1 - y0]
+        [nx, ny]         = col.ndofs[:]
+        
+        [xxb, wx, yyb, wy, _, _] = qd.quad_xyth(nnodes_x = nx,
+                                              nnodes_y = ny)
+        
+        xxf = proj.push_forward(x0, x1, xxb)
+        yyf = proj.push_forward(y0, y1, yyb)
+        wx = wx.reshape([nx, 1, 1])
+        wy = wy.reshape([1, ny, 1])
+        
+        # Construct cell vectors individually
+        cell_vecs  = []
+        cell_items = sorted(col.cells.items())
+        for cell_key, cell in cell_items:
+            if cell.is_lf:
+                # Get cell information, quadrature weights
+                [th0, th1]    = cell.pos[:]
+                [dth]         = [th1 - th0]
+                [nth]         = cell.ndofs[:]
+                cell_bc_vals  = np.zeros([nx, ny, nth])
+                
+                [_, _, _, _, thb, wth] = qd.quad_xyth(nnodes_th = nth)
+                
+                thf  = proj.push_forward(th0, th1, thb)
+                wth  = wth.reshape([1, 1, nth])
+                
+                cell_bc_vec = np.zeros([nx * ny * nth])
+                
+                # If the BCs are a dirac-delta function, we handle
+                # them differently
+                if any(dirac):
+                    in_cell = [True, True, True]
+                    if dirac[0] is not None:
+                        xs_f  = dirac[0]
+                        if (xs_f < x0) or (x1 < xs_f):
+                            in_cell[0] = False
+                        else:
+                            xs_b = proj.pull_back(x0, x1, xs_f)
+                            
+                    if dirac[1] is not None:
+                        ys_f  = dirac[1]
+                        if (ys_f < y0) or (y1 < ys_f):
+                            in_cell[1] = False
+                        else:
+                            ys_b = proj.pull_back(y0, y1, ys_f)
+                            
+                    if dirac[2] is not None:
+                        ths_f = dirac[2]
+                        if (ths_f < th0) or (th1 < ths_f):
+                            in_cell[2] = False
+                        else:
+                            ths_b = proj.pull_back(th0, th1, ths_f)
+                            
+                    if any(in_cell):
+                        for ii in range(0, nx):
+                            if ((dirac[0] is not None)
+                                and in_cell[0]):
+                                phi_i = max(0.0, qd.lag_eval(xxb, ii, xs_b))
+                                x_i   = xs_f
+                            else:
+                                phi_i = 1.
+                                x_i   = xxf[ii]
+                                
+                            for jj in range(0, ny):
+                                if ((dirac[1] is not None)
+                                    and in_cell[1]):
+                                    psi_j = max(0.0, qd.lag_eval(yyb, jj, ys_b))
+                                    y_j   = ys_f
+                                else:
+                                    psi_j = 1.
+                                    y_j   = yyf[jj]
+                                    
+                                for aa in range(0, nth):
+                                    if ((dirac[2] is not None)
+                                        and in_cell[2]):
+                                        xsi_a = max(0.0, qd.lag_eval(thb, aa, ths_b))
+                                        th_a  = ths_f
+                                    else:
+                                        xsi_a = 1.
+                                        th_a  = thf[aa]
+                                        
+                                    bcs_ija = bcs(x_i, y_j, th_a)
+                                    
+                                    col_vec[idx] = bcs_ija * phi_i * psi_j * xsi_a
+                                    idx         += 1
+                                    
+                else:
+                    for ii in range(0, nx):
+                        for jj in range(0, ny):
+                            for aa in range(0, nth):
+                                bcs_ija = bcs(xxf[ii], yyf[jj], thf[aa])
+                                
+                                col_vec[idx] = bcs_ija
+                                idx         += 1
+                                
+    return col_vec
 
+
+def calc_col_vec(mesh, col_key, bcs_dirac, **kwargs):
+    
     col = mesh.cols[col_key]
     if col.is_lf:
         [bcs, dirac] = bcs_dirac

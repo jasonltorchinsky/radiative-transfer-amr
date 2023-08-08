@@ -51,9 +51,13 @@ def plot_xyth(mesh, proj, file_name = None, **kwargs):
     col_items = sorted(mesh.cols.items())
     for col_key, col in col_items:
         if col.is_lf:
+            [nx, ny] = col.ndofs[:]
             [x0, y0, x1, y1] = col.pos[:]
             [dx, dy] = [x1 - x0, y1 - y0]
             [cx, cy] = [(x0 + x1) / 2., (y0 + y1) / 2.]
+            [_, wx, _, wy, _, _] = qd.quad_xyth(nnodes_x = nx, nnodes_y = ny)
+            wx = wx.reshape([nx, 1, 1])
+            wy = wy.reshape([1, ny, 1])
             
             rect = Rectangle((x0, y0), dx, dy,
                              facecolor = 'none',
@@ -63,10 +67,16 @@ def plot_xyth(mesh, proj, file_name = None, **kwargs):
             cell_items = sorted(col.cells.items())
             for cell_key, cell in cell_items:
                 if cell.is_lf:
-                    [th0, th1] = cell.pos[:]
+                    [nth]        = cell.ndofs[:]
+                    [th0, th1]   = cell.pos[:]
+                    [dth]        = [th1 - th0]
                     [deg0, deg1] = [th0 * 180. / np.pi, th1 * 180. / np.pi]
-                    
-                    cell_mean = np.mean(proj.cols[col_key].cells[cell_key].vals)
+                    [_, _, _, _, _, wth] = qd.quad_xyth(nnodes_th = nth)
+                    wth = wth.reshape([1, 1, nth])
+
+                    cell_vals = proj.cols[col_key].cells[cell_key].vals[:,:,:]
+                    cell_intg = (dx * dy * dth / 8.) * np.sum(wx * wy * wth * cell_vals)
+                    cell_mean = (1. / (dx * dy * dth)) * cell_intg
                     
                     wedge = Wedge((cx, cy), min(dx, dy)/2, deg0, deg1,
                                   facecolor = cmap(cell_mean),

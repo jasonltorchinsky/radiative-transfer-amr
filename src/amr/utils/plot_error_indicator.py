@@ -83,6 +83,10 @@ def plot_error_indicator_by_column(mesh, err_ind, file_name = None, **kwargs):
     ax.add_collection(rect_coll)
     
     fig.colorbar(rect_coll, ax = ax)
+
+    title_str = 'Max Error: {:.4E} \nAvg. Ref. Error {:.4E}'.format(err_ind.col_max_err,
+                                                                    err_ind.avg_col_ref_err)
+    ax.set_title(title_str)
     
     if file_name:
         fig.set_size_inches(12, 12 * (Ly / Lx))
@@ -163,6 +167,10 @@ def plot_error_indicator_by_cell(mesh, err_ind, file_name = None, **kwargs):
     ax.add_collection(wedge_coll)
     
     fig.colorbar(wedge_coll, ax = ax)
+
+    title_str = 'Max Error: {:.4E} \nAvg. Ref. Error {:.4E}'.format(err_ind.cell_max_err,
+                                                                    err_ind.avg_cell_ref_err)
+    ax.set_title(title_str)
     
     if file_name:
         fig.set_size_inches(6.5, 6.5 * (Ly / Lx))

@@ -28,13 +28,186 @@ from .calc_scat_matrix      import calc_scat_matrix
 def rtdg(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     return rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f, **kwargs)
 
+def rtdg_src_iter(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
+    """
+    Solve the two-dimensional radiative transfer model.
+    """
+    
+    default_kwargs = {'verbose'      : False, # Print info while executing
+                      'precondition' : False,
+                      'ksp_type' : 'gmres', # Which solver to use
+                      'pc_type' : 'bjacobi',  # Which Preconditioner to use
+                      'residual_file_path' : None # Plot convergence information to this file path
+                      } 
+    kwargs = {**default_kwargs, **kwargs}
+    
+    # Initialize parallel communicators
+    MPI_comm = MPI.COMM_WORLD
+    
+    petsc4py.init()
+    PETSc_comm = PETSc.COMM_WORLD
+    comm_rank  = PETSc_comm.getRank()
+    comm_size  = PETSc_comm.getSize()
+    
+    if kwargs['verbose']:
+        if comm_rank == 0:
+            ndof = mesh.get_ndof()
+            ndof = MPI_comm.bcast(ndof, root = 0)
+        else:
+            ndof = None
+            ndof = MPI_comm.bcast(ndof, root = 0)
+        msg = (
+            'Initiating solve with {} DoFs...\n'.format(ndof)
+            )
+        utils.print_msg(msg)
+        t0  = perf_counter()
+            
+    # Calculate
+    M_mass = calc_mass_matrix(mesh, kappa, **kwargs)
+    M_scat = calc_scat_matrix(mesh, sigma, Phi, **kwargs)
+    M_intr_conv = calc_intr_conv_matrix(mesh, **kwargs)
+    M_bdry_conv = calc_bdry_conv_matrix(mesh, **kwargs)
+    M_conv = M_bdry_conv - M_intr_conv
+    M      = M_conv + M_mass - M_scat
+    intr_mask = mat.get_intr_mask(mesh, **kwargs)
+    
+    [M_s_intr, _] = mat.split_matrix(mesh, M_scat, intr_mask)
+    [M_c_intr, _] = mat.split_matrix(mesh, M_conv + M_mass, intr_mask)
+    [M_intr, M_bdry] = mat.split_matrix(mesh, M, intr_mask)
+        
+    # Make sure forcing function takes three arguments
+    if f is None:
+        def forcing(x, y, th):
+            return 0
+    if len(inspect.signature(f).parameters) == 1:
+        def forcing(x, y, th):
+            return f(x)
+    elif len(inspect.signature(f).parameters) == 2:
+        def forcing(x, y, th):
+            return f(x, y)
+    elif len(inspect.signature(f).parameters) == 3:
+        def forcing(x, y, th):
+            return f(x, y, th)
+    f_vec           = calc_forcing_vec(mesh, forcing, **kwargs)
+    [f_vec_intr, _] = mat.split_vector(mesh, f_vec, intr_mask)
+    
+    bcs_vec           = calc_bcs_vec(mesh, bcs_dirac, **kwargs)
+    [_, bcs_vec_bdry] = mat.split_vector(mesh, bcs_vec, intr_mask)
+
+    # To get proper split, just copy f_vec_intr
+    bcs_rhs = 0. * copy.deepcopy(f_vec_intr)
+    M_bdry.mult(bcs_vec_bdry, bcs_rhs)
+    bcs_rhs = f_vec_intr - bcs_rhs
+    rhs_vec = 0. * copy.deepcopy(f_vec_intr)
+    lhs_vec = 0. * copy.deepcopy(f_vec_intr)
+    Ms_u    = 0. * copy.deepcopy(f_vec_intr)
+    res_vec = 0. * copy.deepcopy(f_vec_intr)
+    
+    if kwargs['verbose']:
+        t0 = perf_counter()
+        msg = (
+            'Executing solve...\n'
+        )
+        utils.print_msg(msg)
+        
+    # Create the linear system solver
+    ksp_type = kwargs['ksp_type']
+    ksp = PETSc.KSP()
+    ksp.create(comm = PETSc_comm)
+    ksp.setType(ksp_type)
+    ksp.setOperators(M_c_intr)
+    ksp.setTolerances(rtol   = 1.e-10, atol   = 1.e-30,
+                      divtol = 1.e50,   max_it = 5000)
+    ksp.setComputeSingularValues(True)
+    ksp.setGMRESRestart(1025)
+    
+    pc_type = kwargs['pc_type']
+    pc = ksp.getPC()
+    pc.setType('lu')
+    
+    ksp.setFromOptions()
+    
+    ksp.setConvergenceHistory()
+    max_it = 5000
+    rtol = 1.e-10
+    atol = 1.e-30
+    divtol = 1.e50
+    res = 1
+    it  = 0
+    while (res > atol) and (it <= max_it):
+        M_s_intr.mult(lhs_vec, Ms_u)
+        rhs_vec = bcs_rhs + Ms_u
+        ksp.solve(rhs_vec, lhs_vec)
+        info = ksp.getConvergedReason()
+        
+        M_intr.mult(lhs_vec, res_vec)
+        res_vec = res_vec - f_vec_intr
+        res = res_vec.norm(norm_type = 2)
+        it += 1
+        
+        utils.print_msg('info: {}'.format(info))
+        utils.print_msg('res:  {:.4E}'.format(res))
+        utils.print_msg('it:   {}\n'.format(it))
+    utils.print_msg('Final res: {:.4E}'.format(res))
+    utils.print_msg('Final it:  {}\n'.format(it))
+    
+    info = ksp.getConvergedReason()
+    residuals = ksp.getConvergenceHistory()
+    [emax, emin] = ksp.computeExtremeSingularValues()
+    if emin != 0.:
+        cond = emax / emin
+    else:
+        cond = -1.
+    
+    PETSc.garbage_cleanup()
+    
+    if comm_rank == 0:
+        file_path = kwargs['residual_file_path']
+        if file_path:
+            fig, ax = plt.subplots()
+            plt.semilogy(residuals)
+            title = '{} - {}, {:.4E}\nConvergence Reason : {}'.format(pc_type, ksp_type, cond, info)
+            ax.set_title(title)
+            #plt.tight_layout()
+            plt.savefig(file_path, dpi = 300)
+            plt.close(fig)
+    MPI_comm.barrier()
+
+    if kwargs['verbose']:
+        tf = perf_counter()
+        n_res = np.size(residuals)
+        if n_res > 1:
+            res_f = residuals[n_res - 1]
+        else:
+            res_f = -1
+        msg = (
+            'Solve {} - {} finished.\n'.format(pc_type, ksp_type) +
+            12 * ' ' + 'Converged Reason: {}\n'.format(info) +
+            12 * ' ' + 'Iteration count:  {}\n'.format(n_res) +
+            12 * ' ' + 'Final residual:   {:.4E}\n'.format(res_f) +
+            12 * ' ' + 'Condition Number: {:.4E}\n'.format(cond) +
+            12 * ' ' + 'Time Elapsed:   {:8.4f} [s]\n'.format(tf - t0)
+        )
+        utils.print_msg(msg)
+        
+    uh_vec  = mat.merge_vectors(lhs_vec, bcs_vec_bdry, intr_mask)
+    if comm_rank == 0:
+        uh_proj = proj.to_projection(mesh, uh_vec)
+    else:
+        uh_proj = None
+        
+    return [uh_proj, info]
+
 def rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     """
     Solve the two-dimensional radiative transfer model.
     """
     
     default_kwargs = {'verbose'      : False, # Print info while executing
-                      'precondition' : False  # Calculate PC matrix
+                      'precondition' : False,
+                      'ksp_type' : 'gmres', # Which solver to use
+                      'pc_type' : 'bjacobi',  # Which Preconditioner to use
+                      'residual_file_path' : None # Plot convergence information to this file path
                       } 
     kwargs = {**default_kwargs, **kwargs}
     
@@ -89,7 +262,7 @@ def rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     f_vec           = calc_forcing_vec(mesh, forcing, **kwargs)
     [f_vec_intr, _] = mat.split_vector(mesh, f_vec, intr_mask)
     
-    bcs_vec    = calc_bcs_vec(mesh, bcs_dirac, **kwargs)
+    bcs_vec           = calc_bcs_vec(mesh, bcs_dirac, **kwargs)
     [_, bcs_vec_bdry] = mat.split_vector(mesh, bcs_vec, intr_mask)
 
     # Construct (Forcing - BCs)
@@ -108,16 +281,20 @@ def rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
         utils.print_msg(msg)
         
     # Create the linear system solver
-    ksp_type = 'lgmres'
+    ksp_type = kwargs['ksp_type']
     ksp = PETSc.KSP()
     ksp.create(comm = PETSc_comm)
     ksp.setType(ksp_type)
     ksp.setOperators(M_intr)
-    ksp.setTolerances(rtol   = 1.e-10, atol   = 1.e-8,
-                      divtol = 1.e7,   max_it = 2500)
+    ksp.setTolerances(rtol   = 1.e-10, atol   = 1.e-30,
+                      divtol = 1.e50,  max_it = 5000)
+    ksp.setComputeSingularValues(True)
+    #ksp.setGMRESRestart(3525)
+    ksp.setGMRESRestart(155)
     
+    pc_type = kwargs['pc_type']
     pc = ksp.getPC()
-    pc.setType('none')
+    pc.setType(pc_type)
     
     ksp.setFromOptions()
     
@@ -125,44 +302,108 @@ def rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     ksp.solve(rhs_vec, lhs_vec)
     info = ksp.getConvergedReason()
     residuals = ksp.getConvergenceHistory()
-    
+    [emax, emin] = ksp.computeExtremeSingularValues()
+    if emin != 0.:
+        cond = emax / emin
+    else:
+        cond = -1.
+        
     PETSc.garbage_cleanup()
     
     if comm_rank == 0:
-        fig, ax = plt.subplots()
-        plt.semilogy(residuals)
-        ax.set_title(ksp_type)
-        file_name = 'residuals.png'
-        #plt.tight_layout()
-        plt.savefig(file_name, dpi = 300)
-        plt.close(fig)
+        file_path = kwargs['residual_file_path']
+        if file_path:
+            fig, ax = plt.subplots()
+            plt.semilogy(residuals)
+            title = '{} - {}, {:.4E}\nConvergence Reason : {}'.format(pc_type, ksp_type, cond, info)
+            ax.set_title(title)
+            #plt.tight_layout()
+            plt.savefig(file_path, dpi = 300)
+            plt.close(fig)
     MPI_comm.barrier()
     
+    """
+    pc_types = ['kaczmarz', 'none']
+    ksp_types = ['chebyshev', 'gmres', 'fgmres', 'lgmres', 'dgmres',
+                 'cgs', 'qmrcgs',
+                 'fbcgsr', 'gcr', 'pgmres']
+    for pc_type in pc_types:
+        pc.setType(pc_type)
+        for ksp_type in ksp_types:
+            ksp.setType(ksp_type)
+            
+            ksp.setFromOptions()
+            
+            ksp.setConvergenceHistory()
+            ksp.solve(rhs_vec, lhs_vec)
+            info = ksp.getConvergedReason()
+            residuals = ksp.getConvergenceHistory()
+            [emax, emin] = ksp.computeExtremeSingularValues()
+            if emin != 0.:
+                cond = emax / emin
+            else:
+                cond = -1.
+                
+            PETSc.garbage_cleanup()
+
+            n_res = np.size(residuals)
+            if n_res > 1:
+                res_f = residuals[n_res - 1]
+            else:
+                res_f = -1
+            msg = (
+                'Solve {} - {} finished.\n'.format(pc_type, ksp_type) +
+                12 * ' ' + 'Converged Reason: {}\n'.format(info) +
+                12 * ' ' + 'Iteration count:  {}\n'.format(n_res) +
+                12 * ' ' + 'Final residual:   {:.4E}\n'.format(res_f) +
+                12 * ' ' + 'Condition Number: {:.4E}\n'.format(cond)
+            )
+            utils.print_msg(msg)
+    """
+    """
     if info < 0:
-        pc_type = 'lu'
         n_res = np.size(residuals)
         if n_res > 1:
             res_f = residuals[n_res - 1]
         else:
             res_f = -1.
         msg = (
-            'Iterative solve {} failed.\n'.format(ksp_type) +
+            'Iterative solve {} - {} failed.\n'.format(pc_type, ksp_type) +
             12 * ' ' + 'Converged Reason: {}\n'.format(info) +
             12 * ' ' + 'Iteration count:  {}\n'.format(n_res) +
             12 * ' ' + 'Final residual:   {:.4E}\n'.format(res_f) +
-            12 * ' ' + 'Attempting direct {} solve...\n'.format(pc_type)
+            12 * ' ' + 'Condition Number: {:.4E}\n'.format(cond) +
+            12 * ' ' + 'Re-attempting iterative solve...\n'
         )
         utils.print_msg(msg)
-        
-        pc.setType(pc_type)
-        
+
+        if cond <= 5.E2:
+            ksp.setGMRESRestart(300)
+        else:
+            ksp.setGMRESRestart(2750)
         ksp.setFromOptions()
         
         ksp.setConvergenceHistory()
         ksp.solve(rhs_vec, lhs_vec)
         info = ksp.getConvergedReason()
         residuals = ksp.getConvergenceHistory()
-    
+        [emax, emin] = ksp.computeExtremeSingularValues()
+        cond = emax / emin
+        
+        PETSc.garbage_cleanup()
+        
+        if comm_rank == 0:
+            file_path = kwargs['residual_file_path']
+            if file_path:
+                fig, ax = plt.subplots()
+                plt.semilogy(residuals)
+                title = '{} - {}, {:.4E}'.format(pc_type, ksp_type, cond)
+                ax.set_title(title)
+                #plt.tight_layout()
+                plt.savefig(file_path, dpi = 300)
+                plt.close(fig)
+        MPI_comm.barrier()
+    """
     if kwargs['verbose']:
         tf = perf_counter()
         n_res = np.size(residuals)
@@ -171,13 +412,15 @@ def rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
         else:
             res_f = -1
         msg = (
-            'Solve Completed. Converged Reason: {}\n'.format(info) +
+            'Solve {} - {} finished.\n'.format(pc_type, ksp_type) +
+            12 * ' ' + 'Converged Reason: {}\n'.format(info) +
             12 * ' ' + 'Iteration count:  {}\n'.format(n_res) +
             12 * ' ' + 'Final residual:   {:.4E}\n'.format(res_f) +
+            12 * ' ' + 'Condition Number: {:.4E}\n'.format(cond) +
             12 * ' ' + 'Time Elapsed:   {:8.4f} [s]\n'.format(tf - t0)
         )
         utils.print_msg(msg)
-    
+        
     uh_vec  = mat.merge_vectors(lhs_vec, bcs_vec_bdry, intr_mask)
     if comm_rank == 0:
         uh_proj = proj.to_projection(mesh, uh_vec)

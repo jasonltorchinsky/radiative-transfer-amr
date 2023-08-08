@@ -45,6 +45,9 @@ def main():
             p_uni_ang,
             h_amr_ang,
             hp_amr_ang
+            #hp_amr_spt,
+            #hp_amr_ang,
+            #hp_amr_all
         ]
         
     elif test_num == 2:
@@ -52,7 +55,7 @@ def main():
             h_uni_ang,
             p_uni_ang,
             h_amr_ang,
-            #hp_amr_ang
+            hp_amr_ang
         ]
         
     elif test_num == 3:

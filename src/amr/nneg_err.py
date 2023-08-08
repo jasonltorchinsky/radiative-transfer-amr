@@ -71,7 +71,8 @@ def nneg_err_abs(mesh, proj, **kwargs):
 
 def nneg_err_ang(mesh, proj, **kwargs):
     """
-    Refine all with a negative value
+    Calculate spatial integral in each spatio-angular element. If beyond negative
+    tolerance, mark to refine.
     """
     
     # If integral of proejction has values less than the (negative) tolerance,
@@ -87,6 +88,8 @@ def nneg_err_ang(mesh, proj, **kwargs):
     kwargs = {**default_kwargs, **kwargs}
     
     err_ind = Error_Indicator(mesh, **kwargs)
+    col_nref = 0
+    cell_nref = 0
     
     col_items = sorted(mesh.cols.items())
     for col_key, col in col_items:
@@ -98,6 +101,9 @@ def nneg_err_ang(mesh, proj, **kwargs):
             [_, wx, _, wy, _, _] = qd.quad_xyth(nnodes_x = nx, nnodes_y = ny)
             wx  = wx.reshape([nx, 1, 1])
             wy  = wy.reshape([1, ny, 1])
+            
+            if kwargs['ref_col']:
+                col_err = 0
             
             # Loop through cells
             cell_items = sorted(col.cells.items())
@@ -114,7 +120,7 @@ def nneg_err_ang(mesh, proj, **kwargs):
                     uh_cell_intg = (1 / dth ) * (dx * dy * dth / 8.) * np.sum(wx * wy * uh_cell)
                     
                     if kwargs['ref_cell']:
-                        cell_err = np.amin(uh_cell_intg)
+                        cell_err = min(np.amin(uh_cell_intg), 0.)
                         
                     if kwargs['ref_col']:
                         col_err = min(np.amin(uh_cell_intg), col_err)
@@ -123,6 +129,8 @@ def nneg_err_ang(mesh, proj, **kwargs):
                         err_ind.cell_max_err = min(cell_err, err_ind.cell_max_err)
                         err_ind.cols[col_key].cells[cell_key].err = cell_err
                         if cell_err < kwargs['cell_ref_tol']:
+                            err_ind.avg_cell_ref_err += cell_err
+                            cell_nref += 1
                             if kwargs['cell_ref_form'] == 'hp':
                                 err_ind.cols[col_key].cells[cell_key].ref_form = hp_steer_cell(mesh, proj, col_key, cell_key)
                         else:
@@ -132,11 +140,20 @@ def nneg_err_ang(mesh, proj, **kwargs):
                 err_ind.col_max_err = min(col_err, err_ind.col_max_err)
                 err_ind.cols[col_key].err = col_err
                 if col_err < kwargs['col_ref_tol']:
+                    err_ind.avg_col_ref_err += col_err
+                    col_nref += 1
                     if kwargs['col_ref_form'] == 'hp':
                         err_ind.cols[col_key].ref_form = hp_steer_col(mesh, proj, col_key)
                 else:
                     err_ind.cols[col_key].ref_form = None
-                    
+    #if kwargs['ref_col']:
+    #    if col_nref > 0.:
+    #        err_ind.avg_col_ref_err /= col_nref
+        
+    #if kwargs['ref_cell']:
+    #    if cell_nref > 0.:
+    #        err_ind.avg_cell_ref_err /= cell_nref
+        
     return err_ind
 
 def nneg_err_spt(mesh, proj, **kwargs):
@@ -157,6 +174,7 @@ def nneg_err_spt(mesh, proj, **kwargs):
     kwargs = {**default_kwargs, **kwargs}
     
     err_ind = Error_Indicator(mesh, **kwargs)
+    col_nref = 0
     
     col_items = sorted(mesh.cols.items())
     for col_key, col in col_items:
@@ -184,9 +202,14 @@ def nneg_err_spt(mesh, proj, **kwargs):
                 err_ind.col_max_err = min(col_err, err_ind.col_max_err)
                 err_ind.cols[col_key].err = col_err
                 if col_err < kwargs['col_ref_tol']:
+                    err_ind.avg_col_ref_err += col_err
+                    col_nref += 1
                     if kwargs['col_ref_form'] == 'hp':
                         err_ind.cols[col_key].ref_form = hp_steer_col(mesh, proj, col_key)
                 else:
                     err_ind.cols[col_key].ref_form = None
-                    
+    #if kwargs['ref_col']:
+    #    if col_nref > 0.:
+    #        err_ind.avg_col_ref_err /= col_nref
+        
     return err_ind

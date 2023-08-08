@@ -375,7 +375,7 @@ def high_res_err(mesh, uh_proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
         ndof_hr = None
         ndof_hr = MPI_comm.bcast(ndof_hr, root = 0)
     [uh_hr, info] = rt.rtdg(mesh_hr, kappa, sigma, Phi, bcs_dirac, f,
-                            blocking = False, verbose = kwargs['verbose'])
+                            **kwargs)
     PETSc.garbage_cleanup()
     
     if comm_rank == 0:
