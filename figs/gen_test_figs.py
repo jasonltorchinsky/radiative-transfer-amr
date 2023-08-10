@@ -98,9 +98,6 @@ def main():
         h_uni_ang['Ls']     = [Lx, Ly]
         h_uni_ang['pbcs']   = pbcs
         h_uni_ang['has_th'] = has_th
-        h_uni_ang['ndof_x_hr']  = 8
-        h_uni_ang['ndof_y_hr']  = 8
-        h_uni_ang['ndof_th_hr'] = 32
         h_uni_ang['spt_res_offset'] = 0
         h_uni_ang['ang_res_offset'] = 2
         
@@ -108,9 +105,6 @@ def main():
         p_uni_ang['Ls']     = [Lx, Ly]
         p_uni_ang['pbcs']   = pbcs
         p_uni_ang['has_th'] = has_th
-        p_uni_ang['ndof_x_hr']  = 8
-        p_uni_ang['ndof_y_hr']  = 8
-        p_uni_ang['ndof_th_hr'] = 32
         p_uni_ang['spt_res_offset'] = 0
         p_uni_ang['ang_res_offset'] = 2
         
@@ -118,9 +112,6 @@ def main():
         h_amr_ang['Ls']     = [Lx, Ly]
         h_amr_ang['pbcs']   = pbcs
         h_amr_ang['has_th'] = has_th
-        h_amr_ang['ndof_x_hr']  = 8
-        h_amr_ang['ndof_y_hr']  = 8
-        h_amr_ang['ndof_th_hr'] = 32
         h_amr_ang['spt_res_offset'] = 0
         h_amr_ang['ang_res_offset'] = 2
         
@@ -128,9 +119,6 @@ def main():
         hp_amr_ang['Ls']     = [Lx, Ly]
         hp_amr_ang['pbcs']   = pbcs
         hp_amr_ang['has_th'] = has_th
-        hp_amr_ang['ndof_x_hr']  = 8
-        hp_amr_ang['ndof_y_hr']  = 8
-        hp_amr_ang['ndof_th_hr'] = 32
         hp_amr_ang['spt_res_offset'] = 0
         hp_amr_ang['ang_res_offset'] = 2
 
@@ -196,6 +184,9 @@ def main():
         h_uni_ang['Ls']     = [Lx, Ly]
         h_uni_ang['pbcs']   = pbcs
         h_uni_ang['has_th'] = has_th
+        h_uni_ang['ndofs']  = [9, 9, 3]
+        h_uni_ang['nref_ang'] = 3
+        h_uni_ang['nref_spt'] = 2
         h_uni_ang['spt_res_offset'] = 0
         h_uni_ang['ang_res_offset'] = 2
         
@@ -203,6 +194,9 @@ def main():
         p_uni_ang['Ls']     = [Lx, Ly]
         p_uni_ang['pbcs']   = pbcs
         p_uni_ang['has_th'] = has_th
+        p_uni_ang['ndofs']  = [9, 9, 3]
+        p_uni_ang['nref_ang'] = 3
+        p_uni_ang['nref_spt'] = 2
         p_uni_ang['spt_res_offset'] = 0
         p_uni_ang['ang_res_offset'] = 2
         
@@ -210,6 +204,9 @@ def main():
         h_amr_ang['Ls']     = [Lx, Ly]
         h_amr_ang['pbcs']   = pbcs
         h_amr_ang['has_th'] = has_th
+        h_amr_ang['ndofs']  = [9, 9, 3]
+        h_amr_ang['nref_ang'] = 3
+        h_amr_ang['nref_spt'] = 2
         h_amr_ang['spt_res_offset'] = 0
         h_amr_ang['ang_res_offset'] = 2
         
@@ -217,14 +214,17 @@ def main():
         hp_amr_ang['Ls']     = [Lx, Ly]
         hp_amr_ang['pbcs']   = pbcs
         hp_amr_ang['has_th'] = has_th
+        hp_amr_ang['ndofs']  = [9, 9, 3]
+        hp_amr_ang['nref_ang'] = 3
+        hp_amr_ang['nref_spt'] = 2
         hp_amr_ang['spt_res_offset'] = 0
         hp_amr_ang['ang_res_offset'] = 2
         
         combos = [
-            h_uni_ang,
-            #p_uni_ang,
-            #h_amr_ang,
-            #hp_amr_ang
+            h_amr_ang,
+            #hp_amr_ang,
+            #h_uni_ang,
+            p_uni_ang
         ]
         
     elif test_num == 3:
@@ -247,7 +247,7 @@ def main():
         hp_amr_spt['Ls']     = [Lx, Ly]
         hp_amr_spt['pbcs']   = pbcs
         hp_amr_spt['has_th'] = has_th
-        hp_amr_spt['ndofs']  = [4, 4, 3]
+        hp_amr_spt['ndofs']  = [3, 3, 3]
         hp_amr_spt['nref_ang'] = 3
         hp_amr_spt['nref_spt'] = 3
         hp_amr_spt['ref_kind'] = 'all'
@@ -258,7 +258,7 @@ def main():
         hp_amr_ang['Ls']     = [Lx, Ly]
         hp_amr_ang['pbcs']   = pbcs
         hp_amr_ang['has_th'] = has_th
-        hp_amr_ang['ndofs']  = [4, 4, 3]
+        hp_amr_ang['ndofs']  = [3, 3, 3]
         hp_amr_ang['nref_ang'] = 3
         hp_amr_ang['nref_spt'] = 3
         hp_amr_ang['ref_kind'] = 'all'
@@ -269,7 +269,7 @@ def main():
         hp_amr_all['Ls']     = [Lx, Ly]
         hp_amr_all['pbcs']   = pbcs
         hp_amr_all['has_th'] = has_th
-        hp_amr_all['ndofs']  = [4, 4, 3]
+        hp_amr_all['ndofs']  = [3, 3, 3]
         hp_amr_all['nref_ang'] = 3
         hp_amr_all['nref_spt'] = 3
         hp_amr_all['spt_res_offset'] = 2
@@ -301,7 +301,7 @@ def main():
         hp_amr_spt['Ls']     = [Lx, Ly]
         hp_amr_spt['pbcs']   = pbcs
         hp_amr_spt['has_th'] = has_th
-        hp_amr_spt['ndofs']  = [3, 3, 5]
+        hp_amr_spt['ndofs']  = [3, 3, 3]
         hp_amr_spt['nref_ang'] = 3
         hp_amr_spt['nref_spt'] = 3
         hp_amr_spt['ref_kind'] = 'all'
@@ -312,7 +312,7 @@ def main():
         hp_amr_ang['Ls']     = [Lx, Ly]
         hp_amr_ang['pbcs']   = pbcs
         hp_amr_ang['has_th'] = has_th
-        hp_amr_ang['ndofs']  = [3, 3, 5]
+        hp_amr_ang['ndofs']  = [3, 3, 3]
         hp_amr_ang['nref_ang'] = 3
         hp_amr_ang['nref_spt'] = 3
         hp_amr_ang['ref_kind'] = 'all'
@@ -323,16 +323,16 @@ def main():
         hp_amr_all['Ls']     = [Lx, Ly]
         hp_amr_all['pbcs']   = pbcs
         hp_amr_all['has_th'] = has_th
-        hp_amr_all['ndofs']  = [3, 3, 5]
+        hp_amr_all['ndofs']  = [3, 3, 3]
         hp_amr_all['nref_ang'] = 3
         hp_amr_all['nref_spt'] = 3
         hp_amr_all['spt_res_offset'] = 2
         hp_amr_all['ang_res_offset'] = 2
         
         combos = [
-            hp_amr_spt,
+            #hp_amr_spt,
             #hp_amr_ang,
-            #hp_amr_all
+            hp_amr_all
         ]
         
     # Extinction coefficient, etc. for each test
@@ -430,7 +430,7 @@ def main():
         x_right = 0.
         y_top = Ly
         def bcs(x, y, th):
-            sth = 96.
+            sth = 96. * 2.
             if (y == y_top) or (x == x_right):
                 return np.exp(-((sth / (2. * np.pi)) * (th - (7. * np.pi / 4.)))**2)
             #if (y == y_top) and (th == (8. * np.pi / 5.)):
@@ -495,8 +495,8 @@ def main():
         def kappa_y(y):
             return (2. * Ay / np.pi) * np.arctan(np.sin(2. * np.pi * fy * (y - Ly / 3.)) / deltay) + 0.5
         def kappa(x, y):
-            r = (Ly / 5) - np.sqrt((x - (Lx / 2.))**2 + (y - (Ly/2.))**2)
-            return 1.1 / (1. + np.exp(-2. * 20 * r))
+            r = (Ly / 5.) - np.sqrt((x - (Lx / 2.))**2 + (y - (Ly/2.))**2)
+            return 25. / (1. + np.exp(-2. * 20 * r))
 
         def sigma(x, y):
             return 0.9 * kappa(x, y)
@@ -517,7 +517,7 @@ def main():
         x_right = 0.
         y_top = Ly
         def bcs(x, y, th):
-            sth = 96.
+            sth = 64.
             if (y == y_top) or (x == x_right):
                 return np.exp(-((sth / (2. * np.pi)) * (th - (8. * np.pi / 5.)))**2)
             #if (y == y_top) and (th == (8. * np.pi / 5.)):

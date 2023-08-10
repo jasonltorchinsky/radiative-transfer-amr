@@ -28,176 +28,6 @@ from .calc_scat_matrix      import calc_scat_matrix
 def rtdg(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     return rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f, **kwargs)
 
-def rtdg_src_iter(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
-    """
-    Solve the two-dimensional radiative transfer model.
-    """
-    
-    default_kwargs = {'verbose'      : False, # Print info while executing
-                      'precondition' : False,
-                      'ksp_type' : 'gmres', # Which solver to use
-                      'pc_type' : 'bjacobi',  # Which Preconditioner to use
-                      'residual_file_path' : None # Plot convergence information to this file path
-                      } 
-    kwargs = {**default_kwargs, **kwargs}
-    
-    # Initialize parallel communicators
-    MPI_comm = MPI.COMM_WORLD
-    
-    petsc4py.init()
-    PETSc_comm = PETSc.COMM_WORLD
-    comm_rank  = PETSc_comm.getRank()
-    comm_size  = PETSc_comm.getSize()
-    
-    if kwargs['verbose']:
-        if comm_rank == 0:
-            ndof = mesh.get_ndof()
-            ndof = MPI_comm.bcast(ndof, root = 0)
-        else:
-            ndof = None
-            ndof = MPI_comm.bcast(ndof, root = 0)
-        msg = (
-            'Initiating solve with {} DoFs...\n'.format(ndof)
-            )
-        utils.print_msg(msg)
-        t0  = perf_counter()
-            
-    # Calculate
-    M_mass = calc_mass_matrix(mesh, kappa, **kwargs)
-    M_scat = calc_scat_matrix(mesh, sigma, Phi, **kwargs)
-    M_intr_conv = calc_intr_conv_matrix(mesh, **kwargs)
-    M_bdry_conv = calc_bdry_conv_matrix(mesh, **kwargs)
-    M_conv = M_bdry_conv - M_intr_conv
-    M      = M_conv + M_mass - M_scat
-    intr_mask = mat.get_intr_mask(mesh, **kwargs)
-    
-    [M_s_intr, _] = mat.split_matrix(mesh, M_scat, intr_mask)
-    [M_c_intr, _] = mat.split_matrix(mesh, M_conv + M_mass, intr_mask)
-    [M_intr, M_bdry] = mat.split_matrix(mesh, M, intr_mask)
-        
-    # Make sure forcing function takes three arguments
-    if f is None:
-        def forcing(x, y, th):
-            return 0
-    if len(inspect.signature(f).parameters) == 1:
-        def forcing(x, y, th):
-            return f(x)
-    elif len(inspect.signature(f).parameters) == 2:
-        def forcing(x, y, th):
-            return f(x, y)
-    elif len(inspect.signature(f).parameters) == 3:
-        def forcing(x, y, th):
-            return f(x, y, th)
-    f_vec           = calc_forcing_vec(mesh, forcing, **kwargs)
-    [f_vec_intr, _] = mat.split_vector(mesh, f_vec, intr_mask)
-    
-    bcs_vec           = calc_bcs_vec(mesh, bcs_dirac, **kwargs)
-    [_, bcs_vec_bdry] = mat.split_vector(mesh, bcs_vec, intr_mask)
-
-    # To get proper split, just copy f_vec_intr
-    bcs_rhs = 0. * copy.deepcopy(f_vec_intr)
-    M_bdry.mult(bcs_vec_bdry, bcs_rhs)
-    bcs_rhs = f_vec_intr - bcs_rhs
-    rhs_vec = 0. * copy.deepcopy(f_vec_intr)
-    lhs_vec = 0. * copy.deepcopy(f_vec_intr)
-    Ms_u    = 0. * copy.deepcopy(f_vec_intr)
-    res_vec = 0. * copy.deepcopy(f_vec_intr)
-    
-    if kwargs['verbose']:
-        t0 = perf_counter()
-        msg = (
-            'Executing solve...\n'
-        )
-        utils.print_msg(msg)
-        
-    # Create the linear system solver
-    ksp_type = kwargs['ksp_type']
-    ksp = PETSc.KSP()
-    ksp.create(comm = PETSc_comm)
-    ksp.setType(ksp_type)
-    ksp.setOperators(M_c_intr)
-    ksp.setTolerances(rtol   = 1.e-10, atol   = 1.e-30,
-                      divtol = 1.e50,   max_it = 5000)
-    ksp.setComputeSingularValues(True)
-    ksp.setGMRESRestart(1025)
-    
-    pc_type = kwargs['pc_type']
-    pc = ksp.getPC()
-    pc.setType('lu')
-    
-    ksp.setFromOptions()
-    
-    ksp.setConvergenceHistory()
-    max_it = 5000
-    rtol = 1.e-10
-    atol = 1.e-30
-    divtol = 1.e50
-    res = 1
-    it  = 0
-    while (res > atol) and (it <= max_it):
-        M_s_intr.mult(lhs_vec, Ms_u)
-        rhs_vec = bcs_rhs + Ms_u
-        ksp.solve(rhs_vec, lhs_vec)
-        info = ksp.getConvergedReason()
-        
-        M_intr.mult(lhs_vec, res_vec)
-        res_vec = res_vec - f_vec_intr
-        res = res_vec.norm(norm_type = 2)
-        it += 1
-        
-        utils.print_msg('info: {}'.format(info))
-        utils.print_msg('res:  {:.4E}'.format(res))
-        utils.print_msg('it:   {}\n'.format(it))
-    utils.print_msg('Final res: {:.4E}'.format(res))
-    utils.print_msg('Final it:  {}\n'.format(it))
-    
-    info = ksp.getConvergedReason()
-    residuals = ksp.getConvergenceHistory()
-    [emax, emin] = ksp.computeExtremeSingularValues()
-    if emin != 0.:
-        cond = emax / emin
-    else:
-        cond = -1.
-    
-    PETSc.garbage_cleanup()
-    
-    if comm_rank == 0:
-        file_path = kwargs['residual_file_path']
-        if file_path:
-            fig, ax = plt.subplots()
-            plt.semilogy(residuals)
-            title = '{} - {}, {:.4E}\nConvergence Reason : {}'.format(pc_type, ksp_type, cond, info)
-            ax.set_title(title)
-            #plt.tight_layout()
-            plt.savefig(file_path, dpi = 300)
-            plt.close(fig)
-    MPI_comm.barrier()
-
-    if kwargs['verbose']:
-        tf = perf_counter()
-        n_res = np.size(residuals)
-        if n_res > 1:
-            res_f = residuals[n_res - 1]
-        else:
-            res_f = -1
-        msg = (
-            'Solve {} - {} finished.\n'.format(pc_type, ksp_type) +
-            12 * ' ' + 'Converged Reason: {}\n'.format(info) +
-            12 * ' ' + 'Iteration count:  {}\n'.format(n_res) +
-            12 * ' ' + 'Final residual:   {:.4E}\n'.format(res_f) +
-            12 * ' ' + 'Condition Number: {:.4E}\n'.format(cond) +
-            12 * ' ' + 'Time Elapsed:   {:8.4f} [s]\n'.format(tf - t0)
-        )
-        utils.print_msg(msg)
-        
-    uh_vec  = mat.merge_vectors(lhs_vec, bcs_vec_bdry, intr_mask)
-    if comm_rank == 0:
-        uh_proj = proj.to_projection(mesh, uh_vec)
-    else:
-        uh_proj = None
-        
-    return [uh_proj, info]
-
 def rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     """
     Solve the two-dimensional radiative transfer model.
@@ -210,6 +40,9 @@ def rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
                       'residual_file_path' : None # Plot convergence information to this file path
                       } 
     kwargs = {**default_kwargs, **kwargs}
+
+    # Set up RNG
+    rng = np.random.default_rng()
     
     # Initialize parallel communicators
     MPI_comm = MPI.COMM_WORLD
@@ -266,12 +99,18 @@ def rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     [_, bcs_vec_bdry] = mat.split_vector(mesh, bcs_vec, intr_mask)
 
     # Construct (Forcing - BCs)
-    rhs_vec = copy.deepcopy(f_vec_intr)
+    #rhs_vec = f_vec_intr.duplicate()
+    def zero(x, y, z):
+        return 0.
+    rhs_vec = calc_forcing_vec(mesh, zero, **kwargs)
+    [rhs_vec, _] = mat.split_vector(mesh, rhs_vec, intr_mask)
     M_bdry.mult(bcs_vec_bdry, rhs_vec)
     rhs_vec = f_vec_intr - rhs_vec
 
     # To get proper split, just copy f_vec_intr
-    lhs_vec = copy.deepcopy(f_vec_intr)
+    #lhs_vec = f_vec_intr.duplicate()
+    lhs_vec = calc_forcing_vec(mesh, zero, **kwargs)
+    [lhs_vec, _] = mat.split_vector(mesh, lhs_vec, intr_mask)
     
     if kwargs['verbose']:
         t0 = perf_counter()
@@ -286,8 +125,9 @@ def rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     ksp.create(comm = PETSc_comm)
     ksp.setType(ksp_type)
     ksp.setOperators(M_intr)
-    ksp.setTolerances(rtol   = 1.e-10, atol   = 1.e-30,
-                      divtol = 1.e50,  max_it = 5000)
+    [rtol, atol, divtol, max_it] = [1.e-10, 1.e-30, 1.e10, 1000]
+    ksp.setTolerances(rtol   = rtol,   atol   = atol,
+                      divtol = divtol, max_it = max_it)
     ksp.setComputeSingularValues(True)
     #ksp.setGMRESRestart(3525)
     ksp.setGMRESRestart(155)
@@ -295,13 +135,93 @@ def rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     pc_type = kwargs['pc_type']
     pc = ksp.getPC()
     pc.setType(pc_type)
+    ksp.setInitialGuessNonzero(False)
     
     ksp.setFromOptions()
     
     ksp.setConvergenceHistory()
     ksp.solve(rhs_vec, lhs_vec)
+    PETSc.garbage_cleanup()
+    MPI_comm.Barrier()
     info = ksp.getConvergedReason()
     residuals = ksp.getConvergenceHistory()
+    n_res = np.size(residuals)
+    if n_res > 1:
+        res_f = residuals[n_res - 1]
+    else:
+        res_f = -1
+    best_res = res_f
+    # Have a list of known good solvers/preconditioner combinations in case the one used fails
+    ksp_list = ['qmrcgs', 'fbcgsr', 'cgs', 'pgmres', 'dgmres', 'gmres',
+                'gcr', 'lgmres', 'fgmres', 'chebyshev']
+    #ksp_pc_list = [['qmrcgs', 'kaczmarz'],    ['fbcgsr', 'kaczmarz'], ['cgs', 'kaczmarz'],
+    #               ['pgmres', 'kaczmarz'],    ['dgmres', 'kaczmarz'], ['gmres', 'kaczmarz'],
+    #               ['gcr', 'kaczmarz'],       ['lgmres', 'kaczmarz'], ['fgmres', 'kaczmarz'],
+    #               ['chebyshev', 'kaczmarz'], ['qmrcgs', 'none'],     ['fbcgsr', 'none'],
+    #               ['cgs', 'none'],           ['pgmres', 'none'],     ['dgmres', 'none'],
+    #               ['gmres', 'none'],         ['gcr', 'none'],        ['lgmres', 'none'],
+    #               ['fgmres', 'none'],        ['chebyshev', 'none']]
+    #ksp_pc_list = [['richardson', 'jacobi'], ['chebyshev', 'jacobi'], ['gmres', 'jacobi'],
+    #               ['fgmres', 'jacobi'], ['lgmres', 'jacobi'], ['dgmres', 'jacobi'],
+    #               ['cg', 'jacobi'], ['cgs', 'jacobi'], ['nash', 'jacobi'],
+    #               ['qmrcgs', 'jacobi'], ['cr', 'jacobi'], ['gcr', 'jacobi'],
+    #               ['pgmres', 'jacobi'], ['richardson', 'pbjacobi'], ['chebyshev', 'pbjacobi'], ['gmres', 'pbjacobi'],
+    #               ['fgmres', 'pbjacobi'], ['lgmres', 'pbjacobi'], ['dgmres', 'pbjacobi'],
+    #               ['cg', 'pbjacobi'], ['cgs', 'pbjacobi'], ['nash', 'pbjacobi'],
+    #               ['qmrcgs', 'pbjacobi'], ['cr', 'pbjacobi'], ['gcr', 'pbjacobi'],
+    #               ['pgmres', 'pbjacobi'], ['richardson', 'bjacobi'], ['chebyshev', 'bjacobi'], ['gmres', 'bjacobi'],
+    #               ['fgmres', 'bjacobi'], ['lgmres', 'bjacobi'], ['dgmres', 'bjacobi'],
+    #               ['cg', 'bjacobi'], ['cgs', 'bjacobi'], ['nash', 'bjacobi'],
+    #               ['qmrcgs', 'bjacobi'], ['cr', 'bjacobi'], ['gcr', 'bjacobi'],
+    #               ['pgmres', 'bjacobi'], ['richardson', 'kaczmarz'], ['chebyshev', 'kaczmarz'], ['gmres', 'kaczmarz'],
+    #               ['fgmres', 'kaczmarz'], ['lgmres', 'kaczmarz'], ['dgmres', 'kaczmarz'],
+    #               ['cg', 'kaczmarz'], ['cgs', 'kaczmarz'], ['nash', 'kaczmarz'],
+    #               ['qmrcgs', 'kaczmarz'], ['cr', 'kaczmarz'], ['gcr', 'kaczmarz'],
+    #               ['pgmres', 'kaczmarz'], ['richardson', 'gamg'], ['chebyshev', 'gamg'], ['gmres', 'gamg'],
+    #               ['fgmres', 'gamg'], ['lgmres', 'gamg'], ['dgmres', 'gamg'],
+    #               ['cg', 'gamg'], ['cgs', 'gamg'], ['nash', 'gamg'],
+    #               ['qmrcgs', 'gamg'], ['cr', 'gamg'], ['gcr', 'gamg'],
+    #               ['pgmres', 'gamg']]
+    
+    ksp_idx = 0
+    while (info < 0) or (info == 4): # Solve failed, try something else
+        msg = (
+            'Iterative solve {} - {} failed.\n'.format(pc_type, ksp_type) +
+            12 * ' ' + 'Converged Reason: {}\n'.format(info) +
+            12 * ' ' + 'Iteration count:  {}\n'.format(n_res) +
+            12 * ' ' + 'Final residual:   {:.4E}\n'.format(res_f) +
+            12 * ' ' + 'Best residual:    {:.4E}\n'.format(best_res) +
+            12 * ' ' + 'Attempting iterative solve {} - {}\n'.format(pc_type, ksp_list[ksp_idx])
+        )
+        utils.print_msg(msg)
+
+        # Use the initial guess of the failed solve, because it was ideally at least a little productive
+        # Randomly start at zero
+        pZero = 0.05
+        guessZero = rng.choice((True, False), size = 1, p = (pZero, 1. - pZero))[0]
+        if guessZero:
+            best_res = 10.**10
+            lhs_vec = 0. * lhs_vec
+        
+        ksp_type = ksp_list[ksp_idx]
+        ksp.setType(ksp_type)
+        
+        PETSc.garbage_cleanup()
+        ksp.solve(rhs_vec, lhs_vec)
+        PETSc.garbage_cleanup()
+        MPI_comm.Barrier()
+        info = ksp.getConvergedReason()
+        residuals = ksp.getConvergenceHistory()
+        n_res = np.size(residuals)
+        if n_res > 1:
+            res_f = residuals[n_res - 1]
+        else:
+            res_f = -1
+        if res_f > 0.:
+            if res_f <= best_res:
+                best_res = res_f
+        ksp_idx = (ksp_idx+1)%len(ksp_list)
+    
     [emax, emin] = ksp.computeExtremeSingularValues()
     if emin != 0.:
         cond = emax / emin
@@ -428,256 +348,3 @@ def rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
         uh_proj = None
         
     return [uh_proj, info]
-
-def rtdg_seq(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
-    """
-    Solve the two-dimensional radiative transfer model.
-    """
-    
-    default_kwargs = {'verbose'      : False, # Print info while executing
-                      'precondition' : False  # Calculate PC matrix
-                      } 
-    kwargs = {**default_kwargs, **kwargs}
-
-    # Initialize parallel communicators
-    MPI_comm = MPI.COMM_WORLD
-    
-    petsc4py.init()
-    comm      = PETSc.COMM_WORLD
-    comm_rank = comm.getRank()
-    comm_size = comm.getSize()
-    
-    if kwargs['verbose']:
-        if comm_rank == 0:
-            ndof = mesh.get_ndof()
-            ndof = MPI_comm.bcast(ndof, root = 0)
-        else:
-            ndof = None
-            ndof = MPI_comm.bcast(ndof, root = 0)
-        msg = (
-            'Initiating solve with {} DoFs...\n'.format(ndof)
-            )
-        utils.print_msg(msg)
-        t0  = perf_counter()
-            
-    # Calculate A, b of Ax=b in serial
-    [M_mass_scat, M_pc] = calc_precond_matrix(mesh, kappa, sigma, Phi, **kwargs)
-    M_intr_conv         = calc_intr_conv_matrix(mesh, **kwargs)
-    M_bdry_conv         = calc_bdry_conv_matrix(mesh, **kwargs)
-    M_conv    = M_bdry_conv - M_intr_conv
-    M         = M_conv + M_mass_scat
-    intr_mask = mat.get_intr_mask(mesh, **kwargs)
-    [M_intr, M_bdry] = mat.split_matrix(mesh, M, intr_mask)
-    
-    if kwargs['precondition']:
-        [M_pc, _] = mat.split_matrix(mesh, M_pc, intr_mask)
-    else:
-        M_pc = None
-        
-    # If using too much memory, delete used matrices
-    used_mem = psutil.virtual_memory()[2]
-    if used_mem >= 80:
-        del M_mass_scat, M_intr_conv, M_bdry_conv, M
-        gc.collect()
-        
-    # Make sure forcing function takes three arguments
-    if f is None:
-        def forcing(x, y, th):
-            return 0
-    if len(inspect.signature(f).parameters) == 1:
-        def forcing(x, y, th):
-            return f(x)
-    elif len(inspect.signature(f).parameters) == 2:
-        def forcing(x, y, th):
-            return f(x, y)
-    elif len(inspect.signature(f).parameters) == 3:
-        def forcing(x, y, th):
-            return f(x, y, th)
-    bcs_vec    = calc_bcs_vec(mesh, bcs_dirac, **kwargs)
-    bdry_mask  = np.invert(intr_mask)
-    f_vec      = calc_forcing_vec(mesh, forcing, **kwargs)
-    f_intr_vec = f_vec[intr_mask]
-    
-    if comm_rank == 0:
-        M_global = M_intr
-        f_global = f_intr_vec - M_bdry @ bcs_vec
-        
-        n_global = np.size(f_global)
-    else:
-        n_global = None
-        
-    # If using too much memory, delete used variables
-    used_mem = psutil.virtual_memory()[2]
-    if used_mem >= 80:
-        del f_vec, f_intr_vec
-        gc.collect()
-        
-    MPI_comm.Barrier()
-
-    if comm_size > 0:
-        n_global = MPI_comm.bcast(n_global, root = 0)
-        M_local = None
-        f_local = None
-        
-        ## Convert the system to parallel
-        if kwargs['verbose']:
-            t0 = perf_counter()
-            msg = (
-                'Setting up solve...\n'
-            )
-            utils.print_msg(msg)
-            
-        # Create PETSc sparse matrix
-        M_MPI = PETSc.Mat()
-        M_MPI.createAIJ(size = [n_global, n_global], comm = comm)
-        
-        o_rngs = M_MPI.getOwnershipRanges()
-        ii_0 = o_rngs[comm_rank]
-        ii_f = o_rngs[comm_rank+1]
-        if comm_rank == 0:
-            # Communicate global information
-            for rank in range(1, comm_size):
-                ii_0_else = o_rngs[rank]
-                ii_f_else = o_rngs[rank+1]
-                MPI_comm.send(M_global[ii_0_else:ii_f_else, :],
-                              dest = rank)
-            M_local = M_global[ii_0:ii_f, :]
-            
-            MPI_comm.Barrier()
-            
-            for rank in range(1, comm_size):
-                ii_0_else = o_rngs[rank]
-                ii_f_else = o_rngs[rank+1]
-                MPI_comm.send(f_global[ii_0_else:ii_f_else],
-                              dest = rank)
-                f_local = f_global[ii_0:ii_f]
-        else:
-            M_local = MPI_comm.recv(source = 0)
-            
-            MPI_comm.Barrier()
-            
-            f_local = MPI_comm.recv(source = 0)
-            
-        # Put A_local into the shared matrix
-        (II, JJ, VV) = sp.find(M_local)
-        nnz_local    = np.size(II)
-        for idx in range(0, nnz_local):
-            ii = II[idx]
-            jj = JJ[idx]
-            vv = VV[idx]
-            
-            M_MPI[ii + ii_0, jj] = vv
-            
-        # Communicate off-rank values and setup internal data structures for
-        # performing parallel operations
-        M_MPI.assemblyBegin()
-        M_MPI.assemblyEnd()
-        
-        # Create LHS, RHS vectors and fill them in
-        u_MPI, f_MPI = M_MPI.createVecs()
-        u_MPI.set(0)
-        (_, II, VV) = sp.find(f_local)
-        nnz_local   = np.size(II)
-        for idx in range(0, nnz_local):
-            ii = II[idx]
-            vv = VV[idx]
-            
-            f_MPI[ii + ii_0] = vv
-            
-        f_MPI.assemblyBegin()
-        f_MPI.assemblyEnd()
-        
-        if kwargs['verbose']:
-            tf = perf_counter()
-            msg = (
-                'Solve set up.\n' +
-                12 * ' ' + 'Time Elapsed: {:8.4f} [s]\n'.format(tf - t0)
-            )
-            utils.print_msg(msg)
-            
-        if kwargs['verbose']:
-            t0 = perf_counter()
-            msg = (
-                'Executing solve...\n'
-            )
-            utils.print_msg(msg)
-            
-        # Create the linear system solver
-        ksp = PETSc.KSP()
-        ksp.create(comm = comm)
-        ksp.setType('gmres')
-        ksp.setOperators(M_MPI)
-        ksp.setTolerances(rtol = 1.e-10, atol   = 1.e-50,
-                          divtol = 1.e7)
-        
-        pc = ksp.getPC()
-        pc.setType('lu')
-        
-        ksp.setFromOptions()
-        
-        ksp.solve(f_MPI, u_MPI)
-        info = ksp.getConvergedReason()
-        
-        # If using too much memory, delete used variables
-        used_mem = psutil.virtual_memory()[2]
-        if used_mem >= 80:
-            del ksp, pc, f_MPI, M_MPI
-            gc.collect()
-            
-        if info > 0:
-            u_local = u_MPI[ii_0:ii_f]
-            u_global = MPI_comm.gather(u_local, root = 0)
-            
-            if comm_rank == 0:
-                u_intr_vec = np.concatenate(u_global)
-        else: # Iterative solver failed, go to direct solve
-            msg = (
-                'Parallel iterative solve failed: {}. Attempting direct solve...\n'.format(info)
-            )
-            utils.print_msg(msg)
-            if comm_rank == 0:
-                u_intr_vec = spla.spsolve(M_global, f_global)
-                
-        if kwargs['verbose']:
-            tf = perf_counter()
-            msg = (
-                'Solve Completed. Exit Code: {}\n'.format(info) +
-                12 * ' ' + 'Time Elapsed: {:8.4f} [s]\n'.format(tf - t0)
-            )
-            utils.print_msg(msg)
-            
-        if comm_rank == 0:
-            u_vec  = mat.merge_vectors(u_intr_vec, bcs_vec, intr_mask)
-            u_proj = proj.to_projection(mesh, u_vec)
-        else:
-            u_proj = None
-    else:
-        if comm_rank == 0:
-            u_intr_vec = spla.spsolve(M_global, f_global)
-            u_vec  = mat.merge_vectors(u_intr_vec, bcs_vec, intr_mask)
-            u_proj = proj.to_projection(mesh, u_vec)
-            info   = 0
-        else:
-            u_proj = None
-            info   = 0
-    return [u_proj, info]
-
-def merge_vecs(intr_mask, intr_vec, bdry_vec):
-    
-    ndof = np.size(intr_mask)
-    
-    vec = np.zeros(ndof)
-    intr_idx = 0
-    bdry_idx = 0
-    
-    for ii in range(0, ndof):
-        if intr_mask[ii]:
-            vec[ii] = intr_vec[intr_idx]
-            
-            intr_idx += 1
-        else:
-            vec[ii] = bdry_vec[bdry_idx]
-            
-            bdry_idx += 1
-            
-    return vec
