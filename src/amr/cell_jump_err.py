@@ -92,6 +92,8 @@ def cell_jump_err_new(mesh, proj, **kwargs):
                 io_itfs = [np.pi / 2., 3. * np.pi / 2.]
             elif ts_bdry or bs_bdry:
                 io_itfs = [0., np.pi]
+            else:
+                io_itfs = [None]
             
             if kwargs['ref_col']:
                 col_err = 0.
@@ -147,8 +149,8 @@ def cell_jump_err_new(mesh, proj, **kwargs):
 
                     # For integral, we multiply by dA / 4.
                     # For mean, we divide integral by 1 / dA.
-                    # Hence, just divise by 4.
-                    # The 0.5 arise from the fact that we take the mean of all
+                    # Hence, just divide by 4.
+                    # The 0.5 arises from the fact that we take the mean of all
                     # the jumps, and there are two jumps.
                     cell_jump = (1. / 4.) * np.sum(wx * wy * 0.5 * (cell_jump_low + cell_jump_up))
                     
@@ -193,10 +195,7 @@ def cell_jump_err_new(mesh, proj, **kwargs):
                 cell_items = sorted(col.cells.items())
                 for cell_key, cell in cell_items:
                     cell_err = err_ind.cols[col_key].cells[cell_key].err
-                    #p = cell_err / cell_max_err
-                    #to_ref = rng.choice([True, False], size = 1, p = (p, 1 - p))[0]
                     if cell_err >= cell_ref_thrsh:
-                    #if to_ref:
                         err_ind.avg_cell_ref_err += cell_err
                         cell_nref += 1
                         if err_ind.cols[col_key].cells[cell_key].ref_form == 'hp':

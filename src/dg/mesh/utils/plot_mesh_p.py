@@ -33,11 +33,13 @@ def plot_mesh_p_2d(mesh, file_name = None, **kwargs):
     [Lx, Ly] = mesh.Ls[:]
     ax.set_xlim([0, Lx])
     ax.set_ylim([0, Ly])
-
-    colors = ['red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet']
+    
+    colors = ['#e6194B', '#f58231', '#ffe119', '#bfef45', '#aaffc3', '#3cb44b',
+              '#469990', '#42d4f4', '#4363d8', '#dcbeff', '#911eb4', '#f032e6',
+              '#fabed4', '#ffffff', '#a9a9a9', '#9A6324', '#800000']
     unique_ndof_xs = []
     ncolors = len(colors)
-
+    
     rects = []
     labels = []
     legend_elements = []
@@ -99,7 +101,9 @@ def plot_mesh_p_3d(mesh, file_name = None, **kwargs):
     ax.set_xlim([0, Lx])
     ax.set_ylim([0, Ly])
     
-    colors = ['red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet']
+    colors = ['#e6194B', '#f58231', '#ffe119', '#bfef45', '#aaffc3', '#3cb44b',
+              '#469990', '#42d4f4', '#4363d8', '#dcbeff', '#911eb4', '#f032e6',
+              '#fabed4', '#ffffff', '#a9a9a9', '#9A6324', '#800000']
     unique_ndof_ths = []
     ncolors = len(colors)
 

@@ -121,43 +121,11 @@ def main():
         hp_amr_ang['has_th'] = has_th
         hp_amr_ang['spt_res_offset'] = 0
         hp_amr_ang['ang_res_offset'] = 2
-
-        # Adaptive Spatial hp-Refinement, Uniform Angular p-Refinement
-        hp_amr_spt['Ls']     = [Lx, Ly]
-        hp_amr_spt['pbcs']   = pbcs
-        hp_amr_spt['has_th'] = has_th
-        hp_amr_spt['ndofs']  = [3, 3, 4]
-        hp_amr_spt['nref_ang'] = 3
-        hp_amr_spt['nref_spt'] = 2
-        hp_amr_spt['ref_kind'] = 'all'
-        hp_amr_spt['spt_res_offset'] = 2
-        hp_amr_spt['ang_res_offset'] = 2
-        
-        # Adaptive Angular hp-Refinement, Uniform Spatial p-Refinement
-        hp_amr_ang['Ls']     = [Lx, Ly]
-        hp_amr_ang['pbcs']   = pbcs
-        hp_amr_ang['has_th'] = has_th
-        hp_amr_ang['ndofs']  = [3, 3, 4]
-        hp_amr_ang['nref_ang'] = 3
-        hp_amr_ang['nref_spt'] = 2
-        hp_amr_ang['ref_kind'] = 'all'
-        hp_amr_ang['spt_res_offset'] = 2
-        hp_amr_ang['ang_res_offset'] = 2
-
-        # Adaptive Spatio-Angular hp-Refinement
-        hp_amr_all['Ls']     = [Lx, Ly]
-        hp_amr_all['pbcs']   = pbcs
-        hp_amr_all['has_th'] = has_th
-        hp_amr_all['ndofs']  = [3, 3, 4]
-        hp_amr_all['nref_ang'] = 3
-        hp_amr_all['nref_spt'] = 2
-        hp_amr_all['spt_res_offset'] = 2
-        hp_amr_all['ang_res_offset'] = 2
         
         combos = [
-            #h_uni_ang,
+            h_uni_ang,
             p_uni_ang,
-            #h_amr_ang,
+            h_amr_ang,
             hp_amr_ang
             #hp_amr_spt,
             #hp_amr_ang,
@@ -167,9 +135,9 @@ def main():
     elif test_num == 2:
         # End-Combo Parameters
         # Maximum number of DOFs
-        max_ndof = 2**19
+        max_ndof = int(5e5)#2**19
         # Maximum number of trials
-        max_ntrial = 256
+        max_ntrial = 1024
         # Minimum error before cut-off
         min_err = 1.e-6
         # Maximum memory usage
@@ -184,9 +152,9 @@ def main():
         h_uni_ang['Ls']     = [Lx, Ly]
         h_uni_ang['pbcs']   = pbcs
         h_uni_ang['has_th'] = has_th
-        h_uni_ang['ndofs']  = [9, 9, 3]
-        h_uni_ang['nref_ang'] = 3
-        h_uni_ang['nref_spt'] = 2
+        h_uni_ang['ndofs']  = [3, 3, 3]
+        h_uni_ang['nref_ang'] = 2
+        h_uni_ang['nref_spt'] = 4
         h_uni_ang['spt_res_offset'] = 0
         h_uni_ang['ang_res_offset'] = 2
         
@@ -194,9 +162,9 @@ def main():
         p_uni_ang['Ls']     = [Lx, Ly]
         p_uni_ang['pbcs']   = pbcs
         p_uni_ang['has_th'] = has_th
-        p_uni_ang['ndofs']  = [9, 9, 3]
-        p_uni_ang['nref_ang'] = 3
-        p_uni_ang['nref_spt'] = 2
+        p_uni_ang['ndofs']  = [3, 3, 3]
+        p_uni_ang['nref_ang'] = 2
+        p_uni_ang['nref_spt'] = 4
         p_uni_ang['spt_res_offset'] = 0
         p_uni_ang['ang_res_offset'] = 2
         
@@ -204,9 +172,9 @@ def main():
         h_amr_ang['Ls']     = [Lx, Ly]
         h_amr_ang['pbcs']   = pbcs
         h_amr_ang['has_th'] = has_th
-        h_amr_ang['ndofs']  = [9, 9, 3]
-        h_amr_ang['nref_ang'] = 3
-        h_amr_ang['nref_spt'] = 2
+        h_amr_ang['ndofs']  = [3, 3, 3]
+        h_amr_ang['nref_ang'] = 2
+        h_amr_ang['nref_spt'] = 4
         h_amr_ang['spt_res_offset'] = 0
         h_amr_ang['ang_res_offset'] = 2
         
@@ -214,16 +182,16 @@ def main():
         hp_amr_ang['Ls']     = [Lx, Ly]
         hp_amr_ang['pbcs']   = pbcs
         hp_amr_ang['has_th'] = has_th
-        hp_amr_ang['ndofs']  = [9, 9, 3]
-        hp_amr_ang['nref_ang'] = 3
-        hp_amr_ang['nref_spt'] = 2
+        hp_amr_ang['ndofs']  = [3, 3, 3]
+        hp_amr_ang['nref_ang'] = 2
+        hp_amr_ang['nref_spt'] = 4
         hp_amr_ang['spt_res_offset'] = 0
         hp_amr_ang['ang_res_offset'] = 2
         
         combos = [
-            h_amr_ang,
+            #h_amr_ang,
             #hp_amr_ang,
-            #h_uni_ang,
+            h_uni_ang,
             p_uni_ang
         ]
         
@@ -258,7 +226,7 @@ def main():
         hp_amr_ang['Ls']     = [Lx, Ly]
         hp_amr_ang['pbcs']   = pbcs
         hp_amr_ang['has_th'] = has_th
-        hp_amr_ang['ndofs']  = [3, 3, 3]
+        hp_amr_ang['ndofs']  = [3, 3, 4]
         hp_amr_ang['nref_ang'] = 3
         hp_amr_ang['nref_spt'] = 3
         hp_amr_ang['ref_kind'] = 'all'
@@ -274,19 +242,30 @@ def main():
         hp_amr_all['nref_spt'] = 3
         hp_amr_all['spt_res_offset'] = 2
         hp_amr_all['ang_res_offset'] = 2
+
+        # Adaptive Angular h-Refinement
+        h_amr_ang['Ls']     = [Lx, Ly]
+        h_amr_ang['pbcs']   = pbcs
+        h_amr_ang['has_th'] = has_th
+        h_amr_ang['ndofs']  = [3, 3, 4]
+        h_amr_ang['nref_ang'] = 3
+        h_amr_ang['nref_spt'] = 3
+        h_amr_ang['spt_res_offset'] = 0
+        h_amr_ang['ang_res_offset'] = 2
         
         combos = [
-            hp_amr_spt,
+            #hp_amr_spt,
             #hp_amr_ang,
-            #hp_amr_all
+            #hp_amr_all,
+            h_amr_ang
         ]
         
     elif test_num == 4:
         # End-Combo Parameters
         # Maximum number of DOFs
-        max_ndof = 2**19
+        max_ndof = 2.4e6
         # Maximum number of trials
-        max_ntrial = 256
+        max_ntrial = 1024
         # Minimum error before cut-off
         min_err = 1.e-6
         # Maximum memory usage
@@ -301,9 +280,9 @@ def main():
         hp_amr_spt['Ls']     = [Lx, Ly]
         hp_amr_spt['pbcs']   = pbcs
         hp_amr_spt['has_th'] = has_th
-        hp_amr_spt['ndofs']  = [3, 3, 3]
-        hp_amr_spt['nref_ang'] = 3
-        hp_amr_spt['nref_spt'] = 3
+        hp_amr_spt['ndofs']  = [3, 3, 4]
+        hp_amr_spt['nref_ang'] = 4
+        hp_amr_spt['nref_spt'] = 2
         hp_amr_spt['ref_kind'] = 'all'
         hp_amr_spt['spt_res_offset'] = 2
         hp_amr_spt['ang_res_offset'] = 2
@@ -312,9 +291,9 @@ def main():
         hp_amr_ang['Ls']     = [Lx, Ly]
         hp_amr_ang['pbcs']   = pbcs
         hp_amr_ang['has_th'] = has_th
-        hp_amr_ang['ndofs']  = [3, 3, 3]
-        hp_amr_ang['nref_ang'] = 3
-        hp_amr_ang['nref_spt'] = 3
+        hp_amr_ang['ndofs']  = [3, 3, 4]
+        hp_amr_ang['nref_ang'] = 4
+        hp_amr_ang['nref_spt'] = 2
         hp_amr_ang['ref_kind'] = 'all'
         hp_amr_ang['spt_res_offset'] = 2
         hp_amr_ang['ang_res_offset'] = 2
@@ -323,15 +302,15 @@ def main():
         hp_amr_all['Ls']     = [Lx, Ly]
         hp_amr_all['pbcs']   = pbcs
         hp_amr_all['has_th'] = has_th
-        hp_amr_all['ndofs']  = [3, 3, 3]
-        hp_amr_all['nref_ang'] = 3
-        hp_amr_all['nref_spt'] = 3
+        hp_amr_all['ndofs']  = [3, 3, 4]
+        hp_amr_all['nref_ang'] = 4
+        hp_amr_all['nref_spt'] = 2
         hp_amr_all['spt_res_offset'] = 2
         hp_amr_all['ang_res_offset'] = 2
         
         combos = [
-            #hp_amr_spt,
-            #hp_amr_ang,
+            hp_amr_spt,
+            hp_amr_ang,
             hp_amr_all
         ]
         
@@ -405,13 +384,13 @@ def main():
         def kappa_y(y):
             return np.ones_like(y)
         def kappa(x, y):
-            r = (Ly / 5) - np.sqrt((x - (Lx / 2.))**2 + (y - (Ly/2.))**2)
-            return 1.1 / (1. + np.exp(-2. * 5 * r))
+            r = (Ly / 4.) - np.sqrt((x - (3. * Lx / 5.))**2 + (y - (2. * Ly / 5.))**2)
+            return 1.1 / (1. + np.exp(-2. * 7.5 * r))
 
         def sigma(x, y):
             return 0.9 * kappa(x, y)
 
-        g = 0.8
+        g = 0.9
         def Phi_HG(Th):
             return (1. - g**2) / (1 + g**2 - 2. * g * np.cos(Th))**(3./2.)
         [Phi_norm, abserr] = quad(lambda Th : Phi_HG(Th), 0., 2. * np.pi,
@@ -420,7 +399,11 @@ def main():
         def Phi(th, phi):
             val = (1. - g**2) / (1 + g**2 - 2. * g * np.cos(th - phi))**(3./2.)
             return val / Phi_norm
-
+        
+        #def Phi(th, phi):
+        #    val = (1. / (3. * np.pi)) * (1. + (np.cos(th - phi))**2)
+        #    return val
+        
         #def Phi(th, phi):
         #    return (1. / (2. * np.pi)) * np.ones_like(th)
         
@@ -430,7 +413,7 @@ def main():
         x_right = 0.
         y_top = Ly
         def bcs(x, y, th):
-            sth = 96. * 2.
+            sth = 96.
             if (y == y_top) or (x == x_right):
                 return np.exp(-((sth / (2. * np.pi)) * (th - (7. * np.pi / 4.)))**2)
             #if (y == y_top) and (th == (8. * np.pi / 5.)):
@@ -454,6 +437,9 @@ def main():
         def kappa(x, y):
             return 15. * kappa_x(x) * kappa_y(y) + 0.1
         
+        def kappa(x, y):
+            return 5. * np.ones_like(x) * np.ones_like(y)
+        
         def sigma(x, y):
             return 0.9 * kappa(x, y)
         
@@ -474,7 +460,7 @@ def main():
         def bcs(x, y, th):
             sth = 96.
             if (y == y_top):
-                return np.exp(-((sth / (2. * np.pi)) * (th - (3. * np.pi / 2.)))**2)
+                return np.exp(-((sth / (2. * np.pi)) * (th - (8. * np.pi / 5.)))**2)
             else:
                 return 0
         dirac = [None, None, None]
@@ -495,13 +481,17 @@ def main():
         def kappa_y(y):
             return (2. * Ay / np.pi) * np.arctan(np.sin(2. * np.pi * fy * (y - Ly / 3.)) / deltay) + 0.5
         def kappa(x, y):
-            r = (Ly / 5.) - np.sqrt((x - (Lx / 2.))**2 + (y - (Ly/2.))**2)
-            return 25. / (1. + np.exp(-2. * 20 * r))
+            r1 = (Ly / 5.) - np.sqrt((x - (9. * Lx / 20.))**2 + (y - (2. * Ly / 5.))**2)
+            kappa1 = 5. / (1. + np.exp(-2. * 15 * r1))
+
+            r2 = (Ly / 7.) - np.sqrt((x - (4. * Lx / 5.))**2 + (y - (1. * Ly / 4.))**2)
+            kappa2 = 5. / (1. + np.exp(-2. * 15 * r2))
+            return kappa1 + kappa2
 
         def sigma(x, y):
             return 0.9 * kappa(x, y)
 
-        g = 0.9
+        g = 0.8
         def Phi_HG(Th):
             return (1. - g**2) / (1 + g**2 - 2. * g * np.cos(Th))**(3./2.)
         [Phi_norm, abserr] = quad(lambda Th : Phi_HG(Th), 0., 2. * np.pi,
@@ -510,18 +500,16 @@ def main():
         def Phi(th, phi):
             val = (1. - g**2) / (1 + g**2 - 2. * g * np.cos(th - phi))**(3./2.)
             return val / Phi_norm
-
+        
         def f(x, y, th):
             return 0
         
         x_right = 0.
         y_top = Ly
         def bcs(x, y, th):
-            sth = 64.
+            sth = 48.
             if (y == y_top) or (x == x_right):
-                return np.exp(-((sth / (2. * np.pi)) * (th - (8. * np.pi / 5.)))**2)
-            #if (y == y_top) and (th == (8. * np.pi / 5.)):
-            #    return 1
+                return np.exp(-((sth / (2. * np.pi)) * (th - (7. * np.pi / 4.)))**2)
             else:
                 return 0
         dirac = [None, None, None]
@@ -594,7 +582,7 @@ def main():
         utils.print_msg(msg)
         
         while (((ndof < max_ndof)
-                and (trial <= max_ntrial)
+                #and (trial <= max_ntrial)
                 and (err > min_err)
                 and (mem_used <= 95.))
                or (trial <= 1)):
@@ -615,29 +603,32 @@ def main():
             )
             utils.print_msg(msg)
             
+            do_calc_err = ((ndof / prev_err_ndof) >= 1.2 or (max_ndof / ndof) < 1.05)
+            
             # Set up output directories
             trial_dir = os.path.join(combo_dir, 'trial_{}'.format(trial))
             os.makedirs(trial_dir, exist_ok = True)
             
             # Plot mesh
             if comm_rank == 0:
-                if do_plot_mesh:
+                if do_plot_mesh and (trial%10 == 0 or do_calc_err):
                     gen_mesh_plot(mesh, trial, trial_dir, blocking = False)
-                if do_plot_mesh_p:
+                if do_plot_mesh_p and (trial%10 == 0 or do_calc_err):
                     gen_mesh_plot_p(mesh, trial, trial_dir, blocking = False)
+            MPI_comm.barrier()
             
             # Get and plot numerical solution
             if test_num == 1:
                 ksp_type = 'lgmres'
                 pc_type = 'bjacobi'
             elif test_num == 2:
-                ksp_type = 'qmrcgs'
+                ksp_type = 'cgs'
                 pc_type = 'kaczmarz'
             elif test_num == 3:
-                ksp_type = 'dgmres'
-                pc_type = 'bjacobi'
+                ksp_type = 'cgs'
+                pc_type = 'kaczmarz'
             elif test_num == 4:
-                ksp_type = 'qmrcgs'
+                ksp_type = 'cgs'
                 pc_type = 'kaczmarz'
                 
             # If iterative solve fails, we refine the mesh
@@ -651,12 +642,12 @@ def main():
             PETSc.garbage_cleanup()
             # Plot mesh after the solve in case it gets refined
             if comm_rank == 0:
-                if do_plot_uh:
+                if do_plot_uh and (trial%10 == 0 or do_calc_err):
                     gen_uh_plot(mesh, uh_proj, trial, trial_dir, blocking = False)
             MPI_comm.barrier()
 
             # Get error and save it to file every so often
-            if ((ndof / prev_err_ndof) >= 1.2 or (max_ndof / ndof) < 1.05):
+            if do_calc_err:
                 if test_num == 1:
                     err_kind = 'anl'
                 elif test_num == 2:
@@ -812,12 +803,16 @@ def main():
                             # Randomly choose which, but probability depends on steering criterion
                             p_ang = avg_cell_ref_err / (avg_cell_ref_err + avg_col_ref_err)
                             ref_strs = ['ang_jmp', 'spt_jmp']
-                            ref_str = rng.choice(ref_strs, size = 1, p = (p_ang, 1 - p_ang))[0]
+                            #ref_str = rng.choice(ref_strs, size = 1, p = (p_ang, 1 - p_ang))[0]
+                            if p_ang >= 0.5:
+                                ref_str = ref_strs[0]
+                            else:
+                                ref_str = ref_strs[1]
                             if ref_str == 'ang_jmp':
                                 err_ind = jmp_ang_err_ind
                             else: # ref_str == 'spt_jmp'
                                 err_ind = jmp_spt_err_ind
-                        if do_plot_err_ind:
+                        if do_plot_err_ind and (trial%10 == 0  or do_calc_err):
                             gen_err_ind_plot(mesh, err_ind_ang, trial, trial_dir, 'err_ind_ang.png')
                             gen_err_ind_plot(mesh, err_ind_spt, trial, trial_dir, 'err_ind_spt.png')
                         avg_cell_ref_err_str = '{:.4E}'.format(jmp_ang_err_ind.avg_cell_ref_err)
@@ -844,7 +839,7 @@ def main():
                             
                             err_ind = jmp_ang_err_ind
                             ref_str = 'ang_jmp'
-                        if do_plot_err_ind:
+                        if do_plot_err_ind and (trial%10 == 0 or do_calc_err):
                             gen_err_ind_plot(mesh, err_ind, trial, trial_dir, 'err_ind_ang.png')
                         refs += [[ndof, ref_str]]
                     
@@ -934,12 +929,16 @@ def main():
                             # Randomly choose which, but probability depends on steering criterion
                             p_ang = avg_cell_ref_err / (avg_cell_ref_err + avg_col_ref_err)
                             ref_strs = ['ang_jmp', 'spt_jmp']
-                            ref_str = rng.choice(ref_strs, size = 1, p = (p_ang, 1 - p_ang))[0]
+                            #ref_str = rng.choice(ref_strs, size = 1, p = (p_ang, 1 - p_ang))[0]
+                            if p_ang >= 0.5:
+                                ref_str = ref_strs[0]
+                            else:
+                                ref_str = ref_strs[1]
                             if ref_str == 'ang_jmp':
                                 err_ind = jmp_ang_err_ind
                             else: # ref_str == 'spt_jmp'
                                 err_ind = jmp_spt_err_ind
-                        if do_plot_err_ind:
+                        if do_plot_err_ind and (trial%10 == 0 or do_calc_err):
                             gen_err_ind_plot(mesh, err_ind_ang, trial, trial_dir, 'err_ind_ang.png')
                             gen_err_ind_plot(mesh, err_ind_spt, trial, trial_dir, 'err_ind_spt.png')
                         avg_cell_ref_err_str = '{:.4E}'.format(jmp_ang_err_ind.avg_cell_ref_err)
@@ -965,7 +964,7 @@ def main():
                                                                **kwargs_spt_jmp)
                             err_ind = jmp_spt_err_ind
                             ref_str = 'spt_jmp'
-                        if do_plot_err_ind:
+                        if do_plot_err_ind and (trial%10 == 0 or do_calc_err):
                             gen_err_ind_plot(mesh, err_ind, trial, trial_dir, 'err_ind_spt.png')
                         refs += [[ndof, ref_str]]
                     
@@ -1038,12 +1037,16 @@ def main():
                         # Randomly choose which, but probability depends on steering criterion
                         p_ang = avg_cell_ref_err / (avg_cell_ref_err + avg_col_ref_err)
                         ref_strs = ['ang_jmp', 'spt_jmp']
-                        ref_str = rng.choice(ref_strs, size = 1, p = (p_ang, 1 - p_ang))[0]
+                        #ref_str = rng.choice(ref_strs, size = 1, p = (p_ang, 1 - p_ang))[0]
+                        if p_ang >= 0.5:
+                            ref_str = ref_strs[0]
+                        else:
+                            ref_str = ref_strs[1]
                         if ref_str == 'ang_jmp':
                             err_ind = jmp_ang_err_ind
                         else: # ref_str == 'spt_jmp'
                             err_ind = jmp_spt_err_ind
-                    if do_plot_err_ind:
+                    if do_plot_err_ind and (trial%10 == 0 or do_calc_err):
                         gen_err_ind_plot(mesh, err_ind_ang, trial, trial_dir, 'err_ind_ang.png')
                         gen_err_ind_plot(mesh, err_ind_spt, trial, trial_dir, 'err_ind_spt.png')
                     avg_cell_ref_err_str = '{:.4E}'.format(jmp_ang_err_ind.avg_cell_ref_err)

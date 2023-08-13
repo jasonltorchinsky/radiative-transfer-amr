@@ -45,9 +45,12 @@ def main():
             p_uni_ang,
             h_amr_ang,
             hp_amr_ang
-            #hp_amr_spt,
-            #hp_amr_ang,
-            #hp_amr_all
+        ]
+        combo_long_names = [
+            r'$h$-Unif. Ang.',
+            r'$p$-Unif. Ang.',
+            r'$h$-Adap. Ang.',
+            r'$hp$-Adap. Ang.'
         ]
         
     elif test_num == 2:
@@ -56,6 +59,13 @@ def main():
             p_uni_ang,
             h_amr_ang,
             hp_amr_ang
+        ]
+        
+        combo_long_names = [
+            r'$h$-Unif. Ang.',
+            r'$p$-Unif. Ang.',
+            r'$h$-Adap. Ang.',
+            r'$hp$-Adap. Ang.'
         ]
         
     elif test_num == 3:
@@ -71,6 +81,11 @@ def main():
             hp_amr_ang,
             hp_amr_all
         ]
+        combo_long_names = [
+            r'$hp$-Adap. Spt. with $p$-Unif. Ang.',
+            r'$hp$-Adap. Ang. with $p$-Unif. Spt.',
+            r'$hp$-Adap. Ang. with $hp$-Adap. Spt.'
+        ]
         
     fig, ax = plt.subplots()
     
@@ -79,6 +94,7 @@ def main():
     colors = ['#000000', '#E69F00', '#56B4E9', '#009E73',
               '#F0E442', '#0072B2', '#D55E00', '#CC79A7',
               '#882255']
+    mstyles = ['.', 'v', 's', '*', 'h', 'D']
     
     for cc in range(0, ncombo):
         combo      = combos[cc]
@@ -97,10 +113,12 @@ def main():
         errs = json.load(errs_file)
         errs_file.close()
         
-        ax.scatter(ndofs, errs,
-                   label     = '{}'.format(combo_name),
-                   color     = colors[cc]
-                   )
+        ax.plot(ndofs, errs,
+                label     = '{}'.format(combo_long_names[cc]),
+                color     = colors[cc%len(colors)],
+                marker    = mstyles[cc%len(mstyles)],
+                linestyle = ':'
+                )
         
         # Get best-fit line
         #[a, b] = np.polyfit(np.log10(ndofs), np.log10(errs), 1)
@@ -114,7 +132,7 @@ def main():
         
     ax.legend()
     
-    ax.set_xscale('log', base = 10)
+    #ax.set_xscale('log', base = 10)
     ax.set_yscale('log', base = 10)
     
     ax.set_xlabel('Total Degrees of Freedom')
