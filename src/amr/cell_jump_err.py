@@ -202,11 +202,11 @@ def cell_jump_err_new(mesh, proj, **kwargs):
                             err_ind.cols[col_key].cells[cell_key].ref_form = hp_steer_cell(mesh, proj, col_key, cell_key)
                     else:
                         err_ind.cols[col_key].cells[cell_key].ref_form = None
-    if kwargs['ref_col']:
-        err_ind.avg_col_ref_err /= col_nref
+    #if kwargs['ref_col']:
+    #    err_ind.avg_col_ref_err /= col_nref
         
-    if kwargs['ref_cell']:
-        err_ind.avg_cell_ref_err /= cell_nref
+    #if kwargs['ref_cell']:
+    #    err_ind.avg_cell_ref_err /= cell_nref
         
     return err_ind
 
@@ -353,10 +353,10 @@ def cell_jump_err(mesh, proj, **kwargs):
                             err_ind.cols[col_key].cells[cell_key].ref_form = hp_steer_cell(mesh, proj, col_key, cell_key)
                     else:
                         err_ind.cols[col_key].cells[cell_key].ref_form = None
-    if kwargs['ref_col']:
-        err_ind.avg_col_ref_err /= col_nref
+    #if kwargs['ref_col']:
+    #    err_ind.avg_col_ref_err /= col_nref
         
-    if kwargs['ref_cell']:
-        err_ind.avg_cell_ref_err /= cell_nref
+    #if kwargs['ref_cell']:
+    #    err_ind.avg_cell_ref_err /= cell_nref
         
     return err_ind

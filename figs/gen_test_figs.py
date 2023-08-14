@@ -263,7 +263,7 @@ def main():
     elif test_num == 4:
         # End-Combo Parameters
         # Maximum number of DOFs
-        max_ndof = 2.4e6
+        max_ndof = int(5e5)
         # Maximum number of trials
         max_ntrial = 1024
         # Minimum error before cut-off
@@ -281,7 +281,7 @@ def main():
         hp_amr_spt['pbcs']   = pbcs
         hp_amr_spt['has_th'] = has_th
         hp_amr_spt['ndofs']  = [3, 3, 4]
-        hp_amr_spt['nref_ang'] = 4
+        hp_amr_spt['nref_ang'] = 3
         hp_amr_spt['nref_spt'] = 2
         hp_amr_spt['ref_kind'] = 'all'
         hp_amr_spt['spt_res_offset'] = 2
@@ -292,7 +292,7 @@ def main():
         hp_amr_ang['pbcs']   = pbcs
         hp_amr_ang['has_th'] = has_th
         hp_amr_ang['ndofs']  = [3, 3, 4]
-        hp_amr_ang['nref_ang'] = 4
+        hp_amr_ang['nref_ang'] = 3
         hp_amr_ang['nref_spt'] = 2
         hp_amr_ang['ref_kind'] = 'all'
         hp_amr_ang['spt_res_offset'] = 2
@@ -303,7 +303,7 @@ def main():
         hp_amr_all['pbcs']   = pbcs
         hp_amr_all['has_th'] = has_th
         hp_amr_all['ndofs']  = [3, 3, 4]
-        hp_amr_all['nref_ang'] = 4
+        hp_amr_all['nref_ang'] = 3
         hp_amr_all['nref_spt'] = 2
         hp_amr_all['spt_res_offset'] = 2
         hp_amr_all['ang_res_offset'] = 2
@@ -482,10 +482,10 @@ def main():
             return (2. * Ay / np.pi) * np.arctan(np.sin(2. * np.pi * fy * (y - Ly / 3.)) / deltay) + 0.5
         def kappa(x, y):
             r1 = (Ly / 5.) - np.sqrt((x - (9. * Lx / 20.))**2 + (y - (2. * Ly / 5.))**2)
-            kappa1 = 5. / (1. + np.exp(-2. * 15 * r1))
+            kappa1 = 10. / (1. + np.exp(-2. * 15 * r1))
 
             r2 = (Ly / 7.) - np.sqrt((x - (4. * Lx / 5.))**2 + (y - (1. * Ly / 4.))**2)
-            kappa2 = 5. / (1. + np.exp(-2. * 15 * r2))
+            kappa2 = 10. / (1. + np.exp(-2. * 15 * r2))
             return kappa1 + kappa2
 
         def sigma(x, y):
@@ -603,7 +603,7 @@ def main():
             )
             utils.print_msg(msg)
             
-            do_calc_err = ((ndof / prev_err_ndof) >= 1.2 or (max_ndof / ndof) < 1.05)
+            do_calc_err = ((ndof / prev_err_ndof) >= 1.2 or ((max_ndof / ndof) <= 1.1 and ((ndof / prev_err_ndof) >= 1.1)))
             
             # Set up output directories
             trial_dir = os.path.join(combo_dir, 'trial_{}'.format(trial))
@@ -628,17 +628,17 @@ def main():
                 ksp_type = 'cgs'
                 pc_type = 'kaczmarz'
             elif test_num == 4:
-                ksp_type = 'cgs'
+                ksp_type = 'fgmres'
                 pc_type = 'kaczmarz'
                 
             # If iterative solve fails, we refine the mesh
             residual_file_name = 'residuals_{}.png'.format(trial)
             residual_file_path = os.path.join(trial_dir, residual_file_name)
-            uh_proj = get_soln(mesh, kappa, sigma, Phi, bcs_dirac, f,
-                               trial,
-                               ksp_type = ksp_type,
-                               pc_type = pc_type,
-                               residual_file_path = residual_file_path)
+            [uh_proj, info] = get_soln(mesh, kappa, sigma, Phi, bcs_dirac, f,
+                                       trial,
+                                       ksp_type = ksp_type,
+                                       pc_type = pc_type,
+                                       residual_file_path = residual_file_path)
             PETSc.garbage_cleanup()
             # Plot mesh after the solve in case it gets refined
             if comm_rank == 0:
@@ -817,7 +817,7 @@ def main():
                             gen_err_ind_plot(mesh, err_ind_spt, trial, trial_dir, 'err_ind_spt.png')
                         avg_cell_ref_err_str = '{:.4E}'.format(jmp_ang_err_ind.avg_cell_ref_err)
                         avg_col_ref_err_str = '{:.4E}'.format(jmp_spt_err_ind.avg_col_ref_err)
-                        refs += [[ndof, ref_str, avg_cell_ref_err_str, avg_col_ref_err_str]]
+                        refs += [[ndof, ref_str, avg_cell_ref_err_str, avg_col_ref_err_str, info]]
                     else: # Just refining in angle
                         # Calculate nneg error
                         kwargs_ang_nneg  = combo['kwargs_ang_nneg']
@@ -841,7 +841,7 @@ def main():
                             ref_str = 'ang_jmp'
                         if do_plot_err_ind and (trial%10 == 0 or do_calc_err):
                             gen_err_ind_plot(mesh, err_ind, trial, trial_dir, 'err_ind_ang.png')
-                        refs += [[ndof, ref_str]]
+                        refs += [[ndof, ref_str, info]]
                     
                     file_name = 'refs.txt'
                     file_path = os.path.join(combo_dir, file_name)
@@ -943,7 +943,7 @@ def main():
                             gen_err_ind_plot(mesh, err_ind_spt, trial, trial_dir, 'err_ind_spt.png')
                         avg_cell_ref_err_str = '{:.4E}'.format(jmp_ang_err_ind.avg_cell_ref_err)
                         avg_col_ref_err_str = '{:.4E}'.format(jmp_spt_err_ind.avg_col_ref_err)
-                        refs += [[ndof, ref_str, avg_cell_ref_err_str, avg_col_ref_err_str]]
+                        refs += [[ndof, ref_str, avg_cell_ref_err_str, avg_col_ref_err_str, info]]
                     else: # Just refining in space
                         # Calculate nneg errors
                         kwargs_spt_nneg  = combo['kwargs_spt_nneg']
@@ -966,7 +966,7 @@ def main():
                             ref_str = 'spt_jmp'
                         if do_plot_err_ind and (trial%10 == 0 or do_calc_err):
                             gen_err_ind_plot(mesh, err_ind, trial, trial_dir, 'err_ind_spt.png')
-                        refs += [[ndof, ref_str]]
+                        refs += [[ndof, ref_str, info]]
                     
                     file_name = 'refs.txt'
                     file_path = os.path.join(combo_dir, file_name)
@@ -1051,7 +1051,7 @@ def main():
                         gen_err_ind_plot(mesh, err_ind_spt, trial, trial_dir, 'err_ind_spt.png')
                     avg_cell_ref_err_str = '{:.4E}'.format(jmp_ang_err_ind.avg_cell_ref_err)
                     avg_col_ref_err_str = '{:.4E}'.format(jmp_spt_err_ind.avg_col_ref_err)
-                    refs += [[ndof, ref_str, avg_cell_ref_err_str, avg_col_ref_err_str]]
+                    refs += [[ndof, ref_str, avg_cell_ref_err_str, avg_col_ref_err_str, info]]
                     
                     file_name = 'refs.txt'
                     file_path = os.path.join(combo_dir, file_name)
@@ -1380,7 +1380,7 @@ def get_soln(mesh, kappa, sigma, Phi, bcs_dirac, f, trial, **kwargs):
     )
     utils.print_msg(msg)
 
-    return uh_proj
+    return [uh_proj, info]
 
 def get_err(mesh, uh_proj, u, kappa, sigma, Phi, bcs_dirac, f,
             trial, figs_dir, **kwargs):

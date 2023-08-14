@@ -553,8 +553,8 @@ def col_jump_err_old(mesh, uh_proj, **kwargs):
                         err_ind.cols[col_key].ref_form = hp_steer_col(mesh, uh_proj, col_key)
                 else: # Needn't be refined
                     err_ind.cols[col_key].ref_form = None
-    if kwargs['ref_col']:
-        err_ind.avg_col_ref_err /= col_nref
+    #if kwargs['ref_col']:
+    #    err_ind.avg_col_ref_err /= col_nref
         
     return err_ind
 

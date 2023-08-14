@@ -119,11 +119,12 @@ def rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     ksp.create(comm = PETSc_comm)
     ksp.setType(ksp_type)
     ksp.setOperators(M_intr)
-    [rtol, atol, divtol, max_it] = [1.e-10, 1.e-30, 1.e15, 2500]
+    [rtol, atol, divtol, max_it] = [1.e-9, 1.e-30, 1.e35, 5000]
+    GMRESRestart = 955
     ksp.setTolerances(rtol   = rtol,   atol   = atol,
                       divtol = divtol, max_it = max_it)
     ksp.setComputeSingularValues(True)
-    ksp.setGMRESRestart(155)
+    ksp.setGMRESRestart(GMRESRestart)
     
     pc_type = kwargs['pc_type']
     pc = ksp.getPC()
@@ -142,12 +143,14 @@ def rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     best_lhs_vec = copy.deepcopy(lhs_vec)
     
     # If the first solve fails, try try again
-    ksp_list = ['qmrcgs', 'fbcgsr', 'cgs', 'pgmres', 'dgmres', 'gmres',
-                'gcr', 'lgmres', 'fgmres']
+    ksp_list = ['qmrcgs', 'lgmres', 'fbcgsr', 'dgmres', 'cgs', 'pgmres', 'gmres',
+                'gcr','fgmres']
     ksp_idx = 0
+    info = MPI_comm.bcast(info, root = 0)
     nsolve = 0
-    while (info < 0) or (info == 4) and nsolve < 25: # Solve failed, try something else
+    while False and ((info < 0) or (info == 4) and nsolve < 25): # Solve failed, try something else
         ksp.destroy()
+        MPI_comm.barrier()
         msg = (
             'Iterative solve {} - {} failed.\n'.format(pc_type, ksp_type) +
             12 * ' ' + 'Converged Reason: {}\n'.format(info) +
@@ -168,7 +171,7 @@ def rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
             lhs_vec = 0. * lhs_vec
         else:
             lhs_vec = copy.deepcopy(best_lhs_vec)
-        
+        MPI_comm.barrier()
         ksp_type = ksp_list[ksp_idx]
         ksp = PETSc.KSP()
         ksp.create(comm = PETSc_comm)
@@ -177,7 +180,7 @@ def rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
         ksp.setTolerances(rtol   = rtol,   atol   = atol,
                           divtol = divtol, max_it = max_it)
         ksp.setComputeSingularValues(True)
-        ksp.setGMRESRestart(155)
+        ksp.setGMRESRestart(GMRESRestart)
         
         pc_type = kwargs['pc_type']
         pc = ksp.getPC()
@@ -193,6 +196,7 @@ def rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
         residuals = ksp.getConvergenceHistory()
         n_iter    = ksp.getIterationNumber()
         res_f     = ksp.getResidualNorm()
+        MPI_comm.bcast(res_f, root = 0)
         if res_f > 0.:
             if res_f <= best_res:
                 best_res = res_f
@@ -202,7 +206,7 @@ def rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
         MPI_comm.barrier()
         
     # If the system is fairly small and the interative solves failed, try a direct solve
-    if (info < 0) or (info == 4) and (ndof < 1.2e5):
+    if ((info < 0) or (info == 4)) and (ndof < 1.2e5):
         ksp.destroy()
         msg = (
             'Iterative solve {} - {} failed.\n'.format(pc_type, ksp_type) +
@@ -222,7 +226,7 @@ def rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
         ksp.setTolerances(rtol   = rtol,   atol   = atol,
                           divtol = divtol, max_it = max_it)
         ksp.setComputeSingularValues(True)
-        ksp.setGMRESRestart(155)
+        ksp.setGMRESRestart(GMRESRestart)
         
         pc = ksp.getPC()
         pc_type = 'lu'
@@ -254,6 +258,7 @@ def rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
         if file_path:
             fig, ax = plt.subplots()
             plt.semilogy(residuals)
+            plt.axhline(rtol)
             title = '{} - {}, {:.4E}\nConvergence Reason : {}'.format(pc_type, ksp_type, cond, info)
             ax.set_title(title)
             #plt.tight_layout()
