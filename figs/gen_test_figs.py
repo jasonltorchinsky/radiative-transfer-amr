@@ -135,7 +135,7 @@ def main():
     elif test_num == 2:
         # End-Combo Parameters
         # Maximum number of DOFs
-        max_ndof = int(5e5)#2**19
+        max_ndof = int(2.8e5)#2**19
         # Maximum number of trials
         max_ntrial = 1024
         # Minimum error before cut-off
@@ -144,7 +144,7 @@ def main():
         max_mem = 95
         
         # Each combo in test has same starting mesh, but we give specifics here for flexibility
-        [Lx, Ly] = [2., 2.]
+        [Lx, Ly] = [3., 2.]
         pbcs     = [False, False]
         has_th   = True
         
@@ -152,45 +152,45 @@ def main():
         h_uni_ang['Ls']     = [Lx, Ly]
         h_uni_ang['pbcs']   = pbcs
         h_uni_ang['has_th'] = has_th
-        h_uni_ang['ndofs']  = [3, 3, 3]
-        h_uni_ang['nref_ang'] = 2
-        h_uni_ang['nref_spt'] = 4
+        h_uni_ang['ndofs']  = [3, 3, 4]
+        h_uni_ang['nref_ang'] = 3
+        h_uni_ang['nref_spt'] = 3
         h_uni_ang['spt_res_offset'] = 0
-        h_uni_ang['ang_res_offset'] = 2
+        h_uni_ang['ang_res_offset'] = 3
         
         # Uniform Angular p-Refinement
         p_uni_ang['Ls']     = [Lx, Ly]
         p_uni_ang['pbcs']   = pbcs
         p_uni_ang['has_th'] = has_th
-        p_uni_ang['ndofs']  = [3, 3, 3]
-        p_uni_ang['nref_ang'] = 2
-        p_uni_ang['nref_spt'] = 4
+        p_uni_ang['ndofs']  = [3, 3, 4]
+        p_uni_ang['nref_ang'] = 3
+        p_uni_ang['nref_spt'] = 3
         p_uni_ang['spt_res_offset'] = 0
-        p_uni_ang['ang_res_offset'] = 2
+        p_uni_ang['ang_res_offset'] = 3
         
         # Adaptive Angular h-Refinement
         h_amr_ang['Ls']     = [Lx, Ly]
         h_amr_ang['pbcs']   = pbcs
         h_amr_ang['has_th'] = has_th
-        h_amr_ang['ndofs']  = [3, 3, 3]
-        h_amr_ang['nref_ang'] = 2
-        h_amr_ang['nref_spt'] = 4
+        h_amr_ang['ndofs']  = [3, 3, 4]
+        h_amr_ang['nref_ang'] = 3
+        h_amr_ang['nref_spt'] = 3
         h_amr_ang['spt_res_offset'] = 0
-        h_amr_ang['ang_res_offset'] = 2
+        h_amr_ang['ang_res_offset'] = 3
         
         # Adaptive Angular hp-Refinement
         hp_amr_ang['Ls']     = [Lx, Ly]
         hp_amr_ang['pbcs']   = pbcs
         hp_amr_ang['has_th'] = has_th
-        hp_amr_ang['ndofs']  = [3, 3, 3]
-        hp_amr_ang['nref_ang'] = 2
-        hp_amr_ang['nref_spt'] = 4
+        hp_amr_ang['ndofs']  = [3, 3, 4]
+        hp_amr_ang['nref_ang'] = 3
+        hp_amr_ang['nref_spt'] = 3
         hp_amr_ang['spt_res_offset'] = 0
-        hp_amr_ang['ang_res_offset'] = 2
+        hp_amr_ang['ang_res_offset'] = 3
         
         combos = [
-            #h_amr_ang,
-            #hp_amr_ang,
+            h_amr_ang,
+            hp_amr_ang,
             h_uni_ang,
             p_uni_ang
         ]
@@ -263,7 +263,7 @@ def main():
     elif test_num == 4:
         # End-Combo Parameters
         # Maximum number of DOFs
-        max_ndof = int(5e5)
+        max_ndof = int(3.2e5)
         # Maximum number of trials
         max_ntrial = 1024
         # Minimum error before cut-off
@@ -309,7 +309,7 @@ def main():
         hp_amr_all['ang_res_offset'] = 2
         
         combos = [
-            hp_amr_spt,
+            #hp_amr_spt,
             hp_amr_ang,
             hp_amr_all
         ]
@@ -384,7 +384,7 @@ def main():
         def kappa_y(y):
             return np.ones_like(y)
         def kappa(x, y):
-            r = (Ly / 4.) - np.sqrt((x - (3. * Lx / 5.))**2 + (y - (2. * Ly / 5.))**2)
+            r = (Ly / 3.) - np.sqrt((x - (3. * Lx / 5.))**2 + (y - (2. * Ly / 5.))**2)
             return 1.1 / (1. + np.exp(-2. * 7.5 * r))
 
         def sigma(x, y):
@@ -413,7 +413,7 @@ def main():
         x_right = 0.
         y_top = Ly
         def bcs(x, y, th):
-            sth = 96.
+            sth = 96. * 4.
             if (y == y_top) or (x == x_right):
                 return np.exp(-((sth / (2. * np.pi)) * (th - (7. * np.pi / 4.)))**2)
             #if (y == y_top) and (th == (8. * np.pi / 5.)):
@@ -504,11 +504,11 @@ def main():
         def f(x, y, th):
             return 0
         
-        x_right = 0.
+        x_left = 0.
         y_top = Ly
         def bcs(x, y, th):
             sth = 48.
-            if (y == y_top) or (x == x_right):
+            if (y == y_top) or (x == x_left):
                 return np.exp(-((sth / (2. * np.pi)) * (th - (7. * np.pi / 4.)))**2)
             else:
                 return 0
@@ -622,7 +622,7 @@ def main():
                 ksp_type = 'lgmres'
                 pc_type = 'bjacobi'
             elif test_num == 2:
-                ksp_type = 'cgs'
+                ksp_type = 'fgmres'
                 pc_type = 'kaczmarz'
             elif test_num == 3:
                 ksp_type = 'cgs'
