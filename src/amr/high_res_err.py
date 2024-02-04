@@ -1,12 +1,20 @@
+"""
+Calculates high-resolution error.
+"""
+
+# Standard Library Imports
 import copy
-import numpy           as np
 import os
+import time
+
+# Third-Party Library Imports
+import numpy           as np
 import petsc4py
 import scipy.integrate as integrate
-import time
 from   mpi4py          import MPI
 from   petsc4py        import PETSc
 
+# Local Library Imports
 import dg.mesh             as ji_mesh
 import dg.projection       as proj
 import dg.projection.utils
@@ -17,6 +25,8 @@ import utils
 from .Error_Indicator import Error_Indicator
 from .hp_steer        import hp_steer_col, hp_steer_cell
 
+
+# Library Variables
 mesh_hr = None
 uh_hr   = None
 intg_uh_hr_2 = None
@@ -374,7 +384,7 @@ def high_res_err(mesh, uh_proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
         mesh_hr = None
         ndof_hr = None
         ndof_hr = MPI_comm.bcast(ndof_hr, root = 0)
-    [uh_hr, info] = rt.rtdg(mesh_hr, kappa, sigma, Phi, bcs_dirac, f,
+    [uh_hr, info, _] = rt.rtdg(mesh_hr, kappa, sigma, Phi, bcs_dirac, f,
                             **kwargs)
     PETSc.garbage_cleanup()
     

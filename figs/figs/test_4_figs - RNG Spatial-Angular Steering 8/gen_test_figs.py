@@ -1,26 +1,18 @@
-"""
-Script to generate the figures included in the publication
-"""
-
-# Standard Library Imports
 import argparse
 import gc
 import json
-import os
-import sys
-from   time            import perf_counter
-
-# Third-Party Library Imports
 import matplotlib        as mpl
 import matplotlib.pyplot as plt
 import numpy             as np
+import os
 import petsc4py
 import psutil
+import sys
 from   mpi4py          import MPI
 from   petsc4py        import PETSc
 from   scipy.integrate import quad, dblquad
+from   time            import perf_counter
 
-# Local Library Imports
 sys.path.append('../src')
 import amr
 import amr.utils
@@ -80,7 +72,6 @@ def main():
     combo_names = []
     combo_ndofs = {}
     combo_errs  = {}
-    combo_nnz   = {}
     
     perf_all_0 = perf_counter()
     msg = ( 'Generating test {} figures...\n'.format(test_num) )
@@ -318,8 +309,8 @@ def main():
         hp_amr_all['ang_res_offset'] = 2
         
         combos = [
-            hp_amr_ang,
-            hp_amr_all,
+            #hp_amr_ang,
+            #hp_amr_all,
             hp_amr_spt
         ]
         
@@ -490,11 +481,11 @@ def main():
         def kappa_y(y):
             return (2. * Ay / np.pi) * np.arctan(np.sin(2. * np.pi * fy * (y - Ly / 3.)) / deltay) + 0.5
         def kappa(x, y):
-            r1 = (Ly / 7.) - np.sqrt((x - (14. * Lx / 20.))**2 + (y - (1. * Ly / 4.))**2)
+            r1 = (Ly / 5.) - np.sqrt((x - (9. * Lx / 20.))**2 + (y - (2. * Ly / 5.))**2)
             kappa1 = (10. - 10.) / (1. + np.exp(-2. * (15 + 0) * r1))
 
-            r2 = (Ly / 9.) - np.sqrt((x - (4. * Lx / 5.))**2 + (y - (1. * Ly / 4.))**2)
-            kappa2 = (10. + 30.) / (1. + np.exp(-2. * (15. + 10.) * r2))
+            r2 = (Ly / 7.) - np.sqrt((x - (4. * Lx / 5.))**2 + (y - (1. * Ly / 4.))**2)
+            kappa2 = (10. + 30.) / (1. + np.exp(-2. * (15 + 0) * r2))
             return kappa1 + kappa2
 
         def sigma(x, y):
@@ -567,15 +558,15 @@ def main():
         # Solve the problem over several trials
         ndofs = []
         errs  = []
-        nnz   = []
         refs  = []
 
         # Parameters for stopping an experiment
         if comm_rank == 0:
             ndof = mesh.get_ndof()
+            ndof = MPI_comm.bcast(ndof, root = 0)
         else:
             ndof = None
-        ndof = MPI_comm.bcast(ndof, root = 0)
+            ndof = MPI_comm.bcast(ndof, root = 0)
         prev_ndof = ndof
         trial = 0
         err   = 1.
@@ -598,9 +589,10 @@ def main():
             mem_used = psutil.virtual_memory()[2]
             if comm_rank == 0:
                 ndof = mesh.get_ndof()
+                ndof = MPI_comm.bcast(ndof, root = 0)
             else:
                 ndof = None
-            ndof = MPI_comm.bcast(ndof, root = 0)
+                ndof = MPI_comm.bcast(ndof, root = 0)
             
             perf_trial_0 = perf_counter()
             msg = (
@@ -642,7 +634,7 @@ def main():
             # If iterative solve fails, we refine the mesh
             residual_file_name = 'residuals_{}.png'.format(trial)
             residual_file_path = os.path.join(trial_dir, residual_file_name)
-            [uh_proj, info, mat_info] = get_soln(mesh, kappa, sigma, Phi, bcs_dirac, f,
+            [uh_proj, info] = get_soln(mesh, kappa, sigma, Phi, bcs_dirac, f,
                                        trial,
                                        ksp_type = ksp_type,
                                        pc_type = pc_type,
@@ -686,7 +678,6 @@ def main():
                 
                 ndofs += [ndof]
                 errs  += [err]
-                nnz   += [int(mat_info["nz_used"])]
                 prev_err_ndof = ndof
                 
                 if comm_rank == 0:
@@ -698,10 +689,6 @@ def main():
                     file_name = 'ndofs.txt'
                     file_path = os.path.join(combo_dir, file_name)
                     json.dump(ndofs, open(file_path, 'w'))
-
-                    file_name = 'nnz.txt'
-                    file_path = os.path.join(combo_dir, file_name)
-                    json.dump(nnz, open(file_path, 'w'))
                 
             # Refine the mesh, plot error indicators along the way
             if   combo['short_name'] == 'h-uni-ang':
@@ -1161,7 +1148,6 @@ def main():
                 
                 combo_ndofs[combo_name] = ndofs
                 combo_errs[combo_name]  = errs
-                combo_nnz[combo_name]   = mat_info["nz_used"]
                 
             perf_combo_f = perf_counter()
             perf_combo_dt = perf_combo_f - perf_combo_0
@@ -1381,7 +1367,7 @@ def get_soln(mesh, kappa, sigma, Phi, bcs_dirac, f, trial, **kwargs):
     )
     utils.print_msg(msg)
     
-    [uh_proj, info, mat_info] = rt.rtdg(mesh, kappa, sigma, Phi, bcs_dirac, f,
+    [uh_proj, info] = rt.rtdg(mesh, kappa, sigma, Phi, bcs_dirac, f,
                                   verbose = True, **kwargs)
     PETSc.garbage_cleanup()
     
@@ -1394,7 +1380,7 @@ def get_soln(mesh, kappa, sigma, Phi, bcs_dirac, f, trial, **kwargs):
     )
     utils.print_msg(msg)
 
-    return [uh_proj, info, mat_info]
+    return [uh_proj, info]
 
 def get_err(mesh, uh_proj, u, kappa, sigma, Phi, bcs_dirac, f,
             trial, figs_dir, **kwargs):

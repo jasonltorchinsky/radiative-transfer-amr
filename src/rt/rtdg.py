@@ -1,18 +1,26 @@
+"""
+Returns the solution.
+"""
+
+# Standard Library Imports
 import copy
 import gc
 import inspect
+import sys
+from   inspect      import signature
+from   time         import perf_counter
+
+# Third-Party Library Imports
 import numpy               as np
 import matplotlib.pyplot   as plt
 import petsc4py
 import psutil
 import scipy.sparse        as sp
 import scipy.sparse.linalg as spla
-import sys
 from   mpi4py       import MPI
 from   petsc4py     import PETSc
-from   inspect      import signature
-from   time         import perf_counter
 
+# Local Library Imports
 import dg.matrix     as mat
 import dg.projection as proj
 import utils
@@ -72,6 +80,8 @@ def rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     M      = M_conv + M_mass_scat
     intr_mask = mat.get_intr_mask(mesh, **kwargs)
     [M_intr, M_bdry] = mat.split_matrix(mesh, M, intr_mask)
+
+    mat_info = M_intr.getInfo()
     
     if kwargs['precondition']:
         [M_pc, _] = mat.split_matrix(mesh, M_pc, intr_mask)
@@ -285,4 +295,4 @@ def rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
         uh_proj = None
     MPI_comm.barrier()
         
-    return [uh_proj, info]
+    return [uh_proj, info, mat_info]
