@@ -1,13 +1,21 @@
+"""
+Generates compilation figures for a given test case.
+"""
+
+# Standard Library Imports
 import argparse
 import json
+import os
+import sys
+from   time            import perf_counter
+
+# Third-Party Library Imports
 import matplotlib        as mpl
 import matplotlib.pyplot as plt
 import numpy             as np
-import os
-import sys
 from   scipy.integrate import quad, dblquad
-from   time            import perf_counter
 
+# Local Library Imports
 from   test_combos   import h_uni_ang, p_uni_ang, hp_uni_ang, \
     h_uni_spt, p_uni_spt, hp_uni_spt, \
     h_uni_all, p_uni_all, hp_uni_all, \
@@ -120,16 +128,6 @@ def main():
                 linestyle = ':'
                 )
         
-        # Get best-fit line
-        #[a, b] = np.polyfit(np.log10(ndofs), np.log10(errs), 1)
-        #xx = np.logspace(np.log10(ndofs[0]), np.log10(ndofs[-1]))
-        #yy = 10**b * xx**a
-        #ax.plot(xx, yy,
-        #        label = '{}: {:4.2f}'.format(combo_name, a),
-        #        color = colors[cc],
-        #        linestyle = '--'
-        #        )
-        
     ax.legend()
     
     #ax.set_xscale('log', base = 10)
@@ -144,7 +142,54 @@ def main():
     title_str = ( 'Convergence Rate' )
     ax.set_title(title_str)
     
-    file_name = 'convergence_{}.png'.format(test_num)
+    file_name = 'dof_convergence_{}.png'.format(test_num)
+    file_path = os.path.join(figs_dir, file_name)
+    fig.set_size_inches(6.5, 6.5)
+    plt.tight_layout()
+    plt.savefig(file_path, dpi = 300)
+    plt.close(fig)
+
+    fig, ax = plt.subplots()
+    
+    for cc in range(0, ncombo):
+        combo      = combos[cc]
+        combo_name = combo['short_name']
+        combo_dir  = os.path.join(figs_dir, combo_name)
+
+        nnz_file_name = 'nnz.txt'
+        nnz_file_path = os.path.join(combo_dir, nnz_file_name)
+        nnz_file = open(nnz_file_path, 'r')
+        nnz = json.load(nnz_file)
+        nnz_file.close()
+        
+        errs_file_name = 'errs.txt'
+        errs_file_path = os.path.join(combo_dir, errs_file_name)
+        errs_file = open(errs_file_path, 'r')
+        errs = json.load(errs_file)
+        errs_file.close()
+        
+        ax.plot(nnz, errs,
+                label     = '{}'.format(combo_long_names[cc]),
+                color     = colors[cc%len(colors)],
+                marker    = mstyles[cc%len(mstyles)],
+                linestyle = ':'
+                )
+        
+    ax.legend()
+    
+    #ax.set_xscale('log', base = 10)
+    ax.set_yscale('log', base = 10)
+    
+    ax.set_xlabel('Non-Zeros in System Matrix')
+    if test_num == 1:
+        ax.set_ylabel(r'$\sqrt{\frac{\int_{\mathcal{S}} \int_{\Omega} \left( u - u_{hp} \right)^2\,d\vec{x}\,d\vec{s}}{\int_{\mathcal{S}} \int_{\Omega} \left( u \right)^2\,d\vec{x}\,d\vec{s}}}$')
+    elif test_num in [2, 3, 4]:
+        ax.set_ylabel(r'$\sqrt{\frac{\int_{\mathcal{S}} \int_{\Omega} \left( u_{hr} - u_{hp} \right)^2\,d\vec{x}\,d\vec{s}}{\int_{\mathcal{S}} \int_{\Omega} \left( u_{hr} \right)^2\,d\vec{x}\,d\vec{s}}}$')
+    
+    title_str = ( 'Convergence Rate' )
+    ax.set_title(title_str)
+    
+    file_name = 'nnz_convergence_{}.png'.format(test_num)
     file_path = os.path.join(figs_dir, file_name)
     fig.set_size_inches(6.5, 6.5)
     plt.tight_layout()
