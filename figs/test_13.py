@@ -12,7 +12,7 @@ from   scipy.integrate import quad, dblquad
 
 
 # End-Combo Parameters
-max_ndof   = int(2.8e5)  # Max number of DOFs
+max_ndof   = int(1.6e5)  # Max number of DOFs
 max_ntrial = 1024        # Max number of trials
 min_err    = 1.e-6       # Min error before cutoff
 max_mem    = 95          # Max memory usage (percentage of 100)
@@ -124,7 +124,7 @@ def kappa_x(x):
 def kappa_y(y):
     return np.ones_like(y)
 def kappa(x, y):
-    r = (Ly / 3.) - np.sqrt((x - (3. * Lx / 5.))**2 + (y - (2. * Ly / 5.))**2)
+    r = (Ly / 3.) - np.sqrt((x - (1. * Lx / 2.))**2 + (y - (1. * Ly / 2.))**2)
     return 1.1 / (1. + np.exp(-15 * r))
 
 def sigma(x, y):

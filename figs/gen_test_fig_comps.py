@@ -16,17 +16,27 @@ import numpy             as np
 from   scipy.integrate import quad, dblquad
 
 # Local Library Imports
-from   test_combos   import h_uni_ang, p_uni_ang, hp_uni_ang, \
-    h_uni_spt, p_uni_spt, hp_uni_spt, \
-    h_uni_all, p_uni_all, hp_uni_all, \
-    h_amr_ang, p_amr_ang, hp_amr_ang, \
-    h_amr_spt, p_amr_spt, hp_amr_spt, \
-    h_amr_all, p_amr_all, hp_amr_all
+import test_temp as test
 
 def main():
     """
     Creates the compilation convegence plots
     """
+
+    # Get local copy of variables from test.py - which is a temporary copy of a
+    # test_n.py for some n
+    max_ndof   = test.max_ndof
+    max_ntrial = test.max_ntrial
+    min_err    = test.min_err
+    max_mem    = test.max_mem
+    [Lx, Ly]   = [test.Lx, test.Ly]
+    combos     = test.combos
+    kappa      = test.kappa
+    sigma      = test.sigma
+    Phi        = test.Phi
+    f          = test.f
+    bcs_dirac  = test.bcs_dirac
+    u          = test.u
     
     parser_desc = 'Determine which tests to run and where to put output.'
     parser = argparse.ArgumentParser(description = parser_desc)
@@ -35,7 +45,7 @@ def main():
                         required = False, help = 'Subdirectory to store output')
     help_str = 'Test Case Number - See Paper for Details'
     parser.add_argument('--test_num', nargs = 1, default = [1],
-                        type = int, choices = [1, 2, 3, 4], required = False,
+                        type = int, required = False,
                         help = help_str)
     
     args = parser.parse_args()
@@ -47,54 +57,21 @@ def main():
     os.makedirs(figs_dir, exist_ok = True)
     
     # Parameters for mesh, and plot functions
-    if test_num == 1:
-        combos = [
-            h_uni_ang,
-            p_uni_ang,
-            h_amr_ang,
-            hp_amr_ang
-        ]
+    if test_num in [1, 2, 11, 12, 13, 14, 15, 16,
+                    17, 18, 19, 20, 21, 22, 23]:
         combo_long_names = [
             r'$h$-Unif. Ang.',
             r'$p$-Unif. Ang.',
             r'$h$-Adap. Ang.',
             r'$hp$-Adap. Ang.'
         ]
-        
-    elif test_num == 2:
-        combos = [
-            h_uni_ang,
-            p_uni_ang,
-            h_amr_ang,
-            hp_amr_ang
-        ]
-        
-        combo_long_names = [
-            r'$h$-Unif. Ang.',
-            r'$p$-Unif. Ang.',
-            r'$h$-Adap. Ang.',
-            r'$hp$-Adap. Ang.'
-        ]
-        
-    elif test_num == 3:
-        combos = [
-            hp_amr_spt,
-            hp_amr_ang,
-            hp_amr_all
-        ]
-        
-    elif test_num == 4:
-        combos = [
-            hp_amr_spt,
-            hp_amr_ang,
-            hp_amr_all
-        ]
+    else:
         combo_long_names = [
             r'$hp$-Adap. Spt. with $p$-Unif. Ang.',
             r'$hp$-Adap. Ang. with $p$-Unif. Spt.',
             r'$hp$-Adap. Ang. with $hp$-Adap. Spt.'
         ]
-        
+
     fig, ax = plt.subplots()
     
     ncombo = len(combos)
@@ -136,7 +113,7 @@ def main():
     ax.set_xlabel('Total Degrees of Freedom')
     if test_num == 1:
         ax.set_ylabel(r'$\sqrt{\frac{\int_{\mathcal{S}} \int_{\Omega} \left( u - u_{hp} \right)^2\,d\vec{x}\,d\vec{s}}{\int_{\mathcal{S}} \int_{\Omega} \left( u \right)^2\,d\vec{x}\,d\vec{s}}}$')
-    elif test_num in [2, 3, 4]:
+    else:
         ax.set_ylabel(r'$\sqrt{\frac{\int_{\mathcal{S}} \int_{\Omega} \left( u_{hr} - u_{hp} \right)^2\,d\vec{x}\,d\vec{s}}{\int_{\mathcal{S}} \int_{\Omega} \left( u_{hr} \right)^2\,d\vec{x}\,d\vec{s}}}$')
     
     title_str = ( 'Convergence Rate' )
@@ -183,7 +160,7 @@ def main():
     ax.set_xlabel('Non-Zeros in System Matrix')
     if test_num == 1:
         ax.set_ylabel(r'$\sqrt{\frac{\int_{\mathcal{S}} \int_{\Omega} \left( u - u_{hp} \right)^2\,d\vec{x}\,d\vec{s}}{\int_{\mathcal{S}} \int_{\Omega} \left( u \right)^2\,d\vec{x}\,d\vec{s}}}$')
-    elif test_num in [2, 3, 4]:
+    else:
         ax.set_ylabel(r'$\sqrt{\frac{\int_{\mathcal{S}} \int_{\Omega} \left( u_{hr} - u_{hp} \right)^2\,d\vec{x}\,d\vec{s}}{\int_{\mathcal{S}} \int_{\Omega} \left( u_{hr} \right)^2\,d\vec{x}\,d\vec{s}}}$')
     
     title_str = ( 'Convergence Rate' )

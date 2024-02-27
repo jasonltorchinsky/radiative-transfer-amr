@@ -131,7 +131,7 @@ hp_amr_all = {'full_name'  : 'Adaptive Spatio-Angular hp-Refinement',
 combos = [
     hp_amr_spt,
     hp_amr_ang,
-    hp_amr_ang
+    hp_amr_all
 ]
 
 # Manufactured solution

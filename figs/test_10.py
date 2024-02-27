@@ -1,5 +1,5 @@
 """
-Test 4: Large cloud corner.
+Test 10: Two pretty mildly strong scatterers in the bottom left corner.
 """
 
 # Standard Library Imports
@@ -129,7 +129,7 @@ hp_amr_all = {'full_name'  : 'Adaptive Spatio-Angular hp-Refinement',
               }
         
 combos = [
-    #hp_amr_spt,
+    hp_amr_spt,
     hp_amr_ang,
     hp_amr_all
 ]
@@ -137,26 +137,17 @@ combos = [
 # Manufactured solution
 u = None
         
-Ax = 0.5
-fx = 1. / Lx
-deltax = 0.05
-def kappa_x(x):
-    return (2. * Ax / np.pi) * np.arctan(np.sin(2. * np.pi * fx * (x - Lx / 3.)) / deltax) + 0.5
-Ay = 0.5
-fy = 1. / Ly
-deltay = 0.05
-def kappa_y(y):
-    return (2. * Ay / np.pi) * np.arctan(np.sin(2. * np.pi * fy * (y - Ly / 3.)) / deltay) + 0.5
 def kappa(x, y):
-    r1 = (Ly / 7.) - np.sqrt((x - (14. * Lx / 20.))**2 + (y - (1. * Ly / 4.))**2)
-    kappa1 = (10. - 10.) / (1. + np.exp(-2. * (15 + 0) * r1))
+    r1 = (Ly / 5.) - np.sqrt((x - (9. * Lx / 20.))**2 + (y - (2. * Ly / 5.))**2)
+    kappa1 = (50.) / (1. + np.exp(-30. * r1))
 
-    r2 = (Ly / 2.) - np.sqrt((x - (5. * Lx / 5.))**2 + (y - (0. * Ly / 5.))**2)
-    kappa2 = (10. + 30.) / (1. + np.exp(-2. * (15. + 10.) * r2))
+    r2 = (Ly / 7.) - np.sqrt((x - (4. * Lx / 5.))**2 + (y - (Ly / 4.))**2)
+    kappa2 = (50.) / (1. + np.exp(-30. * r2))
+
     return kappa1 + kappa2
 
 def sigma(x, y):
-    return 0.9 * kappa(x, y)
+    return 0.7 * kappa(x, y)
 
 g = 0.8
 def Phi_HG(Th):
@@ -174,9 +165,9 @@ def f(x, y, th):
 x_left = 0.
 y_top = Ly
 def bcs(x, y, th):
-    sth = (48.) / 2.
+    sth = 48.
     if (y == y_top) or (x == x_left):
-        return 5. * np.exp(-((sth / (2. * np.pi)) * (th - (7. * np.pi / 4.)))**2)
+        return np.exp(-((sth / (2. * np.pi)) * (th - (7. * np.pi / 4.)))**2)
     else:
         return 0
 dirac = [None, None, None]

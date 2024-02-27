@@ -31,12 +31,6 @@ import dg.projection as proj
 import dg.quadrature as qd
 import rt
 import utils
-from   test_combos   import h_uni_ang, p_uni_ang, hp_uni_ang, \
-    h_uni_spt, p_uni_spt, hp_uni_spt, \
-    h_uni_all, p_uni_all, hp_uni_all, \
-    h_amr_ang, p_amr_ang, hp_amr_ang, \
-    h_amr_spt, p_amr_spt, hp_amr_spt, \
-    h_amr_all, p_amr_all, hp_amr_all
 
 import test_temp as test
 
@@ -73,7 +67,7 @@ def main():
                         required = False, help = 'Subdirectory to store output')
     help_str = 'Test Case Number - See Paper for Details'
     parser.add_argument('--test_num', nargs = 1, default = [1],
-                        type = int, choices = [1, 2, 3, 4], required = False,
+                        type = int, required = False,
                         help = help_str)
     
     args = parser.parse_args()
@@ -217,6 +211,9 @@ def main():
             elif test_num == 4:
                 ksp_type = 'fgmres'
                 pc_type = 'kaczmarz'
+            else:
+                ksp_type = 'fgmres'
+                pc_type = 'kaczmarz'
                 
             # If iterative solve fails, we refine the mesh
             residual_file_name = 'residuals_{}.png'.format(trial)
@@ -237,11 +234,7 @@ def main():
             if do_calc_err:
                 if test_num == 1:
                     err_kind = 'anl'
-                elif test_num == 2:
-                    err_kind = 'hr'
-                elif test_num == 3:
-                    err_kind = 'hr'
-                elif test_num == 4:
+                else:
                     err_kind = 'hr'
 
                 residual_file_name = 'residuals_hr_{}.png'.format(trial)

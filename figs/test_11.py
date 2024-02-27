@@ -146,7 +146,7 @@ def f(x, y, th):
 x_right = 0.
 y_top = Ly
 def bcs(x, y, th):
-    sth = 96. * 4.
+    sth = 96. * 1.
     if (y == y_top) or (x == x_right):
         return np.exp(-((sth / (2. * np.pi)) * (th - (7. * np.pi / 4.)))**2)
     #if (y == y_top) and (th == (8. * np.pi / 5.)):

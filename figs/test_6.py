@@ -1,5 +1,5 @@
 """
-Test 4: Large cloud corner.
+Test 5: Many small clouds.
 """
 
 # Standard Library Imports
@@ -148,12 +148,19 @@ deltay = 0.05
 def kappa_y(y):
     return (2. * Ay / np.pi) * np.arctan(np.sin(2. * np.pi * fy * (y - Ly / 3.)) / deltay) + 0.5
 def kappa(x, y):
-    r1 = (Ly / 7.) - np.sqrt((x - (14. * Lx / 20.))**2 + (y - (1. * Ly / 4.))**2)
-    kappa1 = (10. - 10.) / (1. + np.exp(-2. * (15 + 0) * r1))
+    r1 = (Ly / 12.) - np.sqrt((x - (7. * Lx / 16.))**2 + (y - (9. * Ly / 16.))**2)
+    kappa1 = (50.) / (1. + np.exp(-2. * 15. * r1))
 
-    r2 = (Ly / 2.) - np.sqrt((x - (5. * Lx / 5.))**2 + (y - (0. * Ly / 5.))**2)
-    kappa2 = (10. + 30.) / (1. + np.exp(-2. * (15. + 10.) * r2))
-    return kappa1 + kappa2
+    r2 = (Ly / 12.) - np.sqrt((x - (3. * Lx / 4.))**2 + (y - (1. * Ly / 2.))**2)
+    kappa2 = (50.) / (1. + np.exp(-2. * 15. * r2))
+
+    r3 = (Ly / 12.) - np.sqrt((x - (7. * Lx / 8.))**2 + (y - (3. * Ly / 16.))**2)
+    kappa3 = (50.) / (1. + np.exp(-2. * 15. * r3))
+
+    r4 = (Ly / 12.) - np.sqrt((x - (9. * Lx / 16.))**2 + (y - (1. * Ly / 4.))**2)
+    kappa4 = (50.) / (1. + np.exp(-2. * 15. * r4))
+
+    return kappa1 + kappa2 + kappa3 + kappa4
 
 def sigma(x, y):
     return 0.9 * kappa(x, y)

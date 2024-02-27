@@ -35,22 +35,7 @@ def main(argv):
     mesh.ref_mesh()
     mesh.ref_mesh()
 
-    # Define functions for the problem
-    print_msg('Created initial mesh! Defining problem to solve...')
-    def kappa(x, y):
-
-        return np.exp((x - Lx/2)**2 - (y - Ly/2)**2)
-
-    def sigma(x, y):
-
-        return 0.1 * kappa(x, y)
-
-    def Phi(theta, theta_p):
-
-        return 1.0 / (2.0 * np.pi)
-
-    print_msg('Problem to solve defined! Constructing relevant matrices...')
-    rtdg_amr(mesh, kappa, sigma, Phi)
+    mesh_tools.write_mesh(mesh, "out.json")
     
 
 if __name__ == '__main__':

@@ -12,7 +12,7 @@ from   scipy.integrate import quad, dblquad
 
 
 # End-Combo Parameters
-max_ndof   = int(2.8e5)  # Max number of DOFs
+max_ndof   = int(3.0e5)  # Max number of DOFs
 max_ntrial = 1024        # Max number of trials
 min_err    = 1.e-6       # Min error before cutoff
 max_mem    = 95          # Max memory usage (percentage of 100)
@@ -28,7 +28,7 @@ h_uni_ang  = {'full_name'  : 'Uniform Angular h-Refinement',
               'ref_kind'   : 'ang',
               'ndofs'      : [3, 3, 4],
               'nref_ang'   : 3,
-              'nref_spt'   : 3,
+              'nref_spt'   : 4,
               'Ls'         : [Lx, Ly],
               'pbcs'       : pbcs,
               'has_th'     : has_th,
@@ -42,7 +42,7 @@ p_uni_ang  = {'full_name'  : 'Uniform Angular p-Refinement',
               'ref_kind'   : 'ang',
               'ndofs'      : [3, 3, 4],
               'nref_ang'   : 3,
-              'nref_spt'   : 3,
+              'nref_spt'   : 4,
               'Ls'         : [Lx, Ly],
               'pbcs'       : pbcs,
               'has_th'     : has_th,
@@ -55,7 +55,7 @@ h_amr_ang  = {'full_name'  : 'Adaptive Angular h-Refinement',
               'ref_kind'   : 'ang',
               'ndofs'      : [3, 3, 4],
               'nref_ang'   : 3,
-              'nref_spt'   : 3,
+              'nref_spt'   : 4,
               'Ls'         : [Lx, Ly],
               'pbcs'       : pbcs,
               'has_th'     : has_th,
@@ -76,7 +76,7 @@ h_amr_ang  = {'full_name'  : 'Adaptive Angular h-Refinement',
                                    'ref_cell'      : True,
                                    'cell_ref_form' : 'h',
                                    'cell_ref_kind' : 'ang',
-                                   'cell_ref_tol'  : 0.8}
+                                   'cell_ref_tol'  : 0.9}
               }
         
 # Adaptive Angular hp-Refinement
@@ -85,7 +85,7 @@ hp_amr_ang = {'full_name'  : 'Adaptive Angular hp-Refinement',
               'ref_kind'   : 'ang',
               'ndofs'      : [3, 3, 4],
               'nref_ang'   : 3,
-              'nref_spt'   : 3,
+              'nref_spt'   : 4,
               'Ls'         : [Lx, Ly],
               'pbcs'       : pbcs,
               'has_th'     : has_th,
@@ -106,7 +106,7 @@ hp_amr_ang = {'full_name'  : 'Adaptive Angular hp-Refinement',
                                    'ref_cell'      : True,
                                    'cell_ref_form' : 'hp',
                                    'cell_ref_kind' : 'ang',
-                                   'cell_ref_tol'  : 0.8}
+                                   'cell_ref_tol'  : 0.9}
               }
         
 combos = [
@@ -124,13 +124,13 @@ def kappa_x(x):
 def kappa_y(y):
     return np.ones_like(y)
 def kappa(x, y):
-    r = (Ly / 3.) - np.sqrt((x - (3. * Lx / 5.))**2 + (y - (2. * Ly / 5.))**2)
-    return 1.1 / (1. + np.exp(-15 * r))
+    r = (Ly / 5.) - np.sqrt((x - (1. * Lx / 2.))**2 + (y - (1. * Ly / 2.))**2)
+    return 5.5 / (1. + np.exp(-15 * r))
 
 def sigma(x, y):
     return 0.9 * kappa(x, y)
 
-g = 0.9
+g = 0.7
 def Phi_HG(Th):
     return (1. - g**2) / (1 + g**2 - 2. * g * np.cos(Th))**(3./2.)
 [Phi_norm, abserr] = quad(lambda Th : Phi_HG(Th), 0., 2. * np.pi,

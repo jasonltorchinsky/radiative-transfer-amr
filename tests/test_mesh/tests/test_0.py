@@ -43,3 +43,5 @@ def test_0(dir_name = 'test_mesh'):
     ji_mesh.utils.plot_mesh_bdry(mesh, file_name = file_name,
                                  label_cells = False, plot_dim = 2)
     
+    ji_mesh.utils.write_mesh(mesh, "mesh.json")
+    
