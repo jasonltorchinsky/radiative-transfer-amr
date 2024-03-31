@@ -1,5 +1,5 @@
 """
-Test 2: Clear sky with negligible scattering.
+Test 3: Horizontally homgeneous.
 """
 
 # Standard Library Imports
@@ -12,85 +12,58 @@ from   scipy.integrate import quad, dblquad
 
 
 # End-Combo Parameters
-max_ndof   = int(3.0e5)  # Max number of DOFs
-max_ntrial = 1024        # Max number of trials
-min_err    = 1.e-6       # Min error before cutoff
-max_mem    = 95          # Max memory usage (percentage of 100)
+max_ndof   = 2**19    # Max number of DOFs
+max_ntrial = 256      # Max number of trials
+min_err    = 1.e-6    # Min error before cutoff
+max_mem    = 95       # Max memory usage (percentage of 100)
 
 # Mesh parameters common to each combination
 [Lx, Ly] = [3., 2.]
-pbcs     = [False, False]
+pbcs     = [True, False]
 has_th   = True
         
-# Uniform Angular h-Refinement
-h_uni_ang  = {'full_name'  : 'Uniform Angular h-Refinement',
-              'short_name' : 'h-uni-ang',
-              'ref_kind'   : 'ang',
-              'ndofs'      : [3, 3, 4],
+# Adaptive hp-Spatial, Uniform p-Angular Refinement
+hp_amr_spt = {'full_name'  : 'Adaptive Spatial hp-Refinement',
+              'short_name' : 'hp-amr-spt',
+              'ref_kind'   : 'all',
+              'ndofs'      : [3, 3, 3],
               'nref_ang'   : 3,
-              'nref_spt'   : 4,
+              'nref_spt'   : 3,
               'Ls'         : [Lx, Ly],
               'pbcs'       : pbcs,
               'has_th'     : has_th,
-              'spt_res_offset' : 0,
-              'ang_res_offset' : 3
-}
-
-# Uniform Angular p-Refinement
-p_uni_ang  = {'full_name'  : 'Uniform Angular p-Refinement',
-              'short_name' : 'p-uni-ang',
-              'ref_kind'   : 'ang',
-              'ndofs'      : [3, 3, 4],
-              'nref_ang'   : 3,
-              'nref_spt'   : 4,
-              'Ls'         : [Lx, Ly],
-              'pbcs'       : pbcs,
-              'has_th'     : has_th,
-              'spt_res_offset' : 0,
-              'ang_res_offset' : 3}
-        
-# Adaptive Angular h-Refinement
-h_amr_ang  = {'full_name'  : 'Adaptive Angular h-Refinement',
-              'short_name' : 'h-amr-ang',
-              'ref_kind'   : 'ang',
-              'ndofs'      : [3, 3, 4],
-              'nref_ang'   : 3,
-              'nref_spt'   : 4,
-              'Ls'         : [Lx, Ly],
-              'pbcs'       : pbcs,
-              'has_th'     : has_th,
-              'spt_res_offset' : 0,
-              'ang_res_offset' : 3,
-              'kwargs_ang_nneg' : {'ref_col'       : False,
-                                   'col_ref_form'  : None,
-                                   'col_ref_kind'  : None,
-                                   'col_ref_tol'   : None,
-                                   'ref_cell'      : True,
-                                   'cell_ref_form' : 'h',
-                                   'cell_ref_kind' : 'ang',
-                                   'cell_ref_tol'  : -10.**10},
-              'kwargs_ang_jmp'  : {'ref_col'       : False,
-                                   'col_ref_form'  : None,
-                                   'col_ref_kind'  : None,
-                                   'col_ref_tol'   : None,
-                                   'ref_cell'      : True,
-                                   'cell_ref_form' : 'h',
-                                   'cell_ref_kind' : 'ang',
-                                   'cell_ref_tol'  : 0.9}
+              'spt_res_offset' : 2,
+              'ang_res_offset' : 2,
+              'kwargs_spt_nneg' : {'ref_col'       : True,
+                                   'col_ref_form'  : 'h',
+                                   'col_ref_kind'  : 'spt',
+                                   'col_ref_tol'   : -10.**10,
+                                   'ref_cell'      : False,
+                                   'cell_ref_form' : None,
+                                   'cell_ref_kind' : None,
+                                   'cell_ref_tol'  : None},
+              'kwargs_spt_jmp'  : {'ref_col'       : True,
+                                   'col_ref_form'  : 'hp',
+                                   'col_ref_kind'  : 'spt',
+                                   'col_ref_tol'   : 0.8,
+                                   'ref_cell'      : False,
+                                   'cell_ref_form' : None,
+                                   'cell_ref_kind' : None,
+                                   'cell_ref_tol'  : None}
               }
-        
-# Adaptive Angular hp-Refinement
+
+# Adaptive hp-Angular, Uniform p-Spatial Refinement
 hp_amr_ang = {'full_name'  : 'Adaptive Angular hp-Refinement',
               'short_name' : 'hp-amr-ang',
-              'ref_kind'   : 'ang',
-              'ndofs'      : [3, 3, 4],
+              'ref_kind'   : 'all',
+              'ndofs'      : [3, 3, 3],
               'nref_ang'   : 3,
-              'nref_spt'   : 4,
+              'nref_spt'   : 3,
               'Ls'         : [Lx, Ly],
               'pbcs'       : pbcs,
               'has_th'     : has_th,
-              'spt_res_offset' : 0,
-              'ang_res_offset' : 3,
+              'spt_res_offset' : 2,
+              'ang_res_offset' : 2,
               'kwargs_ang_nneg' : {'ref_col'       : False,
                                    'col_ref_form'  : None,
                                    'col_ref_kind'  : None,
@@ -106,14 +79,59 @@ hp_amr_ang = {'full_name'  : 'Adaptive Angular hp-Refinement',
                                    'ref_cell'      : True,
                                    'cell_ref_form' : 'hp',
                                    'cell_ref_kind' : 'ang',
-                                   'cell_ref_tol'  : 0.9}
+                                   'cell_ref_tol'  : 0.8}
+              }
+        
+# Adaptive hp-Angular, Adaptive hp-Spatial Refinement
+hp_amr_all = {'full_name'  : 'Adaptive Spatio-Angular hp-Refinement',
+              'short_name' : 'hp-amr-all',
+              'ref_kind'   : 'all',
+              'ndofs'      : [3, 3, 3],
+              'nref_ang'   : 3,
+              'nref_spt'   : 3,
+              'Ls'         : [Lx, Ly],
+              'pbcs'       : pbcs,
+              'has_th'     : has_th,
+              'spt_res_offset' : 2,
+              'ang_res_offset' : 2,
+              'kwargs_ang_nneg' : {'ref_col'       : False,
+                                   'col_ref_form'  : None,
+                                   'col_ref_kind'  : None,
+                                   'col_ref_tol'   : None,
+                                   'ref_cell'      : True,
+                                   'cell_ref_form' : 'h',
+                                   'cell_ref_kind' : 'ang',
+                                   'cell_ref_tol'  : -10.**10},
+              'kwargs_spt_nneg' : {'ref_col'       : True,
+                                   'col_ref_form'  : 'h',
+                                   'col_ref_kind'  : 'spt',
+                                   'col_ref_tol'   : -10.**10,
+                                   'ref_cell'      : False,
+                                   'cell_ref_form' : None,
+                                   'cell_ref_kind' : None,
+                                   'cell_ref_tol'  : None},
+              'kwargs_ang_jmp'  : {'ref_col'       : False,
+                                   'col_ref_form'  : None,
+                                   'col_ref_kind'  : None,
+                                   'col_ref_tol'   : None,
+                                   'ref_cell'      : True,
+                                   'cell_ref_form' : 'hp',
+                                   'cell_ref_kind' : 'ang',
+                                   'cell_ref_tol'  : 0.8},
+              'kwargs_spt_jmp'  : {'ref_col'       : True,
+                                   'col_ref_form'  : 'hp',
+                                   'col_ref_kind'  : 'spt',
+                                   'col_ref_tol'   : 0.8,
+                                   'ref_cell'      : False,
+                                   'cell_ref_form' : None,
+                                   'cell_ref_kind' : None,
+                                   'cell_ref_tol'  : None}
               }
         
 combos = [
-    h_uni_ang,
-    p_uni_ang,
-    h_amr_ang,
-    hp_amr_ang
+    hp_amr_spt,
+    hp_amr_ang,
+    hp_amr_all
 ]
 
 # Manufactured solution
@@ -121,16 +139,18 @@ u = None
         
 def kappa_x(x):
     return np.ones_like(x)
+Ay = 0.5
+fy = 1. / Ly
+deltay = 0.05
 def kappa_y(y):
-    return np.ones_like(y)
+    return (2. * Ay / np.pi) * np.arctan(np.sin(2. * np.pi * fy * (y - Ly / 3.)) / deltay) + 0.5
 def kappa(x, y):
-    r = (Ly / 6.) - np.sqrt((x - (5. * Lx / 8.))**2 + (y - (3. * Ly / 8.))**2)
-    return 5.5 / (1. + np.exp(-15 * r))
+    return 15. * kappa_x(x) * kappa_y(y) + 0.1
 
 def sigma(x, y):
     return 0.9 * kappa(x, y)
 
-g = 0.7
+g = 0.875
 def Phi_HG(Th):
     return (1. - g**2) / (1 + g**2 - 2. * g * np.cos(Th))**(3./2.)
 [Phi_norm, abserr] = quad(lambda Th : Phi_HG(Th), 0., 2. * np.pi,
@@ -143,14 +163,11 @@ def Phi(th, phi):
 def f(x, y, th):
     return 0
         
-x_left = 0.
 y_top = Ly
 def bcs(x, y, th):
-    sth = 96. * 2.
-    if (y == y_top) or (x == x_left):
-        return np.exp(-((sth / (2. * np.pi)) * (th - (7. * np.pi / 4.)))**2)
-    #if (y == y_top) and (th == (8. * np.pi / 5.)):
-    #    return 1
+    sth = 96.
+    if (y == y_top):
+        return np.exp(-((sth / (2. * np.pi)) * (th - (8. * np.pi / 5.)))**2)
     else:
         return 0
 dirac = [None, None, None]

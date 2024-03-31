@@ -8,7 +8,8 @@ import gc
 import json
 import os
 import sys
-from   time            import perf_counter
+
+from   time import perf_counter
 
 # Third-Party Library Imports
 import matplotlib        as mpl
@@ -16,6 +17,7 @@ import matplotlib.pyplot as plt
 import numpy             as np
 import petsc4py
 import psutil
+
 from   mpi4py          import MPI
 from   petsc4py        import PETSc
 from   scipy.integrate import quad, dblquad
@@ -192,10 +194,13 @@ def main():
             
             # Plot mesh
             if comm_rank == 0:
-                if do_plot_mesh and (trial%10 == 0 or do_calc_err):
-                    gen_mesh_plot(mesh, trial, trial_dir, blocking = False)
-                if do_plot_mesh_p and (trial%10 == 0 or do_calc_err):
-                    gen_mesh_plot_p(mesh, trial, trial_dir, blocking = False)
+                if (trial%10 == 0 or do_calc_err):
+                    mesh_file = os.path.join(trial_dir, 'mesh.json')
+                    ji_mesh.write_mesh(mesh, mesh_file)
+                    if do_plot_mesh:
+                        gen_mesh_plot(mesh, trial, trial_dir, blocking = False)
+                    if do_plot_mesh_p:
+                        gen_mesh_plot_p(mesh, trial, trial_dir, blocking = False)
             MPI_comm.barrier()
             
             # Get and plot numerical solution

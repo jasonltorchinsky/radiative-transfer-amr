@@ -19,7 +19,7 @@ def test_0(dir_name = 'test_mesh'):
 
     # Create the original 2-D mesh
     [Lx, Ly] = [3., 2.]
-    pbcs     = [True, True]
+    pbcs     = [False, False]
 
     mesh = ji_mesh.Mesh([Lx, Ly], pbcs, has_th = False)
     
@@ -43,5 +43,12 @@ def test_0(dir_name = 'test_mesh'):
     ji_mesh.utils.plot_mesh_bdry(mesh, file_name = file_name,
                                  label_cells = False, plot_dim = 2)
     
-    ji_mesh.utils.write_mesh(mesh, "mesh.json")
+    # Write the mesh put and read it back in to mak sure it's the same
+    file_name = os.path.join(mesh_dir, 'mesh_out.json')
+    ji_mesh.write_mesh(mesh, file_name)
+
+    read_mesh = ji_mesh.read_mesh(file_name)
+    file_name = os.path.join(mesh_dir, 'read_mesh.png')
+    ji_mesh.utils.plot_mesh(read_mesh, ax = None, file_name = file_name,
+                                label_cells = (nrefs <= 3), plot_dim = 2)
     

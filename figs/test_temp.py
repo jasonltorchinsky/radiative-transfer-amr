@@ -1,5 +1,5 @@
 """
-Test 1: Manufactured Solution.
+Test 9: Two mildly strong scatterers in the bottom left corner.
 """
 
 # Standard Library Imports
@@ -12,84 +12,57 @@ from   scipy.integrate import quad, dblquad
 
 
 # End-Combo Parameters
-max_ndof   = 2**20#2**19    # Max number of DOFs
-max_ntrial = 256      # Max number of trials
-min_err    = 1.e-6    # Min error before cutoff
-max_mem    = 95       # Max memory usage (percentage of 100)
+max_ndof   = int(3.2e5) # Max number of DOFs
+max_ntrial = 1024       # Max number of trials
+min_err    = 1.e-6      # Min error before cutoff
+max_mem    = 95         # Max memory usage (percentage of 100)
 
 # Mesh parameters common to each combination
 [Lx, Ly] = [3., 2.]
 pbcs     = [False, False]
 has_th   = True
         
-# Uniform Angular h-Refinement
-h_uni_ang  = {'full_name'  : 'Uniform Angular h-Refinement',
-              'short_name' : 'h-uni-ang',
-              'ref_kind'   : 'ang',
-              'ndofs'      : [5, 5, 3],
+# Adaptive hp-Spatial, Uniform p-Angular Refinement
+hp_amr_spt = {'full_name'  : 'Adaptive Spatial hp-Refinement',
+              'short_name' : 'hp-amr-spt',
+              'ref_kind'   : 'all',
+              'ndofs'      : [3, 3, 4],
               'nref_ang'   : 3,
-              'nref_spt'   : 3,
+              'nref_spt'   : 2,
               'Ls'         : [Lx, Ly],
               'pbcs'       : pbcs,
               'has_th'     : has_th,
-              'spt_res_offset' : 0,
-              'ang_res_offset' : 2
-}
-
-# Uniform Angular p-Refinement
-p_uni_ang  = {'full_name'  : 'Uniform Angular p-Refinement',
-              'short_name' : 'p-uni-ang',
-              'ref_kind'   : 'ang',
-              'ndofs'      : [5, 5, 3],
-              'nref_ang'   : 3,
-              'nref_spt'   : 3,
-              'Ls'         : [Lx, Ly],
-              'pbcs'       : pbcs,
-              'has_th'     : has_th,
-              'spt_res_offset' : 0,
-              'ang_res_offset' : 2}
-        
-# Adaptive Angular h-Refinement
-h_amr_ang  = {'full_name'  : 'Adaptive Angular h-Refinement',
-              'short_name' : 'h-amr-ang',
-              'ref_kind'   : 'ang',
-              'ndofs'      : [5, 5, 3],
-              'nref_ang'   : 3,
-              'nref_spt'   : 3,
-              'Ls'         : [Lx, Ly],
-              'pbcs'       : pbcs,
-              'has_th'     : has_th,
-              'spt_res_offset' : 0,
+              'spt_res_offset' : 2,
               'ang_res_offset' : 2,
-              'kwargs_ang_nneg' : {'ref_col'       : False,
-                                   'col_ref_form'  : None,
-                                   'col_ref_kind'  : None,
-                                   'col_ref_tol'   : None,
-                                   'ref_cell'      : True,
-                                   'cell_ref_form' : 'h',
-                                   'cell_ref_kind' : 'ang',
-                                   'cell_ref_tol'  : -10.**10},
-              'kwargs_ang_jmp'  : {'ref_col'       : False,
-                                   'col_ref_form'  : None,
-                                   'col_ref_kind'  : None,
-                                   'col_ref_tol'   : None,
-                                   'ref_cell'      : True,
-                                   'cell_ref_form' : 'h',
-                                   'cell_ref_kind' : 'ang',
-                                   'cell_ref_tol'  : 0.8}
+              'kwargs_spt_nneg' : {'ref_col'       : True,
+                                   'col_ref_form'  : 'h',
+                                   'col_ref_kind'  : 'spt',
+                                   'col_ref_tol'   : -10.**10,
+                                   'ref_cell'      : False,
+                                   'cell_ref_form' : None,
+                                   'cell_ref_kind' : None,
+                                   'cell_ref_tol'  : None},
+              'kwargs_spt_jmp'  : {'ref_col'       : True,
+                                   'col_ref_form'  : 'hp',
+                                   'col_ref_kind'  : 'spt',
+                                   'col_ref_tol'   : 0.8,
+                                   'ref_cell'      : False,
+                                   'cell_ref_form' : None,
+                                   'cell_ref_kind' : None,
+                                   'cell_ref_tol'  : None}
               }
-        
-# Adaptive Angular hp-Refinement
+
+# Adaptive hp-Angular, Uniform p-Spatial Refinement
 hp_amr_ang = {'full_name'  : 'Adaptive Angular hp-Refinement',
               'short_name' : 'hp-amr-ang',
-              'ref_kind'   : 'ang',
-              'ndofs'      : [5, 5, 3],
+              'ref_kind'   : 'all',
+              'ndofs'      : [3, 3, 4],
               'nref_ang'   : 3,
-              'nref_spt'   : 3,
+              'nref_spt'   : 2,
               'Ls'         : [Lx, Ly],
               'pbcs'       : pbcs,
               'has_th'     : has_th,
-              'spt_res_offset' : 0,
+              'spt_res_offset' : 2,
               'ang_res_offset' : 2,
               'kwargs_ang_nneg' : {'ref_col'       : False,
                                    'col_ref_form'  : None,
@@ -109,68 +82,93 @@ hp_amr_ang = {'full_name'  : 'Adaptive Angular hp-Refinement',
                                    'cell_ref_tol'  : 0.8}
               }
         
+# Adaptive hp-Angular, Adaptive hp-Spatial Refinement
+hp_amr_all = {'full_name'  : 'Adaptive Spatio-Angular hp-Refinement',
+              'short_name' : 'hp-amr-all',
+              'ref_kind'   : 'all',
+              'ndofs'      : [3, 3, 4],
+              'nref_ang'   : 3,
+              'nref_spt'   : 2,
+              'Ls'         : [Lx, Ly],
+              'pbcs'       : pbcs,
+              'has_th'     : has_th,
+              'spt_res_offset' : 2,
+              'ang_res_offset' : 2,
+              'kwargs_ang_nneg' : {'ref_col'       : False,
+                                   'col_ref_form'  : None,
+                                   'col_ref_kind'  : None,
+                                   'col_ref_tol'   : None,
+                                   'ref_cell'      : True,
+                                   'cell_ref_form' : 'h',
+                                   'cell_ref_kind' : 'ang',
+                                   'cell_ref_tol'  : -10.**10},
+              'kwargs_spt_nneg' : {'ref_col'       : True,
+                                   'col_ref_form'  : 'h',
+                                   'col_ref_kind'  : 'spt',
+                                   'col_ref_tol'   : -10.**10,
+                                   'ref_cell'      : False,
+                                   'cell_ref_form' : None,
+                                   'cell_ref_kind' : None,
+                                   'cell_ref_tol'  : None},
+              'kwargs_ang_jmp'  : {'ref_col'       : False,
+                                   'col_ref_form'  : None,
+                                   'col_ref_kind'  : None,
+                                   'col_ref_tol'   : None,
+                                   'ref_cell'      : True,
+                                   'cell_ref_form' : 'hp',
+                                   'cell_ref_kind' : 'ang',
+                                   'cell_ref_tol'  : 0.8},
+              'kwargs_spt_jmp'  : {'ref_col'       : True,
+                                   'col_ref_form'  : 'hp',
+                                   'col_ref_kind'  : 'spt',
+                                   'col_ref_tol'   : 0.8,
+                                   'ref_cell'      : False,
+                                   'cell_ref_form' : None,
+                                   'cell_ref_kind' : None,
+                                   'cell_ref_tol'  : None}
+              }
+        
 combos = [
-    h_uni_ang,
-    p_uni_ang,
-    h_amr_ang,
-    hp_amr_ang
+    hp_amr_spt,
+    hp_amr_ang,
+    hp_amr_all
 ]
 
 # Manufactured solution
-def X(x):
-    return np.exp(-((1. / Lx) * (x - (Lx / 3.)))**2)
-def dXdx(x):
-    return -(2. / Lx**2) * (x - (Lx / 3.)) * X(x)
-def Y(y):
-    return np.exp(-4. * (Ly - y) / Ly)
-def dYdy(y):
-    return (4. / Ly) * Y(y)
-def XY(x, y):
-    return X(x) * Y(y)
-sth = 96.
-def Theta(th):
-    return np.exp(-((sth / (2. * np.pi)) * (th - (7. * np.pi / 5.)))**2)
-def u(x, y, th):
-    return XY(x, y) * Theta(th)
+u = None
         
-def kappa_x(x):
-    return np.exp(-((1. / Lx) * (x - (Lx / 2.)))**2)
-def kappa_y(y):
-    return np.exp(-y / Ly)
 def kappa(x, y):
-    return 10. * kappa_x(x) * kappa_y(y)
+    r1 = (Ly / 5.) - np.sqrt((x - (9. * Lx / 20.))**2 + (y - (2. * Ly / 5.))**2)
+    kappa1 = (100.) / (1. + np.exp(-30. * r1))
+
+    r2 = (Ly / 7.) - np.sqrt((x - (4. * Lx / 5.))**2 + (y - (Ly / 4.))**2)
+    kappa2 = (100.) / (1. + np.exp(-30. * r2))
+
+    return kappa1 + kappa2
 
 def sigma(x, y):
-    return 0.1 * kappa(x, y)
+    return 0.7 * kappa(x, y)
 
+g = 0.8
+def Phi_HG(Th):
+    return (1. - g**2) / (1 + g**2 - 2. * g * np.cos(Th))**(3./2.)
+[Phi_norm, abserr] = quad(lambda Th : Phi_HG(Th), 0., 2. * np.pi,
+                          epsabs = 1.e-9, epsrel = 1.e-9,
+                          limit = 100, maxp1 = 100)
 def Phi(th, phi):
-    val = (1. / (3. * np.pi)) * (1. + (np.cos(th - phi))**2)
-    return val
+    val = (1. - g**2) / (1 + g**2 - 2. * g * np.cos(th - phi))**(3./2.)
+    return val / Phi_norm
 
 def f(x, y, th):
-    # Propagation part
-    prop = (np.cos(th) * dXdx(x) * Y(y) + np.sin(th) * X(x) * dYdy(y)) * Theta(th)
-    # Extinction part
-    extn = kappa(x, y) * u(x, y, th)
-    # Scattering part
-    [Theta_scat, _] = quad(lambda phi: Phi(th, phi) * Theta(phi), 0., 2. * np.pi,
-                           epsabs = 1.e-9, epsrel = 1.e-9, limit = 100, maxp1 = 100)
-    scat =  sigma(x, y) * XY(x, y) * Theta_scat
-    return prop + extn - scat
+    return 0
         
+x_left = 0.
+y_top = Ly
 def bcs(x, y, th):
-    return u(x, y, th)
+    sth = 48.
+    if (y == y_top) or (x == x_left):
+        return np.exp(-((sth / (2. * np.pi)) * (th - (7. * np.pi / 4.)))**2)
+    else:
+        return 0
 dirac = [None, None, None]
 bcs_dirac = [bcs, dirac]
-        
-def u_intg_th(x, y, th0, th1):
-    [Theta_intg, _] = quad(lambda th: Theta(th), th0, th1,
-                           epsabs = 1.e-9, epsrel = 1.e-9,
-                           limit = 100, maxp1 = 100)
-    return XY(x, y) * Theta_intg
-        
-def u_intg_xy(x0, x1, y0, y1, th):
-    [XY_intg, _] = dblquad(lambda x, y: XY(x, y), x0, x1, y0, y1,
-                           epsabs = 1.e-9, epsrel = 1.e-9,
-                           limit = 100, maxp1 = 100)
-    return XY_intg * Theta(th)

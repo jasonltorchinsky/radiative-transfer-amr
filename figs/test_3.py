@@ -1,5 +1,5 @@
 """
-Test 3: Horizontally homgeneous.
+Test 9: Two mildly strong scatterers in the bottom left corner.
 """
 
 # Standard Library Imports
@@ -12,23 +12,23 @@ from   scipy.integrate import quad, dblquad
 
 
 # End-Combo Parameters
-max_ndof   = 2**19    # Max number of DOFs
-max_ntrial = 256      # Max number of trials
-min_err    = 1.e-6    # Min error before cutoff
-max_mem    = 95       # Max memory usage (percentage of 100)
+max_ndof   = int(3.2e5) # Max number of DOFs
+max_ntrial = 1024       # Max number of trials
+min_err    = 1.e-6      # Min error before cutoff
+max_mem    = 95         # Max memory usage (percentage of 100)
 
 # Mesh parameters common to each combination
 [Lx, Ly] = [3., 2.]
-pbcs     = [True, False]
+pbcs     = [False, False]
 has_th   = True
         
 # Adaptive hp-Spatial, Uniform p-Angular Refinement
 hp_amr_spt = {'full_name'  : 'Adaptive Spatial hp-Refinement',
               'short_name' : 'hp-amr-spt',
               'ref_kind'   : 'all',
-              'ndofs'      : [3, 3, 3],
+              'ndofs'      : [3, 3, 4],
               'nref_ang'   : 3,
-              'nref_spt'   : 3,
+              'nref_spt'   : 2,
               'Ls'         : [Lx, Ly],
               'pbcs'       : pbcs,
               'has_th'     : has_th,
@@ -56,9 +56,9 @@ hp_amr_spt = {'full_name'  : 'Adaptive Spatial hp-Refinement',
 hp_amr_ang = {'full_name'  : 'Adaptive Angular hp-Refinement',
               'short_name' : 'hp-amr-ang',
               'ref_kind'   : 'all',
-              'ndofs'      : [3, 3, 3],
+              'ndofs'      : [3, 3, 4],
               'nref_ang'   : 3,
-              'nref_spt'   : 3,
+              'nref_spt'   : 2,
               'Ls'         : [Lx, Ly],
               'pbcs'       : pbcs,
               'has_th'     : has_th,
@@ -86,9 +86,9 @@ hp_amr_ang = {'full_name'  : 'Adaptive Angular hp-Refinement',
 hp_amr_all = {'full_name'  : 'Adaptive Spatio-Angular hp-Refinement',
               'short_name' : 'hp-amr-all',
               'ref_kind'   : 'all',
-              'ndofs'      : [3, 3, 3],
+              'ndofs'      : [3, 3, 4],
               'nref_ang'   : 3,
-              'nref_spt'   : 3,
+              'nref_spt'   : 2,
               'Ls'         : [Lx, Ly],
               'pbcs'       : pbcs,
               'has_th'     : has_th,
@@ -137,20 +137,19 @@ combos = [
 # Manufactured solution
 u = None
         
-def kappa_x(x):
-    return np.ones_like(x)
-Ay = 0.5
-fy = 1. / Ly
-deltay = 0.05
-def kappa_y(y):
-    return (2. * Ay / np.pi) * np.arctan(np.sin(2. * np.pi * fy * (y - Ly / 3.)) / deltay) + 0.5
 def kappa(x, y):
-    return 15. * kappa_x(x) * kappa_y(y) + 0.1
+    r1 = (Ly / 5.) - np.sqrt((x - (9. * Lx / 20.))**2 + (y - (2. * Ly / 5.))**2)
+    kappa1 = (100.) / (1. + np.exp(-30. * r1))
+
+    r2 = (Ly / 7.) - np.sqrt((x - (4. * Lx / 5.))**2 + (y - (Ly / 4.))**2)
+    kappa2 = (100.) / (1. + np.exp(-30. * r2))
+
+    return kappa1 + kappa2
 
 def sigma(x, y):
-    return 0.9 * kappa(x, y)
+    return 0.7 * kappa(x, y)
 
-g = 0.875
+g = 0.8
 def Phi_HG(Th):
     return (1. - g**2) / (1 + g**2 - 2. * g * np.cos(Th))**(3./2.)
 [Phi_norm, abserr] = quad(lambda Th : Phi_HG(Th), 0., 2. * np.pi,
@@ -163,11 +162,12 @@ def Phi(th, phi):
 def f(x, y, th):
     return 0
         
+x_left = 0.
 y_top = Ly
 def bcs(x, y, th):
-    sth = 96.
-    if (y == y_top):
-        return np.exp(-((sth / (2. * np.pi)) * (th - (8. * np.pi / 5.)))**2)
+    sth = 48.
+    if (y == y_top) or (x == x_left):
+        return np.exp(-((sth / (2. * np.pi)) * (th - (7. * np.pi / 4.)))**2)
     else:
         return 0
 dirac = [None, None, None]
