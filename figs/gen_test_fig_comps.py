@@ -57,8 +57,7 @@ def main():
     os.makedirs(figs_dir, exist_ok = True)
     
     # Parameters for mesh, and plot functions
-    if test_num in [1, 2, 11, 12, 13, 14, 15, 16,
-                    17, 18, 19, 20, 21, 22, 23]:
+    if test_num in [1, 2]:
         combo_long_names = [
             r'$h$-Unif. Ang.',
             r'$p$-Unif. Ang.',
@@ -112,11 +111,11 @@ def main():
     
     ax.set_xlabel('Total Degrees of Freedom')
     if test_num == 1:
-        ax.set_ylabel(r'$\sqrt{\frac{\int_{\mathcal{S}} \int_{\Omega} \left( u - u_{hp} \right)^2\,d\vec{x}\,d\vec{s}}{\int_{\mathcal{S}} \int_{\Omega} \left( u \right)^2\,d\vec{x}\,d\vec{s}}}$')
+        ax.set_ylabel(r'Error := $\sqrt{\frac{\int_{\mathcal{S}} \int_{\Omega} \left( u - u_{hp} \right)^2\,d\vec{x}\,d\vec{s}}{\int_{\mathcal{S}} \int_{\Omega} \left( u \right)^2\,d\vec{x}\,d\vec{s}}}$')
     else:
-        ax.set_ylabel(r'$\sqrt{\frac{\int_{\mathcal{S}} \int_{\Omega} \left( u_{hr} - u_{hp} \right)^2\,d\vec{x}\,d\vec{s}}{\int_{\mathcal{S}} \int_{\Omega} \left( u_{hr} \right)^2\,d\vec{x}\,d\vec{s}}}$')
+        ax.set_ylabel(r'Error := $\sqrt{\frac{\int_{\mathcal{S}} \int_{\Omega} \left( u_{hr} - u_{hp} \right)^2\,d\vec{x}\,d\vec{s}}{\int_{\mathcal{S}} \int_{\Omega} \left( u_{hr} \right)^2\,d\vec{x}\,d\vec{s}}}$')
     
-    title_str = ( 'Convergence Rate' )
+    title_str = ( 'Convergence Test' )
     ax.set_title(title_str)
     
     file_name = 'dof_convergence_{}.png'.format(test_num)
@@ -159,11 +158,11 @@ def main():
     
     ax.set_xlabel('Non-Zeros in System Matrix')
     if test_num == 1:
-        ax.set_ylabel(r'$\sqrt{\frac{\int_{\mathcal{S}} \int_{\Omega} \left( u - u_{hp} \right)^2\,d\vec{x}\,d\vec{s}}{\int_{\mathcal{S}} \int_{\Omega} \left( u \right)^2\,d\vec{x}\,d\vec{s}}}$')
+        ax.set_ylabel(r'Error := $\sqrt{\frac{\int_{\mathcal{S}} \int_{\Omega} \left( u - u_{hp} \right)^2\,d\vec{x}\,d\vec{s}}{\int_{\mathcal{S}} \int_{\Omega} \left( u \right)^2\,d\vec{x}\,d\vec{s}}}$')
     else:
-        ax.set_ylabel(r'$\sqrt{\frac{\int_{\mathcal{S}} \int_{\Omega} \left( u_{hr} - u_{hp} \right)^2\,d\vec{x}\,d\vec{s}}{\int_{\mathcal{S}} \int_{\Omega} \left( u_{hr} \right)^2\,d\vec{x}\,d\vec{s}}}$')
+        ax.set_ylabel(r'Error := $\sqrt{\frac{\int_{\mathcal{S}} \int_{\Omega} \left( u_{hr} - u_{hp} \right)^2\,d\vec{x}\,d\vec{s}}{\int_{\mathcal{S}} \int_{\Omega} \left( u_{hr} \right)^2\,d\vec{x}\,d\vec{s}}}$')
     
-    title_str = ( 'Convergence Rate' )
+    title_str = ( 'Convergence Test' )
     ax.set_title(title_str)
     
     file_name = 'nnz_convergence_{}.png'.format(test_num)

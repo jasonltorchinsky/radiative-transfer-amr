@@ -110,9 +110,9 @@ hp_amr_ang = {'full_name'  : 'Adaptive Angular hp-Refinement',
               }
         
 combos = [
-    #h_uni_ang,
-    #p_uni_ang,
-    #h_amr_ang,
+    h_uni_ang,
+    p_uni_ang,
+    h_amr_ang,
     hp_amr_ang
 ]
 

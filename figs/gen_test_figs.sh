@@ -11,4 +11,4 @@ done
 echo "Running test ${test_num} with ${n_procs} processes..."
 
 cp "test_${test_num}.py" "test_temp.py"
-mpirun -n ${n_procs} python gen_test_figs.py --test_num ${test_num}
+#mpirun -n ${n_procs} python gen_test_figs.py --test_num ${test_num}
