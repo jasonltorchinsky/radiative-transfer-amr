@@ -225,7 +225,7 @@ def get_scat_part(scat_num, Th, **kwargs):
     g = kwargs['g']
     if scat_num == 0: # Isotropic scattering
         def Phi(th, phi):
-            return 1.0 / (2.0 * np.pi) * np.ones_like(th)
+            return 1.0 / (2.0 * np.pi) * np.ones_like(th) * np.ones_like(phi)
     elif scat_num == 1: # Rayleigh scattering
         def Phi(th, phi):
             return (1.0 / (3.0 * np.pi)) * (1 + (np.cos(th - phi))**2)

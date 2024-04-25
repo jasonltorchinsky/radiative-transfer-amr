@@ -1,5 +1,12 @@
+# Standard Library Imports
+import json
+
+# Third-Party Library Imports
 import numpy as np
 
+# Local Library Imports
+
+# Relative Imports
 from .Column import Column
 from .Cell import Cell
 
@@ -114,3 +121,102 @@ def get_hasnt_th(mesh):
             mesh_hasnt_th.cols[col_key] = col_copy
             
     return mesh_hasnt_th
+
+def write_mesh(mesh, out_fname : str = "mesh.json"):
+    """
+    Converts a mesh to a dict and writes it our to a .json file.
+    """
+
+    mesh_dict = {}
+
+    # Mesh properties
+    mesh_dict["Ls"]     = mesh.Ls
+    mesh_dict["pbcs"]   = mesh.pbcs
+    mesh_dict["has_th"] = mesh.has_th
+    mesh_dict["cols"]   = {}
+
+    # Copy each column
+    for col_key, col in mesh.cols.items():
+        col_dict = {}
+
+        col_dict["pos"]       = col.pos
+        col_dict["idx"]       = col.idx
+        col_dict["lv"]        = col.lv
+        col_dict["key"]       = col.key
+        col_dict["is_lf"]     = col.is_lf
+        col_dict["ndofs"]     = col.ndofs
+        col_dict["nhbr_keys"] = col.nhbr_keys
+        col_dict["cells"]     = {}
+
+        # Copy each cell
+        for cell_key, cell in col.cells.items():
+            cell_dict = {}
+
+            cell_dict["pos"]       = cell.pos
+            cell_dict["idx"]       = cell.idx
+            cell_dict["lv"]        = cell.lv
+            cell_dict["key"]       = cell.key
+            cell_dict["is_lf"]     = cell.is_lf
+            cell_dict["ndofs"]     = cell.ndofs
+            cell_dict["quad"]      = cell.quad
+            cell_dict["nhbr_keys"] = cell.nhbr_keys
+
+            col_dict["cells"][cell_key] = cell_dict
+
+        mesh_dict["cols"][col_key] = col_dict
+
+    with open(out_fname, "w") as out_file:
+        json.dump(mesh_dict, out_file)
+
+def read_mesh(in_fname : str = "mesh.json"):
+    """
+    Reads a .json file for a mesh.
+    """
+
+    # Load in mesh dictionary
+    with open(in_fname, "r") as in_file:
+        mesh_dict = json.load(in_file)
+
+    # Make the mesh object, empty out its columns
+    Ls     = mesh_dict["Ls"]
+    pbcs   = mesh_dict["pbcs"]
+    has_th = mesh_dict["has_th"]
+    mesh   = Mesh(Ls = Ls, pbcs = pbcs, has_th = has_th)
+    mesh.del_col(0)
+
+    # Copy each Column to the mesh
+    for col_key in mesh_dict["cols"].keys():
+        col_dict = mesh_dict["cols"][col_key]
+        col_pos = col_dict["pos"]
+        col_idx = col_dict["idx"]
+        col_lv  = col_dict["lv"]
+        col_is_lf     = col_dict["is_lf"]
+        col_ndofs     = col_dict["ndofs"]
+        col_nhbr_keys = col_dict["nhbr_keys"]
+
+        col_cells = {}
+
+        # Copy each Cell to the mesh
+        for cell_key in col_dict["cells"].keys():
+            cell_dict = col_dict["cells"][cell_key]
+
+            cell_pos       = cell_dict["pos"]
+            cell_idx       = cell_dict["idx"]
+            cell_lv        = cell_dict["lv"]
+            cell_is_lf     = cell_dict["is_lf"]
+            cell_ndofs     = cell_dict["ndofs"]
+            cell_quad      = cell_dict["quad"]
+            cell_nhbr_keys = cell_dict["nhbr_keys"]
+
+            col_cells[cell_key] = Cell(pos = cell_pos, idx = cell_idx,
+                                       lv = cell_lv, is_lf = cell_is_lf, 
+                                       ndofs = cell_ndofs, quad = cell_quad,
+                                       nhbr_keys = cell_nhbr_keys)
+
+        col = Column(pos = col_pos, idx = col_idx, lv = col_lv,
+                     is_lf = col_is_lf, ndofs = col_ndofs, cells = col_cells,
+                     nhbr_keys = col_nhbr_keys)
+        
+        mesh.add_col(col)
+
+    return mesh

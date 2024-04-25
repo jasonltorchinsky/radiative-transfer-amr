@@ -10,7 +10,22 @@ class Column:
         self.ndofs = ndofs # Degrees of freedom in x-, y-.
         self.cells = cells # Dict of cells in the column
         self.nhbr_keys = nhbr_keys  # List of neighbor keys
-        
+
+    def __eq__(self, other):
+        if self.key != other.key:
+            return False
+        if self.ndofs != other.ndofs: # Assume only one entry!
+            return False
+        if self.is_lf != other.is_lf:
+            return False
+        self_cell_keys = self.cells.keys()
+        other_cell_keys = other.cells.keys()
+        if self_cell_keys != other_cell_keys:
+            return False
+        for cell_key in self_cell_keys:
+            if self.cells[cell_key] != other.cells[cell_key]:
+                return False
+        return True
 
     def __str__(self):
         msg = ( '    Column:  {}, {}\n'.format(self.idx, self.lv) +

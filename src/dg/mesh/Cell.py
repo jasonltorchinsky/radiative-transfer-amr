@@ -3,7 +3,7 @@ import numpy as np
 from .calc_key import calc_cell_key
 
 class Cell:
-    def __init__(self, pos, idx, lv, is_lf, ndofs, quad, nhbr_keys):
+    def __init__(self, pos, idx, lv, is_lf, ndofs, quad, nhbr_keys, col_key = None):
         self.pos   = pos    # Position in angular dimension
         self.idx   = idx    # Angular index of cell
         self.lv    = lv     # Level of angular refinement
@@ -12,6 +12,15 @@ class Cell:
         self.ndofs = ndofs  # Degrees of freedom in theta-.
         self.quad  = quad   # Which angular quadrant the cell is in.
         self.nhbr_keys = nhbr_keys # Keys for neighboring cells in column.
+
+    def __eq__(self, other): # Doesn't check if cells are in different columns!
+        if self.key != other.key:
+            return False
+        if self.ndofs != other.ndofs:
+            return False
+        if self.is_lf != other.is_lf:
+            return False
+        return True
         
     def __str__(self):
         pos_str = ( '[{:3.2f} pi'.format(self.pos[0] / np.pi) +

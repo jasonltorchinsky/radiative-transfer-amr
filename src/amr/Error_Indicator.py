@@ -22,8 +22,10 @@ class Error_Indicator():
         
         if self.ref_col:
             self.col_max_err = 0.
+            self.avg_col_ref_err = 0.
         else:
             self.col_max_err = None
+            self.avg_col_ref_err = None
             
         # Do we refine cells? If so, how?
         self.ref_cell      = kwargs['ref_cell']
@@ -33,8 +35,10 @@ class Error_Indicator():
         
         if self.ref_cell:
             self.cell_max_err = 0.
+            self.avg_cell_ref_err = 0.
         else:
             self.cell_max_err = None
+            self.avg_cell_ref_err = None
         
         
         # Error indicator is structured similarly to mesh object

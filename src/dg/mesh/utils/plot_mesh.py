@@ -1,15 +1,18 @@
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.patches import Rectangle, Wedge
-from mpl_toolkits.mplot3d import Axes3D
-from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+import numpy                      as np
+import matplotlib.pyplot          as plt
 import sys
+from   matplotlib.patches         import Rectangle, Wedge
+from   mpl_toolkits.mplot3d       import Axes3D
+from   mpl_toolkits.mplot3d.art3d import Poly3DCollection
+
 
 def plot_mesh(mesh, ax = None, file_name = None, **kwargs):
     
     default_kwargs = {'label_cells' : False,
                       'plot_dim'    : 2,
-                      'plot_style'  : 'flat'}
+                      'plot_style'  : 'flat',
+                      'blocking'    : False # Defualt to non-blokcig behavior for plotting
+                      }
     kwargs = {**default_kwargs, **kwargs}
 
     if kwargs['plot_dim'] == 2:
@@ -30,7 +33,9 @@ def plot_mesh(mesh, ax = None, file_name = None, **kwargs):
 
 def plot_mesh_2d(mesh, ax = None, file_name = None, **kwargs):
 
-    default_kwargs = {'label_cells': False}
+    default_kwargs = {'label_cells': False,
+                      'blocking'    : False # Defualt to non-blokcig behavior for plotting
+                      }
     kwargs = {**default_kwargs, **kwargs}
     
     Lx = mesh.Ls[0]
@@ -78,7 +83,9 @@ def plot_mesh_2d(mesh, ax = None, file_name = None, **kwargs):
 
 def plot_mesh_3d_box(mesh, ax = None, file_name = None, **kwargs):
 
-    default_kwargs = {'label_cells': False}
+    default_kwargs = {'label_cells': False,
+                      'blocking'    : False # Defualt to non-blokcig behavior for plotting
+                      }
     kwargs = {**default_kwargs, **kwargs}
     
     Lx = mesh.Ls[0]
@@ -206,7 +213,9 @@ def get_closest_factors(x):
 def plot_mesh_3d_flat(mesh, ax = None,
                       file_name = None, **kwargs):
 
-    default_kwargs = {'label_cells': False}
+    default_kwargs = {'label_cells': False,
+                      'blocking'    : False # Defualt to non-blokcig behavior for plotting
+                      }
     kwargs = {**default_kwargs, **kwargs}
 
     if ax:

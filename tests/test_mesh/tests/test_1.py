@@ -65,3 +65,12 @@ def test_1(dir_name = 'test_mesh'):
                 file_str  = 'cell_{}_{}_nhbrs.png'.format(col_key, cell_key)
                 file_name = os.path.join(nhbrs_dir, file_str)
                 ji_mesh.utils.plot_cell_nhbrs(mesh, col, cell, file_name = file_name)
+
+    # Write the mesh put and read it back in to mak sure it's the same
+    file_name = os.path.join(mesh_dir, 'mesh_out.json')
+    ji_mesh.write_mesh(mesh, file_name)
+
+    read_mesh = ji_mesh.read_mesh(file_name)
+    file_name = os.path.join(mesh_dir, 'read_mesh.png')
+    ji_mesh.utils.plot_mesh(read_mesh, ax = None, file_name = file_name,
+                                label_cells = (nrefs <= 3), plot_dim = 3)

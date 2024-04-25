@@ -1,4 +1,5 @@
 from .plot_mesh import plot_mesh
+from .plot_mesh_new import plot_mesh_new
 from .plot_mesh_bdry import plot_mesh_bdry
 from .plot_mesh_p import plot_mesh_p
 from .plot_col_nhbrs import plot_col_nhbrs
