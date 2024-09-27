@@ -1,5 +1,5 @@
 """
-Test 9: Two mildly strong scatterers in the bottom left corner.
+Test 9: Two mildly strong scatterers in the bottom right corner.
 """
 
 # Standard Library Imports
