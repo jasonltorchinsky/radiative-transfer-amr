@@ -32,7 +32,7 @@ import utils
 
 import params
 
-def main():
+def main(argv):
     ## Initialize mpi4py, petsc4py
     petsc4py.init()
     MPI_comm = MPI.COMM_WORLD # Communicator for passing data
@@ -108,18 +108,6 @@ def main():
     perf_all_0 = perf_counter()
     msg: str = ( 'Generating experiment figures...\n' )
     utils.print_msg(msg)
-
-    # Plot extinction coefficient, scattering coefficient, and scattering phase function
-    if comm_rank == 0:
-        kappa_file_name: str = "kappa.png"
-        sigma_file_name: str = "sigma.png"
-        Phi_file_name: str   = "Phi.png"
-        gen_kappa_sigma_plots([Lx, Ly], kappa, sigma, figs_dir,
-                              [kappa_file_name, sigma_file_name])
-        gen_Phi_plot(Phi, figs_dir, Phi_file_name)
-        
-        gen_u_plot([Lx, Ly], u, figs_dir)
-    MPI_comm.Barrier()
     
     for combo in ref_strats:
         combo_name = combo['short_name']
@@ -793,142 +781,7 @@ def main():
         )
         utils.print_msg(msg, blocking = False)
         
-def gen_kappa_sigma_plots(Ls, kappa, sigma, figs_dir, file_names):
-    [Lx, Ly] = Ls[:]
-    
-    xx = np.linspace(0, Lx, num = 1000).reshape([1, 1000])
-    yy = np.linspace(0, Ly, num = 1000).reshape([1000, 1])
-    [XX, YY] = np.meshgrid(xx, yy)
-    
-    kappa_c = kappa(xx, yy)
-    sigma_c = sigma(xx, yy)
-    [vmin, vmax] = [0., max(np.amax(kappa_c), np.amax(sigma_c))]
-    
-    cmap = mpl.cm.gray
-    norm = mpl.colors.Normalize(vmin = vmin, vmax = vmax)
-    
-    # kappa Plot
-    file_path = os.path.join(figs_dir, file_names[0])
-    if not os.path.isfile(file_path):
-        fig, ax = plt.subplots()
-        
-        kappa_plot = ax.contourf(XX, YY, kappa_c, levels = 16,
-                                 cmap = cmap, norm = norm)
-        
-        ax.set_xlim([0, Lx])
-        ax.set_ylim([0, Ly])
-        
-        ax.set_xlabel('x')
-        ax.set_ylabel('y')
-        ax.set_title(r'$\kappa\left( x,\ y \right)$')
-        
-        fig.colorbar(mpl.cm.ScalarMappable(norm = norm, cmap = cmap), ax = ax)
-        
-        file_path = os.path.join(figs_dir, file_names[0])
-        plt.tight_layout()
-        plt.savefig(file_path, dpi = 300)
-        
-        plt.close(fig)
 
-    # sigma Plot
-    file_path = os.path.join(figs_dir, file_names[1])
-    if not os.path.isfile(file_path):
-        fig, ax = plt.subplots()
-        
-        kappa_plot = ax.contourf(XX, YY, sigma_c, levels = 16,
-                                 cmap = cmap, norm = norm)
-        
-        ax.set_xlim([0, Lx])
-        ax.set_ylim([0, Ly])
-        
-        ax.set_xlabel('x')
-        ax.set_ylabel('y')
-        ax.set_title(r'$\sigma\left( x,\ y \right)$')
-        
-        fig.colorbar(mpl.cm.ScalarMappable(norm = norm, cmap = cmap), ax = ax)
-        
-        plt.tight_layout()
-        plt.savefig(file_path, dpi = 300)
-        
-        plt.close(fig)
-    
-def gen_Phi_plot(Phi, figs_dir, file_name):
-    
-    file_path = os.path.join(figs_dir, file_name)
-    if not os.path.isfile(file_path):
-        th = np.linspace(0, 2. * np.pi, num = 720)
-        rr = Phi(0, th)
-        
-        max_r = np.amax(rr)
-        ntick = 2
-        r_ticks = np.linspace(max_r / ntick, max_r, ntick)
-        r_tick_labels = ['{:3.2f}'.format(r_tick) for r_tick in r_ticks]
-        th_ticks = np.linspace(0, 2. * np.pi, num = 8, endpoint = False)
-        th_tick_labels = [r'${:3.2f} \pi$'.format(th_tick/np.pi)
-                          for th_tick in th_ticks]
-        
-        fig, ax = plt.subplots(subplot_kw = {'projection': 'polar'})
-        
-        Phi_plot = ax.plot(th, rr, color = 'black')
-        
-        ax.set_rlim([0, max_r])
-        ax.set_rticks(r_ticks, r_tick_labels)
-        ax.set_xlabel(r"$\theta - \theta'$")
-        ax.set_xticks(th_ticks, th_tick_labels)
-        ax.set_title(r"$\Phi\left( \theta - \theta' \right)$")
-        
-        plt.tight_layout()
-        plt.savefig(file_path, dpi = 300)
-        
-        plt.close(fig)
-    
-def gen_u_plot(Ls, u, figs_dir):
-    perf_0 = perf_counter()
-    msg = ( 'Plotting analytic solution...\n'
-           )
-    utils.print_msg(msg, blocking = False)
-
-    mesh = ji_mesh.Mesh(Ls     = Ls[:],
-                        pbcs   = [False, False],
-                        ndofs  = [8, 8, 8],
-                        has_th = True)
-    for _ in range(0, 4):
-        mesh.ref_mesh(kind = 'ang', form = 'h')
-    for _ in range(0, 4):
-        mesh.ref_mesh(kind = 'spt', form = 'h')
-        
-    file_names = ['u_th.png', 'u_xy.png', 'u_xth.png', 'u_yth.png', 'u_xyth.png']
-    file_paths = []
-    is_file_paths = []
-    for file_name in file_names:
-        file_path      = os.path.join(figs_dir, file_name)
-        file_paths    += [file_path]
-        is_file_paths += [os.path.isfile(file_path)]
-        
-    if not all(is_file_paths):
-        u_proj = proj.Projection(mesh, u)
-        
-        if not os.path.isfile(file_paths[0]):
-            proj.utils.plot_th(mesh, u_proj, file_name = file_paths[0])
-            
-        if not os.path.isfile(file_paths[1]):
-            proj.utils.plot_xy(mesh, u_proj, file_name = file_paths[1])
-            
-        if not os.path.isfile(file_paths[2]):
-            proj.utils.plot_xth(mesh, u_proj, file_name = file_paths[2])
-            
-        if not os.path.isfile(file_paths[3]):
-            proj.utils.plot_yth(mesh, u_proj, file_name = file_paths[3])
-            
-        if not os.path.isfile(file_paths[4]):
-            proj.utils.plot_xyth(mesh, u_proj, file_name = file_paths[4])
-    
-    perf_f = perf_counter()
-    perf_diff = perf_f - perf_0
-    msg = ( 'Analytic solution plotted!\n' +
-            12 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_diff)
-           )
-    utils.print_msg(msg, blocking = False)
     
     
 def get_soln(mesh, kappa, sigma, Phi, bcs_dirac, f, trial, **kwargs):
@@ -1112,4 +965,4 @@ def gen_err_ind_plot(mesh, err_ind, trial, trial_dir, file_name, **kwargs):
     utils.print_msg(msg, **kwargs)
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1:])
