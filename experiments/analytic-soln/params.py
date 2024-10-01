@@ -113,6 +113,5 @@ def u_intg_th(x, y, th0, th1):
         
 def u_intg_xy(x0, x1, y0, y1, th):
     [XY_intg, _] = dblquad(lambda x, y: XY(x, y), x0, x1, y0, y1,
-                           epsabs = 1.e-9, epsrel = 1.e-9,
-                           limit = 100, maxp1 = 100)
+                           epsabs = 1.e-9, epsrel = 1.e-9)
     return XY_intg * Theta(th)

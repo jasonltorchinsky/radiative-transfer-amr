@@ -63,7 +63,7 @@ def gen_u_plot(Ls, u, figs_dir):
         
     file_names: list = ['u_th.png', 'u_xy.png', 'u_xth.png', 'u_yth.png', 'u_xyth.png']
     file_paths: list = []
-    is_file_paths = []
+    is_file_paths: list = []
     for file_name in file_names:
         file_path      = os.path.join(figs_dir, file_name)
         file_paths    += [file_path]
