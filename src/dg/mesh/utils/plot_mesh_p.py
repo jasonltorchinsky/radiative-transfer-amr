@@ -5,26 +5,26 @@ from matplotlib.collections import PatchCollection
 
 def plot_mesh_p(mesh, file_name = None, **kwargs):
     
-    default_kwargs = {'label_cells' : False,
-                      'plot_dim' : 2,
-                      'blocking'    : False # Defualt to non-blokcig behavior for plotting
+    default_kwargs = {"label_cells" : False,
+                      "plot_dim" : 2,
+                      "blocking"    : False # Defualt to non-blokcig behavior for plotting
                       }
     kwargs = {**default_kwargs, **kwargs}
     
-    if kwargs['plot_dim'] == 2:
+    if kwargs["plot_dim"] == 2:
         ax = plot_mesh_p_2d(mesh, file_name = file_name, **kwargs)
-    elif kwargs['plot_dim'] == 3:
+    elif kwargs["plot_dim"] == 3:
         ax = plot_mesh_p_3d(mesh, file_name = file_name, **kwargs)
     else:
-        print('Unable to plot mesh that is not 2D nor 3D')
+        print("Unable to plot mesh that is not 2D nor 3D")
         # TODO: Add more error handling
 
     return None
 
 def plot_mesh_p_2d(mesh, file_name = None, **kwargs):
     
-    default_kwargs = {'label_cells' : False,
-                      'blocking'    : False # Defualt to non-blokcig behavior for plotting
+    default_kwargs = {"label_cells" : False,
+                      "blocking"    : False # Defualt to non-blokcig behavior for plotting
                       }
     kwargs = {**default_kwargs, **kwargs}
     
@@ -34,9 +34,9 @@ def plot_mesh_p_2d(mesh, file_name = None, **kwargs):
     ax.set_xlim([0, Lx])
     ax.set_ylim([0, Ly])
     
-    colors = ['#e6194B', '#f58231', '#ffe119', '#bfef45', '#aaffc3', '#3cb44b',
-              '#469990', '#42d4f4', '#4363d8', '#dcbeff', '#911eb4', '#f032e6',
-              '#fabed4', '#ffffff', '#a9a9a9', '#9A6324', '#800000']
+    colors = ["#e6194B", "#f58231", "#ffe119", "#bfef45", "#aaffc3", "#3cb44b",
+              "#469990", "#42d4f4", "#4363d8", "#dcbeff", "#911eb4", "#f032e6",
+              "#fabed4", "#ffffff", "#a9a9a9", "#9A6324", "#800000"]
     unique_ndof_xs = []
     ncolors = len(colors)
     
@@ -59,12 +59,12 @@ def plot_mesh_p_2d(mesh, file_name = None, **kwargs):
                 label = str(ndof_x)
                 labels += [ndof_x]
                 legend_elements += [Patch(facecolor = color,
-                                          edgecolor = 'black',
+                                          edgecolor = "black",
                                           label     = label)]
             
             rect = Rectangle((x0, y0), dx, dy,
                              facecolor = color,
-                             edgecolor = 'black')
+                             edgecolor = "black")
             rects += [rect]
             
     rect_coll = PatchCollection(rects, match_original = True)
@@ -75,9 +75,9 @@ def plot_mesh_p_2d(mesh, file_name = None, **kwargs):
     legend_elements = list(legend_elements)
     ax.legend(handles = legend_elements)
 
-    ax.set_xlabel('x')
-    ax.set_ylabel('y')
-    title_str = 'Total Number of DoFs: {}'.format(mesh.get_ndof())
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+    title_str = "Total Number of DoFs: {}".format(mesh.get_ndof())
     ax.set_title(title_str)
     
     if file_name:
@@ -90,8 +90,8 @@ def plot_mesh_p_2d(mesh, file_name = None, **kwargs):
 
 def plot_mesh_p_3d(mesh, file_name = None, **kwargs):
                       
-    default_kwargs = {'label_cells': False,
-                      'blocking'    : False # Defualt to non-blokcig behavior for plotting
+    default_kwargs = {"label_cells": False,
+                      "blocking"    : False # Defualt to non-blokcig behavior for plotting
                       }
     kwargs = {**default_kwargs, **kwargs}
                       
@@ -101,9 +101,9 @@ def plot_mesh_p_3d(mesh, file_name = None, **kwargs):
     ax.set_xlim([0, Lx])
     ax.set_ylim([0, Ly])
     
-    colors = ['#e6194B', '#f58231', '#ffe119', '#bfef45', '#aaffc3', '#3cb44b',
-              '#469990', '#42d4f4', '#4363d8', '#dcbeff', '#911eb4', '#f032e6',
-              '#fabed4', '#ffffff', '#a9a9a9', '#9A6324', '#800000']
+    colors = ["#e6194B", "#f58231", "#ffe119", "#bfef45", "#aaffc3", "#3cb44b",
+              "#469990", "#42d4f4", "#4363d8", "#dcbeff", "#911eb4", "#f032e6",
+              "#fabed4", "#ffffff", "#a9a9a9", "#9A6324", "#800000"]
     unique_ndof_ths = []
     ncolors = len(colors)
 
@@ -120,7 +120,7 @@ def plot_mesh_p_3d(mesh, file_name = None, **kwargs):
             [cx, cy] = [(x0 + x1) / 2., (y0 + y1) / 2.]
 
             rect = Rectangle((x0, y0), dx, dy,
-                             edgecolor = 'black',
+                             edgecolor = "black",
                              fill = None)
             rects += [rect]
 
@@ -139,11 +139,11 @@ def plot_mesh_p_3d(mesh, file_name = None, **kwargs):
                         label = str(ndof_th)
                         labels += [ndof_th]
                         legend_elements += [Patch(facecolor = color,
-                                                  edgecolor = 'black',
+                                                  edgecolor = "black",
                                                   label     = label)]
                     
                     wedge = Wedge((cx, cy), min(dx, dy)/2, deg0, deg1,
-                                  edgecolor = 'black',
+                                  edgecolor = "black",
                                   facecolor = color
                                   )
                     
@@ -160,9 +160,9 @@ def plot_mesh_p_3d(mesh, file_name = None, **kwargs):
     legend_elements = list(legend_elements)
     ax.legend(handles = legend_elements)
 
-    ax.set_xlabel('x')
-    ax.set_ylabel('y')
-    title_str = 'Total Number of DoFs: {}'.format(mesh.get_ndof())
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+    title_str = "Total Number of DoFs: {}".format(mesh.get_ndof())
     ax.set_title(title_str)
     
     if file_name:

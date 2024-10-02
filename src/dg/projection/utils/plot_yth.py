@@ -3,14 +3,14 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 import sys
 
-sys.path.append('../..')
+sys.path.append("../..")
 import dg.quadrature as qd
 from dg.projection import push_forward, pull_back
 
 def plot_yth(mesh, proj, file_name = None, **kwargs):
     
-    default_kwargs = {'cmap'  : 'hot',
-                      'scale' : 'normal'}
+    default_kwargs = {"cmap"  : "hot",
+                      "scale" : "normal"}
     kwargs = {**default_kwargs, **kwargs}
     
     if not mesh.has_th:
@@ -46,12 +46,12 @@ def plot_yth(mesh, proj, file_name = None, **kwargs):
                     vmin = min(np.amin(cell_intg_x), vmin)
                     vmax = max(np.amax(cell_intg_x), vmax)
                     
-    scale = kwargs['scale']
-    if scale == 'diff':
+    scale = kwargs["scale"]
+    if scale == "diff":
         v_bnd = max(np.abs(vmin), np.abs(vmax))
         vmin = -v_bnd
         vmax = v_bnd
-    elif scale == 'pos':
+    elif scale == "pos":
         vmin = 0.
     # Default to a normal color scale
     
@@ -80,13 +80,13 @@ def plot_yth(mesh, proj, file_name = None, **kwargs):
                     vals = cell_intg_xs[(col_key, cell_key)]
                     
                     pc = ax.pcolormesh(thf, yyf, vals,
-                                       cmap = kwargs['cmap'],
+                                       cmap = kwargs["cmap"],
                                        vmin = vmin, vmax = vmax,
-                                       shading = 'gouraud')
+                                       shading = "gouraud")
                     
                     rect = Rectangle((th0, y0), dth, dy,
-                                     facecolor = 'none',
-                                     edgecolor = 'none')
+                                     facecolor = "none",
+                                     edgecolor = "none")
                     ax.add_patch(rect)
     
     fig.colorbar(pc)
@@ -96,15 +96,15 @@ def plot_yth(mesh, proj, file_name = None, **kwargs):
     th_tick_labels = [None] * nth_ticks
     for aa in range(0, nth_ticks):
         th_rad = th_ticks[aa] / np.pi
-        th_tick_labels[aa] = '{:.2f}\u03C0'.format(th_rad)
+        th_tick_labels[aa] = "{:.2f}\u03C0".format(th_rad)
     ax.set_xticks(th_ticks)
     ax.set_xticklabels(th_tick_labels)
     
     ax.set_xlim([0, Lth])
     ax.set_ylim([0, Ly])
     
-    ax.set_xlabel(r'$\theta$')
-    ax.set_ylabel('y')
+    ax.set_xlabel(r"$\theta$")
+    ax.set_ylabel("y")
     
     if file_name:
         fig.set_size_inches(6.5, 6.5 * (Ly / Lth))

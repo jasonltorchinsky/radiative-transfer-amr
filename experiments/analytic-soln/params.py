@@ -54,7 +54,8 @@ hp_amr_ang: dict = {**hp_amr_ang, **mesh_params, **amr_params}
 hp_amr_ang["kwargs_ang_nneg"]["cell_ref_form"] = "hp"
 hp_amr_ang["kwargs_ang_jmp"]["cell_ref_form"] = "hp"
         
-ref_strats: list = [h_uni_ang, p_uni_ang, h_amr_ang, hp_amr_ang]
+#ref_strats: list = [h_uni_ang, p_uni_ang, h_amr_ang, hp_amr_ang]
+ref_strats: list = [h_amr_ang]
 
 ## Set the manufactured solution
 [Lx, Ly] = mesh_params["Ls"]

@@ -3,14 +3,14 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 import sys
 
-sys.path.append('../..')
+sys.path.append("../..")
 from dg.quadrature import quad_xyth, lag_eval
 from dg.projection import push_forward, pull_back
 
 def plot_projection(mesh, proj, file_name = None, **kwargs):
     
-    default_kwargs = {'angles' : [0, np.pi/2, np.pi, 3*np.pi/2],
-                      'cmap' : 'hot'}
+    default_kwargs = {"angles" : [0, np.pi/2, np.pi, 3*np.pi/2],
+                      "cmap" : "hot"}
     kwargs = {**default_kwargs, **kwargs}
 
     if not mesh.has_th:
@@ -67,9 +67,9 @@ def plot_projection_2d(mesh, proj, file_name = None, **kwargs):
                     vals = proj_cell.vals[:, :, 0]
                     
                     pc = ax.pcolormesh(xxf, yyf, vals.transpose(),
-                                       cmap = kwargs['cmap'],
+                                       cmap = kwargs["cmap"],
                                        vmin = vmin, vmax = vmax,
-                                       shading = 'gouraud')
+                                       shading = "gouraud")
                     
             rect = Rectangle((x0, y0), dx, dy, fill = False)
             ax.add_patch(rect)
@@ -85,12 +85,12 @@ def plot_projection_2d(mesh, proj, file_name = None, **kwargs):
 
 def plot_projection_3d(mesh, proj, file_name = None, **kwargs):
 
-    default_kwargs = {'angles' : [0, np.pi/2, np.pi, 3*np.pi/2]}
+    default_kwargs = {"angles" : [0, np.pi/2, np.pi, 3*np.pi/2]}
     kwargs = {**default_kwargs, **kwargs}
     
     [Lx, Ly] = mesh.Ls[:]
     Lz       = 2 * np.pi
-    angles   = kwargs['angles']
+    angles   = kwargs["angles"]
     nangles  = np.shape(angles)[0]
 
     # Set up the subplots
@@ -122,7 +122,7 @@ def plot_projection_3d(mesh, proj, file_name = None, **kwargs):
 
         # Title
         th_rads = th / np.pi
-        ax.set_title('{:.2f}\u03C0 Radians'.format(th_rads))
+        ax.set_title("{:.2f}\u03C0 Radians".format(th_rads))
         
         for col_key, col in col_items:
             if col.is_lf:
@@ -155,10 +155,10 @@ def plot_projection_3d(mesh, proj, file_name = None, **kwargs):
                                             * lag_eval(thb, aa, th_pb)
                                         
                             pc = ax.pcolormesh(xxf, yyf, vals_xy.transpose(),
-                                               shading = 'gouraud',
+                                               shading = "gouraud",
                                                vmin = vmin, vmax = vmax,
-                                               cmap = kwargs['cmap'],
-                                               edgecolors = 'black')
+                                               cmap = kwargs["cmap"],
+                                               edgecolors = "black")
                             
                             break
     
@@ -171,9 +171,9 @@ def plot_projection_3d(mesh, proj, file_name = None, **kwargs):
         
         # Title
         th_rads = th / np.pi
-        ax.set_title('{:.2f}\u03C0 Radians'.format(th_rads))
+        ax.set_title("{:.2f}\u03C0 Radians".format(th_rads))
             
-    fig.colorbar(pc, ax = axs, location = 'right')
+    fig.colorbar(pc, ax = axs, location = "right")
     
     if file_name:
         width  = (ncols / nrows) * 12
@@ -186,9 +186,9 @@ def plot_projection_3d(mesh, proj, file_name = None, **kwargs):
 
 
 def get_closest_factors(x):
-    '''
+    """
     Gets the factors of x that are closest to the square root.
-    '''
+    """
 
     a = int(np.floor(np.sqrt(x)))
     while ((x / a) - np.floor(x / a) > 10**(-3)):

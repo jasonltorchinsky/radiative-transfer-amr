@@ -1,6 +1,6 @@
 import sys
 
-sys.path.append('../../src')
+sys.path.append("../../src")
 import dg.mesh as ji_mesh
 
 def gen_mesh(Ls, pbcs, ndofs, has_th):
@@ -17,8 +17,8 @@ def gen_mesh(Ls, pbcs, ndofs, has_th):
     # Refine the mesh for initial trial
     # Uniform: Four columns, four cells per column
     for _ in range(0, 2):
-        mesh.ref_mesh(kind = 'ang')
+        mesh.ref_mesh(kind = "ang")
     for _ in range(0, 1):
-        mesh.ref_mesh(kind = 'spt')
+        mesh.ref_mesh(kind = "spt")
 
     return mesh

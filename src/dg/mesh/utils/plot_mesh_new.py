@@ -18,10 +18,10 @@ import matplotlib.patches as patches
 
 def plot_mesh_new(mesh, xlim, ylim, file_name : str = None, **kwargs):
     
-    default_kwargs = {'label_cells' : False,
-                      'plot_dim'    : 2,
-                      'plot_style'  : 'flat',
-                      'blocking'    : False # Defualt to non-blokcig behavior for plotting
+    default_kwargs = {"label_cells" : False,
+                      "plot_dim"    : 2,
+                      "plot_style"  : "flat",
+                      "blocking"    : False # Defualt to non-blokcig behavior for plotting
                       }
 
     kwargs = {**default_kwargs, **kwargs}
@@ -36,13 +36,13 @@ def plot_mesh_new(mesh, xlim, ylim, file_name : str = None, **kwargs):
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
 
-    ax.set_xlabel('x')
-    ax.set_ylabel('y')
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
 
     # Set up colors for showing the ndof of each element
-    colors = ['#e6194B', '#f58231', '#ffe119', '#bfef45', '#aaffc3', '#3cb44b',
-              '#469990', '#42d4f4', '#4363d8', '#dcbeff', '#911eb4', '#f032e6',
-              '#fabed4', '#ffffff', '#a9a9a9', '#9A6324', '#800000']
+    colors = ["#e6194B", "#f58231", "#ffe119", "#bfef45", "#aaffc3", "#3cb44b",
+              "#469990", "#42d4f4", "#4363d8", "#dcbeff", "#911eb4", "#f032e6",
+              "#fabed4", "#ffffff", "#a9a9a9", "#9A6324", "#800000"]
     unique_ndofs = []
     ncolors = len(colors)
 
@@ -63,7 +63,7 @@ def plot_mesh_new(mesh, xlim, ylim, file_name : str = None, **kwargs):
                 label = str(ndof_x)
                 labels += [ndof_x]
                 legend_elements += [patches.Patch(facecolor = color,
-                                            edgecolor = 'black',
+                                            edgecolor = "black",
                                             label     = label)]
             
             # Create the patch for the spatial element
@@ -74,7 +74,7 @@ def plot_mesh_new(mesh, xlim, ylim, file_name : str = None, **kwargs):
             rect = patches.Rectangle((x0, y0), dx, dy,
                              fill = True,
                             facecolor = color,
-                             edgecolor = 'black')
+                             edgecolor = "black")
             rects += [rect]
 
             cell_items = sorted(col.cells.items())
@@ -88,7 +88,7 @@ def plot_mesh_new(mesh, xlim, ylim, file_name : str = None, **kwargs):
                         label = str(ndof_th)
                         labels += [ndof_th]
                         legend_elements += [patches.Patch(facecolor = color,
-                                            edgecolor = 'black',
+                                            edgecolor = "black",
                                             label     = label)]
                 
                     [th0, th1] = cell.pos[:]
@@ -97,7 +97,7 @@ def plot_mesh_new(mesh, xlim, ylim, file_name : str = None, **kwargs):
                     wed = patches.Wedge((cx, cy), min(dx, dy)/2, deg0, deg1,
                                 fill = True,
                                 facecolor = color,
-                                edgecolor = 'black'
+                                edgecolor = "black"
                                 )
                     wedges += [wed]
                     

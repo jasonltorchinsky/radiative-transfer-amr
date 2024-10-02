@@ -6,10 +6,10 @@ import os, sys
 
 from .gen_mesh  import gen_mesh
 
-sys.path.append('../../tests')
+sys.path.append("../../tests")
 from test_cases import get_cons_prob
 
-sys.path.append('../../src')
+sys.path.append("../../src")
 from dg.mesh import get_hasnt_th
 from dg.mesh.utils import plot_mesh
 from dg.matrix import get_intr_mask, split_matrix, merge_vectors
@@ -25,20 +25,20 @@ from amr.utils import plot_error_indicator, plot_error_indicator_dist, plot_cell
 from utils import print_msg
 
 
-def test_4(dir_name = 'test_amr'):
+def test_4(dir_name = "test_amr"):
     """
     Compare the  jump error estimators against the analytic error estimators.
     """
     
-    test_dir = os.path.join(dir_name, 'test_4')
+    test_dir = os.path.join(dir_name, "test_4")
     os.makedirs(test_dir, exist_ok = True)
 
-    colors = ['#E69F00', '#56B4E9', '#009E73',
-              '#F0E442', '#0072B2', '#D55E00',
-              '#CC79A7']
+    colors = ["#E69F00", "#56B4E9", "#009E73",
+              "#F0E442", "#0072B2", "#D55E00",
+              "#CC79A7"]
     ncolor = len(colors)
 
-    ref_types = ['uni', 'amr-anl', 'amr-jmp']
+    ref_types = ["uni", "amr-anl", "amr-jmp"]
     nref_type = len(ref_types)
     
     max_ndof   = 2**13
@@ -51,7 +51,7 @@ def test_4(dir_name = 'test_amr'):
 
     for ref_type in ref_types:
         perf_ref_type_0 = perf_counter()
-        print_msg('[Refinement Type - {}] Starting...'.format(ref_type))
+        print_msg("[Refinement Type - {}] Starting...".format(ref_type))
 
         ref_dir = os.path.join(test_dir, ref_type)
         os.makedirs(test_dir, exist_ok = True)
@@ -67,7 +67,7 @@ def test_4(dir_name = 'test_amr'):
                         has_th = has_th)
         
         [u, kappa, sigma, Phi, f, u_intg_th, u_intg_xy] \
-            = get_cons_prob(prob_name = 'comp',
+            = get_cons_prob(prob_name = "comp",
                             prob_num  = 0,
                             mesh      = mesh)
         
@@ -78,19 +78,19 @@ def test_4(dir_name = 'test_amr'):
         
         while (ndof < max_ndof) and (trial <= max_ntrial):
             perf_trial_0 = perf_counter()
-            print_msg('[Trial {}] Starting...'.format(trial))
+            print_msg("[Trial {}] Starting...".format(trial))
             
             # Set up output directories
-            trial_dir = os.path.join(ref_dir, 'trial_{}'.format(trial))
+            trial_dir = os.path.join(ref_dir, "trial_{}".format(trial))
             os.makedirs(trial_dir, exist_ok = True)
             
             # Plot the mesh
-            file_name = os.path.join(trial_dir, 'mesh_3d.png')
+            file_name = os.path.join(trial_dir, "mesh_3d.png")
             plot_mesh(mesh,
                       file_name = file_name,
                       plot_dim  = 3)
             
-            file_name = os.path.join(trial_dir, 'mesh_2d.png')
+            file_name = os.path.join(trial_dir, "mesh_2d.png")
             plot_mesh(mesh,
                       file_name   = file_name,
                       plot_dim    = 2,
@@ -98,7 +98,7 @@ def test_4(dir_name = 'test_amr'):
             
             # Construct solve the test problem
             perf_sol_0 = perf_counter()
-            print_msg('[Trial {}] Solving the test problem...'.format(trial))
+            print_msg("[Trial {}] Solving the test problem...".format(trial))
             
             # Use the analytic solution for boundary conditions
             M_mass = calc_mass_matrix(mesh, kappa)
@@ -127,8 +127,8 @@ def test_4(dir_name = 'test_amr'):
             perf_sol_f    = perf_counter()
             perf_sol_diff = perf_sol_f - perf_sol_0
             msg = (
-                '[Trial {}] Test problem solved! '.format(trial) +
-                'Time Elapsed: {:08.3f} [s]'.format(perf_sol_diff)
+                "[Trial {}] Test problem solved! ".format(trial) +
+                "Time Elapsed: {:08.3f} [s]".format(perf_sol_diff)
             )
             print_msg(msg)
 
@@ -137,8 +137,8 @@ def test_4(dir_name = 'test_amr'):
             ref_ndofs[ref_type].append(ndof)
 
             msg = (
-                '[Trial {}] Number of DOFs:'.format(trial) +
-                ' {} of {}'.format(ndof, max_ndof)
+                "[Trial {}] Number of DOFs:".format(trial) +
+                " {} of {}".format(ndof, max_ndof)
             )
             print_msg(msg)
             
@@ -147,40 +147,40 @@ def test_4(dir_name = 'test_amr'):
             errs[ref_type].append(max_err)
             
             # Plot the numerical solution
-            file_name = os.path.join(trial_dir, 'uh.png')
+            file_name = os.path.join(trial_dir, "uh.png")
             angles = np.linspace(0, 1.75, 8) * np.pi
             plot_projection(mesh, uh_proj, file_name = file_name, angles = angles)
             
             mesh_2d = get_hasnt_th(mesh)
             mean_uh = intg_th(mesh, uh_proj)
-            file_name = os.path.join(trial_dir, 'uh_mean.png')
+            file_name = os.path.join(trial_dir, "uh_mean.png")
             plot_projection(mesh_2d, mean_uh, file_name = file_name)
             
-            file_name = os.path.join(trial_dir, 'uh_slices.png')
+            file_name = os.path.join(trial_dir, "uh_slices.png")
             plot_angular_dists(mesh, uh_proj, file_name = file_name)
             
             # Plot the analytic solution
-            file_name = os.path.join(trial_dir, 'u.png')
+            file_name = os.path.join(trial_dir, "u.png")
             angles = np.linspace(0, 1.75, 8) * np.pi
             plot_projection(mesh, u_proj, file_name = file_name, angles = angles)
             
             mean_u = intg_th(mesh, u_proj)
-            file_name = os.path.join(trial_dir, 'u_mean.png')
+            file_name = os.path.join(trial_dir, "u_mean.png")
             plot_projection(mesh_2d, mean_u, file_name = file_name)
             
-            file_name = os.path.join(trial_dir, 'u_slices.png')
+            file_name = os.path.join(trial_dir, "u_slices.png")
             plot_angular_dists(mesh, u_proj, file_name = file_name)
             
             # Refine the mesh for the next trial
-            if ref_type == 'uni':
-                mesh.ref_mesh(kind = 'all')
-            elif ref_type == 'amr-anl':
+            if ref_type == "uni":
+                mesh.ref_mesh(kind = "all")
+            elif ref_type == "amr-anl":
                 anl_err_spt_ind = anl_err_spt(mesh, uh_proj, u_intg_th)
                 anl_err_ang_ind = anl_err_ang(mesh, uh_proj, u_intg_xy)
                 
                 mesh = ref_by_ind(mesh, anl_err_ang_ind, tol)
                 mesh = ref_by_ind(mesh, anl_err_spt_ind, tol)
-            elif ref_type == 'amr-jmp':
+            elif ref_type == "amr-jmp":
                 col_jump_err_ind = col_jump_err(mesh, uh_proj)
                 cell_jump_err_ind = cell_jump_err(mesh, uh_proj)
                 
@@ -190,8 +190,8 @@ def test_4(dir_name = 'test_amr'):
             perf_trial_f    = perf_counter()
             perf_trial_diff = perf_trial_f - perf_trial_0
             msg = (
-                '[Trial {}] Trial completed! '.format(trial) +
-                'Time Elapsed: {:08.3f} [s]\n'.format(perf_trial_diff)
+                "[Trial {}] Trial completed! ".format(trial) +
+                "Time Elapsed: {:08.3f} [s]\n".format(perf_trial_diff)
             )
             print_msg(msg)
             
@@ -200,8 +200,8 @@ def test_4(dir_name = 'test_amr'):
         perf_ref_type_f = perf_counter()
         perf_ref_type_diff = perf_ref_type_f - perf_ref_type_0
         msg = (
-            '[Refinement Type - {}] Refinement type trials completed! '.format(ref_type) +
-            'Time Elapsed: {:08.3f} [s]\n'.format(perf_ref_type_diff)
+            "[Refinement Type - {}] Refinement type trials completed! ".format(ref_type) +
+            "Time Elapsed: {:08.3f} [s]\n".format(perf_ref_type_diff)
         )
         print_msg(msg)
         
@@ -211,12 +211,12 @@ def test_4(dir_name = 'test_amr'):
     
     for rr in range(0, nref_type):
         ref_type = ref_types[rr]
-        if ref_type == 'uni':
-            label = 'Uniform - Spatio-Angular'
-        elif ref_type == 'amr-anl':
-            label = 'Adaptive (Analytic) - Spatio-Angular'
-        elif ref_type == 'amr-jmp':
-            label = 'Adaptive (Jump) - Spatio-Angular'
+        if ref_type == "uni":
+            label = "Uniform - Spatio-Angular"
+        elif ref_type == "amr-anl":
+            label = "Adaptive (Analytic) - Spatio-Angular"
+        elif ref_type == "amr-jmp":
+            label = "Adaptive (Jump) - Spatio-Angular"
             
         min_err = min([min_err, min(errs[ref_type])])
         max_err = max([max_err, max(errs[ref_type])])
@@ -224,24 +224,24 @@ def test_4(dir_name = 'test_amr'):
         ax.plot(ref_ndofs[ref_type], errs[ref_type],
                 label     = label,
                 color     = colors[rr],
-                linestyle = '-')
+                linestyle = "-")
         
     ax.legend()
     
-    ax.set_xscale('log', base = 2)
-    ax.set_yscale('log', base = 2)
+    ax.set_xscale("log", base = 2)
+    ax.set_yscale("log", base = 2)
     
     ymin = 2**(np.floor(np.log2(min_err)))
     ymax = 2**(np.ceil(np.log2(max_err)))
     ax.set_ylim([ymin, ymax])
     
-    ax.set_xlabel('Total Degrees of Freedom')
-    ax.set_ylabel('L$^{\infty}$ Error')
+    ax.set_xlabel("Total Degrees of Freedom")
+    ax.set_ylabel("L$^{\infty}$ Error")
     
-    title_str = 'Spatio-Angular $h$-Refinement Solution Convergence Rate'
+    title_str = "Spatio-Angular $h$-Refinement Solution Convergence Rate"
     ax.set_title(title_str)
     
-    file_name = 'h-ref-conv.png'
+    file_name = "h-ref-conv.png"
     fig.set_size_inches(6.5, 6.5)
     plt.savefig(os.path.join(test_dir, file_name), dpi = 300)
     plt.close(fig)

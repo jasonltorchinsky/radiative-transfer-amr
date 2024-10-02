@@ -41,15 +41,15 @@ def high_res_err_new(mesh, uh_proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
     reuse. Compare all numerical solutions against it.
     """
     
-    default_kwargs = { 'ndof_x_hr'  : 6, # x-DoFs for hi-res solution
-                       'ndof_y_hr'  : 6, # y-DOFs for hi-res solution
-                       'ndof_th_hr' : 6, # th-DoFs for hi-res solution
-                       'nref_spt'   : 3, # Number of spatial h-refs
-                       'nref_ang'   : 2, # Number of angular h-refs
-                       'verbose'    : False, # Print info while executing
-                       'blocking'   : True,  # Synchronize ranks before exiting
-                       'file_path'  : '',    # Path for saving files
-                       'uh_hr_file_name' : 'uh_hr.npy' # File name for hr-soln
+    default_kwargs = { "ndof_x_hr"  : 6, # x-DoFs for hi-res solution
+                       "ndof_y_hr"  : 6, # y-DOFs for hi-res solution
+                       "ndof_th_hr" : 6, # th-DoFs for hi-res solution
+                       "nref_spt"   : 3, # Number of spatial h-refs
+                       "nref_ang"   : 2, # Number of angular h-refs
+                       "verbose"    : False, # Print info while executing
+                       "blocking"   : True,  # Synchronize ranks before exiting
+                       "file_path"  : "",    # Path for saving files
+                       "uh_hr_file_name" : "uh_hr.npy" # File name for hr-soln
                       }
     kwargs = {**default_kwargs, **kwargs}
     
@@ -65,17 +65,17 @@ def high_res_err_new(mesh, uh_proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
     global mesh_hr
     if mesh_hr is None:
         if comm_rank == 0:
-            [nx_hr, ny_hr, nth_hr] = [kwargs['ndof_x_hr'], kwargs['ndof_y_hr'],
-                                      kwargs['ndof_th_hr']]
+            [nx_hr, ny_hr, nth_hr] = [kwargs["ndof_x_hr"], kwargs["ndof_y_hr"],
+                                      kwargs["ndof_th_hr"]]
             mesh_hr = ji_mesh.Mesh(Ls    = mesh.Ls[:],
                                    pbcs  = mesh.pbcs[:],
                                    ndofs = [nx_hr, ny_hr, nth_hr],
                                    has_th = mesh.has_th
                                    )
-            for _ in range(0, kwargs['nref_ang']):
-                mesh_hr.ref_mesh(kind = 'ang', form = 'h')
-            for _ in range(0, kwargs['nref_spt']):
-                mesh_hr.ref_mesh(kind = 'spt', form = 'h')
+            for _ in range(0, kwargs["nref_ang"]):
+                mesh_hr.ref_mesh(kind = "ang", form = "h")
+            for _ in range(0, kwargs["nref_spt"]):
+                mesh_hr.ref_mesh(kind = "spt", form = "h")
         else:
             mesh_hr = None
         mesh_hr = MPI_comm.bcast(mesh_hr, root = 0)
@@ -85,13 +85,13 @@ def high_res_err_new(mesh, uh_proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
     # Get the high-resolution solution
     global uh_hr
     if uh_hr is None:
-        uh_hr_file_path = os.path.join(kwargs['file_path'],
-                                       kwargs['uh_hr_file_name'])
+        uh_hr_file_path = os.path.join(kwargs["file_path"],
+                                       kwargs["uh_hr_file_name"])
         if not os.path.isfile(uh_hr_file_path): # If not saved to file yet
             # Get the solution and save it to file
             [uh_hr, info] = rt.rtdg(mesh_hr, kappa, sigma, Phi, bcs_dirac, f,
                                     blocking = True,
-                                    verbose = kwargs['verbose'])
+                                    verbose = kwargs["verbose"])
             PETSc.garbage_cleanup()
             if comm_rank == 0:
                 uh_hr_vec = uh_hr.to_vector()
@@ -100,42 +100,42 @@ def high_res_err_new(mesh, uh_proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
             # Share the high-resolution solution across processes
             uh_hr = MPI_comm.bcast(uh_hr, root = 0)
             
-            # If it's not saved to file, assume we need to plot it
+            # If it"s not saved to file, assume we need to plot it
             if comm_rank == 0:
-                if kwargs['verbose']:
+                if kwargs["verbose"]:
                     msg = (
-                        'Plotting high-resolution solution...\n'
+                        "Plotting high-resolution solution...\n"
                     )
                     utils.print_msg(msg, blocking = False)
                     t0 = time.perf_counter()
                     
                 # Plot high-resolution solution for posterity
-                file_name = 'uh_hr_th.png'
-                file_path = os.path.join(kwargs['file_path'], file_name)
+                file_name = "uh_hr_th.png"
+                file_path = os.path.join(kwargs["file_path"], file_name)
                 proj.utils.plot_th(mesh_hr, uh_hr, file_name = file_path)
                 
-                file_name = 'uh_hr_xy.png'
-                file_path = os.path.join(kwargs['file_path'], file_name)
+                file_name = "uh_hr_xy.png"
+                file_path = os.path.join(kwargs["file_path"], file_name)
                 proj.utils.plot_xy(mesh_hr, uh_hr, file_name = file_path)
                 
-                file_name = 'uh_hr_xth.png'
-                file_path = os.path.join(kwargs['file_path'], file_name)
+                file_name = "uh_hr_xth.png"
+                file_path = os.path.join(kwargs["file_path"], file_name)
                 proj.utils.plot_xth(mesh_hr, uh_hr, file_name = file_path)
                 
-                file_name = 'uh_hr_yth.png'
-                file_path = os.path.join(kwargs['file_path'], file_name)
+                file_name = "uh_hr_yth.png"
+                file_path = os.path.join(kwargs["file_path"], file_name)
                 proj.utils.plot_yth(mesh_hr, uh_hr, file_name = file_path)
                 
-                file_name = 'uh_hr_xyth.png'
-                file_path = os.path.join(kwargs['file_path'], file_name)
+                file_name = "uh_hr_xyth.png"
+                file_path = os.path.join(kwargs["file_path"], file_name)
                 proj.utils.plot_xyth(mesh_hr, uh_hr, file_name = file_path)
                 
-                if kwargs['verbose']:
+                if kwargs["verbose"]:
                     tf = time.perf_counter()
                     dt = tf - t0
                     msg = (
-                        'High-resolution solution plotted!\n' +
-                        12 * ' ' + 'Time Elapsed: {:8.4f} [s]\n'.format(dt)
+                        "High-resolution solution plotted!\n" +
+                        12 * " " + "Time Elapsed: {:8.4f} [s]\n".format(dt)
                     )
                     utils.print_msg(msg, blocking = False)
         else: # If saved to file, read it from there
@@ -145,9 +145,9 @@ def high_res_err_new(mesh, uh_proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
     # Integrate the square of the high-resolution solution for relative error
     global intg_uh_hr_2
     if intg_uh_hr_2 is None:
-        if kwargs['verbose']:
+        if kwargs["verbose"]:
             msg = (
-                'Integrating high-resolution solution...\n'
+                "Integrating high-resolution solution...\n"
             )
             utils.print_msg(msg, blocking = False)
             t0 = time.perf_counter()
@@ -186,20 +186,20 @@ def high_res_err_new(mesh, uh_proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
                         
                         local_intg_uh_hr_2 += dcoeff * (dth / 2.) * np.sum(wx_hr * wy_hr * wth_hr * (uh_hr_cell)**2)
         intg_uh_hr_2 = MPI_comm.allreduce(local_intg_uh_hr_2)
-        if kwargs['verbose']:
+        if kwargs["verbose"]:
             tf = time.perf_counter()
             dt = tf - t0
             msg = (
-                'High-resolution solution integrated!\n' +
-                12 * ' ' + 'Time Elapsed: {:8.4f} [s]\n'.format(dt)
+                "High-resolution solution integrated!\n" +
+                12 * " " + "Time Elapsed: {:8.4f} [s]\n".format(dt)
             )
             utils.print_msg(msg, blocking = False)
 
     # Calculate the error
     # Embed the low-res soln in the hi-res mesh and get the L2-error
-    if kwargs['verbose']:
+    if kwargs["verbose"]:
         msg = (
-            'Calculating high-resolution error...\n'
+            "Calculating high-resolution error...\n"
         )
         utils.print_msg(msg, blocking = False)
         t0 = time.perf_counter()
@@ -326,16 +326,16 @@ def high_res_err_new(mesh, uh_proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
                     local_err += (dx * dy * dth / 8.) * np.sum(wx_hr * wy_hr * wth_hr * (uh_hr_cell_proj - uh_lr_cell_proj)**2)
     err = MPI_comm.allreduce(local_err)
     err = np.sqrt(err / intg_uh_hr_2)
-    if kwargs['verbose']:
+    if kwargs["verbose"]:
         tf = time.perf_counter()
         dt = tf - t0
         msg = (
-            'High-resolution error obtained!\n' +
-            12 * ' ' + 'Time Elapsed: {:8.4f} [s]\n'.format(dt)
+            "High-resolution error obtained!\n" +
+            12 * " " + "Time Elapsed: {:8.4f} [s]\n".format(dt)
         )
         utils.print_msg(msg, blocking = False)
         
-    if kwargs['blocking']:
+    if kwargs["blocking"]:
         MPI_comm.Barrier()
         
     return err
@@ -345,11 +345,11 @@ def high_res_err(mesh, uh_proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
     Refine the mesh twice in p, solve the problem, then calculate the error.
     """
     
-    default_kwargs = {'ref_kind'   : 'all',
-                      'ang_res_offset' : 1,   # Factor to add to angular DoFs
-                      'spt_res_offset' : 1,   # Factor to add to spatial DoFs
-                      'verbose'    : False, # Print info while executing
-                      'blocking'   : True # Synchronize ranks before exiting
+    default_kwargs = {"ref_kind"   : "all",
+                      "ang_res_offset" : 1,   # Factor to add to angular DoFs
+                      "spt_res_offset" : 1,   # Factor to add to spatial DoFs
+                      "verbose"    : False, # Print info while executing
+                      "blocking"   : True # Synchronize ranks before exiting
                       }
     kwargs = {**default_kwargs, **kwargs}
     
@@ -362,20 +362,20 @@ def high_res_err(mesh, uh_proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
     comm_rank = comm.getRank()
     comm_size = comm.getSize()
     
-    spt_res_offset = kwargs['spt_res_offset']
-    ang_res_offset = kwargs['ang_res_offset']
+    spt_res_offset = kwargs["spt_res_offset"]
+    ang_res_offset = kwargs["ang_res_offset"]
     
     if comm_rank == 0:
         uh = uh_proj # Assign by reference
         
         # Get high-resolution mesh
         mesh_hr = copy.deepcopy(mesh)
-        if kwargs['ref_kind'] in ('ang', 'all'):
+        if kwargs["ref_kind"] in ("ang", "all"):
             for _ in range(0, ang_res_offset):
-                mesh_hr.ref_mesh(kind = 'ang', form = 'p')
-        if kwargs['ref_kind'] in ('spt', 'all'):
+                mesh_hr.ref_mesh(kind = "ang", form = "p")
+        if kwargs["ref_kind"] in ("spt", "all"):
             for _ in range(0, spt_res_offset):
-                mesh_hr.ref_mesh(kind = 'spt', form = 'p')
+                mesh_hr.ref_mesh(kind = "spt", form = "p")
             
         # Get high-resolution solution
         ndof_hr = mesh_hr.get_ndof()
@@ -389,46 +389,46 @@ def high_res_err(mesh, uh_proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
     PETSc.garbage_cleanup()
     
     if comm_rank == 0:
-        if kwargs['verbose']:
+        if kwargs["verbose"]:
             msg = (
-                'Plotting high-resolution solution...\n'
+                "Plotting high-resolution solution...\n"
             )
             utils.print_msg(msg, blocking = False)
             t0 = time.perf_counter()
             
         # Plot high-resolution solution for posterity
-        file_name = 'uh_hr_th.png'
-        file_path = os.path.join(kwargs['dir_name'], file_name)
+        file_name = "uh_hr_th.png"
+        file_path = os.path.join(kwargs["dir_name"], file_name)
         proj.utils.plot_th(mesh_hr, uh_hr, file_name = file_path)
         
-        file_name = 'uh_hr_xy.png'
-        file_path = os.path.join(kwargs['dir_name'], file_name)
+        file_name = "uh_hr_xy.png"
+        file_path = os.path.join(kwargs["dir_name"], file_name)
         proj.utils.plot_xy(mesh_hr, uh_hr, file_name = file_path)
         
-        file_name = 'uh_hr_xth.png'
-        file_path = os.path.join(kwargs['dir_name'], file_name)
+        file_name = "uh_hr_xth.png"
+        file_path = os.path.join(kwargs["dir_name"], file_name)
         proj.utils.plot_xth(mesh_hr, uh_hr, file_name = file_path)
         
-        file_name = 'uh_hr_yth.png'
-        file_path = os.path.join(kwargs['dir_name'], file_name)
+        file_name = "uh_hr_yth.png"
+        file_path = os.path.join(kwargs["dir_name"], file_name)
         proj.utils.plot_yth(mesh_hr, uh_hr, file_name = file_path)
         
-        file_name = 'uh_hr_xyth.png'
-        file_path = os.path.join(kwargs['dir_name'], file_name)
+        file_name = "uh_hr_xyth.png"
+        file_path = os.path.join(kwargs["dir_name"], file_name)
         proj.utils.plot_xyth(mesh_hr, uh_hr, file_name = file_path)
         
-        if kwargs['verbose']:
+        if kwargs["verbose"]:
             tf = time.perf_counter()
             dt = tf - t0
             msg = (
-                'High-resolution solution plotted!\n' +
-                12 * ' ' + 'Time Elapsed: {:8.4f} [s]\n'.format(dt)
+                "High-resolution solution plotted!\n" +
+                12 * " " + "Time Elapsed: {:8.4f} [s]\n".format(dt)
             )
             utils.print_msg(msg, blocking = False)
             
-        if kwargs['verbose']:
+        if kwargs["verbose"]:
             msg = (
-                'Integrating high-resolution solution...\n'
+                "Integrating high-resolution solution...\n"
             )
             utils.print_msg(msg, blocking = False)
             t0 = time.perf_counter()
@@ -463,24 +463,24 @@ def high_res_err(mesh, uh_proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
                         
                         intg_uh_hr2 += dcoeff * (dth / 2.) * np.sum(wx_hr * wy_hr * wth_hr * (uh_hr_cell)**2)
                         
-        if kwargs['verbose']:
+        if kwargs["verbose"]:
             tf = time.perf_counter()
             dt = tf - t0
             msg = (
-                'High-resolution solution integrated!\n' +
-                12 * ' ' + 'Time Elapsed: {:8.4f} [s]\n'.format(dt)
+                "High-resolution solution integrated!\n" +
+                12 * " " + "Time Elapsed: {:8.4f} [s]\n".format(dt)
             )
             utils.print_msg(msg, blocking = False)
             
-        if kwargs['verbose']:
+        if kwargs["verbose"]:
             msg = (
-                'Calculating high-resolution error...\n'
+                "Calculating high-resolution error...\n"
             )
             utils.print_msg(msg, blocking = False)
             t0 = time.perf_counter()
             
         # Now calculate the error. We project high-resolution solution to low-resolution mesh.
-        # This may get into some weird quadrature rule stuff, but that's the bullet we'll bite.
+        # This may get into some weird quadrature rule stuff, but that"s the bullet we"ll bite.
         # The meshs have the same column and cell keys.
         hi_res_err = 0.
         col_keys = sorted(mesh.cols.keys())
@@ -571,12 +571,12 @@ def high_res_err(mesh, uh_proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
                         hi_res_err += (dx * dy * dth / 8.) * np.sum(wx * wy * wth * (uh_hr_lr_cell - uh_lr_cell)**2)
                         
         err = np.sqrt(hi_res_err / intg_uh_hr2)
-        if kwargs['verbose']:
+        if kwargs["verbose"]:
             tf = time.perf_counter()
             dt = tf - t0
             msg = (
-                'High-resolution error obtained!\n' +
-                12 * ' ' + 'Time Elapsed: {:8.4f} [s]\n'.format(dt)
+                "High-resolution error obtained!\n" +
+                12 * " " + "Time Elapsed: {:8.4f} [s]\n".format(dt)
             )
             utils.print_msg(msg, blocking = False)
     else:
@@ -584,7 +584,7 @@ def high_res_err(mesh, uh_proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
         
     err = MPI_comm.bcast(err, root = 0)
     
-    if kwargs['blocking']:
+    if kwargs["blocking"]:
         MPI_comm.Barrier()
         
     return err

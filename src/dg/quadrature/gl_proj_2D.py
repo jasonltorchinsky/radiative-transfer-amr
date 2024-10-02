@@ -4,7 +4,7 @@ from numpy.linalg import inv
 from .gl_eval import gl_eval
 
 def gl_proj_2D(xx, nodes_x, yy, nodes_y, comp_mpinv):
-    '''
+    """
     xx, yy  - Output data locations
     nodes_x, nodes_y - input data locations
 
@@ -18,7 +18,7 @@ def gl_proj_2D(xx, nodes_x, yy, nodes_y, comp_mpinv):
     which leads to k = (A^T A)^-1 A^T d.
 
     The final flag is whther or not to calculate the Moore-Penrose inverse.
-    '''
+    """
 
     nx = np.shape(xx)[0]
     ny = np.shape(yy)[0]

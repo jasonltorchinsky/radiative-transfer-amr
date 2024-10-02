@@ -83,9 +83,9 @@ def gen_kappa_sigma_plots(Ls, kappa, sigma, figs_dir, file_names):
         ax.set_xlim([0, Lx])
         ax.set_ylim([0, Ly])
         
-        ax.set_xlabel('x')
-        ax.set_ylabel('y')
-        ax.set_title(r'$\kappa\left( x,\ y \right)$')
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
+        ax.set_title(r"$\kappa\left( x,\ y \right)$")
         
         fig.colorbar(mpl.cm.ScalarMappable(norm = norm, cmap = cmap), ax = ax)
         
@@ -106,9 +106,9 @@ def gen_kappa_sigma_plots(Ls, kappa, sigma, figs_dir, file_names):
         ax.set_xlim([0, Lx])
         ax.set_ylim([0, Ly])
         
-        ax.set_xlabel('x')
-        ax.set_ylabel('y')
-        ax.set_title(r'$\sigma\left( x,\ y \right)$')
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
+        ax.set_title(r"$\sigma\left( x,\ y \right)$")
         
         fig.colorbar(mpl.cm.ScalarMappable(norm = norm, cmap = cmap), ax = ax)
         
@@ -127,20 +127,20 @@ def gen_Phi_plot(Phi, figs_dir, file_name):
         max_r = np.amax(rr)
         ntick = 2
         r_ticks = np.linspace(max_r / ntick, max_r, ntick)
-        r_tick_labels = ['{:3.2f}'.format(r_tick) for r_tick in r_ticks]
+        r_tick_labels = ["{:3.2f}".format(r_tick) for r_tick in r_ticks]
         th_ticks = np.linspace(0, 2. * np.pi, num = 8, endpoint = False)
-        th_tick_labels = [r'${:3.2f} \pi$'.format(th_tick/np.pi)
+        th_tick_labels = [r"${:3.2f} \pi$".format(th_tick/np.pi)
                           for th_tick in th_ticks]
         
-        fig, ax = plt.subplots(subplot_kw = {'projection': 'polar'})
+        fig, ax = plt.subplots(subplot_kw = {"projection": "polar"})
         
-        Phi_plot = ax.plot(th, rr, color = 'black')
+        Phi_plot = ax.plot(th, rr, color = "black")
         
         ax.set_rlim([0, max_r])
         ax.set_rticks(r_ticks, r_tick_labels)
-        ax.set_xlabel(r"$\theta - \theta'$")
+        ax.set_xlabel(r"$\theta - \theta"$")
         ax.set_xticks(th_ticks, th_tick_labels)
-        ax.set_title(r"$\Phi\left( \theta - \theta' \right)$")
+        ax.set_title(r"$\Phi\left( \theta - \theta" \right)$")
         
         plt.tight_layout()
         plt.savefig(file_path, dpi = 300)

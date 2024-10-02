@@ -10,11 +10,11 @@ class Projection_Column:
         
 
     def __str__(self):
-        msg = ( '    Column:  {}, {}\n'.format(self.idx, self.lv) +
-                '       key:  {}\n'.format(self.key) +
-                '       pos:  {}\n'.format(self.pos) +
-                '     ndofs:  {}\n'.format(self.ndofs) +
-                '     cells:  {}\n'.format(list(self.cells.keys()))
+        msg = ( "    Column:  {}, {}\n".format(self.idx, self.lv) +
+                "       key:  {}\n".format(self.key) +
+                "       pos:  {}\n".format(self.pos) +
+                "     ndofs:  {}\n".format(self.ndofs) +
+                "     cells:  {}\n".format(list(self.cells.keys()))
                )
 
         return msg

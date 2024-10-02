@@ -8,7 +8,7 @@ from .plot_mesh import plot_mesh, get_prism
 
 def plot_cell_spt_nhbrs(mesh, col, cell, file_name = None, **kwargs):
     
-    default_kwargs = {'label_cells' : False}
+    default_kwargs = {"label_cells" : False}
     kwargs = {**default_kwargs, **kwargs}
 
     [fig, ax] = plot_mesh(mesh, ax = None, file_name = None,
@@ -19,11 +19,11 @@ def plot_cell_spt_nhbrs(mesh, col, cell, file_name = None, **kwargs):
             [x0, y0, x1, y1] = col.pos
             if cell in list(col.cells.values()):
                 [z0, z1] = cell.pos
-                prism = get_prism([x0, x1], [y0, y1], [z0, z1], color = 'red')
+                prism = get_prism([x0, x1], [y0, y1], [z0, z1], color = "red")
                 for face in prism:
                     ax.add_collection3d(face)
                     
-                nhbr_locs = ['+', '-']
+                nhbr_locs = ["+", "-"]
                 axes = [0, 1]
                 for nhbr_loc in nhbr_locs:
                     for axis in axes:
@@ -40,7 +40,7 @@ def plot_cell_spt_nhbrs(mesh, col, cell, file_name = None, **kwargs):
                                         [z0, z1] = nhbr.pos
                                         
                                         prism = get_prism([x0, x1], [y0, y1], [z0, z1],
-                                                          color = 'blue')
+                                                          color = "blue")
                                         for face in prism:
                                             ax.add_collection3d(face)
                                             

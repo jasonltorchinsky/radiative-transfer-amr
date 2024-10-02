@@ -15,11 +15,11 @@ def get_intr_mask_seq(mesh, **kwargs):
     """
     We create the mask in a similar way to creating the matrices -
     build the cell masks to assemble the column masks to assemble the global mask.
-    scipy.sparse doesn't work for vectors, so we use a dense representation here.
+    scipy.sparse doesn"t work for vectors, so we use a dense representation here.
     """
 
-    default_kwargs = {'verbose'      : False, # Print info while executing
-                      'blocking'     : True   # Synchronize ranks before exiting
+    default_kwargs = {"verbose"      : False, # Print info while executing
+                      "blocking"     : True   # Synchronize ranks before exiting
                       } 
     kwargs = {**default_kwargs, **kwargs}
     
@@ -31,10 +31,10 @@ def get_intr_mask_seq(mesh, **kwargs):
     comm_rank = comm.getRank()
     comm_size = comm.getSize()
 
-    if kwargs['verbose']:
+    if kwargs["verbose"]:
         t0 = perf_counter()
         msg = (
-            'Constructing Interior Mask...\n'
+            "Constructing Interior Mask...\n"
             )
         utils.print_msg(msg)
 
@@ -110,15 +110,15 @@ def get_intr_mask_seq(mesh, **kwargs):
     else:
         global_mask = 0
 
-    if kwargs['verbose']:
+    if kwargs["verbose"]:
         tf = perf_counter()
         msg = (
-            'Constructed Interior Mask\n' +
-            12 * ' '  + 'Time Elapsed: {:8.4f} [s]\n'.format(tf - t0)
+            "Constructed Interior Mask\n" +
+            12 * " "  + "Time Elapsed: {:8.4f} [s]\n".format(tf - t0)
         )
         utils.print_msg(msg)
     
-    if kwargs['blocking']:        
+    if kwargs["blocking"]:        
         MPI_comm.Barrier()
         
     return global_mask
@@ -127,11 +127,11 @@ def get_intr_mask_mpi(mesh, **kwargs):
     """
     We create the mask in a similar way to creating the matrices -
     build the cell masks to assemble the column masks to assemble the global mask.
-    scipy.sparse doesn't work for vectors, so we use a dense representation here.
+    scipy.sparse doesn"t work for vectors, so we use a dense representation here.
     """
 
-    default_kwargs = {'verbose'      : False, # Print info while executing
-                      'blocking'     : True   # Synchronize ranks before exiting
+    default_kwargs = {"verbose"      : False, # Print info while executing
+                      "blocking"     : True   # Synchronize ranks before exiting
                       } 
     kwargs = {**default_kwargs, **kwargs}
     
@@ -143,10 +143,10 @@ def get_intr_mask_mpi(mesh, **kwargs):
     comm_rank = comm.getRank()
     comm_size = comm.getSize()
 
-    if kwargs['verbose']:
+    if kwargs["verbose"]:
         t0 = perf_counter()
         msg = (
-            'Constructing Interior Mask...\n'
+            "Constructing Interior Mask...\n"
             )
         utils.print_msg(msg)
 
@@ -246,15 +246,15 @@ def get_intr_mask_mpi(mesh, **kwargs):
     
     global_mask = MPI_comm.bcast(global_mask, root = 0)
     
-    if kwargs['verbose']:
+    if kwargs["verbose"]:
         tf = perf_counter()
         msg = (
-            'Constructed Interior Mask\n' +
-            12 * ' '  + 'Time Elapsed: {:8.4f} [s]\n'.format(tf - t0)
+            "Constructed Interior Mask\n" +
+            12 * " "  + "Time Elapsed: {:8.4f} [s]\n".format(tf - t0)
         )
         utils.print_msg(msg)
     
-    if kwargs['blocking']:        
+    if kwargs["blocking"]:        
         MPI_comm.Barrier()
         
     return global_mask
@@ -263,7 +263,7 @@ def get_bdry_mask(mesh):
     """
     We create the mask in a similar way to creating the matrices -
     build the cell masks to assemble the column masks to assemble the global mask.
-    scipy.sparse doesn't work for vectors, so we use a dense representation here.
+    scipy.sparse doesn"t work for vectors, so we use a dense representation here.
     """
     
     intr_mask = get_intr_mask(mesh)

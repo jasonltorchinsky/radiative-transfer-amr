@@ -7,14 +7,14 @@ from dg.projection import push_forward, pull_back
 
 def anl_err_spt(mesh, proj, anl_sol_intg_th, **kwargs):
     
-    default_kwargs = {'ref_col'      : True,
-                      'col_ref_form' : 'hp',
-                      'col_ref_kind' : 'ang',
-                      'col_ref_tol'  : 0.85,
-                      'ref_cell'      : False,
-                      'cell_ref_form' : None,
-                      'cell_ref_kind' : None,
-                      'cell_ref_tol'  : None}
+    default_kwargs = {"ref_col"      : True,
+                      "col_ref_form" : "hp",
+                      "col_ref_kind" : "ang",
+                      "col_ref_tol"  : 0.85,
+                      "ref_cell"      : False,
+                      "cell_ref_form" : None,
+                      "cell_ref_kind" : None,
+                      "cell_ref_tol"  : None}
     kwargs = {**default_kwargs, **kwargs}
     
     err_ind = Error_Indicator(mesh, **kwargs)
@@ -25,7 +25,7 @@ def anl_err_spt(mesh, proj, anl_sol_intg_th, **kwargs):
     
     # Track maximum error(s) to calculate hp-steering only where needed
     col_max_err  = 0.
-    col_ref_tol  = kwargs['col_ref_tol']
+    col_ref_tol  = kwargs["col_ref_tol"]
 
     # Get max-norm errors
     col_items = sorted(mesh.cols.items())
@@ -62,7 +62,7 @@ def anl_err_spt(mesh, proj, anl_sol_intg_th, **kwargs):
                     uh_cell = proj.cols[col_key].cells[cell_key].vals
                     uh_col_intg_th += (dth / 2.) * np.sum(w_th * uh_cell, axis = 2) 
                     
-            if kwargs['ref_col']:
+            if kwargs["ref_col"]:
                 u_col_intg_th = anl_sol_intg_th(xxf, yyf, 0, 2. * np.pi)
                 col_err       = np.amax(np.abs(u_col_intg_th - uh_col_intg_th) / (dx * dy * 2. * np.pi))
                 
@@ -72,20 +72,20 @@ def anl_err_spt(mesh, proj, anl_sol_intg_th, **kwargs):
                 col_max_err = max(col_max_err, col_err)
                 
     # Weight errors to be relative, and calculate hp-steering criteria
-    if kwargs['ref_col']:
+    if kwargs["ref_col"]:
         col_max_err  /= u_intg_th_max
         col_ref_thrsh = col_ref_tol * col_max_err
         err_ind.col_max_err = col_max_err
     
     # Weight to be relative error, determine hp-steering
-    if kwargs['ref_col']: # If we're refining columns
+    if kwargs["ref_col"]: # If we"re refining columns
         for col_key, col in col_items:
             if col.is_lf:
                 err_ind.cols[col_key].err /= u_intg_th_max
                 if err_ind.cols[col_key].err >= col_ref_thrsh: # Does this one need to be refined?
-                    if err_ind.cols[col_key].ref_form == 'hp': # Does the form of refinement need to be chosen?
+                    if err_ind.cols[col_key].ref_form == "hp": # Does the form of refinement need to be chosen?
                         err_ind.cols[col_key].ref_form = hp_steer_col(mesh, proj, col_key)
-                else: # Needn't be refined
+                else: # Needn"t be refined
                     err_ind.cols[col_key].ref_form = None
                     
     

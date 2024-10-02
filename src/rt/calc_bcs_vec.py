@@ -20,9 +20,9 @@ def calc_bcs_vec_seq(mesh, bcs_dirac, **kwargs):
     having the BCs function handle having the correct values on the boundary.
     """
     
-    default_kwargs = {'precondition' : False, # Calculate PC matrix
-                      'verbose'      : False, # Print info while executing
-                      'blocking'     : True   # Synchronize ranks before exiting
+    default_kwargs = {"precondition" : False, # Calculate PC matrix
+                      "verbose"      : False, # Print info while executing
+                      "blocking"     : True   # Synchronize ranks before exiting
                       } 
     kwargs = {**default_kwargs, **kwargs}
     
@@ -34,10 +34,10 @@ def calc_bcs_vec_seq(mesh, bcs_dirac, **kwargs):
     comm_rank = comm.getRank()
     comm_size = comm.getSize()
 
-    if kwargs['verbose']:
+    if kwargs["verbose"]:
         t0 = perf_counter()
         msg = (
-            'Constructing Boundary Conditions Vector...\n'
+            "Constructing Boundary Conditions Vector...\n"
             )
         utils.print_msg(msg)
         
@@ -167,15 +167,15 @@ def calc_bcs_vec_seq(mesh, bcs_dirac, **kwargs):
     else:
         bcs_vec = np.zeros([1])
         
-    if kwargs['verbose']:
+    if kwargs["verbose"]:
         tf = perf_counter()
         msg = (
-            'Constructed Boundary Conditions Vector\n' +
-            12 * ' '  + 'Time Elapsed: {:8.4f} [s]\n'.format(tf - t0)
+            "Constructed Boundary Conditions Vector\n" +
+            12 * " "  + "Time Elapsed: {:8.4f} [s]\n".format(tf - t0)
         )
         utils.print_msg(msg)
     
-    if kwargs['blocking']:        
+    if kwargs["blocking"]:        
         MPI_comm.Barrier()
     
     return bcs_vec
@@ -188,9 +188,9 @@ def calc_bcs_vec_mpi(mesh, bcs_dirac, **kwargs):
     having the BCs function handle having the correct values on the boundary.
     """
     
-    default_kwargs = {'precondition' : False, # Calculate PC matrix
-                      'verbose'      : False, # Print info while executing
-                      'blocking'     : True   # Synchronize ranks before exiting
+    default_kwargs = {"precondition" : False, # Calculate PC matrix
+                      "verbose"      : False, # Print info while executing
+                      "blocking"     : True   # Synchronize ranks before exiting
                       } 
     kwargs = {**default_kwargs, **kwargs}
     
@@ -202,10 +202,10 @@ def calc_bcs_vec_mpi(mesh, bcs_dirac, **kwargs):
     comm_rank  = PETSc_comm.getRank()
     comm_size  = PETSc_comm.getSize()
 
-    if kwargs['verbose']:
+    if kwargs["verbose"]:
         t0 = perf_counter()
         msg = (
-            'Constructing Boundary Conditions Vector...\n'
+            "Constructing Boundary Conditions Vector...\n"
             )
         utils.print_msg(msg)
         
@@ -250,15 +250,15 @@ def calc_bcs_vec_mpi(mesh, bcs_dirac, **kwargs):
     v_MPI.assemblyBegin()
     v_MPI.assemblyEnd()
     
-    if kwargs['verbose']:
+    if kwargs["verbose"]:
         tf = perf_counter()
         msg = (
-            'Constructed Boundary Conditions Vector\n' +
-            12 * ' '  + 'Time Elapsed: {:8.4f} [s]\n'.format(tf - t0)
+            "Constructed Boundary Conditions Vector\n" +
+            12 * " "  + "Time Elapsed: {:8.4f} [s]\n".format(tf - t0)
         )
         utils.print_msg(msg)
     
-    if kwargs['blocking']:        
+    if kwargs["blocking"]:        
         MPI_comm.Barrier()
         
     return v_MPI

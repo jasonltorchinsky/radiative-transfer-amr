@@ -6,7 +6,7 @@ from matplotlib.patches import Rectangle
 from matplotlib.collections import PatchCollection
 import sys
 
-sys.path.append('../..')
+sys.path.append("../..")
 import dg.quadrature as qd
 from dg.projection import push_forward
 
@@ -60,8 +60,8 @@ def plot_cell_jumps(mesh, err_ind, file_name = None, **kwargs):
             [dx, dy] = [x1 - x0, y1 - y0]
             
             rect = Rectangle((x0, y0), dx, dy,
-                             facecolor = 'none',
-                             edgecolor = 'black')
+                             facecolor = "none",
+                             edgecolor = "black")
             rects += [rect]
             
     rect_coll = PatchCollection(rects, match_original = True)
@@ -75,20 +75,20 @@ def plot_cell_jumps(mesh, err_ind, file_name = None, **kwargs):
             [dx, dy] = [x1 - x0, y1 - y0]
             
             sub_ax = ax.inset_axes([x0 / Lx, y0 / Ly, dx / Lx, dy / Ly],
-                                   projection = 'polar')
+                                   projection = "polar")
             col_cell_jump = col_cell_jumps[col_key]
             th = col_cell_jump[0]
             rr = col_cell_jump[1]
-            sub_ax.scatter(th, rr, color = 'k', s = 0.25)
+            sub_ax.scatter(th, rr, color = "k", s = 0.25)
             sub_ax.set_rmin(rmin)
             sub_ax.set_rmax(1.1 * rmax)
             sub_ax.set_xticks([], [])
             sub_ax.set_yticks([], [])
             sub_ax.set_rgrids([err_ind.cell_ref_tol * rmax], angle = 90)
             
-    ax.set_xlabel('x')
-    ax.set_ylabel('y')
-    title_str = 'Max : {:.3E}, Min : {:.3E}'.format(rmax, rmin)
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+    title_str = "Max : {:.3E}, Min : {:.3E}".format(rmax, rmin)
     ax.set_title(title_str)
     
     if file_name:

@@ -19,22 +19,22 @@ import utils
 def gen_convergence_plot(ref_strats, ref_strat_names, ref_strat_ndofs,
                          ref_strat_errs, out_dir, **kwargs):
     
-    default_kwargs = {'blocking' : False, # Default to non-blocking behavior for plotting
+    default_kwargs = {"blocking" : False, # Default to non-blocking behavior for plotting
                       "verbose"  : False}
     kwargs = {**default_kwargs, **kwargs}
     
     if kwargs["verbose"]:
         perf_0: float = perf_counter()
-        msg: str = ( 'Plotting convergence rates...\n' )
+        msg: str = ( "Plotting convergence rates...\n" )
         utils.print_msg(msg, **kwargs)
     
     fig, ax = plt.subplots()
             
     nref_strat = len(ref_strats)
             
-    colors = ['#000000', '#E69F00', '#56B4E9', '#009E73',
-              '#F0E442', '#0072B2', '#D55E00', '#CC79A7',
-              '#882255']
+    colors = ["#000000", "#E69F00", "#56B4E9", "#009E73",
+              "#F0E442", "#0072B2", "#D55E00", "#CC79A7",
+              "#882255"]
             
     for cc in range(0, nref_strat):
         ref_strat_name = ref_strat_names[cc]
@@ -49,23 +49,23 @@ def gen_convergence_plot(ref_strats, ref_strat_names, ref_strat_ndofs,
         xx = np.logspace(np.log10(ndofs[0]), np.log10(ndofs[-1]))
         yy = 10**b * xx**a
         ax.plot(xx, yy,
-                label = '{}: {:4.2f}'.format(ref_strat_name, a),
+                label = "{}: {:4.2f}".format(ref_strat_name, a),
                 color = colors[cc],
-                linestyle = '--'
+                linestyle = "--"
                 )
                 
     ax.legend()
             
-    ax.set_xscale('log', base = 10)
-    ax.set_yscale('log', base = 10)
+    ax.set_xscale("log", base = 10)
+    ax.set_yscale("log", base = 10)
             
-    ax.set_xlabel('Total Degrees of Freedom')
-    ax.set_ylabel(r'$\sqrt{\frac{\int_{\mathcal{S}} \int_{\Omega} \left( u - u_{hp} \right)^2\,d\vec{x}\,d\vec{s}}{\int_{\mathcal{S}} \int_{\Omega} \left( u \right)^2\,d\vec{x}\,d\vec{s}}}$')
+    ax.set_xlabel("Total Degrees of Freedom")
+    ax.set_ylabel(r"$\sqrt{\frac{\int_{\mathcal{S}} \int_{\Omega} \left( u - u_{hp} \right)^2\,d\vec{x}\,d\vec{s}}{\int_{\mathcal{S}} \int_{\Omega} \left( u \right)^2\,d\vec{x}\,d\vec{s}}}$")
 
-    title_str = ( 'Convergence Rate' )
+    title_str = ( "Convergence Rate" )
     ax.set_title(title_str)
             
-    file_name = 'convergence.png'
+    file_name = "convergence.png"
     file_path = os.path.join(out_dir, file_name)
     fig.set_size_inches(6.5, 6.5)
     plt.tight_layout()
@@ -75,6 +75,6 @@ def gen_convergence_plot(ref_strats, ref_strat_names, ref_strat_ndofs,
     if kwargs["verbose"]:
         perf_f: str = perf_counter()
         perf_diff: str = perf_f - perf_0
-        msg: str = ( 'Convergence rates plotted!\n' +
-                     22 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_diff) )
+        msg: str = ( "Convergence rates plotted!\n" +
+                     22 * " " + "Time Elapsed: {:08.3f} [s]\n".format(perf_diff) )
         utils.print_msg(msg, **kwargs)

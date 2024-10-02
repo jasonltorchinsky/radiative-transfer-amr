@@ -21,8 +21,8 @@ def calc_bdry_conv_matrix(mesh, **kwargs):
 
 def calc_bdry_conv_matrix_seq(mesh, **kwargs):
     
-    default_kwargs = {'verbose'  : False, # Print info while executing
-                      'blocking' : True   # Synchronize ranks before exiting
+    default_kwargs = {"verbose"  : False, # Print info while executing
+                      "blocking" : True   # Synchronize ranks before exiting
                       }
     kwargs = {**default_kwargs, **kwargs}
     
@@ -34,10 +34,10 @@ def calc_bdry_conv_matrix_seq(mesh, **kwargs):
     comm_rank = comm.getRank()
     comm_size = comm.getSize()
     
-    if kwargs['verbose']:
+    if kwargs["verbose"]:
         t0 = perf_counter()
         msg = (
-            'Constructing Boundary Propagation Matrix...\n'
+            "Constructing Boundary Propagation Matrix...\n"
             )
         utils.print_msg(msg)
         
@@ -52,17 +52,17 @@ def calc_bdry_conv_matrix_seq(mesh, **kwargs):
         # lot on inter-column interaction matrices,
         # so the construction is a bit more difficult.
         
-        # The local-column matrices come in two kinds: M^CC and M^CC'.
+        # The local-column matrices come in two kinds: M^CC and M^CC".
         # The M^CC have to be constructed in four parts: M^CC_F.
-        # The M^CC' can be constructed in one part.
+        # The M^CC" can be constructed in one part.
         # We loop through each column C, then through each face F of C.
         # For each face, loop through each element K of C.
-        # Depending on K, we contribute to M^CC_F or M^CC'.
+        # Depending on K, we contribute to M^CC_F or M^CC".
         # Hold all four M^CC_F, add them together after all of the loops.
         for col_key_0, col_0 in col_items:
             if col_0.is_lf:
                 # Use _0 to refer to column C
-                # Later, use _1 to refer to column C'
+                # Later, use _1 to refer to column C"
                 col_idx_0 = col_idxs[col_key_0]
                 
                 # Loop through the faces of C
@@ -91,28 +91,28 @@ def calc_bdry_conv_matrix_seq(mesh, **kwargs):
                 
         # Global boundary convection matrix is not block-diagonal
         # but we arranged the column matrices in the proper form
-        bdry_conv_mtx = sp.bmat(col_mtxs, format = 'csr')
+        bdry_conv_mtx = sp.bmat(col_mtxs, format = "csr")
         
     else:
         bdry_conv_mtx = 0
     
-    if kwargs['verbose']:
+    if kwargs["verbose"]:
         tf = perf_counter()
         msg = (
-            'Constructed Boundary Propagation Matrix\n' +
-            12 * ' '  + 'Time Elapsed: {:8.4f} [s]\n'.format(tf - t0)
+            "Constructed Boundary Propagation Matrix\n" +
+            12 * " "  + "Time Elapsed: {:8.4f} [s]\n".format(tf - t0)
         )
         utils.print_msg(msg)
     
-    if kwargs['blocking']:        
+    if kwargs["blocking"]:        
         MPI_comm.Barrier()
         
     return bdry_conv_mtx
 
 def calc_bdry_conv_matrix_mpi(mesh, **kwargs):
     
-    default_kwargs = {'verbose'  : False, # Print info while executing
-                      'blocking' : True   # Synchronize ranks before exiting
+    default_kwargs = {"verbose"  : False, # Print info while executing
+                      "blocking" : True   # Synchronize ranks before exiting
                       }
     kwargs = {**default_kwargs, **kwargs}
     
@@ -130,14 +130,14 @@ def calc_bdry_conv_matrix_mpi(mesh, **kwargs):
         n_global = None
     n_global = MPI_comm.bcast(n_global, root = 0)
     
-    if kwargs['verbose']:
+    if kwargs["verbose"]:
         t0 = perf_counter()
         msg = (
-            'Constructing Boundary Propagation Matrix...\n'
+            "Constructing Boundary Propagation Matrix...\n"
             )
         utils.print_msg(msg)
         
-    # Calculate these matrices in serial, and then we'll split them
+    # Calculate these matrices in serial, and then we"ll split them
     if comm_rank == 0:
         # Variables that are the same throughout the loops
         col_items = sorted(mesh.cols.items())
@@ -148,17 +148,17 @@ def calc_bdry_conv_matrix_mpi(mesh, **kwargs):
         # lot on inter-column interaction matrices,
         # so the construction is a bit more difficult.
         
-        # The local-column matrices come in two kinds: M^CC and M^CC'.
+        # The local-column matrices come in two kinds: M^CC and M^CC".
         # The M^CC have to be constructed in four parts: M^CC_F.
-        # The M^CC' can be constructed in one part.
+        # The M^CC" can be constructed in one part.
         # We loop through each column C, then through each face F of C.
         # For each face, loop through each element K of C.
-        # Depending on K, we contribute to M^CC_F or M^CC'.
+        # Depending on K, we contribute to M^CC_F or M^CC".
         # Hold all four M^CC_F, add them together after all of the loops.
         for col_key_0, col_0 in col_items:
             if col_0.is_lf:
                 # Use _0 to refer to column C
-                # Later, use _1 to refer to column C'
+                # Later, use _1 to refer to column C"
                 col_idx_0 = col_idxs[col_key_0]
                 
                 # Loop through the faces of C
@@ -187,23 +187,23 @@ def calc_bdry_conv_matrix_mpi(mesh, **kwargs):
                 
         # Global boundary convection matrix is not block-diagonal
         # but we arranged the column matrices in the proper form
-        bdry_conv_mtx = sp.bmat(col_mtxs, format = 'csr')
+        bdry_conv_mtx = sp.bmat(col_mtxs, format = "csr")
         
     else:
         bdry_conv_mtx = None
     
-    if kwargs['verbose']:
+    if kwargs["verbose"]:
         tf = perf_counter()
         msg = (
-            'Constructed Boundary Propagation Matrix\n' +
-            12 * ' '  + 'Time Elapsed: {:8.4f} [s]\n'.format(tf - t0)
+            "Constructed Boundary Propagation Matrix\n" +
+            12 * " "  + "Time Elapsed: {:8.4f} [s]\n".format(tf - t0)
         )
         utils.print_msg(msg)
         
-    if kwargs['verbose']:
+    if kwargs["verbose"]:
         t0 = perf_counter()
         msg = (
-            'Scattering Boundary Propagation Matrix...\n'
+            "Scattering Boundary Propagation Matrix...\n"
             )
         utils.print_msg(msg)
         
@@ -241,7 +241,7 @@ def calc_bdry_conv_matrix_mpi(mesh, **kwargs):
     M_MPI.assemblyBegin()
     M_MPI.assemblyEnd()
     
-    if kwargs['blocking']:        
+    if kwargs["blocking"]:        
         MPI_comm.Barrier()
         
     return M_MPI
@@ -272,10 +272,10 @@ def calc_col_matrix(mesh, col_key_0, F):
         [nx_1, ny_1]             = col_1.ndofs[:]
         [nc_1, cell_idxs_1]      = proj.get_cell_idxs(mesh, col_key_1)
         cell_mtxs_01             = [[None] * nc_1 for K in range(0, nc_0)]
-        if (F%2 == 0): # Construct E^K'K,y_jq
+        if (F%2 == 0): # Construct E^K"K,y_jq
             E_x_01 = None
             E_y_01 = get_Ey(mesh, col_key_0, col_key_1)
-        else: # F%2 == 1, construct E^K'K,x_ip
+        else: # F%2 == 1, construct E^K"K,x_ip
             E_x_01 = get_Ex(mesh, col_key_0, col_key_1)
             E_y_01 = None
     else:
@@ -295,10 +295,10 @@ def calc_col_matrix(mesh, col_key_0, F):
         [nx_2, ny_2]             = col_2.ndofs[:]
         [nc_2, cell_idxs_2]      = proj.get_cell_idxs(mesh, col_key_2)
         cell_mtxs_02             = [[None] * nc_2 for K in range(0, nc_0)]
-        if (F%2 == 0): # Construct E^K'K,y_jq
+        if (F%2 == 0): # Construct E^K"K,y_jq
             E_x_02 = None
             E_y_02 = get_Ey(mesh, col_key_0, col_key_2)
-        else: # F%2 == 1, construct E^K'K,x_ip
+        else: # F%2 == 1, construct E^K"K,x_ip
             E_x_02 = get_Ex(mesh, col_key_0, col_key_2)
             E_y_02 = None
     else:
@@ -344,7 +344,7 @@ def calc_col_matrix(mesh, col_key_0, F):
                     
     # Loop through cells of column C
     # For each cell in column C, we loop through the neighboring cells K^(n)
-    # in neighboring column C'
+    # in neighboring column C"
     for cell_key_0, cell_0 in cell_items_0:
         if cell_0.is_lf:
             # Get information about cell K in column C
@@ -368,7 +368,7 @@ def calc_col_matrix(mesh, col_key_0, F):
             else: # F%2 == 1
                 dcoeff = dx_0 * dth_0 / 4.
                 
-            # If we're in Fp we contribute to M^CC and use the first formula
+            # If we"re in Fp we contribute to M^CC and use the first formula
             # Otherwise we have the option of using the quadrature rule from
             # the neighboring column/cell
             if is_Fp:
@@ -613,14 +613,14 @@ def calc_col_matrix(mesh, col_key_0, F):
                         
                                 cell_mtxs_02[cell_idx_0][cell_idx_2].eliminate_zeros()
                 
-    col_mtx_00 = sp.block_diag(cell_mtxs_00, format = 'coo')
+    col_mtx_00 = sp.block_diag(cell_mtxs_00, format = "coo")
     if col_1 is not None:
-        col_mtx_01 = sp.bmat(cell_mtxs_01, format = 'coo')
+        col_mtx_01 = sp.bmat(cell_mtxs_01, format = "coo")
     else:
         col_mtx_01 = None
         
     if col_2 is not None:
-        col_mtx_02 = sp.bmat(cell_mtxs_02, format = 'coo')
+        col_mtx_02 = sp.bmat(cell_mtxs_02, format = "coo")
     else:
         col_mtx_02 = None
         

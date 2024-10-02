@@ -6,7 +6,7 @@ import os, sys
 
 from .gen_mesh import gen_mesh
 
-sys.path.append('../../src')
+sys.path.append("../../src")
 from dg.mesh import get_cell_nhbr_in_col
 import dg.quadrature as qd
 from dg.mesh.utils import plot_mesh_p
@@ -17,13 +17,13 @@ from amr import rand_err, ref_by_ind
 from utils import print_msg
 
 
-def test_5(dir_name = 'test_rt'):
+def test_5(dir_name = "test_rt"):
     """
     Eth matrix generation.
     TO-DO: MAKE CHECK FOR DIFFERENT P.
     """
     
-    test_dir = os.path.join(dir_name, 'test_5')
+    test_dir = os.path.join(dir_name, "test_5")
     os.makedirs(test_dir, exist_ok = True)
 
     do_plot_mesh = True
@@ -44,17 +44,17 @@ def test_5(dir_name = 'test_rt'):
 
     nref = 3
     for ref in range(0, nref):
-        rand_err_ind = rand_err(mesh, kind = 'all', form = 'h')
+        rand_err_ind = rand_err(mesh, kind = "all", form = "h")
         mesh = ref_by_ind(mesh, rand_err_ind,
                           ref_ratio = 0.5,
-                          form = 'h')
+                          form = "h")
 
     if do_plot_mesh:
-        file_name = os.path.join(test_dir, 'mesh_3d.png')
+        file_name = os.path.join(test_dir, "mesh_3d.png")
         plot_mesh_p(mesh      = mesh,
                     file_name = file_name,
                     plot_dim  = 3)
-        file_name = os.path.join(test_dir, 'mesh_2d.png')
+        file_name = os.path.join(test_dir, "mesh_2d.png")
         plot_mesh_p(mesh        = mesh,
                     file_name   = file_name,
                     plot_dim    = 2,
@@ -115,13 +115,13 @@ def test_5(dir_name = 'test_rt'):
                                             
                                 err = np.amax(np.abs(Eth_mat - Eth))
                                 if err > 1.e-13:
-                                    msg = ('FAILED: [{}, {}], '.format(col_key_0, cell_key_0) +
-                                           '[{}, {}]'.format(col_key_1, cell_key_1)
+                                    msg = ("FAILED: [{}, {}], ".format(col_key_0, cell_key_0) +
+                                           "[{}, {}]".format(col_key_1, cell_key_1)
                                            )
                                     print(msg)
                                     print(Eth_mat)
                                     print(Eth)
-                                    print('\n')
+                                    print("\n")
                                     E = get_Eth(mesh,
                                                 col_key_0,
                                                 cell_key_0,
@@ -132,9 +132,9 @@ def test_5(dir_name = 'test_rt'):
                                     do_fail = True
     
     if do_fail:
-        print_msg('Test failed!\n')
+        print_msg("Test failed!\n")
     else:
-        print_msg('Test passed!\n')
+        print_msg("Test passed!\n")
 
 # Theta^F function
 def Theta_F_func(theta, F):

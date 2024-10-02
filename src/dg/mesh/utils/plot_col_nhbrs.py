@@ -8,20 +8,20 @@ from .plot_mesh import plot_mesh, get_prism
 
 def plot_col_nhbrs(mesh, col, file_name = None, **kwargs):
     
-    default_kwargs = {'label_cells' : False,
-                      'plot_dim' : 2}
+    default_kwargs = {"label_cells" : False,
+                      "plot_dim" : 2}
     kwargs = {**default_kwargs, **kwargs}
 
     [fig, ax] = plot_mesh(mesh, ax = None, file_name = None, **kwargs)
 
-    if kwargs['plot_dim'] == 2:
+    if kwargs["plot_dim"] == 2:
         ax = plot_col_nhbrs_2d(mesh, ax = ax, col = col,
                                file_name = file_name)
-    elif kwargs['plot_dim'] == 3:
+    elif kwargs["plot_dim"] == 3:
         ax = plot_col_nhbrs_3d(mesh, ax = ax, col = col,
                                file_name = file_name)
     else:
-        print('Unable to plot mesh that is not 2D nor 3D')
+        print("Unable to plot mesh that is not 2D nor 3D")
         # TODO: Add more error handling
 
     return None
@@ -33,7 +33,7 @@ def plot_col_nhbrs_2d(mesh, ax = None, col = None, file_name = None):
 
     Lx = mesh.Ls[0]
     Ly = mesh.Ls[1]
-    colors = ['#648FFF', '#DC267F', '#FE6100', '#FFB000']
+    colors = ["#648FFF", "#DC267F", "#FE6100", "#FFB000"]
     
     if col in list(mesh.cols.values()):
         if col.is_lf:
@@ -42,7 +42,7 @@ def plot_col_nhbrs_2d(mesh, ax = None, col = None, file_name = None):
             height = y1 - y0
             
             cell = Rectangle((x0, y0), width, height,
-                             color = 'black', fill = True, alpha = 0.1)
+                             color = "black", fill = True, alpha = 0.1)
             ax.add_patch(cell)
             
             for F in range(0, 4):
@@ -75,7 +75,7 @@ def plot_col_nhbrs_3d(mesh, ax = None, col = None,
     if col in list(mesh.cols.values()):
         if col.is_lf:
             [x0, y0, x1, y1] = col.pos
-            prism = get_prism([x0, x1], [y0, y1], [0, 2 * np.pi], color = 'red')
+            prism = get_prism([x0, x1], [y0, y1], [0, 2 * np.pi], color = "red")
             for face in prism:
                 ax.add_collection3d(face)
                 
@@ -89,7 +89,7 @@ def plot_col_nhbrs_3d(mesh, ax = None, col = None,
                             
                             prism = get_prism([x0, x1], [y0, y1],
                                               [0, 2 * np.pi],
-                                              color = 'blue')
+                                              color = "blue")
                             for face in prism:
                                 ax.add_collection3d(face)
                             

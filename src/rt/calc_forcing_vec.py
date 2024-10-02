@@ -17,9 +17,9 @@ def calc_forcing_vec_seq(mesh, f, **kwargs):
     Create the global vector corresponding to the forcing term f.
     """
 
-    default_kwargs = {'precondition' : False, # Calculate PC matrix
-                      'verbose'      : False, # Print info while executing
-                      'blocking'     : True   # Synchronize ranks before exiting
+    default_kwargs = {"precondition" : False, # Calculate PC matrix
+                      "verbose"      : False, # Print info while executing
+                      "blocking"     : True   # Synchronize ranks before exiting
                       } 
     kwargs = {**default_kwargs, **kwargs}
     
@@ -31,10 +31,10 @@ def calc_forcing_vec_seq(mesh, f, **kwargs):
     comm_rank = comm.getRank()
     comm_size = comm.getSize()
 
-    if kwargs['verbose']:
+    if kwargs["verbose"]:
         t0 = perf_counter()
         msg = (
-            'Constructing Forcing Vector...\n'
+            "Constructing Forcing Vector...\n"
             )
         utils.print_msg(msg)
         
@@ -126,15 +126,15 @@ def calc_forcing_vec_seq(mesh, f, **kwargs):
     else:
         f_vec = np.zeros([1])
     
-    if kwargs['verbose']:
+    if kwargs["verbose"]:
         tf = perf_counter()
         msg = (
-            'Constructed Forcing Vector\n' +
-            12 * ' '  + 'Time Elapsed: {:8.4f} [s]\n'.format(tf - t0)
+            "Constructed Forcing Vector\n" +
+            12 * " "  + "Time Elapsed: {:8.4f} [s]\n".format(tf - t0)
         )
         utils.print_msg(msg)
     
-    if kwargs['blocking']:        
+    if kwargs["blocking"]:        
         MPI_comm.Barrier()
     
     return f_vec
@@ -144,9 +144,9 @@ def calc_forcing_vec_mpi(mesh, f, **kwargs):
     Create the global vector corresponding to the forcing term f.
     """
 
-    default_kwargs = {'precondition' : False, # Calculate PC matrix
-                      'verbose'      : False, # Print info while executing
-                      'blocking'     : True   # Synchronize ranks before exiting
+    default_kwargs = {"precondition" : False, # Calculate PC matrix
+                      "verbose"      : False, # Print info while executing
+                      "blocking"     : True   # Synchronize ranks before exiting
                       } 
     kwargs = {**default_kwargs, **kwargs}
     
@@ -158,10 +158,10 @@ def calc_forcing_vec_mpi(mesh, f, **kwargs):
     comm_rank  = PETSc_comm.getRank()
     comm_size  = PETSc_comm.getSize()
     
-    if kwargs['verbose']:
+    if kwargs["verbose"]:
         t0 = perf_counter()
         msg = (
-            'Constructing Forcing Vector...\n'
+            "Constructing Forcing Vector...\n"
             )
         utils.print_msg(msg)
         
@@ -206,15 +206,15 @@ def calc_forcing_vec_mpi(mesh, f, **kwargs):
     v_MPI.assemblyBegin()
     v_MPI.assemblyEnd()
     
-    if kwargs['verbose']:
+    if kwargs["verbose"]:
         tf = perf_counter()
         msg = (
-            'Constructed Forcing Vector\n' +
-            12 * ' '  + 'Time Elapsed: {:8.4f} [s]\n'.format(tf - t0)
+            "Constructed Forcing Vector\n" +
+            12 * " "  + "Time Elapsed: {:8.4f} [s]\n".format(tf - t0)
         )
         utils.print_msg(msg)
     
-    if kwargs['blocking']:        
+    if kwargs["blocking"]:        
         MPI_comm.Barrier()
     
     return v_MPI
@@ -279,9 +279,9 @@ def calc_forcing_vec_old(mesh, f, **kwargs):
     Create the global vector corresponding to the forcing term f.
     """
 
-    default_kwargs = {'precondition' : False, # Calculate PC matrix
-                      'verbose'      : False, # Print info while executing
-                      'blocking'     : True   # Synchronize ranks before exiting
+    default_kwargs = {"precondition" : False, # Calculate PC matrix
+                      "verbose"      : False, # Print info while executing
+                      "blocking"     : True   # Synchronize ranks before exiting
                       } 
     kwargs = {**default_kwargs, **kwargs}
     
@@ -293,10 +293,10 @@ def calc_forcing_vec_old(mesh, f, **kwargs):
     comm_rank = comm.getRank()
     comm_size = comm.getSize()
 
-    if kwargs['verbose']:
+    if kwargs["verbose"]:
         t0 = perf_counter()
         msg = (
-            'Constructing Forcing Vector...\n'
+            "Constructing Forcing Vector...\n"
             )
         utils.print_msg(msg)
     
@@ -368,15 +368,15 @@ def calc_forcing_vec_old(mesh, f, **kwargs):
     else:
         f_vec = np.zeros([1])
         
-    if kwargs['verbose']:
+    if kwargs["verbose"]:
         tf = perf_counter()
         msg = (
-            'Constructed Forcing Vector\n' +
-            12 * ' '  + 'Time Elapsed: {:8.4f} [s]\n'.format(tf - t0)
+            "Constructed Forcing Vector\n" +
+            12 * " "  + "Time Elapsed: {:8.4f} [s]\n".format(tf - t0)
         )
         utils.print_msg(msg)
     
-    if kwargs['blocking']:        
+    if kwargs["blocking"]:        
         MPI_comm.Barrier()
     
     return f_vec

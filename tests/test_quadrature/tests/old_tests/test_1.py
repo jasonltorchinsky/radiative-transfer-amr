@@ -2,31 +2,31 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os, sys
 
-sys.path.append('../../src')
+sys.path.append("../../src")
 import dg.quadrature as qd
 
 def test_1(func, src_nnodes = 41, trgt_nnodes = 10,
-           quad_type = 'lg', dir_name = 'test_quad'):
+           quad_type = "lg", dir_name = "test_quad"):
     """
     Tests the projection of an analytic function f onto the Legendre-Gauss/
     Legendre-Gauss-Lobatto basis.
     """
 
-    dir_name = os.path.join(dir_name, 'test_1')
+    dir_name = os.path.join(dir_name, "test_1")
     os.makedirs(dir_name, exist_ok = True)
 
-    if quad_type == 'lg':
+    if quad_type == "lg":
         [src_nodes, src_weights] = qd.lg_quad(src_nnodes)
         [trgt_nodes, trgt_weights] = qd.lg_quad(trgt_nnodes)
-        quad_type_str = 'Legendre-Gauss'
+        quad_type_str = "Legendre-Gauss"
 
-    elif quad_type == 'lgl':
+    elif quad_type == "lgl":
         [src_nodes, src_weights] = qd.lgl_quad(src_nnodes)
         [trgt_nodes, trgt_weights] = qd.lgl_quad(trgt_nnodes)
-        quad_type_str = 'Legendre-Gauss-Lobatto'
+        quad_type_str = "Legendre-Gauss-Lobatto"
 
     else:
-        print('ERROR: Test 1 recieved invalid quad_type. Please use "lg" or "lgl".')
+        print("ERROR: Test 1 recieved invalid quad_type. Please use "lg" or "lgl".")
         quit()
         
 
@@ -60,21 +60,21 @@ def test_1(func, src_nnodes = 41, trgt_nnodes = 10,
     src_err  = np.abs(f_anl - f_src_anl)
     proj_err = np.abs(f_anl - f_proj_anl)
     trgt_err = np.abs(f_anl - f_trgt_anl)
-    ax.plot(xx, src_err,  label = '|Analytic - Source|',
-            color = 'k', linestyle = '-')
-    ax.plot(xx, proj_err, label = '|Analytic - Projection|',
-            color = 'b', linestyle = '-')
-    ax.plot(xx, trgt_err, label = '|Analytic - Target|',
-            color = 'r', linestyle = '-')
+    ax.plot(xx, src_err,  label = "|Analytic - Source|",
+            color = "k", linestyle = "-")
+    ax.plot(xx, proj_err, label = "|Analytic - Projection|",
+            color = "b", linestyle = "-")
+    ax.plot(xx, trgt_err, label = "|Analytic - Target|",
+            color = "r", linestyle = "-")
     ax.legend()
-    title_str = ('1-D Function Projection Between\n'
-                 + '{} Nodal Bases\n'
-                 + 'Source Order: {}\n'
-                 + 'Target Order: {}').format(quad_type_str, src_nnodes,
+    title_str = ("1-D Function Projection Between\n"
+                 + "{} Nodal Bases\n"
+                 + "Source Order: {}\n"
+                 + "Target Order: {}").format(quad_type_str, src_nnodes,
                                               trgt_nnodes)
     ax.set_title(title_str)
 
-    file_name = '{}_proj_1d_{:03d}_{:03d}.png'.format(quad_type,
+    file_name = "{}_proj_1d_{:03d}_{:03d}.png".format(quad_type,
                                                       src_nnodes, trgt_nnodes)
     fig.set_size_inches(6.5, 6.5)
     plt.savefig(os.path.join(dir_name, file_name), dpi = 300)

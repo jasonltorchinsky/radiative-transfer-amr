@@ -8,7 +8,7 @@ def print_msg(msg, **kwargs):
     Prints the given message with the current time.
     """
     
-    default_kwargs = {'blocking' : True # Synchronize ranks before exiting
+    default_kwargs = {"blocking" : True # Synchronize ranks before exiting
                       } 
     kwargs = {**default_kwargs, **kwargs}
     
@@ -23,12 +23,12 @@ def print_msg(msg, **kwargs):
     now = datetime.now()
     current_time = now.strftime("%H:%M:%S")
     
-    out_msg = ('[{}]: {}').format(current_time, msg)
+    out_msg = ("[{}]: {}").format(current_time, msg)
 
     if comm_rank == 0:
         PETSc.Sys.Print(out_msg)
 
-    if kwargs['blocking']:
+    if kwargs["blocking"]:
         MPI_comm.Barrier()
     
     return None

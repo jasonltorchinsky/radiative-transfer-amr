@@ -9,14 +9,14 @@ from .hp_steer        import hp_steer_col
 
 def col_jump_err(mesh, uh_proj, **kwargs):
 
-    default_kwargs = {'ref_col'      : True,
-                      'col_ref_form' : 'hp',
-                      'col_ref_kind' : 'spt',
-                      'col_ref_tol'  : 0.85,
-                      'ref_cell'      : False,
-                      'cell_ref_form' : None,
-                      'cell_ref_kind' : None,
-                      'cell_ref_tol'  : None}
+    default_kwargs = {"ref_col"      : True,
+                      "col_ref_form" : "hp",
+                      "col_ref_kind" : "spt",
+                      "col_ref_tol"  : 0.85,
+                      "ref_cell"      : False,
+                      "cell_ref_form" : None,
+                      "cell_ref_kind" : None,
+                      "cell_ref_tol"  : None}
     kwargs = {**default_kwargs, **kwargs}
     
     err_ind = Error_Indicator(mesh, **kwargs)
@@ -28,7 +28,7 @@ def col_jump_err(mesh, uh_proj, **kwargs):
     
     # Track maximum error(s) to calculate hp-steering only where needed
     col_max_err  = 0.
-    col_ref_tol  = kwargs['col_ref_tol']
+    col_ref_tol  = kwargs["col_ref_tol"]
     
     # We get the jumps for each pair of neighboring cells
     # _0 refers to self, _1 refers to neighbor
@@ -161,7 +161,7 @@ def col_jump_err(mesh, uh_proj, **kwargs):
                                                 
                                                 # Get solution values in cell 1
                                                 # F refers to the face of _0, so
-                                                # it's opposite for _1
+                                                # it"s opposite for _1
                                                 if F == 0:
                                                     uh_1 = uh_proj.cols[col_key_1].cells[cell_key_1].vals[0,:,:]
                                                 elif F == 1:
@@ -232,11 +232,11 @@ def col_jump_err(mesh, uh_proj, **kwargs):
             col_err = np.sqrt((1. / (perim * 2. * np.pi)) * col_jump)
             col_max_err = max(col_max_err, col_err)
             
-            if kwargs['ref_col']:
+            if kwargs["ref_col"]:
                 err_ind.cols[col_key_0].err = col_err
                 
     # Determine hp-steering
-    if kwargs['ref_col']:
+    if kwargs["ref_col"]:
         err_ind.col_max_err = col_max_err
         col_ref_thrsh = col_ref_tol * col_max_err
         
@@ -250,25 +250,25 @@ def col_jump_err(mesh, uh_proj, **kwargs):
                 #if to_ref:
                     err_ind.avg_col_ref_err += col_err
                     col_nref += 1
-                    if err_ind.cols[col_key].ref_form == 'hp': # Does the form of refinement need to be chosen?
+                    if err_ind.cols[col_key].ref_form == "hp": # Does the form of refinement need to be chosen?
                         err_ind.cols[col_key].ref_form = hp_steer_col(mesh, uh_proj, col_key)
-                else: # Needn't be refined
+                else: # Needn"t be refined
                     err_ind.cols[col_key].ref_form = None
-    if kwargs['ref_col']:
+    if kwargs["ref_col"]:
         err_ind.avg_col_ref_err /= col_nref
         
     return err_ind
 
 def col_jump_err_old(mesh, uh_proj, **kwargs):
     
-    default_kwargs = {'ref_col'      : True,
-                      'col_ref_form' : 'hp',
-                      'col_ref_kind' : 'spt',
-                      'col_ref_tol'  : 0.85,
-                      'ref_cell'      : False,
-                      'cell_ref_form' : None,
-                      'cell_ref_kind' : None,
-                      'cell_ref_tol'  : None}
+    default_kwargs = {"ref_col"      : True,
+                      "col_ref_form" : "hp",
+                      "col_ref_kind" : "spt",
+                      "col_ref_tol"  : 0.85,
+                      "ref_cell"      : False,
+                      "cell_ref_form" : None,
+                      "cell_ref_kind" : None,
+                      "cell_ref_tol"  : None}
     kwargs = {**default_kwargs, **kwargs}
     
     err_ind = Error_Indicator(mesh, **kwargs)
@@ -278,7 +278,7 @@ def col_jump_err_old(mesh, uh_proj, **kwargs):
     
     # Track maximum error(s) to calculate hp-steering only where needed
     col_max_err  = 0.
-    col_ref_tol  = kwargs['col_ref_tol']
+    col_ref_tol  = kwargs["col_ref_tol"]
     
     # Begin by angularly-integrating each column
     col_intg_ths = {}
@@ -535,11 +535,11 @@ def col_jump_err_old(mesh, uh_proj, **kwargs):
             col_err = np.sqrt((1. / perim) * col_err)
             col_max_err = max(col_max_err, col_err)
             
-            if kwargs['ref_col']:
+            if kwargs["ref_col"]:
                 err_ind.cols[col_key_0].err = col_err
                 
     # Weight to be relative error, determine hp-steering
-    if kwargs['ref_col']:
+    if kwargs["ref_col"]:
         err_ind.col_max_err = col_max_err
         col_ref_thrsh = col_ref_tol * col_max_err
         
@@ -549,19 +549,19 @@ def col_jump_err_old(mesh, uh_proj, **kwargs):
                 if col_err >= col_ref_thrsh: # Does this one need to be refined?
                     err_ind.avg_col_ref_err += col_err
                     col_nref += 1
-                    if err_ind.cols[col_key].ref_form == 'hp': # Does the form of refinement need to be chosen?
+                    if err_ind.cols[col_key].ref_form == "hp": # Does the form of refinement need to be chosen?
                         err_ind.cols[col_key].ref_form = hp_steer_col(mesh, uh_proj, col_key)
-                else: # Needn't be refined
+                else: # Needn"t be refined
                     err_ind.cols[col_key].ref_form = None
-    #if kwargs['ref_col']:
+    #if kwargs["ref_col"]:
     #    err_ind.avg_col_ref_err /= col_nref
         
     return err_ind
 
 def intg_col_bdry_th(mesh, uh_proj, col_key):
-    '''
+    """
     Integrate the spatial boundary of a column with respect to theta.
-    '''
+    """
 
     proj_col = uh_proj.cols[col_key]
     if uh_proj_col.is_lf:

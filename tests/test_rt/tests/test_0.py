@@ -3,16 +3,16 @@ import matplotlib.pyplot as plt
 from scipy.sparse.linalg import spsolve, eigs
 import os, sys
 
-sys.path.append('../../src')
+sys.path.append("../../src")
 import dg.quadrature as qd
 from dg.projection import push_forward, pull_back
 
-def test_0(dir_name = 'test_rt'):
+def test_0(dir_name = "test_rt"):
     """
     Test the push-forward, pull-back maps.
     """
     
-    test_dir = os.path.join(dir_name, 'test_0')
+    test_dir = os.path.join(dir_name, "test_0")
     os.makedirs(test_dir, exist_ok = True)
 
     # Create simplified scenario of three elements sharing a boundary
@@ -42,20 +42,20 @@ def test_0(dir_name = 'test_rt'):
     
     # Create plots
     fig, ax = plt.subplots()
-    colors = ['#E69F00', '#56B4E9', '#009E73',
-              '#F0E442', '#0072B2', '#D55E00',
-              '#CC79A7']
+    colors = ["#E69F00", "#56B4E9", "#009E73",
+              "#F0E442", "#0072B2", "#D55E00",
+              "#CC79A7"]
     for pp in range(0, ndof_x_1):
         ax.plot(xxb, phi_pi[pp],
                 color = colors[pp],
-                linestyle = '-',
-                label = 'Basis Function {}'.format(pp))
+                linestyle = "-",
+                label = "Basis Function {}".format(pp))
 
     ax.legend()
     
-    ax.set_title('Level $(l + 1)$ Cell Basis to Level $l$ Cell Domain')
+    ax.set_title("Level $(l + 1)$ Cell Basis to Level $l$ Cell Domain")
     
-    file_name = 'l+1_to_l_1.png'
+    file_name = "l+1_to_l_1.png"
     fig.set_size_inches(6.5, 6.5)
     plt.savefig(os.path.join(test_dir, file_name), dpi = 300)
     plt.close(fig)
@@ -71,20 +71,20 @@ def test_0(dir_name = 'test_rt'):
     
     # Create plots
     fig, ax = plt.subplots()
-    colors = ['#E69F00', '#56B4E9', '#009E73',
-              '#F0E442', '#0072B2', '#D55E00',
-              '#CC79A7']
+    colors = ["#E69F00", "#56B4E9", "#009E73",
+              "#F0E442", "#0072B2", "#D55E00",
+              "#CC79A7"]
     for pp in range(0, ndof_x_2):
         ax.plot(xxb, phi_pi[pp],
                 color = colors[pp],
-                linestyle = '-',
-                label = 'Basis Function {}'.format(pp))
+                linestyle = "-",
+                label = "Basis Function {}".format(pp))
 
     ax.legend()
     
-    ax.set_title('Level $(l + 1)$ Cell Basis to Level $l$ Cell Domain')
+    ax.set_title("Level $(l + 1)$ Cell Basis to Level $l$ Cell Domain")
     
-    file_name = 'l+1_to_l_2.png'
+    file_name = "l+1_to_l_2.png"
     fig.set_size_inches(6.5, 6.5)
     plt.savefig(os.path.join(test_dir, file_name), dpi = 300)
     plt.close(fig)
@@ -101,20 +101,20 @@ def test_0(dir_name = 'test_rt'):
     
     # Create plots
     fig, ax = plt.subplots()
-    colors = ['#E69F00', '#56B4E9', '#009E73',
-              '#F0E442', '#0072B2', '#D55E00',
-              '#CC79A7']
+    colors = ["#E69F00", "#56B4E9", "#009E73",
+              "#F0E442", "#0072B2", "#D55E00",
+              "#CC79A7"]
     for pp in range(0, ndof_x_0):
         ax.plot(xxb, phi_pi[pp],
                 color = colors[pp],
-                linestyle = '-',
-                label = 'Basis Function {}'.format(pp))
+                linestyle = "-",
+                label = "Basis Function {}".format(pp))
 
     ax.legend()
     
-    ax.set_title('Level $l$ Cell Basis to Level $(l + 1)$ Cell Domain')
+    ax.set_title("Level $l$ Cell Basis to Level $(l + 1)$ Cell Domain")
     
-    file_name = 'l_to_l+1.png'
+    file_name = "l_to_l+1.png"
     fig.set_size_inches(6.5, 6.5)
     plt.savefig(os.path.join(test_dir, file_name), dpi = 300)
     plt.close(fig)

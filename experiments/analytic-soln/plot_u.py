@@ -57,11 +57,11 @@ def gen_u_plot(Ls, u, figs_dir):
                         ndofs  = [8, 8, 8],
                         has_th = True)
     for _ in range(0, 4):
-        mesh.ref_mesh(kind = 'ang', form = 'h')
+        mesh.ref_mesh(kind = "ang", form = "h")
     for _ in range(0, 4):
-        mesh.ref_mesh(kind = 'spt', form = 'h')
+        mesh.ref_mesh(kind = "spt", form = "h")
         
-    file_names: list = ['u_th.png', 'u_xy.png', 'u_xth.png', 'u_yth.png', 'u_xyth.png']
+    file_names: list = ["u_th.png", "u_xy.png", "u_xth.png", "u_yth.png", "u_xyth.png"]
     file_paths: list = []
     is_file_paths: list = []
     for file_name in file_names:

@@ -4,7 +4,7 @@ from .quad_xya import quad_xya
 from .gl_proj import gl_proj
 
 def face_2_dface(tablist, deg_prnt, deg_chld):
-    '''
+    """
     Create data structure responsible for face-to-double face communication for
     the mesh.
     
@@ -15,7 +15,7 @@ def face_2_dface(tablist, deg_prnt, deg_chld):
                  deg_prnt X 2*deg_chld
     deg_prnt - Number of DOFs for the psarent face
     deg_chld - Number of DOFs for the child face
-    '''
+    """
 
     deg_sml = np.amin([deg_prnt, deg_chld])
     deg_lrg = np.amax([deg_prnt, deg_chld])

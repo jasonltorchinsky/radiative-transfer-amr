@@ -20,10 +20,10 @@ def calc_mass_matrix(mesh, kappa, **kwargs):
 """
 def calc_mass_matrix_seq(mesh, kappa, **kwargs):
 
-    default_kwargs = {'verbose' : False}
+    default_kwargs = {"verbose" : False}
     kwargs = {**default_kwargs, **kwargs}
     
-    if kwargs['verbose']:
+    if kwargs["verbose"]:
         t0 = perf_counter()
 
     # Create column indexing for constructing global mass matrix
@@ -72,7 +72,7 @@ def calc_mass_matrix_seq(mesh, kappa, **kwargs):
 
                     # Indexing from i, j, a to beta
                     # In this case, the alpha and beta indices are the same,
-                    # so we don't have to do them separately
+                    # so we don"t have to do them separately
                     beta = get_idx_map(ndof_x, ndof_y, ndof_th)
 
                     # Values common to equation for each entry
@@ -95,16 +95,16 @@ def calc_mass_matrix_seq(mesh, kappa, **kwargs):
                                 
                     cell_mtxs[cell_idx] = coo_matrix((vlist, (betalist, betalist)))
                     
-            col_mtxs[col_idx] = block_diag(cell_mtxs, format = 'coo')
+            col_mtxs[col_idx] = block_diag(cell_mtxs, format = "coo")
 
     # Global mass matrix is block-diagonal
     # with the column matrices as the blocks
-    mass_mtx = block_diag(col_mtxs, format = 'csc')
+    mass_mtx = block_diag(col_mtxs, format = "csc")
     
-    if kwargs['verbose']:
+    if kwargs["verbose"]:
         tf = perf_counter()
         msg = (
-            'Mass Matrix Construction Time: {:8.4f} [s]\n'.format(tf - t0)
+            "Mass Matrix Construction Time: {:8.4f} [s]\n".format(tf - t0)
             )
         print_msg(msg)
 
@@ -113,8 +113,8 @@ def calc_mass_matrix_seq(mesh, kappa, **kwargs):
     
 def calc_mass_matrix_mpi(mesh, kappa, **kwargs):
 
-    default_kwargs = {'verbose'      : False, # Print info while executing
-                      'blocking'     : True   # Synchronize ranks before exiting
+    default_kwargs = {"verbose"      : False, # Print info while executing
+                      "blocking"     : True   # Synchronize ranks before exiting
                       }
     kwargs = {**default_kwargs, **kwargs}
 
@@ -126,10 +126,10 @@ def calc_mass_matrix_mpi(mesh, kappa, **kwargs):
     comm_rank  = PETSc_comm.getRank()
     comm_size  = PETSc_comm.getSize()
     
-    if kwargs['verbose']:
+    if kwargs["verbose"]:
         t0 = perf_counter()
         msg = (
-            'Constructing Interior Propagation Matrix...\n'
+            "Constructing Interior Propagation Matrix...\n"
             )
         utils.print_msg(msg)
     
@@ -183,15 +183,15 @@ def calc_mass_matrix_mpi(mesh, kappa, **kwargs):
     M_MPI.assemblyBegin()
     M_MPI.assemblyEnd()
     
-    if kwargs['verbose']:
+    if kwargs["verbose"]:
         tf = perf_counter()
         msg = (
-            'Constructed Interior Propagation Matrix\n' +
-            12 * ' '  + 'Time Elapsed: {:8.4f} [s]\n'.format(tf - t0)
+            "Constructed Interior Propagation Matrix\n" +
+            12 * " "  + "Time Elapsed: {:8.4f} [s]\n".format(tf - t0)
         )
         utils.print_msg(msg)
        
-    if kwargs['blocking']:
+    if kwargs["blocking"]:
         MPI_comm.Barrier()
         
     return M_MPI
@@ -261,7 +261,7 @@ def calc_col_matrix(mesh, col_key, kappa, **kwargs):
                             
                 cell_mtxs[cell_idx] = sp.coo_matrix((vlist, (betalist, betalist)))
                 
-        col_mtx = sp.block_diag(cell_mtxs, format = 'csr')
+        col_mtx = sp.block_diag(cell_mtxs, format = "csr")
         
     else:
         col_mtx = None

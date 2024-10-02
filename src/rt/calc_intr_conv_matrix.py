@@ -20,8 +20,8 @@ def calc_intr_conv_matrix(mesh, **kwargs):
 
 def calc_intr_conv_matrix_seq(mesh, **kwargs):
 
-    default_kwargs = {'verbose'  : False, # Print info while executing
-                      'blocking' : True   # Synchronize ranks before exiting
+    default_kwargs = {"verbose"  : False, # Print info while executing
+                      "blocking" : True   # Synchronize ranks before exiting
                       }
     kwargs = {**default_kwargs, **kwargs}
     
@@ -42,10 +42,10 @@ def calc_intr_conv_matrix_seq(mesh, **kwargs):
         ddy_psis = {}
         ddx_phis = {}
     
-    if kwargs['verbose']:
+    if kwargs["verbose"]:
         t0 = perf_counter()
         msg = (
-            'Constructing Interior Propagation Matrix...\n'
+            "Constructing Interior Propagation Matrix...\n"
             )
         utils.print_msg(msg)
         
@@ -112,7 +112,7 @@ def calc_intr_conv_matrix_seq(mesh, **kwargs):
                         # 2/dy * psi_bar in normalized coordinates, so dcoeff is
                         dcoeff = dx * dth / 4.
                         
-                        # Store the ddy_psi matrix if we haven't yet calculated it
+                        # Store the ddy_psi matrix if we haven"t yet calculated it
                         if ndof_y in ddy_psis.keys():
                             ddy_psi = ddy_psis[ndof_y]
                         else:
@@ -155,7 +155,7 @@ def calc_intr_conv_matrix_seq(mesh, **kwargs):
                         # 2/dx * phi_bar in normalized coordinates, so dcoeff is
                         dcoeff = dy * dth / 4.
                         
-                        # Store the ddy_psi matrix if we haven't yet calculated it
+                        # Store the ddy_psi matrix if we haven"t yet calculated it
                         if ndof_x in ddx_phis.keys():
                             ddx_phi = ddx_phis[ndof_x]
                         else:
@@ -188,32 +188,32 @@ def calc_intr_conv_matrix_seq(mesh, **kwargs):
                         
                         cell_mtxs[cell_idx] = delta_ipar + delta_jqar
                         
-                col_mtxs[col_idx] = sp.block_diag(cell_mtxs, format = 'coo')
+                col_mtxs[col_idx] = sp.block_diag(cell_mtxs, format = "coo")
                 
         # Global interior convection matrix is block-diagonal
         # with the column matrices as the blocks
-        intr_conv_mtx = sp.block_diag(col_mtxs, format = 'csr')
+        intr_conv_mtx = sp.block_diag(col_mtxs, format = "csr")
         
     else:
         intr_conv_mtx = 0
         
-    if kwargs['verbose']:
+    if kwargs["verbose"]:
         tf = perf_counter()
         msg = (
-            'Constructed Interior Propagation Matrix\n' +
-            12 * ' '  + 'Time Elapsed: {:8.4f} [s]\n'.format(tf - t0)
+            "Constructed Interior Propagation Matrix\n" +
+            12 * " "  + "Time Elapsed: {:8.4f} [s]\n".format(tf - t0)
         )
         utils.print_msg(msg)
         
-    if kwargs['blocking']:
+    if kwargs["blocking"]:
         MPI_comm.Barrier()
         
     return intr_conv_mtx
     
 def calc_intr_conv_matrix_mpi(mesh, **kwargs):
 
-    default_kwargs = {'verbose'      : False, # Print info while executing
-                      'blocking'     : True   # Synchronize ranks before exiting
+    default_kwargs = {"verbose"      : False, # Print info while executing
+                      "blocking"     : True   # Synchronize ranks before exiting
                       }
     kwargs = {**default_kwargs, **kwargs}
 
@@ -225,10 +225,10 @@ def calc_intr_conv_matrix_mpi(mesh, **kwargs):
     comm_rank  = PETSc_comm.getRank()
     comm_size  = PETSc_comm.getSize()
     
-    if kwargs['verbose']:
+    if kwargs["verbose"]:
         t0 = perf_counter()
         msg = (
-            'Constructing Interior Propagation Matrix...\n'
+            "Constructing Interior Propagation Matrix...\n"
             )
         utils.print_msg(msg)
     
@@ -282,15 +282,15 @@ def calc_intr_conv_matrix_mpi(mesh, **kwargs):
     M_MPI.assemblyBegin()
     M_MPI.assemblyEnd()
     
-    if kwargs['verbose']:
+    if kwargs["verbose"]:
         tf = perf_counter()
         msg = (
-            'Constructed Interior Propagation Matrix\n' +
-            12 * ' '  + 'Time Elapsed: {:8.4f} [s]\n'.format(tf - t0)
+            "Constructed Interior Propagation Matrix\n" +
+            12 * " "  + "Time Elapsed: {:8.4f} [s]\n".format(tf - t0)
         )
         utils.print_msg(msg)
        
-    if kwargs['blocking']:
+    if kwargs["blocking"]:
         MPI_comm.Barrier()
         
     return M_MPI
@@ -352,7 +352,7 @@ def calc_col_matrix(mesh, col_key, **kwargs):
                 # 2/dy * psi_bar in normalized coordinates, so dcoeff is
                 dcoeff = dx * dth / 4.
                 
-                # Store the ddy_psi matrix if we haven't yet calculated it
+                # Store the ddy_psi matrix if we haven"t yet calculated it
                 global ddy_psis
                 if ny in ddy_psis.keys():
                     ddy_psi = ddy_psis[ny][:,:]
@@ -396,7 +396,7 @@ def calc_col_matrix(mesh, col_key, **kwargs):
                 # 2/dx * phi_bar in normalized coordinates, so dcoeff is
                 dcoeff = dy * dth / 4.
                 
-                # Store the ddy_psi matrix if we haven't yet calculated it
+                # Store the ddy_psi matrix if we haven"t yet calculated it
                 global ddx_phis
                 if nx in ddx_phis.keys():
                     ddx_phi = ddx_phis[nx][:,:]
@@ -430,7 +430,7 @@ def calc_col_matrix(mesh, col_key, **kwargs):
                 
                 cell_mtxs[cell_idx] = delta_ipar + delta_jqar
                 
-        col_mtx = sp.block_diag(cell_mtxs, format = 'csr')
+        col_mtx = sp.block_diag(cell_mtxs, format = "csr")
         
     else:
         col_mtx = None

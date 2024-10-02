@@ -4,16 +4,16 @@ import os, sys
 
 from .gen_mesh import gen_mesh
 
-sys.path.append('../../src')
+sys.path.append("../../src")
 from dg.matrix import get_intr_mask
 
-def test_1(dir_name = 'test_rt'):
+def test_1(dir_name = "test_rt"):
     """
     Creates a plots of the boundary mask to extract the interior and boundary
     entries of a matrix.
     """
 
-    test_dir = os.path.join(dir_name, 'test_1')
+    test_dir = os.path.join(dir_name, "test_1")
     os.makedirs(test_dir, exist_ok = True)
     
     # Get the base mesh
@@ -34,7 +34,7 @@ def test_1(dir_name = 'test_rt'):
 
     mesh_ndof = 0
     # Plot a vertical line denoting where the column matrices are
-    ax.axvline(x = mesh_ndof, color = 'gray', linestyle = '-',
+    ax.axvline(x = mesh_ndof, color = "gray", linestyle = "-",
                linewidth = 0.75)
 
     for col_key, col in sorted(mesh.cols.items()):
@@ -51,18 +51,18 @@ def test_1(dir_name = 'test_rt'):
             mesh_ndof += col_ndof
 
             # Plot a vertical line denoting where the column matrices are
-            ax.axvline(x = mesh_ndof, color = 'gray', linestyle = '-',
+            ax.axvline(x = mesh_ndof, color = "gray", linestyle = "-",
                        linewidth = 0.75)
         
     ax.plot(intr_mask_dense,
-            color      = 'k',
-            marker     = 's',
+            color      = "k",
+            marker     = "s",
             markersize = 0.2,
-            linestyle  = 'None',
-            drawstyle  = 'steps-post')
-    ax.set_title('Interior Mask')
+            linestyle  = "None",
+            drawstyle  = "steps-post")
+    ax.set_title("Interior Mask")
     
-    file_name = 'intr_mask.png'
+    file_name = "intr_mask.png"
     fig.set_size_inches(6.5, 6.5)
     plt.savefig(os.path.join(test_dir, file_name), dpi = 300)
     plt.close(fig)

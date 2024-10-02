@@ -10,7 +10,7 @@ import sys
 
 
 # Local Library Imports
-sys.path.append('../src')
+sys.path.append("../src")
 import dg.mesh       as ji_mesh
 import dg.mesh.utils
 
@@ -35,5 +35,5 @@ def main():
                                 plot_file_path)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

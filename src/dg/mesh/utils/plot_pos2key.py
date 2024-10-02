@@ -14,11 +14,11 @@ def plot_pos2key(mesh, npoints, file_name = None):
     Lx = mesh.Ls[0]
     Ly = mesh.Ls[1]
     rng = np.random.default_rng()
-    colors = ['black', 'blue', 'red', 'green', 'cyan', 'magenta', 'yellow']
+    colors = ["black", "blue", "red", "green", "cyan", "magenta", "yellow"]
     ncolors = len(colors)
     for ii in range(0, npoints):
         color = colors[np.mod(ii, ncolors)]
-        # Put point on plot and color cell that it's in
+        # Put point on plot and color cell that it"s in
         [xp, yp] = rng.random([2])
         circ  = Circle((xp, yp), radius = Lx/100,
                        color = color, fill = True)

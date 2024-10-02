@@ -7,14 +7,14 @@ import dg.quadrature as qd
 
 def cell_jump_err_new(mesh, proj, **kwargs):
     # Skip calculating the jumps between the inflow and outflow boundary
-    default_kwargs = {'ref_col'      : False,
-                      'col_ref_form' : None,
-                      'col_ref_kind' : None,
-                      'col_ref_tol'  : None,
-                      'ref_cell'      : True,
-                      'cell_ref_form' : 'hp',
-                      'cell_ref_kind' : 'ang',
-                      'cell_ref_tol'  : 0.85}
+    default_kwargs = {"ref_col"      : False,
+                      "col_ref_form" : None,
+                      "col_ref_kind" : None,
+                      "col_ref_tol"  : None,
+                      "ref_cell"      : True,
+                      "cell_ref_form" : "hp",
+                      "cell_ref_kind" : "ang",
+                      "cell_ref_tol"  : 0.85}
     kwargs = {**default_kwargs, **kwargs}
     
     err_ind   = Error_Indicator(mesh, **kwargs)
@@ -27,9 +27,9 @@ def cell_jump_err_new(mesh, proj, **kwargs):
     
     # Track maximum error(s) to calculate hp-steering only where needed
     col_max_err   = 0.
-    col_ref_tol   = kwargs['col_ref_tol']
+    col_ref_tol   = kwargs["col_ref_tol"]
     cell_max_err  = 0.
-    cell_ref_tol  = kwargs['cell_ref_tol']
+    cell_ref_tol  = kwargs["cell_ref_tol"]
     
     # Begin by getting the radiation field at the top and bottom of each cell
     cell_tops = {}
@@ -95,7 +95,7 @@ def cell_jump_err_new(mesh, proj, **kwargs):
             else:
                 io_itfs = [None]
             
-            if kwargs['ref_col']:
+            if kwargs["ref_col"]:
                 col_err = 0.
             
             # Cell_0 is self
@@ -156,29 +156,29 @@ def cell_jump_err_new(mesh, proj, **kwargs):
                     
                     cell_err = np.sqrt(cell_jump)
                     cell_max_err = max(cell_max_err, cell_err)
-                    if kwargs['ref_cell']:
+                    if kwargs["ref_cell"]:
                         err_ind.cols[col_key].cells[cell_key_0].err = cell_err
                         
-                    if kwargs['ref_col']:
+                    if kwargs["ref_col"]:
                         col_err += cell_err
                         
-            if kwargs['ref_col']:
+            if kwargs["ref_col"]:
                 err_ind.cols[col_key].err = col_err
                 col_errs += [[col_key, col_err]]
                 col_max_err = max(col_max_err, col_err)
                 
     # Refine if error is at least tol*max_err
-    if kwargs['ref_col']:
+    if kwargs["ref_col"]:
         err_ind.col_max_err = col_max_err
         col_ref_thrsh = col_ref_tol * col_max_err
         
-    if kwargs['ref_cell']:
+    if kwargs["ref_cell"]:
         err_ind.cell_max_err = cell_max_err
         cell_ref_thrsh = cell_ref_tol * cell_max_err
         
     for col_key, col in col_items:
         if col.is_lf:
-            if kwargs['ref_col']:
+            if kwargs["ref_col"]:
                 col_err = err_ind.cols[col_key].err
                 #p = col_err / col_max_err
                 #to_ref = rng.choice([True, False], size = 1, p = (p, 1 - p))[0]
@@ -186,40 +186,40 @@ def cell_jump_err_new(mesh, proj, **kwargs):
                 #if to_ref:
                     err_ind.avg_col_ref_err += col_err
                     col_nref += 1
-                    if err_ind.cols[col_key].ref_form == 'hp':
+                    if err_ind.cols[col_key].ref_form == "hp":
                         err_ind.cols[col_key].ref_form = hp_steer_col(mesh, proj, col_key)
                 else:
                     err_ind.cols[col_key].ref_form = None
                 
-            if kwargs['ref_cell']:
+            if kwargs["ref_cell"]:
                 cell_items = sorted(col.cells.items())
                 for cell_key, cell in cell_items:
                     cell_err = err_ind.cols[col_key].cells[cell_key].err
                     if cell_err >= cell_ref_thrsh:
                         err_ind.avg_cell_ref_err += cell_err
                         cell_nref += 1
-                        if err_ind.cols[col_key].cells[cell_key].ref_form == 'hp':
+                        if err_ind.cols[col_key].cells[cell_key].ref_form == "hp":
                             err_ind.cols[col_key].cells[cell_key].ref_form = hp_steer_cell(mesh, proj, col_key, cell_key)
                     else:
                         err_ind.cols[col_key].cells[cell_key].ref_form = None
-    #if kwargs['ref_col']:
+    #if kwargs["ref_col"]:
     #    err_ind.avg_col_ref_err /= col_nref
         
-    #if kwargs['ref_cell']:
+    #if kwargs["ref_cell"]:
     #    err_ind.avg_cell_ref_err /= cell_nref
         
     return err_ind
 
 def cell_jump_err(mesh, proj, **kwargs):
 
-    default_kwargs = {'ref_col'      : False,
-                      'col_ref_form' : None,
-                      'col_ref_kind' : None,
-                      'col_ref_tol'  : None,
-                      'ref_cell'      : True,
-                      'cell_ref_form' : 'hp',
-                      'cell_ref_kind' : 'ang',
-                      'cell_ref_tol'  : 0.85}
+    default_kwargs = {"ref_col"      : False,
+                      "col_ref_form" : None,
+                      "col_ref_kind" : None,
+                      "col_ref_tol"  : None,
+                      "ref_cell"      : True,
+                      "cell_ref_form" : "hp",
+                      "cell_ref_kind" : "ang",
+                      "cell_ref_tol"  : 0.85}
     kwargs = {**default_kwargs, **kwargs}
     
     err_ind   = Error_Indicator(mesh, **kwargs)
@@ -232,9 +232,9 @@ def cell_jump_err(mesh, proj, **kwargs):
     
     # Track maximum error(s) to calculate hp-steering only where needed
     col_max_err   = 0.
-    col_ref_tol   = kwargs['col_ref_tol']
+    col_ref_tol   = kwargs["col_ref_tol"]
     cell_max_err  = 0.
-    cell_ref_tol  = kwargs['cell_ref_tol']
+    cell_ref_tol  = kwargs["cell_ref_tol"]
     
     # Begin by getting the radiation field at the top and bottom of each cell
     cell_tops = {}
@@ -276,7 +276,7 @@ def cell_jump_err(mesh, proj, **kwargs):
             wx = wx.reshape([nx, 1])
             wy = wy.reshape([1, ny])
             
-            if kwargs['ref_col']:
+            if kwargs["ref_col"]:
                 col_err = 0.
             
             # Cell_0 is self
@@ -304,29 +304,29 @@ def cell_jump_err(mesh, proj, **kwargs):
                     
                     cell_err = np.sqrt(cell_jump)
                     cell_max_err = max(cell_max_err, cell_err)
-                    if kwargs['ref_cell']:
+                    if kwargs["ref_cell"]:
                         err_ind.cols[col_key].cells[cell_key_0].err = cell_err
                         
-                    if kwargs['ref_col']:
+                    if kwargs["ref_col"]:
                         col_err += cell_err
                         
-            if kwargs['ref_col']:
+            if kwargs["ref_col"]:
                 err_ind.cols[col_key].err = col_err
                 col_errs += [[col_key, col_err]]
                 col_max_err = max(col_max_err, col_err)
                 
     # Refine if error is at least tol*max_err
-    if kwargs['ref_col']:
+    if kwargs["ref_col"]:
         err_ind.col_max_err = col_max_err
         col_ref_thrsh = col_ref_tol * col_max_err
         
-    if kwargs['ref_cell']:
+    if kwargs["ref_cell"]:
         err_ind.cell_max_err = cell_max_err
         cell_ref_thrsh = cell_ref_tol * cell_max_err
         
     for col_key, col in col_items:
         if col.is_lf:
-            if kwargs['ref_col']:
+            if kwargs["ref_col"]:
                 col_err = err_ind.cols[col_key].err
                 #p = col_err / col_max_err
                 #to_ref = rng.choice([True, False], size = 1, p = (p, 1 - p))[0]
@@ -334,12 +334,12 @@ def cell_jump_err(mesh, proj, **kwargs):
                 #if to_ref:
                     err_ind.avg_col_ref_err += col_err
                     col_nref += 1
-                    if err_ind.cols[col_key].ref_form == 'hp':
+                    if err_ind.cols[col_key].ref_form == "hp":
                         err_ind.cols[col_key].ref_form = hp_steer_col(mesh, proj, col_key)
                 else:
                     err_ind.cols[col_key].ref_form = None
                 
-            if kwargs['ref_cell']:
+            if kwargs["ref_cell"]:
                 cell_items = sorted(col.cells.items())
                 for cell_key, cell in cell_items:
                     cell_err = err_ind.cols[col_key].cells[cell_key].err
@@ -349,14 +349,14 @@ def cell_jump_err(mesh, proj, **kwargs):
                     #if to_ref:
                         err_ind.avg_cell_ref_err += cell_err
                         cell_nref += 1
-                        if err_ind.cols[col_key].cells[cell_key].ref_form == 'hp':
+                        if err_ind.cols[col_key].cells[cell_key].ref_form == "hp":
                             err_ind.cols[col_key].cells[cell_key].ref_form = hp_steer_cell(mesh, proj, col_key, cell_key)
                     else:
                         err_ind.cols[col_key].cells[cell_key].ref_form = None
-    #if kwargs['ref_col']:
+    #if kwargs["ref_col"]:
     #    err_ind.avg_col_ref_err /= col_nref
         
-    #if kwargs['ref_cell']:
+    #if kwargs["ref_cell"]:
     #    err_ind.avg_cell_ref_err /= cell_nref
         
     return err_ind

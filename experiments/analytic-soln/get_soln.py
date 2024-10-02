@@ -23,7 +23,7 @@ def get_soln(mesh, kappa, sigma, Phi, bcs_dirac, f, trial, **kwargs):
     
     if kwargs["verbose"]:
         perf_0: float = perf_counter()
-        msg: str = ( '[Trial {}] Obtaining numerical solution...\n'.format(trial) )
+        msg: str = ( "[Trial {}] Obtaining numerical solution...\n".format(trial) )
         utils.print_msg(msg)
     
     [uh_proj, info, mat_info] = rt.rtdg(mesh, kappa, sigma, Phi, bcs_dirac, f,
@@ -33,9 +33,9 @@ def get_soln(mesh, kappa, sigma, Phi, bcs_dirac, f, trial, **kwargs):
     if kwargs["verbose"]:
         perf_f: float = perf_counter()
         perf_diff: float = perf_f - perf_0
-        msg: str = ( '[Trial {}] Numerical solution obtained! : '.format(trial) +
-            'Exit Code {} \n'.format(info) +
-            22 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_diff) )
+        msg: str = ( "[Trial {}] Numerical solution obtained! : ".format(trial) +
+            "Exit Code {} \n".format(info) +
+            22 * " " + "Time Elapsed: {:08.3f} [s]\n".format(perf_diff) )
         utils.print_msg(msg)
 
     return [uh_proj, info, mat_info]

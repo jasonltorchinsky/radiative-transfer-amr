@@ -6,24 +6,24 @@ from matplotlib.patches import Rectangle, Wedge
 from matplotlib.collections import PatchCollection
 import sys
 
-sys.path.append('../..')
+sys.path.append("../..")
 from dg.quadrature import quad_xyth, lag_eval
 from dg.projection import push_forward, pull_back
 
 def plot_error_indicator(mesh, err_ind, file_name = None, **kwargs):
     
-    default_kwargs = {'cmap' : 'Reds',
-                      'name' : '',
-                      'ref_col'  : err_ind.ref_col,
-                      'ref_cell' : err_ind.ref_cell}
+    default_kwargs = {"cmap" : "Reds",
+                      "name" : "",
+                      "ref_col"  : err_ind.ref_col,
+                      "ref_cell" : err_ind.ref_cell}
     kwargs = {**default_kwargs, **kwargs}
 
-    if err_ind.ref_col and kwargs['ref_col']:
+    if err_ind.ref_col and kwargs["ref_col"]:
         [fig, ax] = plot_error_indicator_by_column(mesh,
                                                    err_ind,
                                                    file_name = file_name,
                                                    **kwargs)
-    elif err_ind.ref_cell and kwargs['ref_cell']:
+    elif err_ind.ref_cell and kwargs["ref_cell"]:
         [fig, ax] = plot_error_indicator_by_cell(mesh,
                                                  err_ind,
                                                  file_name = file_name,
@@ -38,7 +38,7 @@ def plot_error_indicator_by_column(mesh, err_ind, file_name = None, **kwargs):
     
     fig, ax = plt.subplots()
     
-    cmap = cm.get_cmap(kwargs['cmap'])
+    cmap = cm.get_cmap(kwargs["cmap"])
     
     [Lx, Ly] = mesh.Ls[:]
     ax.set_xlim([0, Lx])
@@ -71,12 +71,12 @@ def plot_error_indicator_by_column(mesh, err_ind, file_name = None, **kwargs):
             
             rect = Rectangle((x0, y0), dx, dy,
                              facecolor = cmap(col_err),
-                             edgecolor = 'black')
+                             edgecolor = "black")
             rects += [rect]
             rect_color = col_err
             rect_colors += [rect_color]
             
-    rect_coll = PatchCollection(rects, edgecolor = 'black',
+    rect_coll = PatchCollection(rects, edgecolor = "black",
                                 cmap = cmap)
     rect_coll.set_array(rect_colors)
     rect_coll.set_clim([vmin, vmax])
@@ -84,7 +84,7 @@ def plot_error_indicator_by_column(mesh, err_ind, file_name = None, **kwargs):
     
     fig.colorbar(rect_coll, ax = ax)
 
-    title_str = 'Max Error: {:.4E} \nAvg. Ref. Error {:.4E}'.format(err_ind.col_max_err,
+    title_str = "Max Error: {:.4E} \nAvg. Ref. Error {:.4E}".format(err_ind.col_max_err,
                                                                     err_ind.avg_col_ref_err)
     ax.set_title(title_str)
     
@@ -100,7 +100,7 @@ def plot_error_indicator_by_cell(mesh, err_ind, file_name = None, **kwargs):
     default_kwargs = {}
     kwargs = {**default_kwargs, **kwargs}
     
-    cmap = cm.get_cmap(kwargs['cmap'])
+    cmap = cm.get_cmap(kwargs["cmap"])
     
     fig, ax = plt.subplots()
     
@@ -139,8 +139,8 @@ def plot_error_indicator_by_cell(mesh, err_ind, file_name = None, **kwargs):
             [cx, cy] = [(x0 + x1) / 2., (y0 + y1) / 2.]
             
             rect = Rectangle((x0, y0), dx, dy,
-                             facecolor = 'none',
-                             edgecolor = 'black')
+                             facecolor = "none",
+                             edgecolor = "black")
             rects += [rect]
 
             cell_items = sorted(col.cells.items())
@@ -153,7 +153,7 @@ def plot_error_indicator_by_cell(mesh, err_ind, file_name = None, **kwargs):
                     
                     wedge = Wedge((cx, cy), min(dx, dy)/2, deg0, deg1,
                                   facecolor = cmap(cell_err),
-                                  edgecolor = 'black')
+                                  edgecolor = "black")
                     wedges += [wedge]
                     wedge_color = cell_err
                     wedge_colors += [wedge_color]
@@ -161,14 +161,14 @@ def plot_error_indicator_by_cell(mesh, err_ind, file_name = None, **kwargs):
     rect_coll = PatchCollection(rects, match_original = True)
     ax.add_collection(rect_coll)
     
-    wedge_coll = PatchCollection(wedges, edgecolor = 'black', cmap = cmap)
+    wedge_coll = PatchCollection(wedges, edgecolor = "black", cmap = cmap)
     wedge_coll.set_array(wedge_colors)
     wedge_coll.set_clim([vmin, vmax])
     ax.add_collection(wedge_coll)
     
     fig.colorbar(wedge_coll, ax = ax)
 
-    title_str = 'Max Error: {:.4E} \nAvg. Ref. Error {:.4E}'.format(err_ind.cell_max_err,
+    title_str = "Max Error: {:.4E} \nAvg. Ref. Error {:.4E}".format(err_ind.cell_max_err,
                                                                     err_ind.avg_cell_ref_err)
     ax.set_title(title_str)
     

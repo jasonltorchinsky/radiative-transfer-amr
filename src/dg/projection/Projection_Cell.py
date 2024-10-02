@@ -12,13 +12,13 @@ class Projection_Cell():
         self.vals = vals
         
     def __str__(self):
-        pos_str = ( '[{:3.2f} pi'.format(self.pos[0] / np.pi) +
-                    ', {:3.2f} pi]'.format(self.pos[1] / np.pi)
+        pos_str = ( "[{:3.2f} pi".format(self.pos[0] / np.pi) +
+                    ", {:3.2f} pi]".format(self.pos[1] / np.pi)
                    )
-        msg = ( '   Cell  :  {}, {}\n'.format(self.idx, self.lv) +
-                '    key  :  {}\n'.format(self.key) +
-                '    pos  :  {}\n'.format(pos_str) +
-                '    ndofs:  {}\n'.format(self.ndofs)
+        msg = ( "   Cell  :  {}, {}\n".format(self.idx, self.lv) +
+                "    key  :  {}\n".format(self.key) +
+                "    pos  :  {}\n".format(pos_str) +
+                "    ndofs:  {}\n".format(self.ndofs)
                )
 
         return msg

@@ -4,7 +4,7 @@ from .quad_xya import quad_xya
 from .gl_proj import gl_proj
 
 def face_2_face(tablist, deg_in, deg_out):
-    '''
+    """
     Create data structure responsible for face-to-face communication for
     the mesh.
     
@@ -13,7 +13,7 @@ def face_2_face(tablist, deg_in, deg_out):
                  max(deg_in, deg_out) X max(deg_in, deg_out)
     tablist[2] - ""
     deg_in, deg_out - Input/output number of DOFs (# of rows/columns)
-    '''
+    """
 
     deg_sml = np.amin([deg_in, deg_out])
     deg_lrg = np.amax([deg_in, deg_out])

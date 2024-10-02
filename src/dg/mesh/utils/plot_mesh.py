@@ -8,33 +8,33 @@ from   mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 def plot_mesh(mesh, ax = None, file_name = None, **kwargs):
     
-    default_kwargs = {'label_cells' : False,
-                      'plot_dim'    : 2,
-                      'plot_style'  : 'flat',
-                      'blocking'    : False # Defualt to non-blokcig behavior for plotting
+    default_kwargs = {"label_cells" : False,
+                      "plot_dim"    : 2,
+                      "plot_style"  : "flat",
+                      "blocking"    : False # Defualt to non-blokcig behavior for plotting
                       }
     kwargs = {**default_kwargs, **kwargs}
 
-    if kwargs['plot_dim'] == 2:
+    if kwargs["plot_dim"] == 2:
         [fig, ax] = plot_mesh_2d(mesh, ax = ax, file_name = file_name, **kwargs)
-    elif kwargs['plot_dim'] == 3 and kwargs['plot_style'] == 'box':
+    elif kwargs["plot_dim"] == 3 and kwargs["plot_style"] == "box":
         [fig, ax] = plot_mesh_3d_box(mesh, ax = ax,
                                      file_name = file_name,
                                      **kwargs)
-    elif kwargs['plot_dim'] == 3 and kwargs['plot_style'] == 'flat':
+    elif kwargs["plot_dim"] == 3 and kwargs["plot_style"] == "flat":
         [fig, ax] = plot_mesh_3d_flat(mesh, ax = ax,
                                       file_name = file_name,
                                       **kwargs)
     else:
-        print('Unable to plot mesh that is not 2D nor 3D')
+        print("Unable to plot mesh that is not 2D nor 3D")
         # TODO: Add more error handling
 
     return [fig, ax]
 
 def plot_mesh_2d(mesh, ax = None, file_name = None, **kwargs):
 
-    default_kwargs = {'label_cells': False,
-                      'blocking'    : False # Defualt to non-blokcig behavior for plotting
+    default_kwargs = {"label_cells": False,
+                      "blocking"    : False # Defualt to non-blokcig behavior for plotting
                       }
     kwargs = {**default_kwargs, **kwargs}
     
@@ -60,18 +60,18 @@ def plot_mesh_2d(mesh, ax = None, file_name = None, **kwargs):
             ax.add_patch(cell)
             
             # Label each cell with idxs, lvs
-            if kwargs['label_cells']:
+            if kwargs["label_cells"]:
                 idx = col.idx
                 lv  = col.lv
                 x_mid = (x0 + x1) / 2.
                 y_mid = (y0 + y1) / 2.
-                label = '{}, {}'.format(idx, lv)
-                label = '{}'.format(col.key)
+                label = "{}, {}".format(idx, lv)
+                label = "{}".format(col.key)
                 ax.text(x_mid, y_mid, label,
-                        ha = 'center', va = 'center')
+                        ha = "center", va = "center")
                 
-    ax.set_xlabel('x')
-    ax.set_ylabel('y')
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
     
     if file_name:
         fig.set_size_inches(6.5, 6.5 * (Ly / Lx))
@@ -83,8 +83,8 @@ def plot_mesh_2d(mesh, ax = None, file_name = None, **kwargs):
 
 def plot_mesh_3d_box(mesh, ax = None, file_name = None, **kwargs):
 
-    default_kwargs = {'label_cells': False,
-                      'blocking'    : False # Defualt to non-blokcig behavior for plotting
+    default_kwargs = {"label_cells": False,
+                      "blocking"    : False # Defualt to non-blokcig behavior for plotting
                       }
     kwargs = {**default_kwargs, **kwargs}
     
@@ -96,7 +96,7 @@ def plot_mesh_3d_box(mesh, ax = None, file_name = None, **kwargs):
         fig = plt.gcf()
     else:
         fig = plt.figure()
-        ax = fig.add_subplot(1, 1, 1, projection = '3d')
+        ax = fig.add_subplot(1, 1, 1, projection = "3d")
     
     ax.set_xlim([0, Lx])
     ax.set_ylim([0, Ly])
@@ -108,35 +108,35 @@ def plot_mesh_3d_box(mesh, ax = None, file_name = None, **kwargs):
             for cell in list(col.cells.values()):
                 # Plot cell
                 [z0, z1] = cell.pos
-                prism = get_prism([x0, x1], [y0, y1], [z0, z1], color = 'w')
+                prism = get_prism([x0, x1], [y0, y1], [z0, z1], color = "w")
                 for face in prism:
                     ax.add_collection3d(face)
                     
                 # Label each cell with idxs, lvs
-                if kwargs['label_cells']:
+                if kwargs["label_cells"]:
                     idx = col.idx
                     lv  = col.lv
                     xmid = (x0 + x1) / 2.
                     ymid = (y0 + y1) / 2.
                     zmid = (z0 + z1) / 2.
-                    label = '{}, {}'.format(idx, lv)
+                    label = "{}, {}".format(idx, lv)
                     ax.text(xmid, ymid, zmid, label, zdir = None)
-    ax.set_xlabel('x')
-    ax.set_ylabel('y')
-    ax.set_zlabel(r'$\theta$')
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+    ax.set_zlabel(r"$\theta$")
     
     nth_ticks = 9
     th_ticks = np.linspace(0, 2, nth_ticks) * np.pi
     th_tick_labels = [None] * nth_ticks
     for aa in range(0, nth_ticks):
         th_rad = th_ticks[aa] / np.pi
-        th_tick_labels[aa] = '{:.2f}\u03C0'.format(th_rad)
+        th_tick_labels[aa] = "{:.2f}\u03C0".format(th_rad)
     ax.set_zticks(th_ticks)
     ax.set_zticklabels(th_tick_labels)
     
     if file_name:
         fig.set_size_inches(6.5, 6.5)
-        plt.savefig(file_name, dpi = 300, bbox_inches = 'tight')
+        plt.savefig(file_name, dpi = 300, bbox_inches = "tight")
         plt.close(fig)
 
     return [fig, ax]
@@ -178,7 +178,7 @@ def get_face(xs, ys, zs):
         
     return verts
 
-def get_prism(xs, ys, zs, color = 'w'):
+def get_prism(xs, ys, zs, color = "w"):
     faces_verts = 6 * [0]
     for ii in range(0, 2):
         faces_verts[ii] = get_face(xs[ii], ys, zs)
@@ -194,15 +194,15 @@ def get_prism(xs, ys, zs, color = 'w'):
         verts = faces_verts[idx]
         faces[idx] = Poly3DCollection(verts,
                                       facecolors = color,
-                                      edgecolor = 'k',
+                                      edgecolor = "k",
                                       alpha = 0.1)
         
     return faces
 
 def get_closest_factors(x):
-    '''
+    """
     Gets the factors of x that are closest to the square root.
-    '''
+    """
 
     a = int(np.floor(np.sqrt(x)))
     while ((x / a) - np.floor(x / a) > 10**(-3)):
@@ -213,8 +213,8 @@ def get_closest_factors(x):
 def plot_mesh_3d_flat(mesh, ax = None,
                       file_name = None, **kwargs):
 
-    default_kwargs = {'label_cells': False,
-                      'blocking'    : False # Defualt to non-blokcig behavior for plotting
+    default_kwargs = {"label_cells": False,
+                      "blocking"    : False # Defualt to non-blokcig behavior for plotting
                       }
     kwargs = {**default_kwargs, **kwargs}
 
@@ -236,7 +236,7 @@ def plot_mesh_3d_flat(mesh, ax = None,
             
             rect = Rectangle((x0, y0), dx, dy,
                              fill = False,
-                             edgecolor = 'black')
+                             edgecolor = "black")
             ax.add_patch(rect)
 
             cell_items = sorted(col.cells.items())
@@ -247,12 +247,12 @@ def plot_mesh_3d_flat(mesh, ax = None,
 
                     wed = Wedge((cx, cy), min(dx, dy)/2, deg0, deg1,
                                 fill = False,
-                                edgecolor = 'black'
+                                edgecolor = "black"
                                 )
                     ax.add_patch(wed)
                     
-    ax.set_xlabel('x')
-    ax.set_ylabel('y')
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
     
     if file_name:
         fig.set_size_inches(6.5, 6.5 * (Ly / Lx))

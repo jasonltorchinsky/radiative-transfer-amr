@@ -25,8 +25,8 @@ def calc_precond_matrix_mpi(mesh, kappa, sigma, Phi, **kwargs):
     Returns the matrix and the Preconditioner for the GMRES method.
     """
     
-    default_kwargs = {'verbose'      : False, # Print info while executing
-                      'blocking'     : True   # Synchronize ranks before exiting
+    default_kwargs = {"verbose"      : False, # Print info while executing
+                      "blocking"     : True   # Synchronize ranks before exiting
                       }
     kwargs = {**default_kwargs, **kwargs}
     
@@ -38,10 +38,10 @@ def calc_precond_matrix_mpi(mesh, kappa, sigma, Phi, **kwargs):
     comm_rank  = PETSc_comm.getRank()
     comm_size  = PETSc_comm.getSize()
     
-    if kwargs['verbose']:
+    if kwargs["verbose"]:
         t0 = perf_counter()
         msg = (
-            'Constructing (Extinction - Scattering) Matrix...\n'
+            "Constructing (Extinction - Scattering) Matrix...\n"
             )
         utils.print_msg(msg)
     
@@ -96,15 +96,15 @@ def calc_precond_matrix_mpi(mesh, kappa, sigma, Phi, **kwargs):
     M_MPI.assemblyBegin()
     M_MPI.assemblyEnd()
     
-    if kwargs['verbose']:
+    if kwargs["verbose"]:
         tf = perf_counter()
         msg = (
-            'Constructed (Extinction - Scattering) Matrix\n' +
-            12 * ' '  + 'Time Elapsed: {:8.4f} [s]\n'.format(tf - t0)
+            "Constructed (Extinction - Scattering) Matrix\n" +
+            12 * " "  + "Time Elapsed: {:8.4f} [s]\n".format(tf - t0)
         )
         utils.print_msg(msg)
        
-    if kwargs['blocking']:
+    if kwargs["blocking"]:
         MPI_comm.Barrier()
         
     return [M_MPI, None]
@@ -139,7 +139,7 @@ def calc_col_matrix(mesh, col_key, kappa, sigma, Phi, **kwargs):
         cell_items = sorted(col.cells.items())
         
         # _0 refers to cell K in the equations
-        # _1 refers to cell K' in the equations
+        # _1 refers to cell K" in the equations
         # Have nested loops because column scattering matrix is dense.
         for cell_key_0, cell_0 in cell_items:
             if cell_0.is_lf:
@@ -187,7 +187,7 @@ def calc_col_matrix(mesh, col_key, kappa, sigma, Phi, **kwargs):
                         # Indexing from i, j, a to beta
                         beta = mat.get_idx_map(nx, ny, nth_1)
                         
-                        # Construct cell matrix - 2 cases: K = K', K != K'
+                        # Construct cell matrix - 2 cases: K = K", K != K"
                         idx = 0
                         if cell_key_0 != cell_key_1:
                             for ii in range(0, nx):
@@ -244,8 +244,8 @@ def calc_col_matrix(mesh, col_key, kappa, sigma, Phi, **kwargs):
                                     
         # Column scattering matrix is not block-diagonal
         # but we arranged the cell matrices in the proper form
-        col_mtx = sp.bmat(cell_mtxs, format = 'csr')
-        if kwargs['precondition']:
+        col_mtx = sp.bmat(cell_mtxs, format = "csr")
+        if kwargs["precondition"]:
             inv_col_mtx = spla.inv(col_mtx.tocsr())
         else:
             inv_col_mtx = None

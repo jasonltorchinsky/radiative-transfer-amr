@@ -10,7 +10,7 @@ from .. import get_cell_nhbr_in_col
 def plot_cell_nhbrs_in_col(mesh, col, cell, nhbr_col,
                            file_name = None, **kwargs):
     
-    default_kwargs = {'label_cells' : False}
+    default_kwargs = {"label_cells" : False}
     kwargs = {**default_kwargs, **kwargs}
 
     [fig, ax] = plot_mesh(mesh, ax = None, file_name = None,
@@ -21,7 +21,7 @@ def plot_cell_nhbrs_in_col(mesh, col, cell, nhbr_col,
             [x0, y0, x1, y1] = col.pos
             if cell in list(col.cells.values()):
                 [z0, z1] = cell.pos
-                prism = get_prism([x0, x1], [y0, y1], [z0, z1], color = 'red')
+                prism = get_prism([x0, x1], [y0, y1], [z0, z1], color = "red")
                 for face in prism:
                     ax.add_collection3d(face)
                     
@@ -35,7 +35,7 @@ def plot_cell_nhbrs_in_col(mesh, col, cell, nhbr_col,
                                 [z0, z1] = nhbr_cell.pos
                             
                                 prism = get_prism([x0, x1], [y0, y1], [z0, z1],
-                                                  color = 'blue')
+                                                  color = "blue")
                                 for face in prism:
                                     ax.add_collection3d(face)
                                             

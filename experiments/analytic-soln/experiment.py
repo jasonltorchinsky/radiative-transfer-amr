@@ -104,18 +104,18 @@ def main(argv):
     
     ## Set up the timer
     perf_all_0 = perf_counter()
-    msg: str = ( 'Generating experiment figures...\n' )
+    msg: str = ( "Generating experiment figures...\n" )
     utils.print_msg(msg)
     
     for ref_strat in ref_strats:
         ## Create output directory for this refinement strategy
-        ref_strat_name: str = ref_strat['short_name']
+        ref_strat_name: str = ref_strat["short_name"]
         ref_strat_names += [ref_strat_name]
         ref_strat_dir: str = os.path.join(figs_dir, ref_strat_name)
         os.makedirs(ref_strat_dir, exist_ok = True)
         
         ## Initiate timers
-        msg: str = ( 'Starting combination {}...\n'.format(ref_strat['full_name']) )
+        msg: str = ( "Starting combination {}...\n".format(ref_strat["full_name"]) )
         utils.print_msg(msg)
         
         perf_ref_strat_0: float = perf_counter()
@@ -123,16 +123,16 @@ def main(argv):
         
         ## Generate the initial mesh
         if comm_rank == 0:
-            mesh: ji_mesh.Mesh = ji_mesh.Mesh(Ls     = ref_strat['Ls'],
-                                pbcs   = ref_strat['pbcs'],
-                                ndofs  = ref_strat['ndofs'],
-                                has_th = ref_strat['has_th'])
+            mesh: ji_mesh.Mesh = ji_mesh.Mesh(Ls     = ref_strat["Ls"],
+                                pbcs   = ref_strat["pbcs"],
+                                ndofs  = ref_strat["ndofs"],
+                                has_th = ref_strat["has_th"])
             
-            for _ in range(0, ref_strat['nref_ang']):
-                mesh.ref_mesh(kind = 'ang', form = 'h')
+            for _ in range(0, ref_strat["nref_ang"]):
+                mesh.ref_mesh(kind = "ang", form = "h")
                 
-            for _ in range(0, ref_strat['nref_spt']):
-                mesh.ref_mesh(kind = 'spt', form = 'h')
+            for _ in range(0, ref_strat["nref_spt"]):
+                mesh.ref_mesh(kind = "spt", form = "h")
         else:
             mesh: ji_mesh.Mesh = None
         MPI_comm.Barrier()
@@ -160,8 +160,8 @@ def main(argv):
         ## Timer for setup
         perf_setup_f: float = perf_counter()
         perf_setup_diff: float = perf_setup_f - perf_setup_0
-        msg: str = ( 'Combination {} setup complete!\n'.format(ref_strat['full_name']) +
-                12 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_setup_diff)
+        msg: str = ( "Combination {} setup complete!\n".format(ref_strat["full_name"]) +
+                12 * " " + "Time Elapsed: {:08.3f} [s]\n".format(perf_setup_diff)
                )
         utils.print_msg(msg)
         
@@ -182,10 +182,10 @@ def main(argv):
             ## Initiate timee for this trial
             perf_trial_0: float = perf_counter()
             msg: str = (
-                '[Trial {}] Starting with: '.format(trial) +
-                '{} of {} DoFs and\n'.format(ndof, max_ndof) +
-                37 * ' ' + 'error {:.2E} of {:.2E}\n'.format(err, min_err) +
-                37 * ' ' + 'RAM Memory % Used: {}\n'.format(mem_used)
+                "[Trial {}] Starting with: ".format(trial) +
+                "{} of {} DoFs and\n".format(ndof, max_ndof) +
+                37 * " " + "error {:.2E} of {:.2E}\n".format(err, min_err) +
+                37 * " " + "RAM Memory % Used: {}\n".format(mem_used)
             )
             utils.print_msg(msg)
             
@@ -195,13 +195,13 @@ def main(argv):
                                and ((ndof / prev_err_ndof) >= 1.1)))
             
             ## Set up output directories
-            trial_dir: str = os.path.join(ref_strat_dir, 'trial_{}'.format(trial))
+            trial_dir: str = os.path.join(ref_strat_dir, "trial_{}".format(trial))
             os.makedirs(trial_dir, exist_ok = True)
             
             ## Plot mesh
             if comm_rank == 0:
                 if (trial%10 == 0 or do_calc_err):
-                    mesh_file = os.path.join(trial_dir, 'mesh.json')
+                    mesh_file = os.path.join(trial_dir, "mesh.json")
                     ji_mesh.write_mesh(mesh, mesh_file)
                     if do_plot_mesh:
                         gen_mesh_plot(mesh, trial, trial_dir, blocking = False)
@@ -210,11 +210,11 @@ def main(argv):
             MPI_comm.barrier()
             
             ## Set solver an preconditioner
-            ksp_type: str = 'lgmres'
-            pc_type: str = 'bjacobi'
+            ksp_type: str = "lgmres"
+            pc_type: str = "bjacobi"
                 
             ## Calculate the numerical solution
-            residual_file_name: str = 'residuals_{}.png'.format(trial)
+            residual_file_name: str = "residuals_{}.png".format(trial)
             residual_file_path: str = os.path.join(trial_dir, residual_file_name)
             [uh_proj, info, mat_info] = get_soln(mesh, kappa, sigma, Phi, 
                                                  bcs_dirac, f, trial,
@@ -231,19 +231,19 @@ def main(argv):
 
             ## Calculate error
             if do_calc_err:
-                err_kind: str = 'anl'
+                err_kind: str = "anl"
 
-                residual_file_name: str = 'residuals_hr_{}.png'.format(trial)
+                residual_file_name: str = "residuals_hr_{}.png".format(trial)
                 residual_file_path: str = os.path.join(trial_dir, residual_file_name)
                     
                 err = get_err(mesh, uh_proj, u, kappa, sigma, Phi,
                               bcs_dirac, f,
                               trial, trial_dir,
-                              nref_ang  = ref_strat['nref_ang'],
-                              nref_spt  = ref_strat['nref_spt'],
-                              ref_kind  = ref_strat['ref_kind'],
-                              spt_res_offset = ref_strat['spt_res_offset'],
-                              ang_res_offset = ref_strat['ang_res_offset'],
+                              nref_ang  = ref_strat["nref_ang"],
+                              nref_spt  = ref_strat["nref_spt"],
+                              ref_kind  = ref_strat["ref_kind"],
+                              spt_res_offset = ref_strat["spt_res_offset"],
+                              ang_res_offset = ref_strat["ang_res_offset"],
                               key       = 1, # Leftover from when we depended on test number
                               err_kind  = err_kind,
                               ksp_type  = ksp_type,
@@ -259,17 +259,17 @@ def main(argv):
                 
                 if comm_rank == 0:
                     # Write error results to files as we go along
-                    file_name = 'errs.txt'
+                    file_name = "errs.txt"
                     file_path = os.path.join(ref_strat_dir, file_name)
-                    json.dump(errs, open(file_path, 'w'))
+                    json.dump(errs, open(file_path, "w"))
                     
-                    file_name = 'ndofs.txt'
+                    file_name = "ndofs.txt"
                     file_path = os.path.join(ref_strat_dir, file_name)
-                    json.dump(ndofs, open(file_path, 'w'))
+                    json.dump(ndofs, open(file_path, "w"))
 
-                    file_name = 'nnz.txt'
+                    file_name = "nnz.txt"
                     file_path = os.path.join(ref_strat_dir, file_name)
-                    json.dump(nnz, open(file_path, 'w'))
+                    json.dump(nnz, open(file_path, "w"))
                 
             # Refine the mesh, plot error indicators along the way
             [mesh, _, refs] = ref_mesh(ref_strat, mesh, uh_proj, comm_rank, 
@@ -287,11 +287,11 @@ def main(argv):
                 ndof = MPI_comm.bcast(ndof, root = 0)
             mem_used = psutil.virtual_memory()[2]
             msg = (
-                '[Trial {}] Trial completed!\n'.format(trial) +
-                12 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_trial_diff) +
-                12 * ' ' + 'Next trial: {} of {} DoFs and\n'.format(ndof, max_ndof) +
-                24 * ' ' + 'error {:.2E} of {:.2E}\n'.format(err, min_err) +
-                24 * ' ' + 'RAM Memory % Used: {}\n'.format(mem_used)
+                "[Trial {}] Trial completed!\n".format(trial) +
+                12 * " " + "Time Elapsed: {:08.3f} [s]\n".format(perf_trial_diff) +
+                12 * " " + "Next trial: {} of {} DoFs and\n".format(ndof, max_ndof) +
+                24 * " " + "error {:.2E} of {:.2E}\n".format(err, min_err) +
+                24 * " " + "RAM Memory % Used: {}\n".format(mem_used)
             )
             utils.print_msg(msg)
             
@@ -299,13 +299,13 @@ def main(argv):
             
         if comm_rank == 0:
             # Write error results to files as we go along
-            file_name = 'errs.txt'
+            file_name = "errs.txt"
             file_path = os.path.join(ref_strat_dir, file_name)
-            json.dump(errs, open(file_path, 'w'))
+            json.dump(errs, open(file_path, "w"))
             
-            file_name = 'ndofs.txt'
+            file_name = "ndofs.txt"
             file_path = os.path.join(ref_strat_dir, file_name)
-            json.dump(ndofs, open(file_path, 'w'))
+            json.dump(ndofs, open(file_path, "w"))
             
             if do_plot_errs:
                 gen_err_plot(ref_strat, ref_strat_name, ndofs, errs, ref_strat_dir)
@@ -317,8 +317,8 @@ def main(argv):
             perf_ref_strat_f = perf_counter()
             perf_ref_strat_dt = perf_ref_strat_f - perf_ref_strat_0
             msg = (
-                'Combination {} complete!\n'.format(ref_strat['full_name']) +
-                12 * ' ' + 'Time elapsed: {:08.3f} [s]\n'.format(perf_ref_strat_dt)
+                "Combination {} complete!\n".format(ref_strat["full_name"]) +
+                12 * " " + "Time elapsed: {:08.3f} [s]\n".format(perf_ref_strat_dt)
             )
             utils.print_msg(msg, blocking = False)
             
@@ -334,10 +334,10 @@ def main(argv):
         perf_all_f = perf_counter()
         perf_all_dt = perf_all_f - perf_all_0
         msg = (
-            'Experiment figures generated!\n' +
-            12 * ' ' + 'Time elapsed: {:08.3f} [s]\n'.format(perf_all_dt)
+            "Experiment figures generated!\n" +
+            12 * " " + "Time elapsed: {:08.3f} [s]\n".format(perf_all_dt)
         )
         utils.print_msg(msg, blocking = False)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main(sys.argv[1:])

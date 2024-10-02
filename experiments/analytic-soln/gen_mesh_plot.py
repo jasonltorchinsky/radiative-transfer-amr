@@ -17,22 +17,22 @@ import utils
 
 def gen_mesh_plot(mesh, trial, trial_dir, **kwargs):
     
-    default_kwargs = {'blocking' : False, # Default to non-blocking behavior for plotting
-                      'verbose'  : False}
+    default_kwargs = {"blocking" : False, # Default to non-blocking behavior for plotting
+                      "verbose"  : False}
     kwargs = {**default_kwargs, **kwargs}
 
     if kwargs["verbose"]:
         perf_0 = perf_counter()
-        msg = ( '[Trial {}] Plotting mesh...\n'.format(trial) )
+        msg = ( "[Trial {}] Plotting mesh...\n".format(trial) )
         utils.print_msg(msg, **kwargs)
     
-    file_name = 'mesh_3d_{}.png'.format(trial)
+    file_name = "mesh_3d_{}.png".format(trial)
     file_path = os.path.join(trial_dir, file_name)
     ji_mesh.utils.plot_mesh(mesh      = mesh,
                             file_name = file_path,
                             plot_dim  = 3)
     
-    file_name = 'mesh_2d_{}.png'.format(trial)
+    file_name = "mesh_2d_{}.png".format(trial)
     file_path = os.path.join(trial_dir, file_name)
     ji_mesh.utils.plot_mesh(mesh        = mesh,
                             file_name   = file_path,
@@ -42,28 +42,28 @@ def gen_mesh_plot(mesh, trial, trial_dir, **kwargs):
     if kwargs["verbose"]:
         perf_f = perf_counter()
         perf_diff = perf_f - perf_0
-        msg = ( '[Trial {}] Mesh plotted!\n'.format(trial) +
-                22 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_diff) )
+        msg = ( "[Trial {}] Mesh plotted!\n".format(trial) +
+                22 * " " + "Time Elapsed: {:08.3f} [s]\n".format(perf_diff) )
         utils.print_msg(msg, **kwargs)
 
 def gen_mesh_plot_p(mesh, trial, trial_dir, **kwargs):
 
-    default_kwargs = {'blocking' : False, # Default to non-blocking behavior for plotting
+    default_kwargs = {"blocking" : False, # Default to non-blocking behavior for plotting
                       "verbose"  : False}
     kwargs = {**default_kwargs, **kwargs}
     
     if kwargs["verbose"]:
         perf_0 = perf_counter()
-        msg = ( '[Trial {}] Plotting mesh polynomial degree...\n'.format(trial) )
+        msg = ( "[Trial {}] Plotting mesh polynomial degree...\n".format(trial) )
         utils.print_msg(msg, **kwargs)
     
-    file_name = 'mesh_3d_p_{}.png'.format(trial)
+    file_name = "mesh_3d_p_{}.png".format(trial)
     file_path = os.path.join(trial_dir, file_name)
     ji_mesh.utils.plot_mesh_p(mesh        = mesh,
                               file_name   = file_path,
                               plot_dim    = 3)
     
-    file_name = 'mesh_2d_p_{}.png'.format(trial)
+    file_name = "mesh_2d_p_{}.png".format(trial)
     file_path = os.path.join(trial_dir, file_name)
     ji_mesh.utils.plot_mesh_p(mesh        = mesh,
                               file_name   = file_path,
@@ -73,6 +73,6 @@ def gen_mesh_plot_p(mesh, trial, trial_dir, **kwargs):
     if kwargs["verbose"]:
         perf_f = perf_counter()
         perf_diff = perf_f - perf_0
-        msg = ( '[Trial {}] Mesh polynomial degree plotted!\n'.format(trial) +
-                22 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_diff) )
+        msg = ( "[Trial {}] Mesh polynomial degree plotted!\n".format(trial) +
+                22 * " " + "Time Elapsed: {:08.3f} [s]\n".format(perf_diff) )
         utils.print_msg(msg, **kwargs)

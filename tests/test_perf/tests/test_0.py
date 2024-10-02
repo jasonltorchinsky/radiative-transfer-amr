@@ -7,10 +7,10 @@ import os, sys
 
 from .gen_mesh import gen_mesh
 
-sys.path.append('../../tests')
+sys.path.append("../../tests")
 from test_cases import get_cons_prob
 
-sys.path.append('../../src')
+sys.path.append("../../src")
 from dg.matrix import get_intr_mask, split_matrix
 from dg.projection import Projection
 from rt import calc_mass_matrix, calc_scat_matrix, \
@@ -20,27 +20,27 @@ from amr import rand_err, ref_by_ind
 
 from utils import print_msg
 
-def test_0(dir_name = 'test_perf'):
+def test_0(dir_name = "test_perf"):
     """
     Tests the performance of matrix contruction utilizing the contructed
     test problems with random refinement.
     """
     
-    test_dir = os.path.join(dir_name, 'test_0')
+    test_dir = os.path.join(dir_name, "test_0")
     os.makedirs(test_dir, exist_ok = True)
 
     # Test parameters:
-    # Problem Name: 'mass', 'scat'tering, 'conv'ection, 'comp'lete
-    prob_name = ''
+    # Problem Name: "mass", "scat"tering, "conv"ection, "comp"lete
+    prob_name = ""
     # Problem Number
     prob_num  = None
-    # Refinement Type: 'sin'gle column, 'uni'form, 'a'daptive 'm'esh 'r'efinement,
-    # random ('rng')
-    ref_type = ''
-    # Refinement Kind: 's'pa't'ia'l', 'ang'ular, 'all'
-    ref_kind = ''
-    # Refinement Form: 'h', 'p'
-    ref_form = ''
+    # Refinement Type: "sin"gle column, "uni"form, "a"daptive "m"esh "r"efinement,
+    # random ("rng")
+    ref_type = ""
+    # Refinement Kind: "s"pa"t"ia"l", "ang"ular, "all"
+    ref_kind = ""
+    # Refinement Form: "h", "p"
+    ref_form = ""
     # Refinement Tolerance
     tol_spt = 0.75
     tol_ang = 0.75
@@ -50,8 +50,8 @@ def test_0(dir_name = 'test_perf'):
     max_ntrial = 8
     # Which combinations of Refinement Form, Refinement Type, and Refinement Kind
     combos = [
-        ['h',  'uni', 'ang'],
-        ['h',  'uni', 'spt']
+        ["h",  "uni", "ang"],
+        ["h",  "uni", "spt"]
     ]
 
     # Test Output Parameters
@@ -67,16 +67,16 @@ def test_0(dir_name = 'test_perf'):
         prob_dir = os.path.join(test_dir, str(prob_num))
         os.makedirs(prob_dir, exist_ok = True)
         
-        msg = ( 'Starting problem {}...\n'.format(prob_num) )
+        msg = ( "Starting problem {}...\n".format(prob_num) )
         print_msg(msg)
         
         for combo in combos:
             [ref_form, ref_type, ref_kind] = combo
-            combo_str = '{}-{}-{}'.format(ref_form, ref_type, ref_kind)
+            combo_str = "{}-{}-{}".format(ref_form, ref_type, ref_kind)
             combo_dir = os.path.join(prob_dir, combo_str)
             os.makedirs(combo_dir, exist_ok = True)
             
-            msg = ( 'Starting combination {}...\n'.format(combo_str) )
+            msg = ( "Starting combination {}...\n".format(combo_str) )
             print_msg(msg)
             
             # Get the base mesh, manufactured solution
@@ -89,7 +89,7 @@ def test_0(dir_name = 'test_perf'):
                             ndofs  = [ndof_x, ndof_y, ndof_th],
                             has_th = has_th)
             
-            [u, kappa, sigma, Phi, f, _, _] = get_cons_prob(prob_name = 'comp',
+            [u, kappa, sigma, Phi, f, _, _] = get_cons_prob(prob_name = "comp",
                                                             prob_num  = prob_num,
                                                             mesh      = mesh)
             ndof = get_mesh_ndof(mesh)
@@ -99,16 +99,16 @@ def test_0(dir_name = 'test_perf'):
             ncols  = []
             ncells = []
             do_solve = False
-            cons_dts = {'scat' : []}
+            cons_dts = {"scat" : []}
             solve_dts = {}
-            #cons_dts = {'mass' : [], 'scat' : [],
-            #            'intr_conv' : [], 'bdry_conv' : []}
-            #solve_dts = {'spsolve' : []}
+            #cons_dts = {"mass" : [], "scat" : [],
+            #            "intr_conv" : [], "bdry_conv" : []}
+            #solve_dts = {"spsolve" : []}
             
             trial = 0
             while (ndof < max_ndof) and (trial < max_ntrial):
                 msg = (
-                    'Starting trial {} of {}...'.format(trial, max_ntrial)
+                    "Starting trial {} of {}...".format(trial, max_ntrial)
                     )
                 print_msg(msg)
                 
@@ -119,41 +119,41 @@ def test_0(dir_name = 'test_perf'):
                 ncells += [get_mesh_ncell(mesh)]
 
                 msg = (
-                    'ndofs: {} of {}\n'.format(ndof, max_ndof)
+                    "ndofs: {} of {}\n".format(ndof, max_ndof)
                     )
                 print_msg(msg)
                 
                 ## Mass matrix
-                if 'mass' in cons_dts.keys():
+                if "mass" in cons_dts.keys():
                     t0 = perf_counter()
                     M_mass  = calc_mass_matrix(mesh, kappa)
                     tf = perf_counter()
                     
-                    cons_dts['mass'] += [tf - t0]
+                    cons_dts["mass"] += [tf - t0]
                 
                 ## Scattering matrix
-                if 'scat' in cons_dts.keys():
+                if "scat" in cons_dts.keys():
                     t0 = perf_counter()
                     M_scat  = calc_scat_matrix(mesh, sigma, Phi)
                     tf = perf_counter()
                     
-                    cons_dts['scat'] += [tf - t0]
+                    cons_dts["scat"] += [tf - t0]
                 
                 ## Interior convection matrix
-                if 'intr_conv' in cons_dts.keys():
+                if "intr_conv" in cons_dts.keys():
                     t0 = perf_counter()
                     M_intr_conv  = calc_intr_conv_matrix(mesh)
                     tf = perf_counter()
                     
-                    cons_dts['intr_conv'] += [tf - t0]
+                    cons_dts["intr_conv"] += [tf - t0]
                 
                 ## Boundary convection matrix
-                if 'bdry_conv' in cons_dts.keys():
+                if "bdry_conv" in cons_dts.keys():
                     t0 = perf_counter()
                     M_bdry_conv  = calc_bdry_conv_matrix(mesh)
                     tf = perf_counter()
                     
-                    cons_dts['bdry_conv'] += [tf - t0]
+                    cons_dts["bdry_conv"] += [tf - t0]
 
                 ## Solve the complete problem...
                 if do_solve:
@@ -176,37 +176,37 @@ def test_0(dir_name = 'test_perf'):
                     
                     for solve_type in solve_dts.keys():
                         msg = (
-                            'Starting solve type {}...\n'.format(solve_type)
+                            "Starting solve type {}...\n".format(solve_type)
                         )
                         print_msg(msg)
                         
                         t0 = perf_counter()
-                        if solve_type[0:2] == 'p-':
-                            pc_str = 'p-'
+                        if solve_type[0:2] == "p-":
+                            pc_str = "p-"
                             solve_type = solve_type[2:]
                             M_pc = inv(M_conv + M_mass)
                             [M_pc, _] = split_matrix(mesh, M_pc, intr_mask)
                         else:
-                            pc_str = ''
+                            pc_str = ""
                             M_pc = None
                             
-                        if solve_type == 'bicg':
+                        if solve_type == "bicg":
                             u_intr_vec = bicg(A, b, M = M_pc)
-                        elif solve_type == 'bicgstab':
+                        elif solve_type == "bicgstab":
                             u_intr_vec = bicgstab(A, b, M = M_pc)
-                        elif solve_type == 'cg':
+                        elif solve_type == "cg":
                             u_intr_vec = cg(A, b, M = M_pc)
-                        elif solve_type == 'cgs':
+                        elif solve_type == "cgs":
                             u_intr_vec = cgs(A, b, M = M_pc)
-                        elif solve_type == 'gmres':
+                        elif solve_type == "gmres":
                             u_intr_vec = gmres(A, b, M = M_pc)
-                        elif solve_type == 'lgmres':
+                        elif solve_type == "lgmres":
                             u_intr_vec = lgmres(A, b, M = M_pc)
-                        elif solve_type == 'qmr':
+                        elif solve_type == "qmr":
                             u_intr_vec = qmr(A, b)
-                        elif solve_type == 'gcrotmk':
+                        elif solve_type == "gcrotmk":
                             u_intr_vec = gcrotmk(A, b, M = M_pc)
-                        elif solve_type == 'tfqmr':
+                        elif solve_type == "tfqmr":
                             u_intr_vec = tfqmr(A, b, M = M_pc)
                         else:
                             u_intr_vec = spsolve(A, b)
@@ -216,10 +216,10 @@ def test_0(dir_name = 'test_perf'):
                         
                         
                 # Refine the mesh for the next trial
-                if ref_type == 'uni':
+                if ref_type == "uni":
                     ## Refine the mesh uniformly
                     mesh.ref_mesh(kind = ref_kind, form = ref_form)
-                elif ref_type == 'rng':
+                elif ref_type == "rng":
                     ## Refine the mesh randomly
                     rand_err_ind = rand_err(mesh, kind = ref_kind, form = ref_form)
                     
@@ -230,9 +230,9 @@ def test_0(dir_name = 'test_perf'):
                 trial += 1
                     
             if do_plot_perf:
-                colors = ['#000000', '#E69F00', '#56B4E9', '#009E73',
-                          '#F0E442', '#0072B2', '#D55E00', '#CC79A7',
-                          '#882255']
+                colors = ["#000000", "#E69F00", "#56B4E9", "#009E73",
+                          "#F0E442", "#0072B2", "#D55E00", "#CC79A7",
+                          "#882255"]
                 
                 fig, ax = plt.subplots()
                 
@@ -241,10 +241,10 @@ def test_0(dir_name = 'test_perf'):
                     ax.plot(ndofs, cons_dts[key],
                             label     = key,
                             color     = colors[c_idx],
-                            linestyle = '-')
+                            linestyle = "-")
                     c_idx += 1
 
-                l_styles = ['--', '-.', ':']
+                l_styles = ["--", "-.", ":"]
                 c_idx = 0
                 l_idx = 0
                 for key in solve_dts.keys():
@@ -257,33 +257,33 @@ def test_0(dir_name = 'test_perf'):
 
                 ax.legend()
                 
-                ax.set_xscale('log', base = 2)
-                ax.set_yscale('log', base = 2)
+                ax.set_xscale("log", base = 2)
+                ax.set_yscale("log", base = 2)
                         
-                ax.set_xlabel('Total Degrees of Freedom')
-                ax.set_ylabel('Execution Time [s]')
+                ax.set_xlabel("Total Degrees of Freedom")
+                ax.set_ylabel("Execution Time [s]")
                 
-                ref_strat_str = ''
-                if ref_type == 'uni':
-                    ref_strat_str = 'Uniform'
-                elif ref_type == 'rng':
-                    ref_strat_str = 'Random'
+                ref_strat_str = ""
+                if ref_type == "uni":
+                    ref_strat_str = "Uniform"
+                elif ref_type == "rng":
+                    ref_strat_str = "Random"
                     
-                ref_kind_str = ''
-                if ref_kind == 'spt':
-                    ref_kind_str = 'Spatial'
-                elif ref_kind == 'ang':
-                    ref_kind_str = 'Angular'
-                elif ref_kind == 'all':
-                    ref_kind_str = 'Spatio-Angular'
+                ref_kind_str = ""
+                if ref_kind == "spt":
+                    ref_kind_str = "Spatial"
+                elif ref_kind == "ang":
+                    ref_kind_str = "Angular"
+                elif ref_kind == "all":
+                    ref_kind_str = "Spatio-Angular"
                     
-                title_str = ( '{} {} ${}$-Refinement '.format(ref_strat_str,
+                title_str = ( "{} {} ${}$-Refinement ".format(ref_strat_str,
                                                               ref_kind_str,
                                                               ref_form) +
-                              'Construction/Execution Time' )
+                              "Construction/Execution Time" )
                 ax.set_title(title_str)
                     
-                file_name = 'exec_times.png'
+                file_name = "exec_times.png"
                 file_path = os.path.join(combo_dir, file_name)
                 fig.set_size_inches(6.5, 6.5)
                 plt.savefig(file_path, dpi = 300)

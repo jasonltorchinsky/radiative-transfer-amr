@@ -25,26 +25,26 @@ def get_Eth(mesh, col_key_0, cell_key_0, col_key_1, cell_key_1, F):
     mid_1          = (th0_1 + th1_1) / 2.
     
     # _0 <=> K in equations
-    # _1 <=> K' in equations
+    # _1 <=> K" in equations
     
     # Get the neighbor relation
     if lv_0 == lv_1:
-        pos_str = 's'
+        pos_str = "s"
     elif lv_0 - lv_1 == -1:
         if mid_1 < mid_0:
-            pos_str = 'l'
+            pos_str = "l"
         else: # mid_0 < mid_1
-            pos_str = 'u'
+            pos_str = "u"
     elif lv_0 - lv_1 == 1:
         if mid_1 < mid_0:
-            pos_str = 'u'
+            pos_str = "u"
         else: # mid_0 < mid_1
-            pos_str = 'l'
+            pos_str = "l"
             
     nhbr_rel = (lv_0 - lv_1, pos_str)
 
     key = (ndof_th_0, ndof_th_1, nhbr_rel)
-    # ISSUE: Theta_F is dependent on cell position, so we can't just reuse data
+    # ISSUE: Theta_F is dependent on cell position, so we can"t just reuse data
     #if key in Eth_matrices.keys():
     #    return Eth_matrices[key]
     
@@ -52,7 +52,7 @@ def get_Eth(mesh, col_key_0, cell_key_0, col_key_1, cell_key_1, F):
     [_, _, _, _, thb_1, wth_1] = quad_xyth(nnodes_th = ndof_th_1)
     E_th = np.zeros([ndof_th_1, ndof_th_0])
     
-    # If _1 is more refined, then its basis functions aren't supported on half
+    # If _1 is more refined, then its basis functions aren"t supported on half
     # the interval, and we must integrate on that interval instead
     if lv_0 - lv_1 == -1:
         coeff = 1. / 2.

@@ -18,20 +18,20 @@ import utils
     
 def gen_err_plot(ref_strat, ref_strat_name, ndofs, errs, out_dir, **kwargs):
     
-    default_kwargs = {'blocking' : False, # Default to non-blocking behavior for plotting
+    default_kwargs = {"blocking" : False, # Default to non-blocking behavior for plotting
                       "verbose"  : False}
     kwargs = {**default_kwargs, **kwargs}
     
     if kwargs["verbose"]:
         perf_0: float = perf_counter()
-        msg: str = ( 'Plotting convergence rate for {}...\n'.format(ref_strat_name) )
+        msg: str = ( "Plotting convergence rate for {}...\n".format(ref_strat_name) )
         utils.print_msg(msg, **kwargs)
     
     fig, ax = plt.subplots()
                 
-    colors = ['#000000', '#E69F00', '#56B4E9', '#009E73',
-              '#F0E442', '#0072B2', '#D55E00', '#CC79A7',
-              '#882255']
+    colors = ["#000000", "#E69F00", "#56B4E9", "#009E73",
+              "#F0E442", "#0072B2", "#D55E00", "#CC79A7",
+              "#882255"]
                 
     ax.scatter(ndofs, errs,
                label = None,
@@ -42,13 +42,13 @@ def gen_err_plot(ref_strat, ref_strat_name, ndofs, errs, out_dir, **kwargs):
     xx = np.logspace(np.log10(ndofs[0]), np.log10(ndofs[-1]))
     yy = 10**b * xx**a
     ax.plot(xx, yy,
-            label = '{} High-Res.: {:4.2f}'.format(ref_strat_name, a),
+            label = "{} High-Res.: {:4.2f}".format(ref_strat_name, a),
             color = colors[0],
-            linestyle = '--'
+            linestyle = "--"
             )
                 
-    ax.set_xscale('log', base = 10)
-    ax.set_yscale('log', base = 10)
+    ax.set_xscale("log", base = 10)
+    ax.set_yscale("log", base = 10)
                 
     err_max = max(errs)
     err_min = min(errs)
@@ -57,15 +57,15 @@ def gen_err_plot(ref_strat, ref_strat_name, ndofs, errs, out_dir, **kwargs):
         ymax = 10**(np.ceil(np.log10(err_max)))
         ax.set_ylim([ymin, ymax])
                     
-    ax.set_xlabel('Total Degrees of Freedom')
-    ax.set_ylabel(r'$\sqrt{\frac{\int_{\mathcal{S}} \int_{\Omega} \left( u - u_{hp} \right)^2\,d\vec{x}\,d\vec{s}}{\int_{\mathcal{S}} \int_{\Omega} \left( u \right)^2\,d\vec{x}\,d\vec{s}}}$')
+    ax.set_xlabel("Total Degrees of Freedom")
+    ax.set_ylabel(r"$\sqrt{\frac{\int_{\mathcal{S}} \int_{\Omega} \left( u - u_{hp} \right)^2\,d\vec{x}\,d\vec{s}}{\int_{\mathcal{S}} \int_{\Omega} \left( u \right)^2\,d\vec{x}\,d\vec{s}}}$")
 
     ax.legend()
                 
-    title_str = ( '{} Convergence Rate'.format(ref_strat['full_name']) )
+    title_str = ( "{} Convergence Rate".format(ref_strat["full_name"]) )
     ax.set_title(title_str)
                 
-    file_name = 'convergence.png'
+    file_name = "convergence.png"
     file_path = os.path.join(out_dir, file_name)
     fig.set_size_inches(6.5, 6.5)
     plt.tight_layout()
@@ -75,6 +75,6 @@ def gen_err_plot(ref_strat, ref_strat_name, ndofs, errs, out_dir, **kwargs):
     if kwargs["verbose"]:
         perf_f: str = perf_counter()
         perf_diff: str = perf_f - perf_0
-        msg: str = ( 'Convergence rates plotted!\n' +
-                     22 * ' ' + 'Time Elapsed: {:08.3f} [s]\n'.format(perf_diff) )
+        msg: str = ( "Convergence rates plotted!\n" +
+                     22 * " " + "Time Elapsed: {:08.3f} [s]\n".format(perf_diff) )
         utils.print_msg(msg, **kwargs)

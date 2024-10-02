@@ -21,21 +21,21 @@ def get_Ex(mesh, col_key_0, col_key_1):
     mid_1    = (x0_1 + x1_1) / 2.
 
     # _0 <=> K in equations
-    # _1 <=> K' in equations
+    # _1 <=> K" in equations
 
     # Get the neighbor relation
     if lv_0 == lv_1:
-        pos_str = 's'
+        pos_str = "s"
     elif lv_0 - lv_1 == -1:
         if mid_1 < mid_0:
-            pos_str = 'l'
+            pos_str = "l"
         else: # mid_0 < mid_1
-            pos_str = 'u'
+            pos_str = "u"
     elif lv_0 - lv_1 == 1:
         if mid_1 < mid_0:
-            pos_str = 'u'
+            pos_str = "u"
         else: # mid_0 < mid_1
-            pos_str = 'l'
+            pos_str = "l"
         
     nhbr_rel = (lv_0 - lv_1, pos_str)
     
@@ -47,7 +47,7 @@ def get_Ex(mesh, col_key_0, col_key_1):
     [xxb_1, wx_1, _, _, _, _] = quad_xyth(nnodes_x = ndof_x_1)
     E_x = np.zeros([ndof_x_1, ndof_x_0])
     
-    # If _1 is more refined, then its basis functions aren't supported on half
+    # If _1 is more refined, then its basis functions aren"t supported on half
     # the interval, and we must integrate on that interval instead
     if lv_0 - lv_1 == -1:
         coeff = 1. / 2.
@@ -141,21 +141,21 @@ def get_Ex_old(mesh, col_key_0, col_key_1):
     mid_1    = (x0_1 + x1_1) / 2.
 
     # _0 <=> K in equations
-    # _1 <=> K' in equations
+    # _1 <=> K" in equations
 
     # Get the neighbor relation
     if lv_0 == lv_1:
-        pos_str = 's'
+        pos_str = "s"
     elif lv_0 - lv_1 == -1:
         if mid_1 < mid_0:
-            pos_str = 'l'
+            pos_str = "l"
         else: # mid_0 < mid_1
-            pos_str = 'u'
+            pos_str = "u"
     elif lv_0 - lv_1 == 1:
         if mid_1 < mid_0:
-            pos_str = 'u'
+            pos_str = "u"
         else: # mid_0 < mid_1
-            pos_str = 'l'
+            pos_str = "l"
         
     nhbr_rel = (lv_0 - lv_1, pos_str)
     
@@ -163,16 +163,16 @@ def get_Ex_old(mesh, col_key_0, col_key_1):
     if key in Ex_matrices.keys():
         return Ex_matrices[key]
     
-    # Handles if K, K' are of different refinement levels
+    # Handles if K, K" are of different refinement levels
     if nhbr_rel[0] == -1:
         coeff = 0.5
-        if nhbr_rel[1] == 'l':
+        if nhbr_rel[1] == "l":
             def f(x):
                 return 2. * x + 1.
             
             def f_inv(x):
                 return 0.5 * (x - 1.)
-        else: # if nhbr_rel[1] == 'u'
+        else: # if nhbr_rel[1] == "u"
             def f(x):
                 return 2. * x - 1.
             

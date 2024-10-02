@@ -40,11 +40,11 @@ def rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     Solve the two-dimensional radiative transfer model.
     """
     
-    default_kwargs = {'verbose'      : False, # Print info while executing
-                      'precondition' : False,
-                      'ksp_type' : 'gmres', # Which solver to use
-                      'pc_type' : 'bjacobi',  # Which Preconditioner to use
-                      'residual_file_path' : None # Plot convergence information to this file path
+    default_kwargs = {"verbose"      : False, # Print info while executing
+                      "precondition" : False,
+                      "ksp_type" : "gmres", # Which solver to use
+                      "pc_type" : "bjacobi",  # Which Preconditioner to use
+                      "residual_file_path" : None # Plot convergence information to this file path
                       } 
     kwargs = {**default_kwargs, **kwargs}
     
@@ -59,7 +59,7 @@ def rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     # Set up RNG
     rng = np.random.default_rng()
     
-    if kwargs['verbose']:
+    if kwargs["verbose"]:
         if comm_rank == 0:
             ndof = mesh.get_ndof()
             ndof = MPI_comm.bcast(ndof, root = 0)
@@ -67,7 +67,7 @@ def rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
             ndof = None
             ndof = MPI_comm.bcast(ndof, root = 0)
         msg = (
-            'Initiating solve with {} DoFs...\n'.format(ndof)
+            "Initiating solve with {} DoFs...\n".format(ndof)
             )
         utils.print_msg(msg)
         t0  = perf_counter()
@@ -83,7 +83,7 @@ def rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
 
     mat_info = M_intr.getInfo()
     
-    if kwargs['precondition']:
+    if kwargs["precondition"]:
         [M_pc, _] = mat.split_matrix(mesh, M_pc, intr_mask)
     else:
         M_pc = None
@@ -116,15 +116,15 @@ def rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     lhs_vec = copy.deepcopy(f_vec_intr)
     
     
-    if kwargs['verbose']:
+    if kwargs["verbose"]:
         t0 = perf_counter()
         msg = (
-            'Executing solve...\n'
+            "Executing solve...\n"
         )
         utils.print_msg(msg)
         
     # Create the linear system solver
-    ksp_type = kwargs['ksp_type']
+    ksp_type = kwargs["ksp_type"]
     ksp = PETSc.KSP()
     ksp.create(comm = PETSc_comm)
     ksp.setType(ksp_type)
@@ -136,7 +136,7 @@ def rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     ksp.setComputeSingularValues(True)
     ksp.setGMRESRestart(GMRESRestart)
     
-    pc_type = kwargs['pc_type']
+    pc_type = kwargs["pc_type"]
     pc = ksp.getPC()
     pc.setType(pc_type)
     
@@ -153,8 +153,8 @@ def rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     best_lhs_vec = copy.deepcopy(lhs_vec)
     
     # If the first solve fails, try try again
-    ksp_list = ['qmrcgs', 'lgmres', 'fbcgsr', 'dgmres', 'cgs', 'pgmres', 'gmres',
-                'gcr','fgmres']
+    ksp_list = ["qmrcgs", "lgmres", "fbcgsr", "dgmres", "cgs", "pgmres", "gmres",
+                "gcr","fgmres"]
     ksp_idx = 0
     info = MPI_comm.bcast(info, root = 0)
     nsolve = 0
@@ -162,12 +162,12 @@ def rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
         ksp.destroy()
         MPI_comm.barrier()
         msg = (
-            'Iterative solve {} - {} failed.\n'.format(pc_type, ksp_type) +
-            12 * ' ' + 'Converged Reason: {}\n'.format(info) +
-            12 * ' ' + 'Iteration count:  {}\n'.format(n_iter) +
-            12 * ' ' + 'Final residual:   {:.4E}\n'.format(res_f) +
-            12 * ' ' + 'Best residual:    {:.4E}\n'.format(best_res) +
-            12 * ' ' + 'Attempting iterative solve {} - {}\n'.format(pc_type, ksp_list[ksp_idx])
+            "Iterative solve {} - {} failed.\n".format(pc_type, ksp_type) +
+            12 * " " + "Converged Reason: {}\n".format(info) +
+            12 * " " + "Iteration count:  {}\n".format(n_iter) +
+            12 * " " + "Final residual:   {:.4E}\n".format(res_f) +
+            12 * " " + "Best residual:    {:.4E}\n".format(best_res) +
+            12 * " " + "Attempting iterative solve {} - {}\n".format(pc_type, ksp_list[ksp_idx])
         )
         utils.print_msg(msg)
 
@@ -192,7 +192,7 @@ def rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
         ksp.setComputeSingularValues(True)
         ksp.setGMRESRestart(GMRESRestart)
         
-        pc_type = kwargs['pc_type']
+        pc_type = kwargs["pc_type"]
         pc = ksp.getPC()
         pc.setType(pc_type)
         
@@ -219,19 +219,19 @@ def rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     if ((info < 0) or (info == 4)) and (ndof < 1.2e5):
         ksp.destroy()
         msg = (
-            'Iterative solve {} - {} failed.\n'.format(pc_type, ksp_type) +
-            12 * ' ' + 'Converged Reason: {}\n'.format(info) +
-            12 * ' ' + 'Iteration count:  {}\n'.format(n_iter) +
-            12 * ' ' + 'Final residual:   {:.4E}\n'.format(res_f) +
-            12 * ' ' + 'Best residual:    {:.4E}\n'.format(best_res) +
-            12 * ' ' + 'Attempting direct LU solve\n'.format(pc_type, ksp_list[ksp_idx])
+            "Iterative solve {} - {} failed.\n".format(pc_type, ksp_type) +
+            12 * " " + "Converged Reason: {}\n".format(info) +
+            12 * " " + "Iteration count:  {}\n".format(n_iter) +
+            12 * " " + "Final residual:   {:.4E}\n".format(res_f) +
+            12 * " " + "Best residual:    {:.4E}\n".format(best_res) +
+            12 * " " + "Attempting direct LU solve\n".format(pc_type, ksp_list[ksp_idx])
         )
         utils.print_msg(msg)
         
         ksp = PETSc.KSP()
         ksp.create(comm = PETSc_comm)
-        ksp_type = 'none'
-        ksp.setType('dgmres')
+        ksp_type = "none"
+        ksp.setType("dgmres")
         ksp.setOperators(M_intr)
         ksp.setTolerances(rtol   = rtol,   atol   = atol,
                           divtol = divtol, max_it = max_it)
@@ -239,7 +239,7 @@ def rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
         ksp.setGMRESRestart(GMRESRestart)
         
         pc = ksp.getPC()
-        pc_type = 'lu'
+        pc_type = "lu"
         pc.setType(pc_type)
         
         ksp.setInitialGuessNonzero(False)
@@ -264,27 +264,27 @@ def rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     ksp.destroy()
     
     if comm_rank == 0:
-        file_path = kwargs['residual_file_path']
+        file_path = kwargs["residual_file_path"]
         if file_path:
             fig, ax = plt.subplots()
             plt.semilogy(residuals)
             plt.axhline(rtol)
-            title = '{} - {}, {:.4E}\nConvergence Reason : {}'.format(pc_type, ksp_type, cond, info)
+            title = "{} - {}, {:.4E}\nConvergence Reason : {}".format(pc_type, ksp_type, cond, info)
             ax.set_title(title)
             #plt.tight_layout()
             plt.savefig(file_path, dpi = 300)
             plt.close(fig)
     MPI_comm.barrier()
     
-    if kwargs['verbose']:
+    if kwargs["verbose"]:
         tf = perf_counter()
         msg = (
-            'Solve {} - {} finished.\n'.format(pc_type, ksp_type) +
-            12 * ' ' + 'Converged Reason: {}\n'.format(info) +
-            12 * ' ' + 'Iteration count:  {}\n'.format(n_iter) +
-            12 * ' ' + 'Final residual:   {:.4E}\n'.format(res_f) +
-            12 * ' ' + 'Condition Number: {:.4E}\n'.format(cond) +
-            12 * ' ' + 'Time Elapsed:   {:8.4f} [s]\n'.format(tf - t0)
+            "Solve {} - {} finished.\n".format(pc_type, ksp_type) +
+            12 * " " + "Converged Reason: {}\n".format(info) +
+            12 * " " + "Iteration count:  {}\n".format(n_iter) +
+            12 * " " + "Final residual:   {:.4E}\n".format(res_f) +
+            12 * " " + "Condition Number: {:.4E}\n".format(cond) +
+            12 * " " + "Time Elapsed:   {:8.4f} [s]\n".format(tf - t0)
         )
         utils.print_msg(msg)
         

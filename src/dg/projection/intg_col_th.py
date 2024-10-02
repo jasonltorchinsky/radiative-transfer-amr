@@ -4,9 +4,9 @@ import numpy as np
 import dg.quadrature as qd    
 
 def intg_col_th(mesh, proj, col_key):
-    '''
+    """
     Integrate a column with respect to theta.
-    '''
+    """
 
     col = mesh.cols[col_key]
     if col.is_lf:

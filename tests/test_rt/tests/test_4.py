@@ -6,7 +6,7 @@ import os, sys
 
 from .gen_mesh import gen_mesh
 
-sys.path.append('../../src')
+sys.path.append("../../src")
 import dg.quadrature as qd
 from dg.mesh.utils import plot_mesh_p
 from dg.projection import push_forward, pull_back, get_f2f_matrix
@@ -16,12 +16,12 @@ from amr import rand_err, ref_by_ind
 from utils import print_msg
 
 
-def test_4(dir_name = 'test_rt'):
+def test_4(dir_name = "test_rt"):
     """
     Ex matrix generation
     """
     
-    test_dir = os.path.join(dir_name, 'test_4')
+    test_dir = os.path.join(dir_name, "test_4")
     os.makedirs(test_dir, exist_ok = True)
 
     do_plot_mesh = True
@@ -42,17 +42,17 @@ def test_4(dir_name = 'test_rt'):
 
     nref = 3
     for ref in range(0, nref):
-        rand_err_ind = rand_err(mesh, kind = 'spt', form = 'hp')
+        rand_err_ind = rand_err(mesh, kind = "spt", form = "hp")
         mesh = ref_by_ind(mesh, rand_err_ind,
                           ref_ratio = 0.5,
-                          form = 'hp')
+                          form = "hp")
 
     if do_plot_mesh:
-        file_name = os.path.join(test_dir, 'mesh_3d.png')
+        file_name = os.path.join(test_dir, "mesh_3d.png")
         plot_mesh_p(mesh      = mesh,
                     file_name = file_name,
                     plot_dim  = 3)
-        file_name = os.path.join(test_dir, 'mesh_2d.png')
+        file_name = os.path.join(test_dir, "mesh_2d.png")
         plot_mesh_p(mesh        = mesh,
                     file_name   = file_name,
                     plot_dim    = 2,
@@ -60,17 +60,17 @@ def test_4(dir_name = 'test_rt'):
 
     do_fail = False
     col_items = sorted(mesh.cols.items())
-    dims = ['x', 'y']
+    dims = ["x", "y"]
     for dim in dims:
         for col_key_0, col_0 in col_items:
             if col_0.is_lf:
-                if dim == 'x':
+                if dim == "x":
                     [n0_0, _, n1_0, _] = col_0.pos[:]
                     [ndof_0, _]        = col_0.ndofs[:]
                     [nnb_0, wn_0, _, _, _, _] = qd.quad_xyth(nnodes_x = ndof_0)
 
                     col_nhbr_keys = col_0.nhbr_keys[1] + col_0.nhbr_keys[3]
-                elif dim == 'y':
+                elif dim == "y":
                     [_, n0_0, _, n1_0] = col_0.pos[:]
                     [_, ndof_0]        = col_0.ndofs[:]
                     [_, _, nnb_0, wn_0, _, _] = qd.quad_xyth(nnodes_y = ndof_0)
@@ -86,12 +86,12 @@ def test_4(dir_name = 'test_rt'):
                     if col_key_1 is not None:
                         col_1 = mesh.cols[col_key_1]
                         if col_1.is_lf:
-                            if dim == 'x':
+                            if dim == "x":
                                 [n0_1, _, n1_1, _] = col_1.pos[:]
                                 [ndof_1, _]        = col_1.ndofs[:]
                                 [nnb_1, wn_1, _, _, _, _] = \
                                     qd.quad_xyth(nnodes_x = ndof_1)
-                            elif dim == 'y':
+                            elif dim == "y":
                                 [_, n0_1, _, n1_1] = col_1.pos[:]
                                 [_, ndof_1]        = col_1.ndofs[:]
                                 [_, _, nnb_1, wn_1, _, _] = \
@@ -135,25 +135,25 @@ def test_4(dir_name = 'test_rt'):
                                                 * f2f_mat_0[cc, ccp] \
                                                 * f2f_mat_1[dd, ccp]
                             
-                            if dim == 'x':
+                            if dim == "x":
                                 E = get_Ex(mesh, col_key_0, col_key_1)
-                            elif dim == 'y':
+                            elif dim == "y":
                                 E = get_Ey(mesh, col_key_0, col_key_1)
                         
                             err = np.amax(np.abs(E_mat - E))
                             if err > 1.e-13:
-                                print('FAILED: {}, {}, {}'.format(dim, col_key_0, col_key_1))
+                                print("FAILED: {}, {}, {}".format(dim, col_key_0, col_key_1))
                                 print(E_mat)
                                 print(E)
 
-                                if dim == 'x':
+                                if dim == "x":
                                     E = get_Ex(mesh, col_key_0, col_key_1)
-                                elif dim == 'y':
+                                elif dim == "y":
                                     E = get_Ey(mesh, col_key_0, col_key_1)
                                 
                                 do_fail = True
     
     if do_fail:
-        print_msg('Test failed!\n')
+        print_msg("Test failed!\n")
     else:
-        print_msg('Test passed!\n')
+        print_msg("Test passed!\n")

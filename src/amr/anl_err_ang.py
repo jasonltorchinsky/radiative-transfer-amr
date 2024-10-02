@@ -12,14 +12,14 @@ def anl_err_ang(mesh, proj, anl_sol_intg_xy, **kwargs):
     numerical solution by column and cell, weighted to be average relative error.
     """
 
-    default_kwargs = {'ref_col'      : True,
-                      'col_ref_form' : 'hp',
-                      'col_ref_kind' : 'ang',
-                      'col_ref_tol'  : 0.85,
-                      'ref_cell'      : True,
-                      'cell_ref_form' : 'hp',
-                      'cell_ref_kind' : 'ang',
-                      'cell_ref_tol'  : 0.85}
+    default_kwargs = {"ref_col"      : True,
+                      "col_ref_form" : "hp",
+                      "col_ref_kind" : "ang",
+                      "col_ref_tol"  : 0.85,
+                      "ref_cell"      : True,
+                      "cell_ref_form" : "hp",
+                      "cell_ref_kind" : "ang",
+                      "cell_ref_tol"  : 0.85}
     kwargs = {**default_kwargs, **kwargs}
     
     err_ind = Error_Indicator(mesh, **kwargs)
@@ -32,9 +32,9 @@ def anl_err_ang(mesh, proj, anl_sol_intg_xy, **kwargs):
     
     # Track maximum error(s) to calculate hp-steering only where needed
     col_max_err  = 0.
-    col_ref_tol  = kwargs['col_ref_tol']
+    col_ref_tol  = kwargs["col_ref_tol"]
     cell_max_err = 0.
-    cell_ref_tol = kwargs['cell_ref_tol']
+    cell_ref_tol = kwargs["cell_ref_tol"]
 
     # Get max-norm errors
     for col_key, col in col_items:
@@ -79,21 +79,21 @@ def anl_err_ang(mesh, proj, anl_sol_intg_xy, **kwargs):
                     
                     u_intg_xy_max = max(u_intg_xy_max, np.amax(np.abs(u_cell_intg_xy)))
                     
-                    if kwargs['ref_cell']:
+                    if kwargs["ref_cell"]:
                         err_ind.cols[col_key].cells[cell_key].err = cell_err
                         cell_max_err = max(cell_max_err, cell_err)
                                         
-            if kwargs['ref_col']:
+            if kwargs["ref_col"]:
                 err_ind.cols[col_key].err = col_err
                 col_max_err = max(col_max_err, col_err)
             
     # Weight errors to be relative, and calculate hp-steering criteria
-    if kwargs['ref_col']:
+    if kwargs["ref_col"]:
         col_max_err  /= u_intg_xy_max
         col_ref_thrsh = col_ref_tol * col_max_err
         err_ind.col_max_err = col_max_err
 
-    if kwargs['ref_cell']:
+    if kwargs["ref_cell"]:
         cell_max_err  /= u_intg_xy_max
         cell_ref_thrsh = cell_ref_tol * cell_max_err
         err_ind.cell_max_err = cell_max_err
@@ -101,26 +101,26 @@ def anl_err_ang(mesh, proj, anl_sol_intg_xy, **kwargs):
     # Weight to be relative error
     for col_key, col in col_items:
         if col.is_lf:
-            if kwargs['ref_col']: # If we're refining columns
+            if kwargs["ref_col"]: # If we"re refining columns
                 err_ind.cols[col_key].err /= u_intg_xy_max
                 if err_ind.cols[col_key].err >= col_ref_thrsh: # Does this one need to be refined?
-                    if err_ind.cols[col_key].ref_form == 'hp': # Does the form of refinement need to be chosen?
+                    if err_ind.cols[col_key].ref_form == "hp": # Does the form of refinement need to be chosen?
                         err_ind.cols[col_key].ref_form = hp_steer_col(mesh, proj, col_key)
-                else: # Needn't be refined
+                else: # Needn"t be refined
                     err_ind.cols[col_key].ref_form = None
                         
                 
-            if kwargs['ref_cell']: # If we're refining cells
+            if kwargs["ref_cell"]: # If we"re refining cells
                 cell_items = sorted(col.cells.items())
                 for cell_key, cell in cell_items:
                     if cell.is_lf:
                         err_ind.cols[col_key].cells[cell_key].err /= u_intg_xy_max
                         
                         if err_ind.cols[col_key].cells[cell_key].err >= cell_ref_thrsh: # Does this one need to be refined?
-                            if err_ind.cols[col_key].cells[cell_key].ref_form == 'hp': # Does the form of refinement need to be chosen?
+                            if err_ind.cols[col_key].cells[cell_key].ref_form == "hp": # Does the form of refinement need to be chosen?
                                 err_ind.cols[col_key].cells[cell_key].ref_form = \
                                     hp_steer_cell(mesh, proj, col_key, cell_key)
-                        else: # Needn't be refined
+                        else: # Needn"t be refined
                             err_ind.cols[col_key].cells[cell_key].ref_form = None
 
     return err_ind

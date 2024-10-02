@@ -73,10 +73,10 @@ class Projection():
         self.cols = proj_cols # Columns in mesh
         
     def __str__(self):
-        msg = ( 'Ls     :  {}\n'.format(self.Ls) +
-                'pbcs   :  {}\n'.format(self.pbcs) +
-                'has_th :  {}\n'.format(self.has_th) +
-                'cols   :  {}\n'.format(sorted(self.cols.keys()))
+        msg = ( "Ls     :  {}\n".format(self.Ls) +
+                "pbcs   :  {}\n".format(self.pbcs) +
+                "has_th :  {}\n".format(self.has_th) +
+                "cols   :  {}\n".format(sorted(self.cols.keys()))
                )
         
         return msg

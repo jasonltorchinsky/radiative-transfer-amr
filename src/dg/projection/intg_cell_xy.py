@@ -3,9 +3,9 @@ import numpy as np
 import dg.quadrature as qd    
 
 def intg_cell_xy(mesh, proj, col_key, cell_key):
-    '''
+    """
     Integrate a column with respect to theta.
-    '''
+    """
 
     col = mesh.cols[col_key]
     if col.is_lf:

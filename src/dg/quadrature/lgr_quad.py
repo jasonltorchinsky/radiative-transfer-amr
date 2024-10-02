@@ -1,9 +1,9 @@
 import numpy as np
 
 def lgr_quad(nnodes = 5):
-    '''
+    """
     Calculate Legendre-Gauss-Radau nodes, weights, and Vandermonde matrix.
-    The LGR nodes are the zeros of P_N + P'_N(x) (the Nth Legendre 
+    The LGR nodes are the zeros of P_N + P"_N(x) (the Nth Legendre 
     polynomial).
 
     The order of approximation is one greater than the number of nodes.
@@ -12,7 +12,7 @@ def lgr_quad(nnodes = 5):
 
     Reference: C. Canuto, M. Y. Hussaini, A. Quarteroni, T. A. Tang,
     "Spectral Methods in Fluid Dynamics," Section 2.3. Springer-Verlag 1987
-    '''
+    """
 
     # Initial guess: Chebyshev-Gauss-Radau nodes
     nodes = -np.cos(2. * np.pi * np.arange(0, nnodes) / (2. * nnodes - 1))

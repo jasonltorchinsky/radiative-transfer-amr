@@ -2,41 +2,41 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os, sys
 
-sys.path.append('../../src')
+sys.path.append("../../src")
 import dg.quadrature as qd
 
 def test_6(func, Func,
-           quad_type = 'lg',
-           dir_name = 'test_quad'):
+           quad_type = "lg",
+           dir_name = "test_quad"):
     """
     Tests the integration of an analytic function f onto the Legendre-Gauss/
     Legendre-Gauss-Lobatto basis.
     """
 
-    dir_name = os.path.join(dir_name, 'test_6')
+    dir_name = os.path.join(dir_name, "test_6")
     os.makedirs(dir_name, exist_ok = True)
 
     nnodes = 2**np.arange(2, 7, 1)
     quad_nnode = 2 * np.amax(nnodes)
 
-    if quad_type == 'lg':
+    if quad_type == "lg":
         [quad_nodes, quad_weights] = qd.lg_quad(quad_nnode)
-        quad_type_str = 'Legendre-Gauss'
+        quad_type_str = "Legendre-Gauss"
 
-    elif quad_type == 'lgl':
+    elif quad_type == "lgl":
         [quad_nodes, quad_weights] = qd.lgl_quad(quad_nnode)
-        quad_type_str = 'Legendre-Gauss-Lobatto'
+        quad_type_str = "Legendre-Gauss-Lobatto"
     else:
-        print('ERROR: Test 6 recieved invalid quad_type. Please use "lg" or "lgl".')
+        print("ERROR: Test 6 recieved invalid quad_type. Please use "lg" or "lgl".")
         quit()
         
     for nnode in nnodes:
-        if quad_type == 'lg':
+        if quad_type == "lg":
             [nodes, weights] = qd.lg_quad(nnode)
-        elif quad_type == 'lgl':
+        elif quad_type == "lgl":
             [nodes, weights] = qd.lgl_quad(nnode)
         else:
-            print('ERROR: Test 6 recieved invalid quad_type. Please use "lg" or "lgl".')
+            print("ERROR: Test 6 recieved invalid quad_type. Please use "lg" or "lgl".")
             quit()        
 
         # Define 
@@ -64,17 +64,17 @@ def test_6(func, Func,
         
         # Plot all functions for comparison
         fig, ax = plt.subplots()
-        ax.plot(xx, F_anl,  label = 'Analytic',
-                color = 'k', linestyle = '-')
-        ax.plot(xx, F_apr, label = 'Approximation',
-                color = 'b', linestyle = '-')
+        ax.plot(xx, F_anl,  label = "Analytic",
+                color = "k", linestyle = "-")
+        ax.plot(xx, F_apr, label = "Approximation",
+                color = "b", linestyle = "-")
 
         ax.legend()
-        title_str = ('1-D Function Anti-differentiation on\n'
-                     + '{} Nodal Bases\n').format(quad_type_str)
+        title_str = ("1-D Function Anti-differentiation on\n"
+                     + "{} Nodal Bases\n").format(quad_type_str)
         ax.set_title(title_str)
         
-        file_name = '{}_integration_{:03d}.png'.format(quad_type, nnode)
+        file_name = "{}_integration_{:03d}.png".format(quad_type, nnode)
         fig.set_size_inches(6.5, 6.5)
         plt.savefig(os.path.join(dir_name, file_name), dpi = 300)
         plt.close(fig)

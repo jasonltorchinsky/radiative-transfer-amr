@@ -2,10 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os, sys
 
-sys.path.append('../')
+sys.path.append("../")
 from test_cases import get_test_funcs
 
-sys.path.append('../../src')
+sys.path.append("../../src")
 import dg.mesh as ji_mesh
 import dg.mesh.utils
 
@@ -13,18 +13,18 @@ import dg.projection
 import dg.projection.utils
 
 
-def test_1(dir_name = 'test_mesh'):
+def test_1(dir_name = "test_mesh"):
     """
     3D projection creation and plotting.
     """
     
-    dir_name = os.path.join(dir_name, 'test_1')
+    dir_name = os.path.join(dir_name, "test_1")
     os.makedirs(dir_name, exist_ok = True)
     
-    mesh_dir  = os.path.join(dir_name, 'mesh')
+    mesh_dir  = os.path.join(dir_name, "mesh")
     os.makedirs(mesh_dir, exist_ok = True)
     
-    proj_dir  = os.path.join(dir_name, 'proj')
+    proj_dir  = os.path.join(dir_name, "proj")
     os.makedirs(proj_dir, exist_ok = True)
 
     # Select test problem
@@ -43,11 +43,11 @@ def test_1(dir_name = 'test_mesh'):
     angles = [0, 2 * np.pi / 3, 4 * np.pi /3, 2 * np.pi]
     nrefs = 0
     
-    file_name = os.path.join(mesh_dir, 'mesh_3d_{}.png'.format(nrefs))
+    file_name = os.path.join(mesh_dir, "mesh_3d_{}.png".format(nrefs))
     ji_mesh.utils.plot_mesh(mesh, ax = None, file_name = file_name,
                             label_cells = False, plot_dim = 3)
     
-    file_name = os.path.join(proj_dir, 'projs_{}.png'.format(nrefs))
+    file_name = os.path.join(proj_dir, "projs_{}.png".format(nrefs))
     dg.projection.utils.plot_projection(proj, file_name = file_name,
                                         angles = angles)
     
@@ -60,21 +60,21 @@ def test_1(dir_name = 'test_mesh'):
         cell_keys = sorted(list(col.cells.keys()))
         cell_key = cell_keys[-1]
         mesh.ref_cell(col_key, cell_key)
-        mesh.ref_col(col_key, kind = 'spt')
+        mesh.ref_col(col_key, kind = "spt")
         
-        #mesh.ref_mesh(kind = 'all')
+        #mesh.ref_mesh(kind = "all")
         proj = dg.projection.Projection(mesh, test_func)
         nrefs += 1
         
-        file_name = os.path.join(mesh_dir, 'mesh_3d_{}.png'.format(nrefs))
+        file_name = os.path.join(mesh_dir, "mesh_3d_{}.png".format(nrefs))
         ji_mesh.utils.plot_mesh(mesh, ax = None, file_name = file_name,
                                 label_cells = False, plot_dim = 3)
         
-        file_name = os.path.join(proj_dir, 'projs_{}.png'.format(nrefs))
+        file_name = os.path.join(proj_dir, "projs_{}.png".format(nrefs))
         dg.projection.utils.plot_projection(proj, file_name = file_name,
                                             angles = angles)
 
-    file_name = os.path.join(mesh_dir, 'mesh_2d_bdry.png')
+    file_name = os.path.join(mesh_dir, "mesh_2d_bdry.png")
     ji_mesh.utils.plot_mesh_bdry(mesh, file_name = file_name,
                                  label_cells = False, plot_dim = 2)
     

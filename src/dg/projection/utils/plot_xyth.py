@@ -6,17 +6,17 @@ from matplotlib.patches import Rectangle, Wedge
 from matplotlib.collections import PatchCollection
 import sys
 
-sys.path.append('../..')
+sys.path.append("../..")
 import dg.quadrature as qd
 from dg.projection import push_forward, pull_back
 
 def plot_xyth(mesh, proj, file_name = None, **kwargs):
     
-    default_kwargs = {'cmap'  : 'hot',
-                      'scale' : 'normal'}
+    default_kwargs = {"cmap"  : "hot",
+                      "scale" : "normal"}
     kwargs = {**default_kwargs, **kwargs}
     
-    cmap = cm.get_cmap(kwargs['cmap'])
+    cmap = cm.get_cmap(kwargs["cmap"])
     
     fig, ax = plt.subplots()
     
@@ -36,12 +36,12 @@ def plot_xyth(mesh, proj, file_name = None, **kwargs):
                     vmin = min(vmin, cell_mean)
                     vmax = max(vmax, cell_mean)
 
-    scale = kwargs['scale']
-    if scale == 'diff':
+    scale = kwargs["scale"]
+    if scale == "diff":
         v_bnd = max(np.abs(vmin), np.abs(vmax))
         vmin = -v_bnd
         vmax = v_bnd
-    elif scale == 'pos':
+    elif scale == "pos":
         vmin = 0.
     # Default to a normal color scale
 
@@ -60,8 +60,8 @@ def plot_xyth(mesh, proj, file_name = None, **kwargs):
             wy = wy.reshape([1, ny, 1])
             
             rect = Rectangle((x0, y0), dx, dy,
-                             facecolor = 'none',
-                             edgecolor = 'black')
+                             facecolor = "none",
+                             edgecolor = "black")
             rects += [rect]
 
             cell_items = sorted(col.cells.items())
@@ -95,8 +95,8 @@ def plot_xyth(mesh, proj, file_name = None, **kwargs):
     
     fig.colorbar(wedge_coll, ax = ax)
     
-    ax.set_xlabel('x')
-    ax.set_ylabel('y')
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
     
     if file_name:
         fig.set_size_inches(6.5, 6.5 * (Ly / Lx))

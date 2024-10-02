@@ -3,7 +3,7 @@ from scipy.integrate import quad
 from scipy.special import erf, erfi
 import sys
 
-sys.path.append('../../src')
+sys.path.append("../../src")
 from utils import print_msg
 
 
@@ -13,10 +13,10 @@ def get_cons_prob(prob_name, prob_num, mesh, **kwargs):
     test (sub-)problem.
     """
     
-    default_kwargs = {'sx'  : 16.,
-                      'sy'  : 24.,
-                      'sth' : 32.,
-                      'g'   : 0.8}
+    default_kwargs = {"sx"  : 16.,
+                      "sy"  : 24.,
+                      "sth" : 32.,
+                      "g"   : 0.8}
     kwargs = {**default_kwargs, **kwargs}
     
     [x_num, y_num, th_num, scat_num] = prob_num[:]
@@ -51,25 +51,25 @@ def get_cons_prob(prob_name, prob_num, mesh, **kwargs):
     def u_intg_xy(x0, x1, y0, y1, th):
         return X_intg(x0, x1) * Y_intg(y0, y1) * Th(th)
     
-    if prob_name == 'mass':
+    if prob_name == "mass":
         def f(x, y, th):
             return f_mass(x, y, th)
         
-    elif prob_name == 'scat':
+    elif prob_name == "scat":
         def f(x, y, th):
             return f_mass(x, y, th) - f_scat(x, y, th)
         
-    elif prob_name == 'conv':
+    elif prob_name == "conv":
         def f(x, y, th):
             return f_conv(x, y, th)
         
-    elif prob_name == 'comp':
-        # s.grad(u) + kappa * u - sigma * int_0^2pi Phi u dth' = f
+    elif prob_name == "comp":
+        # s.grad(u) + kappa * u - sigma * int_0^2pi Phi u dth" = f
         def f(x, y, th):
             return f_conv(x, y, th) + f_mass(x, y, th) - f_scat(x, y, th)
         
     else:
-        msg = 'ERROR: Problem name {} is unsupported.'.format(prob_name)
+        msg = "ERROR: Problem name {} is unsupported.".format(prob_name)
         print_msg(msg)
         quit()
         
@@ -77,11 +77,11 @@ def get_cons_prob(prob_name, prob_num, mesh, **kwargs):
 
 def get_X_part(mesh, x_num, **kwargs):
     
-    default_kwargs = {'sx' : 16.}
+    default_kwargs = {"sx" : 16.}
     kwargs = {**default_kwargs, **kwargs}
     
     [Lx, _] = mesh.Ls[:]
-    sx = kwargs['sx']
+    sx = kwargs["sx"]
 
     if x_num == 0: # Constant
         def X(x):
@@ -128,11 +128,11 @@ def get_X_part(mesh, x_num, **kwargs):
 
 def get_Y_part(mesh, y_num, **kwargs):
     
-    default_kwargs = {'sy' : 24.}
+    default_kwargs = {"sy" : 24.}
     kwargs = {**default_kwargs, **kwargs}
     
     [Ly, _] = mesh.Ls[:]
-    sy = kwargs['sy']
+    sy = kwargs["sy"]
     
     if y_num == 0: # Constant
         def Y(y):
@@ -179,10 +179,10 @@ def get_Y_part(mesh, y_num, **kwargs):
 
 def get_Th_part(mesh, th_num, **kwargs):
     
-    default_kwargs = {'sth' : 32.}
+    default_kwargs = {"sth" : 32.}
     kwargs = {**default_kwargs, **kwargs}
     
-    sth = kwargs['sth']
+    sth = kwargs["sth"]
     
     if th_num == 0: # Constant
         def Th(th):
@@ -219,10 +219,10 @@ def get_Th_part(mesh, th_num, **kwargs):
 
 def get_scat_part(scat_num, Th, **kwargs):
 
-    default_kwargs = {'g' : 0.8}
+    default_kwargs = {"g" : 0.8}
     kwargs = {**default_kwargs, **kwargs}
     
-    g = kwargs['g']
+    g = kwargs["g"]
     if scat_num == 0: # Isotropic scattering
         def Phi(th, phi):
             return 1.0 / (2.0 * np.pi) * np.ones_like(th) * np.ones_like(phi)
@@ -470,25 +470,25 @@ def get_cons_prob_old(prob_name, prob_num, mesh):
     def u_intg_xy(x0, x1, y0, y1, th):
         return X_intg(x0, x1) * Y_intg(y0, y1) * TH(th)
 
-    if prob_name == 'mass':
+    if prob_name == "mass":
         def f(x, y, th):
             return f_mass(x, y, th)
         
-    elif prob_name == 'scat':
+    elif prob_name == "scat":
         def f(x, y, th):
             return f_mass(x, y, th) - f_scat(x, y, th)
         
-    elif prob_name == 'conv':
+    elif prob_name == "conv":
         def f(x, y, th):
             return f_conv(x, y, th)
         
-    elif prob_name == 'comp':
-        # s.grad(u) + kappa * u - sigma * int_0^2pi Phi u dth' = f
+    elif prob_name == "comp":
+        # s.grad(u) + kappa * u - sigma * int_0^2pi Phi u dth" = f
         def f(x, y, th):
             return f_conv(x, y, th) + f_mass(x, y, th) - f_scat(x, y, th)
         
     else:
-        msg = 'ERROR: Problem name {} is unsupported.'.format(prob_name)
+        msg = "ERROR: Problem name {} is unsupported.".format(prob_name)
         print_msg(msg)
         quit()
         

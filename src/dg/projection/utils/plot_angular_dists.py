@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 import sys
 
-sys.path.append('../..')
+sys.path.append("../..")
 from dg.quadrature import quad_xyth, lag_eval
 from dg.projection import push_forward, pull_back
 
@@ -63,9 +63,9 @@ def plot_angular_dists(mesh, proj, file_name = None, **kwargs):
                 vals = cell_intg_xs[(col_key, cell_key)]
                 
                 pc = ax.pcolormesh(yyf, thf, vals.transpose(),
-                                   cmap = kwargs['cmap'],
+                                   cmap = kwargs["cmap"],
                                    vmin = vmin, vmax = vmax,
-                                   shading = 'gouraud')
+                                   shading = "gouraud")
                     
                 rect = Rectangle((th0, y0), dth, dy, fill = False)
             ax.add_patch(rect)
@@ -75,7 +75,7 @@ def plot_angular_dists(mesh, proj, file_name = None, **kwargs):
         th_tick_labels = [None] * nth_ticks
         for aa in range(0, nth_ticks):
             th_rad = th_ticks[aa] / np.pi
-            th_tick_labels[aa] = '{:.2f}\u03C0'.format(th_rad)
+            th_tick_labels[aa] = "{:.2f}\u03C0".format(th_rad)
         ax.set_xticks(th_ticks)
         ax.set_xticklabels(th_tick_labels)
     
@@ -89,9 +89,9 @@ def plot_angular_dists(mesh, proj, file_name = None, **kwargs):
     return [fig, ax]
 
 def get_closest_factors(x):
-    '''
+    """
     Gets the factors of x that are closest to the square root.
-    '''
+    """
 
     a = int(np.floor(np.sqrt(x)))
     while ((x / a) - np.floor(x / a) > 10**(-3)):

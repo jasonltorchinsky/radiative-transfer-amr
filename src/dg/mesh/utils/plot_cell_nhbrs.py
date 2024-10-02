@@ -9,13 +9,13 @@ from .. import get_cell_nhbr_in_col
 
 def plot_cell_nhbrs(mesh, col, cell, file_name = None, **kwargs):
     
-    default_kwargs = {'label_cells' : False}
+    default_kwargs = {"label_cells" : False}
     kwargs = {**default_kwargs, **kwargs}
 
     [fig, ax] = plot_mesh(mesh, ax = None, file_name = None,
-                          plot_dim = 3, plot_style = 'box', **kwargs)
+                          plot_dim = 3, plot_style = "box", **kwargs)
 
-    colors = ['#648FFF', '#DC267F', '#FE6100', '#FFB000']
+    colors = ["#648FFF", "#DC267F", "#FE6100", "#FFB000"]
     cols = list(mesh.cols.values())
     if col in cols:
         if col.is_lf:
@@ -23,7 +23,7 @@ def plot_cell_nhbrs(mesh, col, cell, file_name = None, **kwargs):
             cells = list(col.cells.values())
             if cell in cells:
                 [z0, zf] = cell.pos
-                prism = get_prism([x0, xf], [y0, yf], [z0, zf], color = 'black')
+                prism = get_prism([x0, xf], [y0, yf], [z0, zf], color = "black")
                 for face in prism:
                     ax.add_collection3d(face)
 
@@ -36,7 +36,7 @@ def plot_cell_nhbrs(mesh, col, cell, file_name = None, **kwargs):
                             [z0, zf] = cell_nhbr.pos
                             
                             prism = get_prism([x0, xf], [y0, yf], [z0, zf],
-                                              color = 'blue')
+                                              color = "blue")
                             for face in prism:
                                 ax.add_collection3d(face)
 

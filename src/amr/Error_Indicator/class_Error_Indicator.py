@@ -58,7 +58,7 @@ class Error_Indicator():
         col_items = sorted(mesh.cols.items())
         for col_key, col in col_items:
             if col.is_lf:
-                # Even if we don"t refine by column, they're used to store cells
+                # Even if we don"t refine by column, they"re used to store cells
                 self.cols[col_key] = Error_Indicator_Column(**kwargs)
                 if self.ref_cell:
                     cell_items = sorted(col.cells.items())

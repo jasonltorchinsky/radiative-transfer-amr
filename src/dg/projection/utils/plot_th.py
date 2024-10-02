@@ -6,7 +6,7 @@ from matplotlib.patches import Rectangle
 from matplotlib.collections import PatchCollection
 import sys
 
-sys.path.append('../..')
+sys.path.append("../..")
 import dg.quadrature as qd
 from dg.projection import push_forward
 
@@ -77,8 +77,8 @@ def plot_th(mesh, proj, file_name = None, **kwargs):
             [dx, dy] = [x1 - x0, y1 - y0]
             
             rect = Rectangle((x0, y0), dx, dy,
-                             facecolor = 'none',
-                             edgecolor = 'black')
+                             facecolor = "none",
+                             edgecolor = "black")
             rects += [rect]
             
     rect_coll = PatchCollection(rects, match_original = True)
@@ -92,19 +92,19 @@ def plot_th(mesh, proj, file_name = None, **kwargs):
             [dx, dy] = [x1 - x0, y1 - y0]
             
             sub_ax = ax.inset_axes([x0 / Lx, y0 / Ly, dx / Lx, dy / Ly],
-                                   projection = 'polar')
+                                   projection = "polar")
             intg_xy_col = intg_xy_cols[col_key]
             th = intg_xy_col[0]
             rr = intg_xy_col[1]
-            sub_ax.plot(th, rr, color = 'k')
+            sub_ax.plot(th, rr, color = "k")
             sub_ax.set_rmin(rmin)
             sub_ax.set_rmax(rmax)
             sub_ax.set_xticks([], [])
             sub_ax.set_yticks([], [])
             sub_ax.set_rgrids([0.33 * rmax, 0.67 * rmax], angle = 90)
             
-    ax.set_xlabel('x')
-    ax.set_ylabel('y')
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
     
     if file_name:
         fig.set_size_inches(6.5, 6.5 * (Ly / Lx))

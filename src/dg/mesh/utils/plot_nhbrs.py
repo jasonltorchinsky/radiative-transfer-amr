@@ -8,11 +8,11 @@ from .. import get_cell_nhbr_in_col
 
 def plot_nhbrs(mesh, col_key_0, cell_key_0 = None, file_name = None, **kwargs):
     
-    default_kwargs = {'label_cells' : False}
+    default_kwargs = {"label_cells" : False}
     if cell_key_0 is not None:
-        default_kwargs['plot_dim'] = 3
+        default_kwargs["plot_dim"] = 3
     else:
-        default_kwargs['plot_dim'] = 2
+        default_kwargs["plot_dim"] = 2
     kwargs = {**default_kwargs, **kwargs}
     
     
@@ -41,7 +41,7 @@ def plot_nhbrs(mesh, col_key_0, cell_key_0 = None, file_name = None, **kwargs):
     ax.set_xlim([0, Lx])
     ax.set_ylim([0, Ly])
 
-    colors = ['#000000', '#E69F00', '#56B4E9']
+    colors = ["#000000", "#E69F00", "#56B4E9"]
 
     col_items = sorted(mesh.cols.items())
     for col_key, col in col_items:
@@ -55,13 +55,13 @@ def plot_nhbrs(mesh, col_key_0, cell_key_0 = None, file_name = None, **kwargs):
             elif (col_key in col_nhbr_keys) and (cell_key_0 is None):
                 facecolor = colors[1]
             else:
-                facecolor = 'none'
+                facecolor = "none"
             rect = Rectangle((x0, y0), dx, dy,
                              facecolor = facecolor,
-                             edgecolor = 'black')
+                             edgecolor = "black")
             ax.add_patch(rect)
 
-            if kwargs['plot_dim'] == 3:
+            if kwargs["plot_dim"] == 3:
                 cell_items = sorted(col.cells.items())
                 for cell_key, cell in cell_items:
                     if cell.is_lf:
@@ -77,18 +77,18 @@ def plot_nhbrs(mesh, col_key_0, cell_key_0 = None, file_name = None, **kwargs):
                                 else:
                                     facecolor = colors[2]
                             else:
-                                facecolor = 'none'
+                                facecolor = "none"
                         else:
-                            facecolor = 'none'
+                            facecolor = "none"
                             
                         wed = Wedge((cx, cy), min(dx, dy)/2, deg0, deg1,
                                     facecolor = facecolor,
-                                    edgecolor = 'black'
+                                    edgecolor = "black"
                                     )
                         ax.add_patch(wed)
                         
-    ax.set_xlabel('x')
-    ax.set_ylabel('y')
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
     
     if file_name:
         fig.set_size_inches(6.5, 6.5 * (Ly / Lx))

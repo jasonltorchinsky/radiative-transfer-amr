@@ -2,7 +2,7 @@ import numpy as np
 import scipy.integrate as integrate
 import sys
 
-sys.path.append('../../src')
+sys.path.append("../../src")
 from utils import print_msg
 
 def get_test_prob(prob_num, mesh):
@@ -157,7 +157,7 @@ def get_test_prob(prob_num, mesh):
             return 0
 
     else:
-        print_msg('Problem number {} unsupported.'.format(prob_num))
+        print_msg("Problem number {} unsupported.".format(prob_num))
         quit()
         
     return [kappa, sigma, Phi, [bcs, dirac], f]

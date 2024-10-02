@@ -20,7 +20,7 @@ intg_u_hr_2 = None
 
 def total_anl_err(mesh, num_sol, anl_sol, **kwargs):
     #return total_anl_err_2(mesh, num_sol, anl_sol, **kwargs)
-    if kwargs['ang_res_offset'] == 0 and kwargs['spt_res_offset'] == 0:
+    if kwargs["ang_res_offset"] == 0 and kwargs["spt_res_offset"] == 0:
         return total_anl_err_lr(mesh, num_sol, anl_sol, **kwargs)
     else:
         return total_anl_err_hr(mesh, num_sol, anl_sol, **kwargs)
@@ -30,15 +30,15 @@ def total_anl_err_2(mesh, num_sol, anl_sol, **kwargs):
     Construct a single high-resolution solution and save it to file for later
     reuse. Compare all numerical solutions against it.
     """
-    default_kwargs = { 'ndof_x_hr'  : 6, # x-DoFs for hi-res solution
-                       'ndof_y_hr'  : 6, # y-DOFs for hi-res solution
-                       'ndof_th_hr' : 6, # th-DoFs for hi-res solution
-                       'nref_spt'   : 3, # Number of spatial h-refs
-                       'nref_ang'   : 2, # Number of angular h-refs
-                       'verbose'    : False, # Print info while executing
-                       'blocking'   : True,  # Synchronize ranks before exiting
-                       'file_path'  : '',    # Path for saving files
-                       'u_hr_file_name' : 'u_hr.npy' # File name for hr-soln
+    default_kwargs = { "ndof_x_hr"  : 6, # x-DoFs for hi-res solution
+                       "ndof_y_hr"  : 6, # y-DOFs for hi-res solution
+                       "ndof_th_hr" : 6, # th-DoFs for hi-res solution
+                       "nref_spt"   : 3, # Number of spatial h-refs
+                       "nref_ang"   : 2, # Number of angular h-refs
+                       "verbose"    : False, # Print info while executing
+                       "blocking"   : True,  # Synchronize ranks before exiting
+                       "file_path"  : "",    # Path for saving files
+                       "u_hr_file_name" : "u_hr.npy" # File name for hr-soln
                       }
     kwargs = {**default_kwargs, **kwargs}
     
@@ -54,24 +54,24 @@ def total_anl_err_2(mesh, num_sol, anl_sol, **kwargs):
     global mesh_hr
     if mesh_hr is None:
         if comm_rank == 0:
-            [nx_hr, ny_hr, nth_hr] = [kwargs['ndof_x_hr'], kwargs['ndof_y_hr'],
-                                      kwargs['ndof_th_hr']]
+            [nx_hr, ny_hr, nth_hr] = [kwargs["ndof_x_hr"], kwargs["ndof_y_hr"],
+                                      kwargs["ndof_th_hr"]]
             mesh_hr = ji_mesh.Mesh(Ls    = mesh.Ls[:],
                                    pbcs  = mesh.pbcs[:],
                                    ndofs = [nx_hr, ny_hr, nth_hr],
                                    has_th = mesh.has_th
                                    )
-            for _ in range(0, kwargs['nref_ang']):
-                mesh_hr.ref_mesh(kind = 'ang', form = 'h')
-            for _ in range(0, kwargs['nref_spt']):
-                mesh_hr.ref_mesh(kind = 'spt', form = 'h')
+            for _ in range(0, kwargs["nref_ang"]):
+                mesh_hr.ref_mesh(kind = "ang", form = "h")
+            for _ in range(0, kwargs["nref_spt"]):
+                mesh_hr.ref_mesh(kind = "spt", form = "h")
             # Plot the mesh
-            file_name = 'mesh_hr.png'
-            file_path = os.path.join(kwargs['file_path'], file_name)
+            file_name = "mesh_hr.png"
+            file_path = os.path.join(kwargs["file_path"], file_name)
             ji_mesh.utils.gen_mesh_plot(mesh, trial, file_path, blocking = False)
             
-            file_name = 'mesh_hr_p.png'
-            file_path = os.path.join(kwargs['file_path'], file_name)
+            file_name = "mesh_hr_p.png"
+            file_path = os.path.join(kwargs["file_path"], file_name)
             ji_mesh.utils.gen_mesh_plot_p(mesh, trial, file_path, blocking = False)
             
         else:
@@ -84,8 +84,8 @@ def total_anl_err_2(mesh, num_sol, anl_sol, **kwargs):
     # Get the high-resolution solution
     global u_hr
     if u_hr is None:
-        u_hr_file_path = os.path.join(kwargs['file_path'],
-                                       kwargs['u_hr_file_name'])
+        u_hr_file_path = os.path.join(kwargs["file_path"],
+                                       kwargs["u_hr_file_name"])
         if not os.path.isfile(u_hr_file_path): # If not saved to file yet
             # Get the solution and save it to file
             u_hr = proj.Projection(mesh_hr, anl_sol)
@@ -96,42 +96,42 @@ def total_anl_err_2(mesh, num_sol, anl_sol, **kwargs):
             # Share the high-resolution solution across processes
             u_hr = MPI_comm.bcast(u_hr, root = 0)
             
-            # If it's not saved to file, assume we need to plot it
+            # If it"s not saved to file, assume we need to plot it
             if comm_rank == 0:
-                if kwargs['verbose']:
+                if kwargs["verbose"]:
                     msg = (
-                        'Plotting high-resolution solution...\n'
+                        "Plotting high-resolution solution...\n"
                     )
                     utils.print_msg(msg, blocking = False)
                     t0 = time.perf_counter()
                     
                 # Plot high-resolution solution for posterity
-                file_name = 'u_hr_th.png'
-                file_path = os.path.join(kwargs['file_path'], file_name)
+                file_name = "u_hr_th.png"
+                file_path = os.path.join(kwargs["file_path"], file_name)
                 proj.utils.plot_th(mesh_hr, u_hr, file_name = file_path)
                 
-                file_name = 'u_hr_xy.png'
-                file_path = os.path.join(kwargs['file_path'], file_name)
+                file_name = "u_hr_xy.png"
+                file_path = os.path.join(kwargs["file_path"], file_name)
                 proj.utils.plot_xy(mesh_hr, u_hr, file_name = file_path)
                 
-                file_name = 'u_hr_xth.png'
-                file_path = os.path.join(kwargs['file_path'], file_name)
+                file_name = "u_hr_xth.png"
+                file_path = os.path.join(kwargs["file_path"], file_name)
                 proj.utils.plot_xth(mesh_hr, u_hr, file_name = file_path)
                 
-                file_name = 'u_hr_yth.png'
-                file_path = os.path.join(kwargs['file_path'], file_name)
+                file_name = "u_hr_yth.png"
+                file_path = os.path.join(kwargs["file_path"], file_name)
                 proj.utils.plot_yth(mesh_hr, u_hr, file_name = file_path)
                 
-                file_name = 'u_hr_xyth.png'
-                file_path = os.path.join(kwargs['file_path'], file_name)
+                file_name = "u_hr_xyth.png"
+                file_path = os.path.join(kwargs["file_path"], file_name)
                 proj.utils.plot_xyth(mesh_hr, u_hr, file_name = file_path)
                 
-                if kwargs['verbose']:
+                if kwargs["verbose"]:
                     tf = time.perf_counter()
                     dt = tf - t0
                     msg = (
-                        'High-resolution solution plotted!\n' +
-                        12 * ' ' + 'Time Elapsed: {:8.4f} [s]\n'.format(dt)
+                        "High-resolution solution plotted!\n" +
+                        12 * " " + "Time Elapsed: {:8.4f} [s]\n".format(dt)
                     )
                     utils.print_msg(msg, blocking = False)
         else: # If saved to file, read it from there
@@ -141,9 +141,9 @@ def total_anl_err_2(mesh, num_sol, anl_sol, **kwargs):
     # Integrate the square of the high-resolution solution for relative error
     global intg_u_hr_2
     if intg_u_hr_2 is None:
-        if kwargs['verbose']:
+        if kwargs["verbose"]:
             msg = (
-                'Integrating high-resolution solution...\n'
+                "Integrating high-resolution solution...\n"
             )
             utils.print_msg(msg, blocking = False)
             t0 = time.perf_counter()
@@ -182,20 +182,20 @@ def total_anl_err_2(mesh, num_sol, anl_sol, **kwargs):
                         
                         local_intg_u_hr_2 += dcoeff * (dth / 2.) * np.sum(wx_hr * wy_hr * wth_hr * (u_hr_cell)**2)
         intg_u_hr_2 = MPI_comm.allreduce(local_intg_u_hr_2)
-        if kwargs['verbose']:
+        if kwargs["verbose"]:
             tf = time.perf_counter()
             dt = tf - t0
             msg = (
-                'High-resolution solution integrated!\n' +
-                12 * ' ' + 'Time Elapsed: {:8.4f} [s]\n'.format(dt)
+                "High-resolution solution integrated!\n" +
+                12 * " " + "Time Elapsed: {:8.4f} [s]\n".format(dt)
             )
             utils.print_msg(msg, blocking = False)
 
     # Calculate the error
     # Embed the low-res soln in the hi-res mesh and get the L2-error
-    if kwargs['verbose']:
+    if kwargs["verbose"]:
         msg = (
-            'Calculating high-resolution error...\n'
+            "Calculating high-resolution error...\n"
         )
         utils.print_msg(msg, blocking = False)
         t0 = time.perf_counter()
@@ -322,16 +322,16 @@ def total_anl_err_2(mesh, num_sol, anl_sol, **kwargs):
                     local_err += (dx * dy * dth / 8.) * np.sum(wx_hr * wy_hr * wth_hr * (u_hr_cell_proj - uh_lr_cell_proj)**2)
     err = MPI_comm.allreduce(local_err)
     err = np.sqrt(err / intg_u_hr_2)
-    if kwargs['verbose']:
+    if kwargs["verbose"]:
         tf = time.perf_counter()
         dt = tf - t0
         msg = (
-            'High-resolution error obtained!\n' +
-            12 * ' ' + 'Time Elapsed: {:8.4f} [s]\n'.format(dt)
+            "High-resolution error obtained!\n" +
+            12 * " " + "Time Elapsed: {:8.4f} [s]\n".format(dt)
         )
         utils.print_msg(msg, blocking = False)
         
-    if kwargs['blocking']:
+    if kwargs["blocking"]:
         MPI_comm.Barrier()
         
     return err
@@ -342,10 +342,10 @@ def total_anl_err_lr(mesh, num_sol, anl_sol, **kwargs):
     Calculate the L2-error by cell (and column), weighted to be the relative error.
     """
     
-    default_kwargs = {'ang_res_offset' : 0,   # Factor to add to angular DoFs
-                      'spt_res_offset' : 0,   # Factor to add to spatial DoFs
-                      'key'        : ' ', # Key to hold intg_u2
-                      'blocking'   : True # Synchronize ranks before exiting
+    default_kwargs = {"ang_res_offset" : 0,   # Factor to add to angular DoFs
+                      "spt_res_offset" : 0,   # Factor to add to spatial DoFs
+                      "key"        : " ", # Key to hold intg_u2
+                      "blocking"   : True # Synchronize ranks before exiting
                       }
     kwargs = {**default_kwargs, **kwargs}
     
@@ -368,9 +368,9 @@ def total_anl_err_lr(mesh, num_sol, anl_sol, **kwargs):
         
     # Integrate the square of the analytic solution here
     global intg_u2
-    if kwargs['key'] not in intg_u2.keys():
+    if kwargs["key"] not in intg_u2.keys():
         [Lx, Ly] = mesh.Ls[:]
-        [intg_u2[kwargs['key']], _] = integrate.nquad(lambda x, y, th: (anl_sol(x, y, th))**2,
+        [intg_u2[kwargs["key"]], _] = integrate.nquad(lambda x, y, th: (anl_sol(x, y, th))**2,
                                                       [[0, Lx], [0, Ly], [0, 2. * np.pi]])
         
     local_err = 0.
@@ -413,9 +413,9 @@ def total_anl_err_lr(mesh, num_sol, anl_sol, **kwargs):
                     local_err += (dx * dy * dth / 8.) * np.sum(wx * wy * wth * (u_cell - uh_cell)**2)
                     
     err = MPI_comm.allreduce(local_err)
-    err = np.sqrt(err/intg_u2[kwargs['key']])
+    err = np.sqrt(err/intg_u2[kwargs["key"]])
     
-    if kwargs['blocking']:
+    if kwargs["blocking"]:
         MPI_comm.Barrier()
 
     return err
@@ -425,11 +425,11 @@ def total_anl_err_hr(mesh, num_sol, anl_sol, **kwargs):
     Calculate the L2-error by cell (and column), weighted to be the relative error.
     """
     
-    default_kwargs = {'ref_kind'   : 'all',
-                      'ang_res_offset' : 1,   # Factor to add to angular DoFs
-                      'spt_res_offset' : 1,   # Factor to add to spatial DoFs
-                      'key'        : ' ', # Key to hold intg_u2
-                      'blocking'   : True # Synchronize ranks before exiting
+    default_kwargs = {"ref_kind"   : "all",
+                      "ang_res_offset" : 1,   # Factor to add to angular DoFs
+                      "spt_res_offset" : 1,   # Factor to add to spatial DoFs
+                      "key"        : " ", # Key to hold intg_u2
+                      "blocking"   : True # Synchronize ranks before exiting
                       }
     kwargs = {**default_kwargs, **kwargs}
     
@@ -450,14 +450,14 @@ def total_anl_err_hr(mesh, num_sol, anl_sol, **kwargs):
     col_keys_global = list(sorted(mesh.cols.keys()))
     col_keys_local  = np.array_split(col_keys_global, comm_size)[comm_rank].astype(np.int32)
     
-    ang_res_offset = kwargs['ang_res_offset']
-    spt_res_offset = kwargs['spt_res_offset']
+    ang_res_offset = kwargs["ang_res_offset"]
+    spt_res_offset = kwargs["spt_res_offset"]
     
     # Integrate the square of the analytic solution here
     global intg_u2
-    if kwargs['key'] not in intg_u2.keys():
+    if kwargs["key"] not in intg_u2.keys():
         [Lx, Ly] = mesh.Ls[:]
-        [intg_u2[kwargs['key']], _] = integrate.nquad(lambda x, y, th: (anl_sol(x, y, th))**2,
+        [intg_u2[kwargs["key"]], _] = integrate.nquad(lambda x, y, th: (anl_sol(x, y, th))**2,
                                                       [[0, Lx], [0, Ly], [0, 2. * np.pi]])
         
     local_err = 0.
@@ -473,7 +473,7 @@ def total_anl_err_hr(mesh, num_sol, anl_sol, **kwargs):
             [xxb, _, yyb, _, _, _] = qd.quad_xyth(nnodes_x = nx,
                                                   nnodes_y = ny)
             
-            if kwargs['ref_kind'] in ('spt', 'all'):
+            if kwargs["ref_kind"] in ("spt", "all"):
                 [nx_hr, ny_hr] = [int(spt_res_offset + nx), int(spt_res_offset * ny)]
             else:
                 [nx_hr, ny_hr] = [nx, ny]
@@ -516,7 +516,7 @@ def total_anl_err_hr(mesh, num_sol, anl_sol, **kwargs):
                     
                     [_, _, _, _, thb, _] = qd.quad_xyth(nnodes_th = nth)
 
-                    if kwargs['ref_kind'] in ('ang', 'all'):
+                    if kwargs["ref_kind"] in ("ang", "all"):
                         [nth_hr]  = [int(ang_res_offset + nth)]
                     else:
                         [nth_hr]  = [nth]
@@ -554,9 +554,9 @@ def total_anl_err_hr(mesh, num_sol, anl_sol, **kwargs):
                     local_err += (dx * dy * dth / 8.) * np.sum(wx_hr * wy_hr * wth_hr * (u_cell - u_hr_cell)**2)
                     
     err = MPI_comm.allreduce(local_err)
-    err = np.sqrt(err/intg_u2[kwargs['key']])
+    err = np.sqrt(err/intg_u2[kwargs["key"]])
     
-    if kwargs['blocking']:
+    if kwargs["blocking"]:
         MPI_comm.Barrier()
         
     return err
