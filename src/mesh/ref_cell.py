@@ -5,26 +5,30 @@ import sys
 import numpy as np
 
 # Local Library Imports
-from class_Cell import Cell
-from class_Cell import calc_key as calc_cell_key
+from class_Column import Column
+from class_Column import calc_key as calc_col_key
+
+from class_Column.class_Cell import Cell
+from class_Column.class_Cell import calc_key as calc_cell_key
 
 # Relative Imports
 
 # Refine a cell angularly
-def ref_cell(self, cell_key: int, form: str = "h"):
+
+def ref_cell(self, col_key: int, cell_key: int, form: str = "h") -> None:
     if form in ["p", "hp"]:
-        self.ref_cell_p(self, cell_key)
+        ref_cell_p(self, col_key, cell_key)
     if form in ["h", "hp"]:
-        self.ref_cell_h(self, cell_key)
+        ref_cell_h(self, col_key, cell_key)
     if form not in ["h", "p", "hp"]:
         msg = ( "ERROR IN REFINING CELL, " +
                     "UNSUPPORTED REFINEMENT FORM - {}").format(form)
         print(msg)
         sys.exit(0)
 
-def ref_cell_p(self, col_key, cell_key):
-    col  = self.cols[col_key]
-    cell = col.cells[cell_key]
+def ref_cell_p(self, col_key: int, cell_key: int) -> None:
+    col: Column = self.cols[col_key]
+    cell: Cell  = col.cells[cell_key]
 
     # The naming conventions break down here, leading to some atrocious code.
     if cell.is_lf:

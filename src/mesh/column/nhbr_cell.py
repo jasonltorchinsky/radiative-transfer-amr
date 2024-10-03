@@ -4,8 +4,8 @@ from math import floor
 # Third-Party Library Imports
 
 # Local Library Imports
-from class_Column.class_Cell import Cell
-from class_Column.class_Cell import calc_key as calc_cell_key
+from .cell import Cell
+from .cell import calc_key as calc_cell_key
 
 # Relative Imports
 

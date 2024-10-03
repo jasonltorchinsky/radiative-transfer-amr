@@ -1,14 +1,21 @@
-import numpy as np
+# Standard Library Imports
 import sys
 
-from .Cell import Cell
+# Third-Party Library Imports
+import numpy as np
 
-from .get_nhbr import get_cell_nhbr_in_col
-from .calc_key import calc_cell_key
+# Local Library Imports
+from class_Column import Column
+from class_Column import calc_key as calc_col_key
+
+from class_Column.class_Cell import Cell
+from class_Column.class_Cell import calc_key as calc_cell_key
+
+# Relative Imports
 
 # Refine a cell angularly
 
-def ref_cell(self, col_key, cell_key, form = "h"):
+def ref_cell(self, col_key: int, cell_key: int, form: str = "h") -> None:
     if form in ["p", "hp"]:
         ref_cell_p(self, col_key, cell_key)
     if form in ["h", "hp"]:
@@ -19,9 +26,9 @@ def ref_cell(self, col_key, cell_key, form = "h"):
         print(msg)
         sys.exit(0)
 
-def ref_cell_p(self, col_key, cell_key):
-    col  = self.cols[col_key]
-    cell = col.cells[cell_key]
+def ref_cell_p(self, col_key: int, cell_key: int) -> None:
+    col: Column = self.cols[col_key]
+    cell: Cell  = col.cells[cell_key]
 
     # The naming conventions break down here, leading to some atrocious code.
     if cell.is_lf:
