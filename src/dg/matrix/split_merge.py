@@ -1,8 +1,17 @@
-import numpy        as np
+# Standard Library Imports
+from time import perf_counter
+
+# Third-Party Library Imports
+import numpy as np
 import petsc4py
 import scipy.sparse as sp
-from   mpi4py       import MPI
-from   petsc4py     import PETSc
+
+from mpi4py   import MPI
+from petsc4py import PETSc
+
+# Local Library Imports
+
+# Relative Imports
 
 def extract_rows_csr(mat, mask):
     """
@@ -28,7 +37,8 @@ def split_matrix_seq(mesh, mat, intr_mask):
     # Initialize parallel communicators
     MPI_comm = MPI.COMM_WORLD
     
-    petsc4py.init()
+    if not PETSc.Sys.isInitialized():
+        petsc4py.init(comm = MPI_comm)
     comm      = PETSc.COMM_WORLD
     comm_rank = comm.getRank()
     comm_size = comm.getSize()

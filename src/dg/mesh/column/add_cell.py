@@ -5,6 +5,7 @@
 # Local Library Imports
 
 # Relative Imports
+from .cell import Cell
 
-def del_col(self, col_key: int):
-    del self.cols[col_key]
+def add_cell(self, cell: Cell) -> None:
+    self.cells[cell.key] = cell

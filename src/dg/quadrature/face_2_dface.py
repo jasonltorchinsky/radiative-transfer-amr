@@ -1,5 +1,11 @@
+# Standard Library Imports
+
+# Third-Party Library Imports
 import numpy as np
 
+# Local Library Imports
+
+# Relative Imports
 from .quad_xya import quad_xya
 from .gl_proj import gl_proj
 

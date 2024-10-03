@@ -1,7 +1,12 @@
-# Refine each coumn in the mesh spatially ("spt"), angularly ("ang"),
-# or both ("all").
+# Standard Library Imports
 
-def ref_mesh(self, kind = "all", form = "h"):
+# Third-Party Library Imports
+
+# Local Library Imports
+
+# Relative Imports
+
+def ref_mesh(self, kind: str = "all", form: str = "h"):
     col_keys = sorted(self.cols.keys())
     if (kind == "ang") or (kind == "all"):
         for col_key in col_keys:

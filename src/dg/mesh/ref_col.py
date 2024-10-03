@@ -1,7 +1,15 @@
+# Standard Library Imports
 import sys
 
-def ref_col(self, col_key, kind = "all", form = "h"):
-    col = self.cols[col_key]
+# Third-Party Library Imports
+
+# Local Library Imports
+
+# Relative Imports
+from .column import Column
+
+def ref_col(self, col_key: int, kind: str = "all", form: str = "h") -> None:
+    col: Column = self.cols[col_key]
     if col.is_lf:     
         if (kind == "ang") or (kind == "all"):
             cell_keys = sorted(col.cells.keys())
@@ -12,7 +20,7 @@ def ref_col(self, col_key, kind = "all", form = "h"):
             self.ref_col_spt(col_key, form = form)
             
         if (kind != "spt") and (kind != "ang") and (kind != "all"):
-            msg = ( "ERROR IN REFINING COLUMN, " +
-                    "UNSUPPORTED REFINEMENT KIND - {}").format(kind)
+            msg: str = ( "ERROR IN REFINING COLUMN, " +
+                         "UNSUPPORTED REFINEMENT KIND - {}").format(kind)
             print(msg)
             sys.exit(0)

@@ -1,13 +1,21 @@
-def get_ndof(self):
+# Standard Library Imports
 
-    mesh_ndof = 0.
-    for col_key, col in self.cols.items():
+# Third-Party Library Imports
+
+# Local Library Imports
+
+# Relative Imports
+
+def get_ndof(self) -> int:
+    mesh_ndof: int = 0
+    for _, col in self.cols.items():
         if col.is_lf:
             [ndof_x, ndof_y] = col.ndofs[:]
             
-            for cell_key, cell in col.cells.items():
+            for _, cell in col.cells.items():
                 if cell.is_lf:
                     [ndof_th] = cell.ndofs[:]
                     
-                    mesh_ndof += ndof_x * ndof_y * ndof_th
+                    mesh_ndof += int(ndof_x * ndof_y * ndof_th)
+    
     return int(mesh_ndof)

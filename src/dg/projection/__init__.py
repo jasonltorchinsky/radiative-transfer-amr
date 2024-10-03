@@ -1,5 +1,18 @@
+import os, sys
+src_dir: str = os.path.normpath(os.path.join(os.path.dirname(__file__),
+                                             os.pardir, os.pardir))
+
+if src_dir not in sys.path:
+    sys.path.append(src_dir)
+
+# Standard Library Imports
+
+# Third-Party Library Imports
 import numpy as np
 
+# Local Library Imports
+
+# Relative Imports
 from .Projection_Column import Projection_Column
 from .Projection_Cell import Projection_Cell
 
@@ -8,9 +21,9 @@ from .intg_cell_xy import intg_cell_xy
 from .intg_col_th import intg_col_th
 from .get_f2f_matrix import get_f2f_matrix
 
-from ..matrix import get_idx_inv_map, get_col_idxs, get_cell_idxs
-from ..mesh import get_hasnt_th
-from ..quadrature import quad_xyth
+from dg.matrix import get_idx_inv_map, get_col_idxs, get_cell_idxs
+from dg.mesh import get_hasnt_th
+from dg.quadrature import quad_xyth
 
 class Projection():
     def __init__(self, mesh, func):
