@@ -7,7 +7,7 @@ def plot_mesh_p(mesh, file_name = None, **kwargs):
     
     default_kwargs = {'label_cells' : False,
                       'plot_dim' : 2,
-                      'blocking'    : False # Defualt to non-blokcig behavior for plotting
+                      'blocking'    : False # Defualt to non-blocking behavior for plotting
                       }
     kwargs = {**default_kwargs, **kwargs}
     
@@ -24,7 +24,7 @@ def plot_mesh_p(mesh, file_name = None, **kwargs):
 def plot_mesh_p_2d(mesh, file_name = None, **kwargs):
     
     default_kwargs = {'label_cells' : False,
-                      'blocking'    : False # Defualt to non-blokcig behavior for plotting
+                      'blocking'    : False # Defualt to non-blocking behavior for plotting
                       }
     kwargs = {**default_kwargs, **kwargs}
     
@@ -91,7 +91,7 @@ def plot_mesh_p_2d(mesh, file_name = None, **kwargs):
 def plot_mesh_p_3d(mesh, file_name = None, **kwargs):
                       
     default_kwargs = {'label_cells': False,
-                      'blocking'    : False # Defualt to non-blokcig behavior for plotting
+                      'blocking'    : False # Defualt to non-blocking behavior for plotting
                       }
     kwargs = {**default_kwargs, **kwargs}
                       

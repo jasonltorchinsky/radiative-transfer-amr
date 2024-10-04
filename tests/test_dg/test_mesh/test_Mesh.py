@@ -4,7 +4,6 @@ import os
 # Third-Party Library Imports
 
 # Local Library Imports
-import consts
 from dg.mesh import Mesh, from_file
 from tools.dg.mesh import plot_mesh
 
@@ -32,16 +31,37 @@ def test_Mesh(tmp_path):
     same_mesh: Mesh = from_file(file_path)
     assert(mesh == same_mesh)
 
-    ## Plot mesh
-    file_name: str = "mesh.png"
+    ## Plot initial mesh
+    file_name: str = "mesh_0.png"
     file_path: str = os.path.join(tmp_path, file_name)
     plot_mesh(mesh, file_path = file_path)
 
     ## Refine mesh and plot it again
-    mesh.ref_col(col_key = 0, kind = "all", form = "h")
-    mesh.ref_col(col_key = 1, kind = "all", form = "h")
-    mesh.ref_col(col_key = 5, kind = "all", form = "hp")
-    mesh.ref_col(col_key = 30, kind = "all", form = "hp")
-    file_name: str = "mesh_ref.png"
-    file_path: str = os.path.join(tmp_path, file_name)
-    plot_mesh(mesh, file_path = file_path)
+    col_keys: list = [0, 0, 0, 1, 10, 48]
+    ref_kinds: list = ["ang", "ang", "spt", "spt", "spt", "spt"]
+    ref_forms: list = ["h", "h", "h", "h", "hp", "hp"]
+
+    nrefs: int = 0
+    
+    for idx in range(0, len(col_keys)):
+        nrefs += 1
+        mesh.ref_col(col_key = col_keys[idx], kind = ref_kinds[idx], 
+                     form = ref_forms[idx])
+
+        file_name: str = "mesh_{}.png".format(nrefs)
+        file_path: str = os.path.join(tmp_path, file_name)
+        plot_mesh(mesh, file_path = file_path, show_p = True)
+
+    col_key: int = 204
+    cell_keys: list = [3, 7, 15]
+    ref_forms: list = ["h", "hp", "hp"]
+
+    for idx in range(0, len(cell_keys)):
+        #breakpoint()
+        nrefs += 1
+        mesh.ref_cell(col_key = col_key, cell_key = cell_keys[idx], 
+                     form = ref_forms[idx])
+
+        file_name: str = "mesh_{}.png".format(nrefs)
+        file_path: str = os.path.join(tmp_path, file_name)
+        plot_mesh(mesh, file_path = file_path, show_p = True)

@@ -1005,7 +1005,7 @@ def get_err(mesh, uh_proj, u, kappa, sigma, Phi, bcs_dirac, f,
 
 def gen_mesh_plot(mesh, trial, trial_dir, **kwargs):
     
-    default_kwargs = {"blocking" : False # Default to non-blokcig behavior for plotting
+    default_kwargs = {"blocking" : False # Default to non-blocking behavior for plotting
                       }
     kwargs = {**default_kwargs, **kwargs}
 
@@ -1036,7 +1036,7 @@ def gen_mesh_plot(mesh, trial, trial_dir, **kwargs):
 
 def gen_mesh_plot_p(mesh, trial, trial_dir, **kwargs):
 
-    default_kwargs = {"blocking" : False # Default to non-blokcig behavior for plotting
+    default_kwargs = {"blocking" : False # Default to non-blocking behavior for plotting
                       }
     kwargs = {**default_kwargs, **kwargs}
     
@@ -1067,7 +1067,7 @@ def gen_mesh_plot_p(mesh, trial, trial_dir, **kwargs):
     
 def gen_uh_plot(mesh, uh_proj, trial, trial_dir, **kwargs):
     
-    default_kwargs = {"blocking" : False # Default to non-blokcig behavior for plotting
+    default_kwargs = {"blocking" : False # Default to non-blocking behavior for plotting
                       }
     kwargs = {**default_kwargs, **kwargs}
     
@@ -1107,7 +1107,7 @@ def gen_uh_plot(mesh, uh_proj, trial, trial_dir, **kwargs):
     
 def gen_err_ind_plot(mesh, err_ind, trial, trial_dir, file_name, **kwargs):
     
-    default_kwargs = {"blocking" : False # Default to non-blokcig behavior for plotting
+    default_kwargs = {"blocking" : False # Default to non-blocking behavior for plotting
                       }
     kwargs = {**default_kwargs, **kwargs}
     

@@ -9,7 +9,7 @@ def plot_mesh(mesh, ax = None, file_name = None, **kwargs):
     default_kwargs = {'label_cells' : False,
                       'plot_dim'    : 2,
                       'plot_style'  : 'flat',
-                      'blocking'    : False # Defualt to non-blokcig behavior for plotting
+                      'blocking'    : False # Defualt to non-blocking behavior for plotting
                       }
     kwargs = {**default_kwargs, **kwargs}
 
@@ -32,7 +32,7 @@ def plot_mesh(mesh, ax = None, file_name = None, **kwargs):
 def plot_mesh_2d(mesh, ax = None, file_name = None, **kwargs):
 
     default_kwargs = {'label_cells': False,
-                      'blocking'    : False # Defualt to non-blokcig behavior for plotting
+                      'blocking'    : False # Defualt to non-blocking behavior for plotting
                       }
     kwargs = {**default_kwargs, **kwargs}
     
@@ -82,7 +82,7 @@ def plot_mesh_2d(mesh, ax = None, file_name = None, **kwargs):
 def plot_mesh_3d_box(mesh, ax = None, file_name = None, **kwargs):
 
     default_kwargs = {'label_cells': False,
-                      'blocking'    : False # Defualt to non-blokcig behavior for plotting
+                      'blocking'    : False # Defualt to non-blocking behavior for plotting
                       }
     kwargs = {**default_kwargs, **kwargs}
     
@@ -212,7 +212,7 @@ def plot_mesh_3d_flat(mesh, ax = None,
                       file_name = None, **kwargs):
 
     default_kwargs = {'label_cells': False,
-                      'blocking'    : False # Defualt to non-blokcig behavior for plotting
+                      'blocking'    : False # Defualt to non-blocking behavior for plotting
                       }
     kwargs = {**default_kwargs, **kwargs}
 
