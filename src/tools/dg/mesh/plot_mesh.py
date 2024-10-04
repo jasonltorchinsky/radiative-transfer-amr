@@ -12,7 +12,7 @@ from dg.mesh import Mesh
 # Relative Imports
 
 def plot_mesh(mesh: Mesh, lims: list = [[],[]], file_path : str = None,
-                  **kwargs):
+              **kwargs) -> list:
     default_kwargs: dict = {"show_p"   : True, # Show ndof of each element
                             "blocking" : False # Defualt to non-blocking behavior for plotting
                             }

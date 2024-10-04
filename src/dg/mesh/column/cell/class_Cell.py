@@ -10,7 +10,7 @@ from .calc_key import calc_key
 
 class Cell:
     def __init__(self, pos: list, idx: int, lv: int, is_lf: bool, ndofs: list,
-                 quadrant: int, nhbr_keys: list, col_key: int = None):
+                 quadrant: int, nhbr_keys: list):
         self.pos: list   = pos    # Position in angular dimension
         self.idx: int    = idx    # Angular index of cell
         self.lv: int     = lv     # Level of angular refinement

@@ -13,3 +13,4 @@ if src_dir not in sys.path:
 # Local Library Imports
 
 # Relative Imports
+from .plot_xyth import plot_xyth

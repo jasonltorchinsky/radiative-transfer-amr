@@ -1,107 +1,137 @@
+# Standard Library Imports
+
+# Third-Party Library Imports
 import numpy as np
-import matplotlib as mpl
-import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle, Wedge
 from matplotlib.collections import PatchCollection
-import sys
 
-sys.path.append("../..")
+# Local Library Imports
+import consts
+from dg.mesh import Mesh
+from dg.projection import Projection
 import dg.quadrature as qd
-from dg.projection import push_forward, pull_back
 
-def plot_xyth(mesh, proj, file_name = None, **kwargs):
-    
-    default_kwargs = {"cmap"  : "hot",
-                      "scale" : "normal"}
-    kwargs = {**default_kwargs, **kwargs}
-    
-    cmap = cm.get_cmap(kwargs["cmap"])
+# Relative Imports
+
+def plot_xyth(proj: Projection, lims: list = [[],[]], file_path: str = None,
+              **kwargs) -> list:
+    default_kwargs: dict = {"cmap"  : "hot",
+                            "scale" : "normal"}
+    kwargs: dict = {**default_kwargs, **kwargs}
     
     fig, ax = plt.subplots()
     
-    [Lx, Ly] = mesh.Ls[:]
-    ax.set_xlim([0, Lx])
-    ax.set_ylim([0, Ly])
+    ## Set plot range
+    [Lx, Ly] = proj.Ls[:]
+    if not lims[0]:
+        xlim: list = [0, Lx]
+    else:
+        xlim: list = lims[0]
+    if not lims[1]:
+        ylim: list = [0, Ly]
+    else:
+        ylim: list = lims[1]
+    ax.set_xlim(xlim)
+    ax.set_ylim(ylim)
+
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
     
     # Get colorbar min/max
-    [vmin, vmax] = [10.**10, -10.**10]
-    col_items = sorted(mesh.cols.items())
+    [vmin, vmax] = [consts.INF, -consts.INF]
+    col_items: list = sorted(proj.cols.items())
+    cell_means: dict = {}
     for col_key, col in col_items:
-        if col.is_lf:
-            cell_items = sorted(col.cells.items())
-            for cell_key, cell in cell_items:
-                if cell.is_lf:
-                    cell_mean = np.mean(proj.cols[col_key].cells[cell_key].vals)
-                    vmin = min(vmin, cell_mean)
-                    vmax = max(vmax, cell_mean)
+        assert(col.is_lf)
 
-    scale = kwargs["scale"]
-    if scale == "diff":
-        v_bnd = max(np.abs(vmin), np.abs(vmax))
-        vmin = -v_bnd
-        vmax = v_bnd
-    elif scale == "pos":
-        vmin = 0.
-    # Default to a normal color scale
-
-    wedges = []
-    wedge_colors = []
-    rects = []
-    col_items = sorted(mesh.cols.items())
-    for col_key, col in col_items:
-        if col.is_lf:
-            [nx, ny] = col.ndofs[:]
-            [x0, y0, x1, y1] = col.pos[:]
-            [dx, dy] = [x1 - x0, y1 - y0]
-            [cx, cy] = [(x0 + x1) / 2., (y0 + y1) / 2.]
-            [_, wx, _, wy, _, _] = qd.quad_xyth(nnodes_x = nx, nnodes_y = ny)
-            wx = wx.reshape([nx, 1, 1])
-            wy = wy.reshape([1, ny, 1])
+        [nx, ny] = col.ndofs[:]
+        [x0, y0, x1, y1] = col.pos[:]
+        [dx, dy] = [x1 - x0, y1 - y0]
+        [_, wx, _, wy, _, _] = qd.quad_xyth(nnodes_x = nx, nnodes_y = ny)
+        wx: np.ndarray = wx.reshape([nx, 1, 1])
+        wy: np.ndarray = wy.reshape([1, ny, 1])
+        
+        cell_items: list = sorted(col.cells.items())
+        for cell_key, cell in cell_items:
+            assert(cell.is_lf)
             
-            rect = Rectangle((x0, y0), dx, dy,
-                             facecolor = "none",
-                             edgecolor = "black")
-            rects += [rect]
+            [nth]      = cell.ndofs[:]
+            [th0, th1] = cell.pos[:]
+            [dth]      = [th1 - th0]
+            [_, _, _, _, _, wth] = qd.quad_xyth(nnodes_th = nth)
+            wth: np.ndarray = wth.reshape([1, 1, nth])
+            
+            cell_vals: np.ndarray = proj.cols[col_key].cells[cell_key].vals[:,:,:]
+            cell_intg: float = (dx * dy * dth / 8.) * np.sum(wx * wy * wth * cell_vals)
+            cell_mean: float = (1. / (dx * dy * dth)) * cell_intg
 
-            cell_items = sorted(col.cells.items())
-            for cell_key, cell in cell_items:
-                if cell.is_lf:
-                    [nth]        = cell.ndofs[:]
-                    [th0, th1]   = cell.pos[:]
-                    [dth]        = [th1 - th0]
-                    [deg0, deg1] = [th0 * 180. / np.pi, th1 * 180. / np.pi]
-                    [_, _, _, _, _, wth] = qd.quad_xyth(nnodes_th = nth)
-                    wth = wth.reshape([1, 1, nth])
+            vmin: float = min(vmin, cell_mean)
+            vmax: float = max(vmax, cell_mean)
 
-                    cell_vals = proj.cols[col_key].cells[cell_key].vals[:,:,:]
-                    cell_intg = (dx * dy * dth / 8.) * np.sum(wx * wy * wth * cell_vals)
-                    cell_mean = (1. / (dx * dy * dth)) * cell_intg
+            cell_means[(col_key, cell_key)] = cell_mean
+
+    # Two colors scales: diff shows a difference, pos shows positive values
+    scale: str = kwargs["scale"]
+    if scale == "diff":
+        v_bnd: float = max(np.abs(vmin), np.abs(vmax))
+        vmin: float = -v_bnd
+        vmax: float = v_bnd
+    elif scale == "pos":
+        vmin: float = 0.
+    elif scale == "normal":
+        pass
+    
+    ## Get colormap
+    cmap = plt.get_cmap(kwargs["cmap"])
+
+    wedges: list = []
+    wedge_colors: list = []
+    rects: list  = []
+    for col_key, col in col_items:
+        assert(col.is_lf)
+        
+        [x0, y0, x1, y1] = col.pos[:]
+        [dx, dy] = [x1 - x0, y1 - y0]
+        [cx, cy] = [(x0 + x1) / 2., (y0 + y1) / 2.]
+
+        rect: Rectangle = Rectangle((x0, y0), dx, dy,
+                                    facecolor = "none",
+                                    edgecolor = "black")
+        rects += [rect]
+
+        cell_items: list = sorted(col.cells.items())
+        for cell_key, cell in cell_items:
+            assert(cell.is_lf)
+                
+            [th0, th1]   = cell.pos[:]
+            [deg0, deg1] = [th0 * 180. / consts.PI, th1 * 180. / consts.PI]
+
+            cell_mean: float = cell_means[(col_key, cell_key)]
+            
+            wedge: Wedge = Wedge((cx, cy), min(dx, dy)/2, deg0, deg1,
+                                 facecolor = cmap(cell_mean),
+                                 edgecolor = None)
+            wedges += [wedge]
+
+            wedge_color: float = cell_mean
+            wedge_colors += [wedge_color]
                     
-                    wedge = Wedge((cx, cy), min(dx, dy)/2, deg0, deg1,
-                                  facecolor = cmap(cell_mean),
-                                  edgecolor = None)
-                    wedges += [wedge]
-                    wedge_color = cell_mean
-                    wedge_colors += [wedge_color]
-                    
-    rect_coll = PatchCollection(rects, match_original = True)
+    rect_coll: PatchCollection = PatchCollection(rects, match_original = True)
     ax.add_collection(rect_coll)
     
-    wedge_coll = PatchCollection(wedges, edgecolor = None, cmap = cmap)
+    wedge_coll: PatchCollection = PatchCollection(wedges, edgecolor = None,
+                                                  cmap = cmap)
     wedge_coll.set_array(wedge_colors)
     wedge_coll.set_clim([vmin, vmax])
     ax.add_collection(wedge_coll)
     
     fig.colorbar(wedge_coll, ax = ax)
     
-    ax.set_xlabel("x")
-    ax.set_ylabel("y")
-    
-    if file_name:
+    if file_path:
         fig.set_size_inches(6.5, 6.5 * (Ly / Lx))
         plt.tight_layout()
-        plt.savefig(file_name, dpi = 300)
+        plt.savefig(file_path, dpi = 300)
         plt.close(fig)
 
     return [fig, ax]

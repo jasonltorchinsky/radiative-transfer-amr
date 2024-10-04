@@ -5,7 +5,9 @@ import numpy as np
 
 # Local Library Imports
 
-INT = np.int64
-REAL = np.float64
+INT: type  = np.int64
+REAL: type = np.float64
 
-PI = np.pi
+PI: float  = np.pi
+EPS: float = np.finfo(REAL).resolution
+INF: float = np.finfo(REAL).max
