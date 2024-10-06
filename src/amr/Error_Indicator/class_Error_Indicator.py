@@ -1,72 +1,21 @@
-import os, sys
-src_dir: str = os.path.normpath(os.path.join(os.path.dirname(__file__),
-                                             os.pardir, os.pardir,))
-
-if src_dir not in sys.path:
-    sys.path.append(src_dir)
-
 # Standard Library Imports
 
 # Third-Party Library Imports
 
 # Local Library Imports
-from .class_Error_Indicator_Column import Error_Indicator_Column
-from .class_Error_Indicator_Cell import Error_Indicator_Cell
+from dg.projection import Projection
+
+# Relative Imports
+
 
 class Error_Indicator():
-    def __init__(self, mesh, **kwargs):
+    def __init__(self, proj: Projection, ref_kind: str = "all", 
+                 ref_form: str = "hp", ref_tol: list = [0., 0.]):
+        self.proj: Projection = proj
+        self.ref_kind: str = ref_kind
+        self.ref_form: str = ref_form
+        [self.ang_ref_tol, self.spt_ref_tol] = ref_tol # [ang_ref_tol, spt_ref_tol]
 
-        default_kwargs: dict = {"ref_col"      : False,
-                          "col_ref_form" : None,
-                          "col_ref_kind" : None,
-                          "col_ref_tol"  : None,
-                          "ref_cell"      : False,
-                          "cell_ref_form" : None,
-                          "cell_ref_kind" : None,
-                          "cell_ref_tol"  : None}
-        kwargs = {**default_kwargs, **kwargs}
-
-        # Do we refine columns? If so, how?
-        self.ref_col      = kwargs["ref_col"]
-        self.col_ref_form = kwargs["col_ref_form"]
-        self.col_ref_kind = kwargs["col_ref_kind"]
-        self.col_ref_tol  = kwargs["col_ref_tol"]
-        
-        if self.ref_col:
-            self.col_max_err = 0.
-            self.avg_col_ref_err = 0.
-        else:
-            self.col_max_err = None
-            self.avg_col_ref_err = None
-            
-        # Do we refine cells? If so, how?
-        self.ref_cell      = kwargs["ref_cell"]
-        self.cell_ref_form = kwargs["cell_ref_form"]
-        self.cell_ref_kind = kwargs["cell_ref_kind"]
-        self.cell_ref_tol  = kwargs["cell_ref_tol"]
-        
-        if self.ref_cell:
-            self.cell_max_err = 0.
-            self.avg_cell_ref_err = 0.
-        else:
-            self.cell_max_err = None
-            self.avg_cell_ref_err = None
-        
-        
-        # Error indicator is structured similarly to mesh object
-        self.cols = {}
-        col_items = sorted(mesh.cols.items())
-        for col_key, col in col_items:
-            if col.is_lf:
-                # Even if we don"t refine by column, they"re used to store cells
-                self.cols[col_key] = Error_Indicator_Column(**kwargs)
-                if self.ref_cell:
-                    cell_items = sorted(col.cells.items())
-                    for cell_key, cell in cell_items:
-                        if cell.is_lf:
-                            self.cols[col_key].cells[cell_key] \
-                                = Error_Indicator_Cell(**kwargs)
-        
     def __str__(self):
         cols_str        = (sorted(list(self.cols.keys())) if self.cols is not None else "None")
         

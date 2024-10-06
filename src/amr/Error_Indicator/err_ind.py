@@ -186,5 +186,4 @@ def err_ind(mesh, uh):
             err.coeffs[st_idx:st_idx + dof_x * dof_y] \
                 = (error * np.ones([dof_x * dof_y])).tolist()
             
-            
     return err

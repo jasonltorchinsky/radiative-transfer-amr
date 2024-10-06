@@ -17,8 +17,25 @@ class Projection_Cell():
         self.key: int    = cell.key      # Unique key for cell
         self.is_lf: bool = cell.is_lf    # Whether cell is a leaf or not
         self.ndofs: list = cell.ndofs[:] # Degrees of freedom in theta-..
+        self.quadrant: int   = cell.quadrant  # Which angular quadrant the cell is in.
+        self.nhbr_keys: list = cell.nhbr_keys # Keys for neighboring cells in column.
 
         self.vals: np.ndarray = vals
+
+    def __eq__(self, other): # Doesn't check if cells are in different columns!
+        pos: bool = (self.pos == other.pos)
+        idx: bool = (self.idx == other.idx)
+        lv: bool  = (self.lv  == other.lv)
+        key: bool = (self.key == other.key)
+        is_lf: bool = (self.is_lf == other.is_lf)
+        ndofs: bool = (self.ndofs == other.ndofs)
+        quadrant: bool  = (self.quadrant  == other.quadrant)
+        nhbr_keys: bool = (self.nhbr_keys == other.nhbr_keys)
+
+        vals: bool = np.min(self.vals == other.vals)
+        
+        return (pos and idx and lv and key and is_lf and ndofs and quadrant
+                and nhbr_keys and vals)
         
     def __str__(self):
         pos_str: str = ( "[{:3.2f} pi".format(self.pos[0] / consts.PI) +

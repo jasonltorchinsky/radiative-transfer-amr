@@ -8,7 +8,6 @@ from matplotlib.collections import PatchCollection
 
 # Local Library Imports
 import consts
-from dg.mesh import Mesh
 from dg.projection import Projection
 import dg.quadrature as qd
 
@@ -23,7 +22,7 @@ def plot_xyth(proj: Projection, lims: list = [[],[]], file_path: str = None,
     fig, ax = plt.subplots()
     
     ## Set plot range
-    [Lx, Ly] = proj.Ls[:]
+    [Lx, Ly] = proj.mesh.Ls[:]
     if not lims[0]:
         xlim: list = [0, Lx]
     else:

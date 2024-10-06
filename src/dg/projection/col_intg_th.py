@@ -19,7 +19,7 @@ def col_intg_th(self, col_key: int) -> np.ndarray:
     
     proj_cell_items = sorted(proj_col.cells.items())
     
-    for proj_cell_key, proj_cell in proj_cell_items:
+    for _, proj_cell in proj_cell_items:
         assert(proj_cell.is_lf)
             
         [th0, thf] = proj_cell.pos[:]

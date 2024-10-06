@@ -6,11 +6,10 @@ import numpy as np
 # Local Library Imports
 
 # Relative Imports
-from ..mesh import Mesh
 from ..matrix import get_idx_inv_map
 
-def from_vector(self, mesh: Mesh, vec: np.ndarray) -> None:
-    col_items: list = sorted(mesh.cols.items())
+def from_vector(self, vec: np.ndarray) -> None:
+    col_items: list = sorted(self.mesh.cols.items())
 
     g_idx: int = 0 # Starting index of the current cell matrix
     for col_key, col in col_items:

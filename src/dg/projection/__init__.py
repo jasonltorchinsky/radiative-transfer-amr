@@ -14,5 +14,6 @@ if src_dir not in sys.path:
 # Relative Imports
 from . import projection_column
 from .class_Projection import Projection
+from .from_file import from_file
 from .get_f2f_matrix import get_f2f_matrix
 from .push_pull import push_forward, pull_back

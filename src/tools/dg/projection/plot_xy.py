@@ -1,100 +1,122 @@
+# Standard Library Imports
+
+# Third-Party Library Imports
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
-import sys
+from matplotlib.collections import PatchCollection
 
-sys.path.append("../..")
+# Local Library Imports
+import consts
+from dg.projection import Projection, push_forward
 import dg.quadrature as qd
-from dg.projection import push_forward, pull_back
 
-def plot_xy(mesh, proj, file_name = None, **kwargs):
+# Relative Imports
+
+def plot_xy(proj: Projection, lims: list = [[],[]], file_path: str = None,
+            **kwargs) -> list:
+    default_kwargs: dict = {"cmap"  : "hot",
+                            "scale" : "normal",
+                            "show_mesh" : True}
+    kwargs: dict = {**default_kwargs, **kwargs}
     
-    default_kwargs = {"cmap"  : "hot",
-                      "scale" : "normal"}
-    kwargs = {**default_kwargs, **kwargs}
-    
-    if not mesh.has_th:
-        return None
-    
-    [Lx, Ly] = mesh.Ls[:]
-    Lth = 2. * np.pi
-
-    # Integrate each cell in th, and get the bounds for the colorbar
-    [vmin, vmax] = [0., 0.]
-    col_items = sorted(mesh.cols.items())
-    col_intg_ths = {}
-    for col_key, col in col_items:
-        if col.is_lf:
-            [ndof_x, ndof_y] = col.ndofs[:]
-            
-            col_intg_th = np.zeros([ndof_x, ndof_y])
-            
-            cell_items = sorted(col.cells.items())
-            for cell_key, cell in cell_items:
-                if cell.is_lf:
-                    [ndof_th]    = cell.ndofs[:]
-                    [th_0, th_1] = cell.pos[:]
-                    dth          = th_1 - th_0
-
-                    [_, _, _, _, _, wth] = qd.quad_xyth(nnodes_th = ndof_th)
-                    
-                    proj_cell = proj.cols[col_key].cells[cell_key]
-                    
-                    for aa in range(0, ndof_th):
-                        col_intg_th += (dth / 2.) * wth[aa] * proj_cell.vals[:, :, aa]
-                        
-            col_intg_ths[col_key] = col_intg_th
-
-            vmin = min(np.amin(col_intg_th), vmin)
-            vmax = max(np.amax(col_intg_th), vmax)
-            
-    scale = kwargs["scale"]
-    if scale == "diff":
-        v_bnd = max(np.abs(vmin), np.abs(vmax))
-        vmin = -v_bnd
-        vmax = v_bnd
-    elif scale == "pos":
-        vmin = 0.
-    # Default to a normal color scale
-            
     fig, ax = plt.subplots()
-
-    for col_key, col in col_items:
-        if col.is_lf:
-            [x0, y0, x1, y1] = col.pos[:]
-            [dx, dy]         = [x1 - x0, y1 - y0]
-            [ndof_x, ndof_y] = col.ndofs[:]
-            
-            [xxb, _, yyb, _, _, _] = qd.quad_xyth(nnodes_x = ndof_x,
-                                                  nnodes_y = ndof_y)
-            
-            xxf = push_forward(x0, x1, xxb)
-            yyf = push_forward(y0, y1, yyb)
-            
-            vals = col_intg_ths[col_key]
-            
-            pc = ax.pcolormesh(xxf, yyf, vals.transpose(),
-                               cmap = kwargs["cmap"],
-                               vmin = vmin, vmax = vmax,
-                               shading = "gouraud")
-            
-            rect = Rectangle((x0, y0), dx, dy,
-                             facecolor = "none",
-                             edgecolor = "none")
-            ax.add_patch(rect)
     
-    fig.colorbar(pc)
+    ## Set plot range
+    [Lx, Ly] = proj.mesh.Ls[:]
+    if not lims[0]:
+        xlim: list = [0, Lx]
+    else:
+        xlim: list = lims[0]
+    if not lims[1]:
+        ylim: list = [0, Ly]
+    else:
+        ylim: list = lims[1]
+    ax.set_xlim(xlim)
+    ax.set_ylim(ylim)
 
-    ax.set_xlim([0, Lx])
-    ax.set_ylim([0, Ly])
-    
     ax.set_xlabel("x")
     ax.set_ylabel("y")
+
+    # Get colorbar min/max
+    [vmin, vmax] = [consts.INF, -consts.INF]
+    col_items: list = sorted(proj.cols.items())
+    col_intg_ths: dict = {}
+    for col_key, col in col_items:
+        assert(col.is_lf)
+
+        [nx, ny] = col.ndofs[:]
+        col_intg_th: np.ndarray = np.zeros([nx, ny])
+        
+        cell_items: list = sorted(col.cells.items())
+        for cell_key, cell in cell_items:
+            assert(cell.is_lf)
+
+            [nth]    = cell.ndofs[:]
+            [th_0, th_1] = cell.pos[:]
+            dth: float   = th_1 - th_0
+            [_, _, _, _, _, wth] = qd.quad_xyth(nnodes_th = nth)
+            wth: np.ndarray = wth.reshape([1, 1, nth])
+
+            cell_vals: np.ndarray = proj.cols[col_key].cells[cell_key].vals[:,:,:]
+            
+            col_intg_th += (dth / 2.) * np.sum(wth * cell_vals, axis = 2)
+                    
+        col_intg_ths[col_key] = col_intg_th
+        vmin: float = min(np.min(col_intg_th), vmin)
+        vmax: float = max(np.max(col_intg_th), vmax)
+            
+    # Two colors scales: diff shows a difference, pos shows positive values
+    scale: str = kwargs["scale"]
+    if scale == "diff":
+        v_bnd: float = max(np.abs(vmin), np.abs(vmax))
+        vmin: float = -v_bnd
+        vmax: float = v_bnd
+    elif scale == "pos":
+        vmin: float = 0.
+    elif scale == "normal":
+        pass
+
+    ## Get colormap
+    cmap = plt.get_cmap(kwargs["cmap"])
+
+    rects: list = []
+    for col_key, col in col_items:
+        assert(col.is_lf)
+
+        [x0, y0, x1, y1] = col.pos[:]
+        [nx, ny] = col.ndofs[:]
+        
+        [xxb, _, yyb, _, _, _] = qd.quad_xyth(nnodes_x = nx,
+                                              nnodes_y = ny)
+        
+        xxf: np.ndarray = push_forward(x0, x1, xxb)
+        yyf: np.ndarray = push_forward(y0, y1, yyb)
+        
+        vals: np.ndarray = col_intg_ths[col_key]
+        
+        pc = ax.pcolormesh(xxf, yyf, vals.transpose(),
+                           cmap = cmap,
+                           vmin = vmin, vmax = vmax,
+                           shading = "gouraud")
+        
+        if kwargs["show_mesh"]:
+            [dx, dy] = [x1 - x0, y1 - y0]
+            rect: Rectangle = Rectangle((x0, y0), dx, dy,
+                                        facecolor = "none",
+                                        edgecolor = "black")
+            rects += [rect]
     
-    if file_name:
+    if kwargs["show_mesh"]:
+        rect_coll: PatchCollection = PatchCollection(rects, match_original = True)
+        ax.add_collection(rect_coll)
+
+    fig.colorbar(pc, ax = ax)
+    
+    if file_path:
         fig.set_size_inches(6.5, 6.5 * (Ly / Lx))
         plt.tight_layout()
-        plt.savefig(file_name, dpi = 300)
+        plt.savefig(file_path, dpi = 300)
         plt.close(fig)
         
     return [fig, ax]

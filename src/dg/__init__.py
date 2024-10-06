@@ -12,4 +12,4 @@ if src_dir not in sys.path:
 # Local Library Imports
 
 # Relative Imports
-from . import (matrix, mesh)
+from . import (matrix, mesh, projection, quadrature)

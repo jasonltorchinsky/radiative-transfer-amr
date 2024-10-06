@@ -1,7 +1,3 @@
-"""
-Calculates high-resolution error.
-"""
-
 # Standard Library Imports
 import copy
 import os
@@ -10,14 +6,12 @@ import time
 # Third-Party Library Imports
 import numpy           as np
 import petsc4py
-import scipy.integrate as integrate
 from   mpi4py          import MPI
 from   petsc4py        import PETSc
 
 # Local Library Imports
 import dg.mesh             as ji_mesh
 import dg.projection       as proj
-import dg.projection.utils
 import dg.quadrature       as qd
 import rt
 import utils
@@ -349,7 +343,8 @@ def high_res_err(mesh, uh_proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
                       "ang_res_offset" : 1,   # Factor to add to angular DoFs
                       "spt_res_offset" : 1,   # Factor to add to spatial DoFs
                       "verbose"    : False, # Print info while executing
-                      "blocking"   : True # Synchronize ranks before exiting
+                      "blocking"   : True, # Synchronize ranks before exiting
+                      "out_dir"    : "out"
                       }
     kwargs = {**default_kwargs, **kwargs}
     
@@ -397,25 +392,25 @@ def high_res_err(mesh, uh_proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
             t0 = time.perf_counter()
             
         # Plot high-resolution solution for posterity
-        file_name = "uh_hr_th.png"
-        file_path = os.path.join(kwargs["dir_name"], file_name)
-        proj.utils.plot_th(mesh_hr, uh_hr, file_name = file_path)
+        #file_name = "uh_hr_th.png"
+        #file_path = os.path.join(kwargs["dir_name"], file_name)
+        #proj.utils.plot_th(mesh_hr, uh_hr, file_name = file_path)
         
-        file_name = "uh_hr_xy.png"
-        file_path = os.path.join(kwargs["dir_name"], file_name)
-        proj.utils.plot_xy(mesh_hr, uh_hr, file_name = file_path)
+        #file_name = "uh_hr_xy.png"
+        #file_path = os.path.join(kwargs["dir_name"], file_name)
+        #proj.utils.plot_xy(mesh_hr, uh_hr, file_name = file_path)
         
-        file_name = "uh_hr_xth.png"
-        file_path = os.path.join(kwargs["dir_name"], file_name)
-        proj.utils.plot_xth(mesh_hr, uh_hr, file_name = file_path)
+        #file_name = "uh_hr_xth.png"
+        #file_path = os.path.join(kwargs["dir_name"], file_name)
+        #proj.utils.plot_xth(mesh_hr, uh_hr, file_name = file_path)
         
-        file_name = "uh_hr_yth.png"
-        file_path = os.path.join(kwargs["dir_name"], file_name)
-        proj.utils.plot_yth(mesh_hr, uh_hr, file_name = file_path)
+        #file_name = "uh_hr_yth.png"
+        #file_path = os.path.join(kwargs["dir_name"], file_name)
+        #proj.utils.plot_yth(mesh_hr, uh_hr, file_name = file_path)
         
-        file_name = "uh_hr_xyth.png"
-        file_path = os.path.join(kwargs["dir_name"], file_name)
-        proj.utils.plot_xyth(mesh_hr, uh_hr, file_name = file_path)
+        #file_name = "uh_hr_xyth.png"
+        #file_path = os.path.join(kwargs["dir_name"], file_name)
+        #proj.utils.plot_xyth(mesh_hr, uh_hr, file_name = file_path)
         
         if kwargs["verbose"]:
             tf = time.perf_counter()

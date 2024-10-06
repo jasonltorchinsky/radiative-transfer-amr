@@ -85,7 +85,7 @@ def anl_err_spt(mesh, proj, anl_sol_intg_th, **kwargs):
                 if err_ind.cols[col_key].err >= col_ref_thrsh: # Does this one need to be refined?
                     if err_ind.cols[col_key].ref_form == "hp": # Does the form of refinement need to be chosen?
                         err_ind.cols[col_key].ref_form = hp_steer_col(mesh, proj, col_key)
-                else: # Needn"t be refined
+                else: # Needn't be refined
                     err_ind.cols[col_key].ref_form = None
                     
     

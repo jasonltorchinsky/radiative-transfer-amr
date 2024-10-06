@@ -20,7 +20,7 @@ def anl_err(mesh, proj, anl_sol, **kwargs):
 def anl_err_hr_L2(mesh, proj, anl_sol, **kwargs):
     """
     Calculate the L2-error by cell (and column), weighted to be the relative error.
-    Use a high-resolution analytioc solution and its associated quadrature.
+    Use a high-resolution analytic solution and its associated quadrature.
     """
     
     default_kwargs = {"ref_col"      : True,
@@ -170,7 +170,7 @@ def anl_err_hr_L2(mesh, proj, anl_sol, **kwargs):
                 if err_ind.cols[col_key].err >= col_ref_thrsh: # Does this one need to be refined?
                     if err_ind.cols[col_key].ref_form == "hp": # Does the form of refinement need to be chosen?
                         err_ind.cols[col_key].ref_form = hp_steer_col(mesh, proj, col_key)
-                else: # Needn"t be refined
+                else: # Needn't be refined
                     err_ind.cols[col_key].ref_form = None
                         
                 
@@ -184,7 +184,7 @@ def anl_err_hr_L2(mesh, proj, anl_sol, **kwargs):
                             if err_ind.cols[col_key].cells[cell_key].ref_form == "hp": # Does the form of refinement need to be chosen?
                                 err_ind.cols[col_key].cells[cell_key].ref_form = \
                                     hp_steer_cell(mesh, proj, col_key, cell_key)
-                        else: # Needn"t be refined
+                        else: # Needn't be refined
                             err_ind.cols[col_key].cells[cell_key].ref_form = None
                             
     return err_ind
@@ -294,7 +294,7 @@ def anl_err_L2(mesh, proj, anl_sol, **kwargs):
                 if err_ind.cols[col_key].err >= col_ref_thrsh: # Does this one need to be refined?
                     if err_ind.cols[col_key].ref_form == "hp": # Does the form of refinement need to be chosen?
                         err_ind.cols[col_key].ref_form = hp_steer_col(mesh, proj, col_key)
-                else: # Needn"t be refined
+                else: # Needn't be refined
                     err_ind.cols[col_key].ref_form = None
                         
                 
@@ -308,7 +308,7 @@ def anl_err_L2(mesh, proj, anl_sol, **kwargs):
                             if err_ind.cols[col_key].cells[cell_key].ref_form == "hp": # Does the form of refinement need to be chosen?
                                 err_ind.cols[col_key].cells[cell_key].ref_form = \
                                     hp_steer_cell(mesh, proj, col_key, cell_key)
-                        else: # Needn"t be refined
+                        else: # Needn't be refined
                             err_ind.cols[col_key].cells[cell_key].ref_form = None
                             
     return err_ind
@@ -387,7 +387,7 @@ def anl_err_max(mesh, proj, anl_sol, **kwargs):
                 if err_ind.cols[col_key].err >= col_ref_thrsh: # Does this one need to be refined?
                     if err_ind.cols[col_key].ref_form == "hp": # Does the form of refinement need to be chosen?
                         err_ind.cols[col_key].ref_form = hp_steer_col(mesh, proj, col_key)
-                else: # Needn"t be refined
+                else: # Needn't be refined
                     err_ind.cols[col_key].ref_form = None
                         
                 
@@ -401,7 +401,7 @@ def anl_err_max(mesh, proj, anl_sol, **kwargs):
                             if err_ind.cols[col_key].cells[cell_key].ref_form == "hp": # Does the form of refinement need to be chosen?
                                 err_ind.cols[col_key].cells[cell_key].ref_form = \
                                     hp_steer_cell(mesh, proj, col_key, cell_key)
-                        else: # Needn"t be refined
+                        else: # Needn't be refined
                             err_ind.cols[col_key].cells[cell_key].ref_form = None
                             
     return err_ind

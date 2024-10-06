@@ -1,4 +1,5 @@
 # Standard Library Imports
+import copy
 
 # Third-Party Library Imports
 import numpy as np
@@ -15,11 +16,7 @@ from ..quadrature import quad_xyth
 
 class Projection():
     def __init__(self, mesh: Mesh, func = None):
-        self.Ls: list     = mesh.Ls
-        self.pbcs: list   = mesh.pbcs
-        self.has_th: bool = mesh.has_th
-
-        self.mesh: Mesh = mesh # This could be made obselete
+        self.mesh: Mesh = copy.copy(mesh)
 
         # Write function to have three arguments even if it only has two
         if func is None:
@@ -35,7 +32,7 @@ class Projection():
         
         # Fill in the Projection
         projection_cols: dict = {}
-        col_items: list = sorted(mesh.cols.items())
+        col_items: list = sorted(self.mesh.cols.items())
 
         for col_key, col in col_items:
             assert(col.is_lf)
@@ -55,7 +52,7 @@ class Projection():
             for cell_key, cell in cell_items:
                 assert(cell.is_lf)
 
-                if self.has_th:
+                if self.mesh.has_th:
                     [th0, th1] = cell.pos
                     [ndof_th]  = cell.ndofs
                     [_, _, _, _, thb, _] = quad_xyth(nnodes_th = ndof_th)
@@ -77,11 +74,20 @@ class Projection():
 
             projection_cols[col_key] = Projection_Column(col, projection_cells)
         
-        self.cols = projection_cols # Columns in mesh
+        self.cols: dict = projection_cols # Columns in mesh
         
     from .cell_intg_xy import cell_intg_xy
     from .col_intg_th import col_intg_th
     from .to_vector import to_vector
+    from .from_vector import from_vector
+    from .to_file import to_file
+
+    def __eq__(self, other):
+        mesh: bool = (self.mesh == other.mesh)
+        cols: bool = (self.cols == other.cols)
+
+        return (mesh and cols)
+        
     
     def __str__(self):
         msg: str = ( "Ls     :  {}\n".format(self.Ls) +

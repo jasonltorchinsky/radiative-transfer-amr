@@ -252,7 +252,7 @@ def col_jump_err(mesh, uh_proj, **kwargs):
                     col_nref += 1
                     if err_ind.cols[col_key].ref_form == "hp": # Does the form of refinement need to be chosen?
                         err_ind.cols[col_key].ref_form = hp_steer_col(mesh, uh_proj, col_key)
-                else: # Needn"t be refined
+                else: # Needn't be refined
                     err_ind.cols[col_key].ref_form = None
     if kwargs["ref_col"]:
         err_ind.avg_col_ref_err /= col_nref
@@ -551,7 +551,7 @@ def col_jump_err_old(mesh, uh_proj, **kwargs):
                     col_nref += 1
                     if err_ind.cols[col_key].ref_form == "hp": # Does the form of refinement need to be chosen?
                         err_ind.cols[col_key].ref_form = hp_steer_col(mesh, uh_proj, col_key)
-                else: # Needn"t be refined
+                else: # Needn't be refined
                     err_ind.cols[col_key].ref_form = None
     #if kwargs["ref_col"]:
     #    err_ind.avg_col_ref_err /= col_nref
