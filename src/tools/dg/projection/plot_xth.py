@@ -13,9 +13,9 @@ import dg.quadrature as qd
 
 # Relative Imports
 
-def plot_xth(proj: Projection, lims: list = [[],[]], file_path: str = None,
-            **kwargs) -> list:
-    default_kwargs: dict = {"cmap"  : "hot",
+def plot_xth(proj: Projection, file_path: str = None, **kwargs) -> list:
+    default_kwargs: dict = {"lims" : [[],[]],
+                            "cmap"  : "hot",
                             "scale" : "normal",
                             "show_mesh" : True}
     kwargs: dict = {**default_kwargs, **kwargs}
@@ -24,14 +24,14 @@ def plot_xth(proj: Projection, lims: list = [[],[]], file_path: str = None,
     
     ## Set plot range
     [Lx, Lth] = [proj.mesh.Ls[0], 2. * consts.PI]
-    if not lims[0]:
+    if not kwargs["lims"][0]:
         xlim: list = [0, Lx]
     else:
-        xlim: list = lims[0]
-    if not lims[1]:
+        xlim: list = kwargs["lims"][0]
+    if not kwargs["lims"][1]:
         thlim: list = [0, Lth]
     else:
-        thlim: list = lims[1]
+        thlim: list = kwargs["lims"][1]
     ax.set_xlim(xlim)
     ax.set_ylim(thlim)
 

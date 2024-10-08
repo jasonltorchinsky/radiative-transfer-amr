@@ -36,7 +36,7 @@ def test_2(func, quad_type = "lg", dir_name = "test_quad"):
             color = "k", linestyle = "-")
     
     
-    powers = np.arange(min_power, max_power + 1, dtype = np.int32)
+    powers = np.arange(min_power, max_power + 1, dtype = consts.INT)
     npowers = np.size(powers)
     nnodes_list = 2**powers
 

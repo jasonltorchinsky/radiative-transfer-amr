@@ -51,18 +51,18 @@ def test_Projection(tmp_path):
     file_path: str = os.path.join(tmp_path, file_name)
     plot_th(proj, file_path = file_path)
 
-    #file_name: str = "proj_xth.png"
-    #file_path: str = os.path.join(tmp_path, file_name)
-    #plot_xth(proj, file_path = file_path, cmap = "bwr", scale = "diff")
+    file_name: str = "proj_xth.png"
+    file_path: str = os.path.join(tmp_path, file_name)
+    plot_xth(proj, file_path = file_path, cmap = "bwr", scale = "diff")
 
-    #file_name: str = "proj_yth.png"
-    #file_path: str = os.path.join(tmp_path, file_name)
-    #plot_yth(proj, file_path = file_path, cmap = "bwr", scale = "diff")
+    file_name: str = "proj_yth.png"
+    file_path: str = os.path.join(tmp_path, file_name)
+    plot_yth(proj, file_path = file_path, cmap = "bwr", scale = "diff")
 
-    #file_name: str = "proj_xy.png"
-    #file_path: str = os.path.join(tmp_path, file_name)
-    #plot_xy(proj, file_path = file_path, cmap = "hot", scale = "normal")
+    file_name: str = "proj_xy.png"
+    file_path: str = os.path.join(tmp_path, file_name)
+    plot_xy(proj, file_path = file_path, cmap = "hot", scale = "normal")
 
-    #file_name: str = "proj_xyth.png"
-    #file_path: str = os.path.join(tmp_path, file_name)
-    #plot_xyth(proj, file_path = file_path, cmap = "bwr", scale = "diff")
+    file_name: str = "proj_xyth.png"
+    file_path: str = os.path.join(tmp_path, file_name)
+    plot_xyth(proj, file_path = file_path, cmap = "bwr", scale = "diff")

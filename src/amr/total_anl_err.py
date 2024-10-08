@@ -150,7 +150,7 @@ def total_anl_err_2(mesh, num_sol, anl_sol, **kwargs):
             
         # Split the problem into parts dependent on size of COMM_WORLD.
         col_keys_hr_global = list(sorted(mesh_hr.cols.keys()))
-        col_keys_hr_local  = np.array_split(col_keys_hr_global, comm_size)[comm_rank].astype(np.int32)
+        col_keys_hr_local  = np.array_split(col_keys_hr_global, comm_size)[comm_rank].astype(consts.INT)
         
         local_intg_u_hr_2 = 0.
         # Integrate high-resolution solution
@@ -202,7 +202,7 @@ def total_anl_err_2(mesh, num_sol, anl_sol, **kwargs):
         
     # Split the problem into parts dependent on size of COMM_WORLD.
     col_keys_global = list(sorted(mesh.cols.keys()))
-    col_keys_local  = np.array_split(col_keys_global, comm_size)[comm_rank].astype(np.int32)
+    col_keys_local  = np.array_split(col_keys_global, comm_size)[comm_rank].astype(consts.INT)
 
     col_keys_hr_global = list(sorted(mesh_hr.cols.keys()))
     local_err = 0.
@@ -364,7 +364,7 @@ def total_anl_err_lr(mesh, num_sol, anl_sol, **kwargs):
     
     # Split the problem into parts dependent on size of COMM_WORLD.
     col_keys_global = list(sorted(mesh.cols.keys()))
-    col_keys_local  = np.array_split(col_keys_global, comm_size)[comm_rank].astype(np.int32)
+    col_keys_local  = np.array_split(col_keys_global, comm_size)[comm_rank].astype(consts.INT)
         
     # Integrate the square of the analytic solution here
     global intg_u2
@@ -448,7 +448,7 @@ def total_anl_err_hr(mesh, num_sol, anl_sol, **kwargs):
     
     # Split the problem into parts dependent on size of COMM_WORLD.
     col_keys_global = list(sorted(mesh.cols.keys()))
-    col_keys_local  = np.array_split(col_keys_global, comm_size)[comm_rank].astype(np.int32)
+    col_keys_local  = np.array_split(col_keys_global, comm_size)[comm_rank].astype(consts.INT)
     
     ang_res_offset = kwargs["ang_res_offset"]
     spt_res_offset = kwargs["spt_res_offset"]

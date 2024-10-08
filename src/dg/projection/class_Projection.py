@@ -16,7 +16,7 @@ from ..quadrature import quad_xyth
 
 class Projection():
     def __init__(self, mesh: Mesh, func = None):
-        self.mesh: Mesh = copy.copy(mesh)
+        self.mesh: Mesh = copy.deepcopy(mesh)
 
         # Write function to have three arguments even if it only has two
         if func is None:

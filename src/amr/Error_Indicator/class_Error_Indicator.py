@@ -3,6 +3,7 @@
 # Third-Party Library Imports
 
 # Local Library Imports
+import consts
 from dg.projection import Projection
 
 # Relative Imports
@@ -10,14 +11,20 @@ from dg.projection import Projection
 
 class Error_Indicator():
     def __init__(self, proj: Projection, ref_kind: str = "all", 
-                 ref_form: str = "hp", ref_tol: list = [0., 0.]):
+                 ref_form: str = "hp", ref_tol: list = [consts.INF, consts.INF]):
         self.proj: Projection = proj
         self.ref_kind: str = ref_kind
         self.ref_form: str = ref_form
         [self.ang_ref_tol, self.spt_ref_tol] = ref_tol # [ang_ref_tol, spt_ref_tol]
 
+    from .cell_hp_steer import cell_hp_steer
+    from .col_hp_steer import col_hp_steer
+
+    from .error import error_analytic, error_cell_jump, error_col_jump
+    from .ref_by_ind import ref_by_ind
+
     def __str__(self):
-        cols_str        = (sorted(list(self.cols.keys())) if self.cols is not None else "None")
+        cols_str         = (sorted(list(self.cols.keys())) if self.cols is not None else "None")
         
         ref_col_str      = (self.ref_col      if self.ref_col      is not None else "None")
         col_ref_form_str = (self.col_ref_form if self.col_ref_form is not None else "None")
@@ -31,7 +38,7 @@ class Error_Indicator():
         cell_ref_kind_str = (self.cell_ref_kind if self.cell_ref_kind is not None else "None")
         cell_ref_tol_str  = (self.cell_ref_tol  if self.cell_ref_tol  is not None else "None")
         
-        cell_max_err_str   = ("{:.4E}".format(self.cell_max_err) if self.cell_max_err is not None else "None")
+        cell_max_err_str = ("{:.4E}".format(self.cell_max_err) if self.cell_max_err is not None else "None")
         
         msg = ( "Columns: {}\n".format(cols_str) +
                 "Column Refinement Information:\n" +

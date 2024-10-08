@@ -27,7 +27,7 @@ def test_1(dir_name = "test_rt"):
                     has_th = has_th)
 
     intr_mask = get_intr_mask(mesh)
-    intr_mask_dense = intr_mask.astype(dtype = np.int32)
+    intr_mask_dense = intr_mask.astype(dtype = consts.INT)
     
     # Plot of the main diagonal, with vertical gridlines denoting columns
     fig, ax = plt.subplots()

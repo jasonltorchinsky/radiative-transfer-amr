@@ -148,7 +148,7 @@ def high_res_err_new(mesh, uh_proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
             
         # Split the problem into parts dependent on size of COMM_WORLD.
         col_keys_hr_global = list(sorted(mesh_hr.cols.keys()))
-        col_keys_hr_local  = np.array_split(col_keys_hr_global, comm_size)[comm_rank].astype(np.int32)
+        col_keys_hr_local  = np.array_split(col_keys_hr_global, comm_size)[comm_rank].astype(consts.INT)
         
         local_intg_uh_hr_2 = 0.
         # Integrate high-resolution solution
@@ -200,7 +200,7 @@ def high_res_err_new(mesh, uh_proj, kappa, sigma, Phi, bcs_dirac, f, **kwargs):
         
     # Split the problem into parts dependent on size of COMM_WORLD.
     col_keys_global = list(sorted(mesh.cols.keys()))
-    col_keys_local  = np.array_split(col_keys_global, comm_size)[comm_rank].astype(np.int32)
+    col_keys_local  = np.array_split(col_keys_global, comm_size)[comm_rank].astype(consts.INT)
 
     col_keys_hr_global = list(sorted(mesh_hr.cols.keys()))
     local_err = 0.

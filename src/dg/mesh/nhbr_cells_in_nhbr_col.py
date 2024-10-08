@@ -12,7 +12,7 @@ from .column.cell import Cell
 from .column.cell import calc_key as calc_cell_key
 
 def nhbr_cells_in_nhbr_col(self, col_key: int, cell_key: int, 
-                          nhbr_col_key: int) -> list:
+                           nhbr_col_key: int) -> list:
 
     cell: Cell = self.cols[col_key].cells[cell_key]
     idx: int = cell.idx

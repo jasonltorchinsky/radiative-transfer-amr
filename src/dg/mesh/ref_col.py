@@ -10,7 +10,8 @@ from .column import Column
 
 def ref_col(self, col_key: int, kind: str = "all", form: str = "h") -> None:
     col: Column = self.cols[col_key]
-    assert(col.is_lf)  
+    assert(col.is_lf)
+    
     if kind in ["ang", "all"]:
         cell_keys: list = sorted(col.cells.keys())
         for cell_key in cell_keys:

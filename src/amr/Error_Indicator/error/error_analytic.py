@@ -7,14 +7,12 @@ from scipy.integrate import nquad
 
 # Local Library Imports
 import consts
-from dg.projection import Projection
-import dg.quadrature as qd
+from dg.quadrature import quad_xyth
 from dg.projection import push_forward
 
 # Relative Imports
-from .error_indicator_column import Error_Indicator_Column
-from .error_indicator_column.error_indicator_cell import Error_Indicator_Cell
-from .hp_steer import hp_steer_col, hp_steer_cell
+from ..error_indicator_column import Error_Indicator_Column
+from ..error_indicator_column.error_indicator_cell import Error_Indicator_Cell
 
 intg_u2: float = None
 
@@ -23,6 +21,7 @@ def error_analytic(self, anl_sol: Callable[[np.ndarray, np.ndarray, np.ndarray],
     # L2 error by cell and column (Sqrt[Sum[cell_err**2]] / Sqrt[Intg[u**2]])
     
     # Integrate square of analytic solution to weight the relative error
+    global intg_u2
     if intg_u2 is None:
         [Lx, Ly] = self.proj.mesh.Ls[:]
         [intg_u2, _] = nquad(lambda x, y, th: (anl_sol(x, y, th))**2,
@@ -34,6 +33,7 @@ def error_analytic(self, anl_sol: Callable[[np.ndarray, np.ndarray, np.ndarray],
     
     # Store the info needed for error_indicator
     cols: dict = {}
+    mesh_err: float = 0.
 
     # Calculate the errors
     col_items: list = sorted(self.proj.mesh.cols.items())
@@ -45,8 +45,7 @@ def error_analytic(self, anl_sol: Callable[[np.ndarray, np.ndarray, np.ndarray],
         [dx, dy] = [xf - x0, yf - y0]
         [nx, ny] = col.ndofs[:]
         
-        [xxb, wx, yyb, wy, _, _] = qd.quad_xyth(nnodes_x = nx,
-                                                nnodes_y = ny)
+        [xxb, wx, yyb, wy, _, _] = quad_xyth(nnodes_x = nx, nnodes_y = ny)
         
         xxf: np.ndarray = push_forward(x0, xf, xxb).reshape(nx, 1, 1)
         wx: np.ndarray  = wx.reshape(nx, 1, 1)
@@ -54,10 +53,10 @@ def error_analytic(self, anl_sol: Callable[[np.ndarray, np.ndarray, np.ndarray],
         wy: np.ndarray  = wy.reshape(1, ny, 1)
         
         # Store the info needed for error_indicator_columns
+        col_err: float = 0.
         cells: dict = {}
 
         # Loop through cells to calculate error
-        col_err: float = 0.
         cell_items: list = sorted(col.cells.items())
         for cell_key, cell in cell_items:
             assert(cell.is_lf)
@@ -67,7 +66,7 @@ def error_analytic(self, anl_sol: Callable[[np.ndarray, np.ndarray, np.ndarray],
             dth: float = thf - th0
             [nth]  = cell.ndofs[:]
             
-            [_, _, _, _, thb, wth] = qd.quad_xyth(nnodes_th = nth)
+            [_, _, _, _, thb, wth] = quad_xyth(nnodes_th = nth)
             
             thf: np.ndarray = push_forward(th0, thf, thb).reshape(1, 1, nth)
             wth: np.ndarray = wth.reshape(1, 1, nth)
@@ -79,16 +78,18 @@ def error_analytic(self, anl_sol: Callable[[np.ndarray, np.ndarray, np.ndarray],
             cell_err: float = \
                 np.sum((dx * dy * dth / 8.) * wx * wy * wth * (u_cell - uh_cell)**2) / intg_u2
             col_err += cell_err
+            mesh_err += cell_err
             
             cells[cell_key] = Error_Indicator_Cell(np.sqrt(cell_err)) # sqrt at the end to avoid sqrt then square
-            cell_max_err: float = max(cell_max_err, cell_err)
+            cell_max_err: float = max(cell_max_err, np.sqrt(cell_err))
                 
         cols[col_key] = Error_Indicator_Column(np.sqrt(col_err), cells)
-        col_max_err: float = max(col_max_err, col_err)
+        col_max_err: float = max(col_max_err, np.sqrt(col_err))
     
     self.cols: dict = cols
     self.col_max_err: float = col_max_err
     self.cell_max_err: float = cell_max_err
+    self.error: float = np.sqrt(mesh_err)
 
     ## Calculate if cols/cells need to be refined, and calculate hp-steering
     ang_ref_thrsh: float = self.ang_ref_tol * self.cell_max_err
@@ -100,7 +101,7 @@ def error_analytic(self, anl_sol: Callable[[np.ndarray, np.ndarray, np.ndarray],
             if self.cols[col_key].error >= spt_ref_thrsh: # Does this one need to be refined?
                 self.cols[col_key].do_ref = True
                 if self.ref_form == "hp": # Does the form of refinement need to be chosen?
-                    self.cols[col_key].ref_form = self.hp_steer_col(col_key)
+                    self.cols[col_key].ref_form = self.col_hp_steer(col_key)
                 else:
                     self.cols[col_key].ref_form = self.ref_form
             else: # Needn't be refined
@@ -115,7 +116,7 @@ def error_analytic(self, anl_sol: Callable[[np.ndarray, np.ndarray, np.ndarray],
                     self.cols[col_key].cells[cell_key].do_ref = True
                     if self.ref_form == "hp": # Does the form of refinement need to be chosen?
                         self.cols[col_key].cells[cell_key].ref_form = \
-                            self.hp_steer_cell(col_key, cell_key)
+                            self.cell_hp_steer(col_key, cell_key)
                     else:
                         self.cols[col_key].cells[cell_key].ref_form = self.ref_form
                 else: # Needn't be refined

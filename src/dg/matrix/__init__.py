@@ -14,4 +14,6 @@ if src_dir not in sys.path:
 # Relative Imports
 from .get_idxs import get_idx_map, get_idx_inv_map, get_col_idxs, get_cell_idxs
 from .get_masks import get_intr_mask, get_bdry_mask
-from .split_merge import split_matrix, split_vector, merge_vectors
+from .merge_vectors import merge_vectors
+from .split_matrix import split_matrix
+from .split_vector import split_vector

@@ -13,9 +13,9 @@ import dg.quadrature as qd
 
 # Relative Imports
 
-def plot_yth(proj: Projection, lims: list = [[],[]], file_path: str = None,
-            **kwargs) -> list:
-    default_kwargs: dict = {"cmap"  : "hot",
+def plot_yth(proj: Projection, file_path: str = None, **kwargs) -> list:
+    default_kwargs: dict = {"lims" : [[],[]],
+                            "cmap"  : "hot",
                             "scale" : "normal",
                             "show_mesh" : True}
     kwargs: dict = {**default_kwargs, **kwargs}
@@ -24,14 +24,14 @@ def plot_yth(proj: Projection, lims: list = [[],[]], file_path: str = None,
     
     ## Set plot range
     [Lth, Ly] = [2. * consts.PI, proj.mesh.Ls[1]]
-    if not lims[0]:
+    if not kwargs["lims"][0]:
         thlim: list = [0, Lth]
     else:
-        thlim: list = lims[0]
-    if not lims[1]:
+        thlim: list = kwargs["lims"][0]
+    if not kwargs["lims"][1]:
         ylim: list = [0, Ly]
     else:
-        ylim: list = lims[1]
+        ylim: list = kwargs["lims"][1]
     ax.set_xlim(thlim)
     ax.set_ylim(ylim)
 
@@ -105,7 +105,7 @@ def plot_yth(proj: Projection, lims: list = [[],[]], file_path: str = None,
             thf: np.ndarray = push_forward(th0, th1, thb)
             vals: np.ndarray = cell_intg_ys[(col_key, cell_key)]
             
-            pc = ax.pcolormesh(thf, yyf, vals.transpose(),
+            pc = ax.pcolormesh(thf, yyf, vals,
                                cmap = cmap,
                                vmin = vmin, vmax = vmax,
                                shading = "gouraud")

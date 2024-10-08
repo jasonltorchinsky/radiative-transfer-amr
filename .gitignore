@@ -138,6 +138,7 @@ run/*
 *.pdf
 *.csv
 *.json
+*.npy
 
 # Word Docs, Mathematica Notebooks, etc.
 *.nb

@@ -66,7 +66,7 @@ def get_intr_mask_seq(mesh: Mesh, **kwargs) -> np.ndarray:
                         cell_idx: int = cell_idxs[cell_key]
                         [ndof_th]     = cell.ndofs
                         
-                        S_quadrant: int = cell.quadrantrant
+                        S_quadrant: int = cell.quadrant
                         
                         beta = get_idx_map(ndof_x, ndof_y, ndof_th)
                         
@@ -160,7 +160,7 @@ def get_intr_mask_mpi(mesh, **kwargs):
     
     # Split the problem into parts dependent on size of COMM_WORLD.
     col_keys_global = list(sorted(mesh.cols.keys()))
-    col_keys_local  = np.array_split(col_keys_global, comm_size)[comm_rank].astype(np.int32)
+    col_keys_local  = np.array_split(col_keys_global, comm_size)[comm_rank].astype(consts.INT)
     
     # Get the start indices for each column matrix
     col_st_idxs = {col_keys_global[0] : 0}

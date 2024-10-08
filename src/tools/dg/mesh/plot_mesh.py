@@ -11,9 +11,9 @@ from dg.mesh import Mesh
 
 # Relative Imports
 
-def plot_mesh(mesh: Mesh, lims: list = [[],[]], file_path : str = None,
-              **kwargs) -> list:
-    default_kwargs: dict = {"show_p"   : True, # Show ndof of each element
+def plot_mesh(mesh: Mesh, file_path : str = None, **kwargs) -> list:
+    default_kwargs: dict = {"lims" : [[],[]],
+                            "show_p" : True, # Show ndof of each element
                             "blocking" : False # Defualt to non-blocking behavior for plotting
                             }
 
@@ -23,19 +23,23 @@ def plot_mesh(mesh: Mesh, lims: list = [[],[]], file_path : str = None,
 
     ## Set plot range
     [Lx, Ly] = mesh.Ls[:]
-    if not lims[0]:
+    if not kwargs["lims"][0]:
         xlim: list = [0, Lx]
     else:
-        xlim: list = lims[0]
-    if not lims[1]:
+        xlim: list = kwargs["lims"][0]
+    if not kwargs["lims"][1]:
         ylim: list = [0, Ly]
     else:
-        ylim: list = lims[1]
+        ylim: list = kwargs["lims"][1]
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
 
+    ## Label axes and get title
+    mesh_ndof: int = mesh.get_ndof()
+    title: str = "Number of Degress of Freedom: {}".format(mesh_ndof)
     ax.set_xlabel("x")
     ax.set_ylabel("y")
+    ax.set_title(title)
 
     ## Colors for showing ndofs for each element
     colors: list = ["#e6194B", "#f58231", "#ffe119", "#bfef45", "#aaffc3", "#3cb44b",

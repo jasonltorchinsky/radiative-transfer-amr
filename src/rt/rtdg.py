@@ -1,90 +1,79 @@
-"""
-Returns the solution.
-"""
-
 # Standard Library Imports
 import copy
-import gc
 import inspect
-import sys
-from   inspect      import signature
-from   time         import perf_counter
+from inspect import signature
+from time import perf_counter
+from typing import Callable
 
 # Third-Party Library Imports
-import numpy               as np
-import matplotlib.pyplot   as plt
+import numpy as np
+import matplotlib.pyplot as plt
 import petsc4py
-import psutil
-import scipy.sparse        as sp
-import scipy.sparse.linalg as spla
-from   mpi4py       import MPI
-from   petsc4py     import PETSc
+import scipy.sparse as sp
+from mpi4py import MPI
+from petsc4py import PETSc
 
 # Local Library Imports
-import dg.matrix     as mat
-import dg.projection as proj
+from dg.mesh import Mesh
+from dg.projection import Projection
+from dg.matrix import get_intr_mask, split_matrix, split_vector, merge_vectors
 import utils
 
 from .calc_bcs_vec          import calc_bcs_vec
 from .calc_bdry_conv_matrix import calc_bdry_conv_matrix
 from .calc_forcing_vec      import calc_forcing_vec
 from .calc_intr_conv_matrix import calc_intr_conv_matrix
-from .calc_mass_matrix      import calc_mass_matrix
 from .calc_precond_matrix   import calc_precond_matrix
-from .calc_scat_matrix      import calc_scat_matrix
 
-def rtdg(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
-    return rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f, **kwargs)
-def rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
+def rtdg(mesh: Mesh,
+         kappa: Callable[[np.ndarray, np.ndarray, np.ndarray], np.ndarray], 
+         sigma: Callable[[np.ndarray, np.ndarray, np.ndarray], np.ndarray],
+         Phi: Callable[[np.ndarray, np.ndarray], np.ndarray],
+         bcs_dirac: list, f = None, **kwargs) -> list:
     """
     Solve the two-dimensional radiative transfer model.
     """
-    
-    default_kwargs = {"verbose"      : False, # Print info while executing
-                      "precondition" : False,
-                      "ksp_type" : "gmres", # Which solver to use
-                      "pc_type" : "bjacobi",  # Which Preconditioner to use
-                      "residual_file_path" : None # Plot convergence information to this file path
-                      } 
-    kwargs = {**default_kwargs, **kwargs}
+
+    default_kwargs: dict = {"verbose" : False, # Print info while executing
+                            "precondition" : False,
+                            "ksp_type" : "gmres", # Which solver to use
+                            "pc_type" : "bjacobi",  # Which Preconditioner to use
+                            "residual_file_path" : None # Plot convergence information to this file path
+                            } 
+    kwargs: dict = {**default_kwargs, **kwargs}
     
     # Initialize parallel communicators
-    MPI_comm = MPI.COMM_WORLD
+    MPI_comm: MPI.Intracomm = MPI.COMM_WORLD
     
-    petsc4py.init()
-    PETSc_comm = PETSc.COMM_WORLD
-    comm_rank  = PETSc_comm.getRank()
-    comm_size  = PETSc_comm.getSize()
-    
-    # Set up RNG
-    rng = np.random.default_rng()
+    if not PETSc.Sys.isInitialized():
+        petsc4py.init(comm = MPI_comm)
+    PETSc_comm: PETSc.Comm = PETSc.COMM_WORLD
+    comm_rank: int = PETSc_comm.getRank()
     
     if kwargs["verbose"]:
         if comm_rank == 0:
-            ndof = mesh.get_ndof()
-            ndof = MPI_comm.bcast(ndof, root = 0)
+            ndof: int = mesh.get_ndof()
+            ndof: int = MPI_comm.bcast(ndof, root = 0)
         else:
-            ndof = None
-            ndof = MPI_comm.bcast(ndof, root = 0)
-        msg = (
-            "Initiating solve with {} DoFs...\n".format(ndof)
-            )
+            ndof: int = None
+            ndof: int = MPI_comm.bcast(ndof, root = 0)
+        msg: str = ( "Initiating solve with {} DoFs...\n".format(ndof) )
         utils.print_msg(msg)
-        t0  = perf_counter()
+        t0: float = perf_counter()
             
     # Calculate
     [M_mass_scat, _] = calc_precond_matrix(mesh, kappa, sigma, Phi, **kwargs)
-    M_intr_conv = calc_intr_conv_matrix(mesh, **kwargs)
-    M_bdry_conv = calc_bdry_conv_matrix(mesh, **kwargs)
-    M_conv = M_bdry_conv - M_intr_conv
-    M      = M_conv + M_mass_scat
-    intr_mask = mat.get_intr_mask(mesh, **kwargs)
-    [M_intr, M_bdry] = mat.split_matrix(mesh, M, intr_mask)
+    M_intr_conv: sp._coo.coo_matrix = calc_intr_conv_matrix(mesh, **kwargs)
+    M_bdry_conv: sp._coo.coo_matrix = calc_bdry_conv_matrix(mesh, **kwargs)
+    M_conv: sp._coo.coo_matrix = M_bdry_conv - M_intr_conv
+    M: sp._coo.coo_matrix = M_conv + M_mass_scat
+    intr_mask: np.ndarray = get_intr_mask(mesh, **kwargs)
+    [M_intr, M_bdry] = split_matrix(mesh, M, intr_mask)
 
     mat_info = M_intr.getInfo()
     
     if kwargs["precondition"]:
-        [M_pc, _] = mat.split_matrix(mesh, M_pc, intr_mask)
+        [M_pc, _] = split_matrix(mesh, M_pc, intr_mask)
     else:
         M_pc = None
         
@@ -101,11 +90,11 @@ def rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     elif len(inspect.signature(f).parameters) == 3:
         def forcing(x, y, th):
             return f(x, y, th)
-    f_vec           = calc_forcing_vec(mesh, forcing, **kwargs)
-    [f_vec_intr, _] = mat.split_vector(mesh, f_vec, intr_mask)
+    f_vec: np.ndarray = calc_forcing_vec(mesh, forcing, **kwargs)
+    [f_vec_intr, _] = split_vector(mesh, f_vec, intr_mask)
     
-    bcs_vec           = calc_bcs_vec(mesh, bcs_dirac, **kwargs)
-    [_, bcs_vec_bdry] = mat.split_vector(mesh, bcs_vec, intr_mask)
+    bcs_vec: PETSc.Vec = calc_bcs_vec(mesh, bcs_dirac, **kwargs)
+    [_, bcs_vec_bdry] = split_vector(mesh, bcs_vec, intr_mask)
 
     # Construct (Forcing - BCs)
     rhs_vec = copy.deepcopy(f_vec_intr)
@@ -117,10 +106,8 @@ def rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     
     
     if kwargs["verbose"]:
-        t0 = perf_counter()
-        msg = (
-            "Executing solve...\n"
-        )
+        t0: float = perf_counter()
+        msg: str = ( "Executing solve...\n" )
         utils.print_msg(msg)
         
     # Create the linear system solver
@@ -158,63 +145,6 @@ def rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
     ksp_idx = 0
     info = MPI_comm.bcast(info, root = 0)
     nsolve = 0
-    while False and ((info < 0) or (info == 4) and nsolve < 25): # Solve failed, try something else
-        ksp.destroy()
-        MPI_comm.barrier()
-        msg = (
-            "Iterative solve {} - {} failed.\n".format(pc_type, ksp_type) +
-            12 * " " + "Converged Reason: {}\n".format(info) +
-            12 * " " + "Iteration count:  {}\n".format(n_iter) +
-            12 * " " + "Final residual:   {:.4E}\n".format(res_f) +
-            12 * " " + "Best residual:    {:.4E}\n".format(best_res) +
-            12 * " " + "Attempting iterative solve {} - {}\n".format(pc_type, ksp_list[ksp_idx])
-        )
-        utils.print_msg(msg)
-
-        # Use the initial guess of the failed solve, because it was ideally at least a little productive
-        # Randomly start at zero
-        pZero = 0.05
-        guessZero = rng.choice((True, False), size = 1, p = (pZero, 1. - pZero))[0]
-        MPI_comm.bcast(guessZero, root = 0)
-        if guessZero or best_res > 10.**2:
-            best_res = 10.**10
-            lhs_vec = 0. * lhs_vec
-        else:
-            lhs_vec = copy.deepcopy(best_lhs_vec)
-        MPI_comm.barrier()
-        ksp_type = ksp_list[ksp_idx]
-        ksp = PETSc.KSP()
-        ksp.create(comm = PETSc_comm)
-        ksp.setType(ksp_type)
-        ksp.setOperators(M_intr)
-        ksp.setTolerances(rtol   = rtol,   atol   = atol,
-                          divtol = divtol, max_it = max_it)
-        ksp.setComputeSingularValues(True)
-        ksp.setGMRESRestart(GMRESRestart)
-        
-        pc_type = kwargs["pc_type"]
-        pc = ksp.getPC()
-        pc.setType(pc_type)
-        
-        ksp.setInitialGuessNonzero(True) # Might need to be true if crashes after morning of Aug. 10
-        
-        ksp.setConvergenceHistory()
-        ksp.solve(rhs_vec, lhs_vec)
-        PETSc.garbage_cleanup()
-        info = ksp.getConvergedReason()
-        MPI_comm.bcast(info, root = 0)
-        residuals = ksp.getConvergenceHistory()
-        n_iter    = ksp.getIterationNumber()
-        res_f     = ksp.getResidualNorm()
-        MPI_comm.bcast(res_f, root = 0)
-        if res_f > 0.:
-            if res_f <= best_res:
-                best_res = res_f
-                best_lhs_vec = copy.deepcopy(lhs_vec)
-        ksp_idx = (ksp_idx+1)%len(ksp_list)
-        nsolve += 1
-        MPI_comm.barrier()
-        
     # If the system is fairly small and the interative solves failed, try a direct solve
     if ((info < 0) or (info == 4)) and (ndof < 1.2e5):
         ksp.destroy()
@@ -288,11 +218,12 @@ def rtdg_mpi(mesh, kappa, sigma, Phi, bcs_dirac, f = None, **kwargs):
         )
         utils.print_msg(msg)
         
-    uh_vec  = mat.merge_vectors(lhs_vec, bcs_vec_bdry, intr_mask)
+    uh_vec = merge_vectors(lhs_vec, bcs_vec_bdry, intr_mask)
     if comm_rank == 0:
-        uh_proj = proj.to_projection(mesh, uh_vec)
+        uh_proj: Projection = Projection(mesh)
+        uh_proj.from_vector(uh_vec)
     else:
-        uh_proj = None
+        uh_proj: Projection = None
     MPI_comm.barrier()
         
     return [uh_proj, info, mat_info]

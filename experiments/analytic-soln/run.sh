@@ -1,6 +1,6 @@
 #!/bin/bash
 
-EXPERIMENT_NAME="Analytic Solution"
+EXPERIMENT_NAME="test_rt"
 
 while getopts n: flag
 do
@@ -10,7 +10,7 @@ do
 done
 
 OUT_DIR="out"
-
+FIGS_DIR='"${OUT_DIR}"/figs'
 
 printf "~~~ Executing ${EXPERIMENT_NAME} experiment with ${n_procs} processes... ~~~\n\n"
 

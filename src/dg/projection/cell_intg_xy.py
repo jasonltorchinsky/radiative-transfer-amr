@@ -12,7 +12,7 @@ from ..quadrature import quad_xyth
 
 def cell_intg_xy(self, col_key: int, cell_key: int) -> np.ndarray:
     proj_col: Projection_Column = self.cols[col_key]
-    assert(proj_col.is_leaf)
+    assert(proj_col.is_lf)
 
     [x0, y0, x1, y1]   = proj_col.pos[:]
     [dx, dy]           = [x1 - x0, y1 - y0]
