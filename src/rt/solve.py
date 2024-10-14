@@ -14,10 +14,13 @@ from mpi4py import MPI
 from petsc4py import PETSc
 
 # Local Library Imports
+import consts
 from dg.mesh import Mesh
 from dg.projection import Projection
 from dg.matrix import get_intr_mask, split_matrix, split_vector, merge_vectors
 import utils
+
+# Relative Imports
 
 def solve(self, mesh: Mesh, **kwargs) -> list:
     default_kwargs: dict = {"verbose" : False, # Print info while executing
@@ -29,20 +32,20 @@ def solve(self, mesh: Mesh, **kwargs) -> list:
     kwargs: dict = {**default_kwargs, **kwargs}
     
     ## Initialize parallel communicators
-    MPI_comm: MPI.Intracomm = MPI.COMM_WORLD
+    mpi_comm: MPI.Intracomm = MPI.COMM_WORLD
     
     if not PETSc.Sys.isInitialized():
-        petsc4py.init(comm = MPI_comm)
-    PETSc_comm: PETSc.Comm = PETSc.COMM_WORLD
-    comm_rank: int = PETSc_comm.getRank()
+        petsc4py.init(comm = mpi_comm)
+    petsc_comm: PETSc.Comm = PETSc.COMM_WORLD
+    comm_rank: int = petsc_comm.getRank()
     
     if kwargs["verbose"]:
-        if comm_rank == 0:
+        if comm_rank == consts.COMM_ROOT:
             ndof: int = mesh.get_ndof()
-            ndof: int = MPI_comm.bcast(ndof, root = 0)
+            ndof: int = mpi_comm.bcast(ndof, root = consts.COMM_ROOT)
         else:
             ndof: int = None
-            ndof: int = MPI_comm.bcast(ndof, root = 0)
+            ndof: int = mpi_comm.bcast(ndof, root = consts.COMM_ROOT)
         msg: str = ( "Initiating solve with {} DoFs...\n".format(ndof) )
         utils.print_msg(msg)
         t0: float = perf_counter()
@@ -81,7 +84,7 @@ def solve(self, mesh: Mesh, **kwargs) -> list:
     # Create the linear system solver
     ksp_type: str = kwargs["ksp_type"]
     ksp: PETSc.KSP = PETSc.KSP()
-    ksp.create(comm = PETSc_comm)
+    ksp.create(comm = petsc_comm)
     ksp.setType(ksp_type)
     ksp.setOperators(sys_mat_intr)
     [rtol, atol, divtol, max_it] = [1.e-9, 1.e-30, 1.e35, 5000]
@@ -111,7 +114,7 @@ def solve(self, mesh: Mesh, **kwargs) -> list:
     ksp_list = ["qmrcgs", "lgmres", "fbcgsr", "dgmres", "cgs", "pgmres", "gmres",
                 "gcr","fgmres"]
     ksp_idx: int = 0
-    info = MPI_comm.bcast(info, root = 0)
+    info = mpi_comm.bcast(info, root = consts.COMM_ROOT)
     # If the system is fairly small and the interative solves failed, try a direct solve
     if ((info < 0) or (info == 4)) and (ndof < 1.2e5):
         ksp.destroy()
@@ -126,7 +129,7 @@ def solve(self, mesh: Mesh, **kwargs) -> list:
         utils.print_msg(msg)
         
         ksp = PETSc.KSP()
-        ksp.create(comm = PETSc_comm)
+        ksp.create(comm = petsc_comm)
         ksp_type = "none"
         ksp.setType("dgmres")
         ksp.setOperators(sys_mat_intr)
@@ -145,11 +148,11 @@ def solve(self, mesh: Mesh, **kwargs) -> list:
         ksp.solve(rhs_vec, lhs_vec)
         PETSc.garbage_cleanup()
         info = ksp.getConvergedReason()
-        MPI_comm.bcast(info, root = 0)
+        mpi_comm.bcast(info, root = consts.COMM_ROOT)
         residuals = ksp.getConvergenceHistory()
         n_iter    = ksp.getIterationNumber()
         res_f     = ksp.getResidualNorm()
-        MPI_comm.barrier()
+        mpi_comm.barrier()
     elif (info < 0) or (info == 4): # Problem too big to solve directly, just go with the best solution
         lhs_vec = copy.deepcopy(best_lhs_vec)
         
@@ -160,7 +163,7 @@ def solve(self, mesh: Mesh, **kwargs) -> list:
         cond = -1.
     ksp.destroy()
     
-    if comm_rank == 0:
+    if comm_rank == consts.COMM_ROOT:
         file_path = kwargs["residual_file_path"]
         if file_path:
             fig, ax = plt.subplots()
@@ -171,7 +174,7 @@ def solve(self, mesh: Mesh, **kwargs) -> list:
             #plt.tight_layout()
             plt.savefig(file_path, dpi = 300)
             plt.close(fig)
-    MPI_comm.barrier()
+    mpi_comm.barrier()
     
     if kwargs["verbose"]:
         tf = perf_counter()
@@ -186,11 +189,11 @@ def solve(self, mesh: Mesh, **kwargs) -> list:
         utils.print_msg(msg)
         
     uh_vec: np.ndarray = merge_vectors(lhs_vec, bcs_vec_bdry, intr_mask)
-    if comm_rank == 0:
+    if comm_rank == consts.COMM_ROOT:
         uh_proj: Projection = Projection(mesh)
         uh_proj.from_vector(uh_vec)
     else:
         uh_proj: Projection = None
-    MPI_comm.barrier()
+    mpi_comm.barrier()
         
     return [uh_proj, info, mat_info]

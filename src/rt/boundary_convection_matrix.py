@@ -40,11 +40,11 @@ def boundary_convection_matrix(self, mesh: Mesh, **kwargs) -> sp._csr.csr_matrix
     comm_rank: int = PETSc_comm.getRank()
     comm_size: int = PETSc_comm.getSize()
 
-    if comm_rank == 0:
+    if comm_rank == consts.COMM_ROOT:
         n_global: int = mesh.get_ndof()
     else:
         n_global: int = None
-    n_global: int = MPI_comm.bcast(n_global, root = 0)
+    n_global: int = MPI_comm.bcast(n_global, root = consts.COMM_ROOT)
     
     if kwargs["verbose"]:
         t0: float = perf_counter()
@@ -52,7 +52,7 @@ def boundary_convection_matrix(self, mesh: Mesh, **kwargs) -> sp._csr.csr_matrix
         utils.print_msg(msg)
         
     # Calculate these matrices in serial, and then we"ll split them
-    if comm_rank == 0:
+    if comm_rank == consts.COMM_ROOT:
         # Variables that are the same throughout the loops
         col_items: list = sorted(mesh.cols.items())
         
@@ -125,7 +125,7 @@ def boundary_convection_matrix(self, mesh: Mesh, **kwargs) -> sp._csr.csr_matrix
     o_rngs: list = M_MPI.getOwnershipRanges()
     ii_0: list = o_rngs[comm_rank]
     ii_f: list = o_rngs[comm_rank+1]
-    if comm_rank == 0:
+    if comm_rank == consts.COMM_ROOT:
         # Communicate global information
         for rank in range(1, comm_size):
             ii_0_else: list = o_rngs[rank]

@@ -9,6 +9,7 @@ from mpi4py   import MPI
 from petsc4py import PETSc
 
 # Local Library Imports
+import consts
 import utils
 
 # Relative Imports
@@ -44,7 +45,7 @@ def get_intr_mask_seq(mesh: Mesh, **kwargs) -> np.ndarray:
         msg: str = ( "Constructing Interior Mask...\n" )
         utils.print_msg(msg)
 
-    if comm_rank == 0:
+    if comm_rank == consts.COMM_ROOT:
         [ncols, col_idxs] = get_col_idxs(mesh)
         col_masks: list = [None] * ncols # Global mask is a 1-D vector
         
@@ -155,7 +156,7 @@ def get_intr_mask_mpi(mesh, **kwargs):
         utils.print_msg(msg)
 
     # Split the problem into parts dependent on size of communicator
-    mesh     = MPI_comm.bcast(mesh, root = 0)
+    mesh     = MPI_comm.bcast(mesh, root = consts.COMM_ROOT)
     n_global = mesh.get_ndof()
     
     # Split the problem into parts dependent on size of COMM_WORLD.
@@ -248,7 +249,7 @@ def get_intr_mask_mpi(mesh, **kwargs):
     else:
         global_mask = None
     
-    global_mask = MPI_comm.bcast(global_mask, root = 0)
+    global_mask = MPI_comm.bcast(global_mask, root = consts.COMM_ROOT)
     
     if kwargs["verbose"]:
         tf = perf_counter()

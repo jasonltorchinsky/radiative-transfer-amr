@@ -46,7 +46,7 @@ def boundary_conditions_vector(self, mesh: Mesh, **kwargs) -> PETSc.Vec:
         utils.print_msg(msg)
         
     # Share information that is stored on root process
-    mesh: Mesh = MPI_comm.bcast(mesh, root = 0)
+    mesh: Mesh = MPI_comm.bcast(mesh, root = consts.COMM_ROOT)
     n_global: int = mesh.get_ndof()
     
     # Split the problem into parts dependent on size of COMM_WORLD.

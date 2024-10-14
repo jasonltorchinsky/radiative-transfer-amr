@@ -1,14 +1,12 @@
 # Standard Library Imports
 
 # Third-Party Library Imports
-import json
 import numpy as np
 
 # Local Library Imports
 
 # Relative Imports
 from .class_Projection import Projection
-from .from_vector import from_vector as proj_from_vector
 
 from ..mesh import Mesh
 from ..mesh import from_file as mesh_from_file

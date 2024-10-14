@@ -14,7 +14,7 @@ from dg.projection import push_forward, pull_back
 from ..error_indicator_column import Error_Indicator_Column
 from ..error_indicator_column.error_indicator_cell import Error_Indicator_Cell
 
-def error_col_jump(self) -> None:
+def error_column_jump(self) -> None:
     # Spatial jump error
 
     # Store maximum errors to calculate hp-steering only where needed
@@ -253,13 +253,13 @@ def error_col_jump(self) -> None:
         col_max_err: float = max(col_max_err, col_err)
 
     self.cols: dict = cols
-    self.col_max_err: float = col_max_err
-    self.cell_max_err: float = cell_max_err
+    self.col_max_error: float = col_max_err
+    self.cell_max_error: float = cell_max_err
     self.error: float = np.sqrt(mesh_err)
                 
     ## Calculate if cols/cells need to be refined, and calculate hp-steering
-    ang_ref_thrsh: float = self.ang_ref_tol * self.cell_max_err
-    spt_ref_thrsh: float = self.spt_ref_tol * self.col_max_err
+    ang_ref_thrsh: float = self.ang_ref_tol * self.cell_max_error
+    spt_ref_thrsh: float = self.spt_ref_tol * self.col_max_error
     for col_key, col in col_items:
         assert(col.is_lf)
 

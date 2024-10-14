@@ -44,7 +44,7 @@ def plot_error_indicator(err_ind: Error_Indicator, file_path: str = None,
     
     # Get colorbar min/max
     vmin: float = 0.
-    vmax: float = max(err_ind.col_max_err, err_ind.cell_max_err)
+    vmax: float = max(err_ind.col_max_error, err_ind.cell_max_error)
     
     ## Get colormap
     cmap = plt.get_cmap(kwargs["cmap"])

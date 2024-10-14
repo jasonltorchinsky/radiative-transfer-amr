@@ -8,6 +8,7 @@ from mpi4py   import MPI
 from petsc4py import PETSc
 
 # Local Library Imports
+import consts
 
 # Relative Imports
 
@@ -35,7 +36,7 @@ def print_msg(msg: str, **kwargs) -> None:
     
     out_msg: str = ("[{}]: {}").format(current_time, msg)
 
-    if comm_rank == 0:
+    if comm_rank == consts.COMM_ROOT:
         PETSc.Sys.Print(out_msg)
 
     if kwargs["blocking"]:

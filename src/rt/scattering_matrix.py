@@ -39,11 +39,11 @@ def scattering_matrix(self, mesh: Mesh, **kwargs) -> sp._coo.coo_matrix:
         msg: str = ( "Constructing Scattering Matrix...\n" )
         utils.print_msg(msg)
     
-    if comm_rank == 0:
+    if comm_rank == consts.COMM_ROOT:
         n_global: int = mesh.get_ndof()
     else:
         n_global: int = None
-    n_global: int = mpi_comm.bcast(n_global, root = 0)
+    n_global: int = mpi_comm.bcast(n_global, root = consts.COMM_ROOT)
     
     # Split the problem into parts dependent on size of COMM_WORLD.
     col_keys_global: list = list(sorted(mesh.cols.keys()))

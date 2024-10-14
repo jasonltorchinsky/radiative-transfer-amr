@@ -21,6 +21,7 @@ mesh_params: dict = input_dict["mesh_params"]
 ## Setup the Problem
 [Lx, Ly] = mesh_params["Ls"]
 
+## Analytic solution
 def X(x):
     return np.exp(-((1. / Lx) * (x - (Lx / 3.)))**2)
 def dXdx(x):
@@ -31,12 +32,13 @@ def dYdy(y):
     return (4. / Ly) * Y(y)
 def XY(x, y):
     return X(x) * Y(y)
-sth = 96.
+sth: float = 96.
 def Theta(th):
     return np.exp(-((sth / (2. * consts.PI)) * (th - (7. * consts.PI / 5.)))**2)
 def u(x, y, th):
     return XY(x, y) * Theta(th)
-        
+
+## Exctinction coefficient
 def kappa_x(x):
     return np.exp(-((1. / Lx) * (x - (Lx / 2.)))**2)
 def kappa_y(y):
@@ -44,13 +46,16 @@ def kappa_y(y):
 def kappa(x, y):
     return 10. * kappa_x(x) * kappa_y(y)
 
+## Scattering coefficient
 def sigma(x, y):
     return 0.1 * kappa(x, y)
 
+## Scattering phase function
 def Phi(th, phi):
     val = (1. / (3. * consts.PI)) * (1. + (np.cos(th - phi))**2)
     return val
 
+## Forcing term
 def f(x, y, th):
     # Propagation part
     prop = (np.cos(th) * dXdx(x) * Y(y) + np.sin(th) * X(x) * dYdy(y)) * Theta(th)

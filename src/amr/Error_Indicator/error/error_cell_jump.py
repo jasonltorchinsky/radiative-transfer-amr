@@ -34,7 +34,7 @@ def error_cell_jump(self) -> None:
         for cell_key, cell in cell_items:
             assert(cell.is_lf)
             
-            [nth]      = cell.ndofs[:]
+            [nth] = cell.ndofs[:]
             
             [_, _, _, _, thb, _] = qd.quad_xyth(nnodes_th = nth)
             
@@ -92,20 +92,20 @@ def error_cell_jump(self) -> None:
             col_err += cell_err
             mesh_err += cell_err
 
-            cells[cell_key] = Error_Indicator_Cell(np.sqrt(cell_err)) # sqrt at the end to avoid sqrt then square
+            cells[cell_key_0] = Error_Indicator_Cell(np.sqrt(cell_err)) # sqrt at the end to avoid sqrt then square
             cell_max_err: float = max(cell_max_err, np.sqrt(cell_err))
 
         cols[col_key] = Error_Indicator_Column(np.sqrt(col_err), cells)
         col_max_err: float = max(col_max_err, np.sqrt(col_err))
         
     self.cols: dict = cols
-    self.col_max_err: float = col_max_err
-    self.cell_max_err: float = cell_max_err
+    self.col_max_error: float = col_max_err
+    self.cell_max_error: float = cell_max_err
     self.error: float = np.sqrt(mesh_err)
         
     ## Calculate if cols/cells need to be refined, and calculate hp-steering
-    ang_ref_thrsh: float = self.ang_ref_tol * self.cell_max_err
-    spt_ref_thrsh: float = self.spt_ref_tol * self.col_max_err
+    ang_ref_thrsh: float = self.ang_ref_tol * self.cell_max_error
+    spt_ref_thrsh: float = self.spt_ref_tol * self.col_max_error
     for col_key, col in col_items:
         assert(col.is_lf)
 

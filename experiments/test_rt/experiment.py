@@ -16,6 +16,7 @@ from mpi4py   import MPI
 from petsc4py import PETSc
 
 # Local Library Imports
+import consts
 from dg.mesh.column import Column
 from dg.mesh.column.cell import Cell
 from tools.dg.mesh import plot_mesh
@@ -56,13 +57,13 @@ def main():
         out_dir_path: str = args.o
     
     ## Create the figs output directory
-    if comm_rank == 0:
+    if comm_rank == consts.COMM_ROOT:
         figs_dir_name: str = "figs"
         figs_dir_path: str = os.path.join(out_dir_path, figs_dir_name)
         os.makedirs(figs_dir_path, exist_ok = True)
 
     ## Output the initial mesh
-    if comm_rank == 0:
+    if comm_rank == consts.COMM_ROOT:
         mesh_file_name: str = "mesh.json"
         mesh_file_path: str = os.path.join(out_dir_path, mesh_file_name)
         mesh.to_file(mesh_file_path)
@@ -75,7 +76,7 @@ def main():
     ## Obtain and output the mass matrix
     ma_mat: sp._coo.coo_matrix = problem.mass_matrix(mesh)
 
-    if comm_rank == 0:
+    if comm_rank == consts.COMM_ROOT:
         ## Plot the intra-process mass matrix on process 0
         ownership_range: tuple = ma_mat.getOwnershipRange()
         ma_mat_global: np.ndarray = ma_mat[ownership_range[0]:ownership_range[1],
@@ -117,7 +118,7 @@ def main():
     ## Obtain and output scattering matrix
     sc_mat: sp._coo.coo_matrix = problem.scattering_matrix(mesh)
 
-    if comm_rank == 0:
+    if comm_rank == consts.COMM_ROOT:
         ## Plot the intra-process scattering matrix on process 0
         ownership_range: tuple = sc_mat.getOwnershipRange()
         sc_mat_global: np.ndarray = sc_mat[ownership_range[0]:ownership_range[1],
@@ -159,7 +160,7 @@ def main():
     ## Obtain and output the interior convection matrix
     ic_mat: sp._coo.coo_matrix = problem.interior_convection_matrix(mesh)
 
-    if comm_rank == 0:
+    if comm_rank == consts.COMM_ROOT:
         ## Plot the intra-process interior_convection matrix on process 0
         ownership_range: tuple = ic_mat.getOwnershipRange()
         ic_mat_global: np.ndarray = ic_mat[ownership_range[0]:ownership_range[1],
@@ -201,7 +202,7 @@ def main():
     ## Obtain and output the boundary convection matrix
     bc_mat: sp._coo.coo_matrix = problem.boundary_convection_matrix(mesh)
 
-    if comm_rank == 0:
+    if comm_rank == consts.COMM_ROOT:
         ## Plot the intra-process interior_convection matrix on process 0
         ownership_range: tuple = bc_mat.getOwnershipRange()
         bc_mat_global: np.ndarray = bc_mat[ownership_range[0]:ownership_range[1],
@@ -243,7 +244,7 @@ def main():
     ## Obtain and output the system matrix
     sys_mat: sp._coo.coo_matrix = ma_mat - sc_mat + (bc_mat - ic_mat)
 
-    if comm_rank == 0:
+    if comm_rank == consts.COMM_ROOT:
         ## Plot the intra-process interior_convection matrix on process 0
         ownership_range: tuple = sys_mat.getOwnershipRange()
         sys_mat_global: np.ndarray = sys_mat[ownership_range[0]:ownership_range[1],
@@ -285,7 +286,7 @@ def main():
     ## Calculate, output, and plot the solution
     [uh, _, _] = problem.solve(mesh)
 
-    if comm_rank == 0:
+    if comm_rank == consts.COMM_ROOT:
         file_name: str = "uh.npy"
         file_path: str = os.path.join(out_dir_path, file_name)
         uh.to_file(file_path, write_mesh = False)

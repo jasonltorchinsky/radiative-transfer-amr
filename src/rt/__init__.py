@@ -13,4 +13,3 @@ if src_dir not in sys.path:
 
 # Relative Imports
 from .class_Problem import Problem
-from .rtdg import rtdg

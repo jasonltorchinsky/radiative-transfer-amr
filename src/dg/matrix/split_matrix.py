@@ -25,8 +25,8 @@ def split_matrix(matrix: PETSc.Mat, intr_mask: np.ndarray) -> list:
     g_bdry_idxs: np.ndarray = np.where(np.invert(intr_mask))[0].astype(consts.INT)
     
     ## Broadcast to other ranks
-    g_intr_idxs: np.ndarray = mpi_comm.bcast(g_intr_idxs, root = 0)
-    g_bdry_idxs: np.ndarray = mpi_comm.bcast(g_bdry_idxs, root = 0)
+    g_intr_idxs: np.ndarray = mpi_comm.bcast(g_intr_idxs, root = consts.COMM_ROOT)
+    g_bdry_idxs: np.ndarray = mpi_comm.bcast(g_bdry_idxs, root = consts.COMM_ROOT)
     
     ## Get local (l_) idxs of intr and bdry DoFs
     ii_0, ii_f = matrix.getOwnershipRange()

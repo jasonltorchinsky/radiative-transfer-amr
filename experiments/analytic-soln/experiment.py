@@ -22,7 +22,6 @@ from amr.error_indicator import Error_Indicator
 
 # Relative Imports
 from mesh import mesh
-from generate_plots import generate_plots
 from problem import problem, u
 from refinement_strategies import refinement_strategies
 
@@ -61,6 +60,8 @@ def main():
     input_file.close()
 
     stopping_conditions: dict = input_dict["stopping_conditions"]
+    hr_err_params: dict = input_dict["hr_err_params"]
+    
     ## If a stopping condition is 0 or less, it should be ignored
     for key, val in stopping_conditions.items():
         if val <= 0:
@@ -68,11 +69,7 @@ def main():
 
     ## Calculate, output, and plot the solution
     for ref_strat_name, ref_strat in refinement_strategies.items():
-        ## Values to record for each refinement strategy
-        tracked_vals: dict = {"ndof" : {},
-                              "error": {}}
-
-        if comm_rank == 0:
+        if comm_rank == consts.COMM_ROOT:
             ref_strat_dir_path: str = os.path.join(out_dir_path, ref_strat_name)
             os.makedirs(ref_strat_dir_path, exist_ok = True)
 
@@ -87,15 +84,17 @@ def main():
         keep_going: bool = ( (l_mesh.get_ndof() <= stopping_conditions["max_ndof"])
                             and (trial < stopping_conditions["max_ntrial"])
                             and (min_err >= stopping_conditions["min_err"]) )
+
         while (keep_going):
-            if comm_rank == 0:
+            if comm_rank == consts.COMM_ROOT:
                 trial_dir_path: str = os.path.join(ref_strat_dir_path,
                                                    str(trial))
                 os.makedirs(trial_dir_path, exist_ok = True)
 
             [uh, _, _] = problem.solve(l_mesh)
+            PETSc.garbage_cleanup(petsc_comm)
 
-            if comm_rank == 0:
+            if comm_rank == consts.COMM_ROOT:
                 ## Save the numeric solution to file
                 proj_file_name: str = "uh.npy"
                 proj_file_path: str = os.path.join(trial_dir_path, proj_file_name)
@@ -105,47 +104,72 @@ def main():
 
                 uh.to_file(proj_file_path, wrte_mesh = True,
                            mesh_file_path = mesh_file_path)
+                
+                ## Calculate the cell jump error indicator
+                err_ind_jmp: Error_Indicator = Error_Indicator(uh, **ref_strat)
+                err_ind_jmp.error_cell_jump()
 
-                ## Calculate the error indicator
-                err_ind: Error_Indicator = Error_Indicator(uh, **ref_strat)
-                err_ind.error_analytic(u)
+                ## Save the cell jump error indicator to file
+                err_ind_jmp_file_name: str = "err_ind_jmp.json"
+                err_ind_jmp_file_path: str = os.path.join(trial_dir_path, 
+                                                          err_ind_jmp_file_name)
+                err_ind_jmp.to_file(err_ind_jmp_file_path, 
+                                    write_projection = False, 
+                                    write_mesh = False)
 
-                ## Updates values to record
-                tracked_vals["ndof"][trial] = l_mesh.get_ndof
-                tracked_vals["error"][trial] = err_ind.error
+                ## Calculate the analytic error indicator
+                err_ind_anl: Error_Indicator = Error_Indicator(uh, **ref_strat)
+                err_ind_anl.error_analytic(u)
 
+                ## Save the analytic error indicator to file
+                err_ind_anl_file_name: str = "err_ind_anl.json"
+                err_ind_anl_file_path: str = os.path.join(trial_dir_path, 
+                                                          err_ind_anl_file_name)
+                err_ind_anl.to_file(err_ind_anl_file_path, 
+                                    write_projection = False, 
+                                    write_mesh = False)
+
+            ## Calculate the high-resolution error indicator
+            err_ind_hr: Error_Indicator = Error_Indicator(uh, **ref_strat)
+            [uh_hr, _, _] = err_ind_hr.error_high_resolution(problem, **hr_err_params)
+
+            if comm_rank == consts.COMM_ROOT:
+                ## Save the high-resolution solution to file
+                proj_file_name: str = "uh_hr.npy"
+                proj_file_path: str = os.path.join(trial_dir_path, proj_file_name)
+
+                mesh_file_name: str = "mesh_hr.json"
+                mesh_file_path: str = os.path.join(trial_dir_path, mesh_file_name)
+
+                uh_hr.to_file(proj_file_path, wrte_mesh = True,
+                              mesh_file_path = mesh_file_path)
+                
+                ## Save the high-resolution error indicator to file
+                err_ind_hr_file_name: str = "err_ind_hr.json"
+                err_ind_hr_file_path: str = os.path.join(trial_dir_path, 
+                                                          err_ind_hr_file_name)
+                err_ind_hr.to_file(err_ind_hr_file_path, 
+                                   write_projection = False, 
+                                   write_mesh = False)
+
+            ## We refine the mesh here because if it gets too big, then we'll
+            ## want to stop. However, this doesn *not* update the mesh in the
+            ## uh and err_ind objects
+            if comm_rank == consts.COMM_ROOT:
+                l_mesh: Mesh = err_ind_hr.ref_by_ind()
+            l_mesh: Mesh = mpi_comm.bcast(l_mesh, root = consts.COMM_ROOT)
+
+            ## Update values for stopping conditions - these reflect what 
+            ## the next trial *will* be
+            trial += 1
+            if comm_rank == consts.COMM_ROOT:
+                min_err: float = min(min_err, err_ind_anl.error)
+            min_err: float = mpi_comm.bcast(min_err, root = consts.COMM_ROOT)
+            
             keep_going: bool = ( (l_mesh.get_ndof() <= stopping_conditions["max_ndof"])
                                   and (trial <= stopping_conditions["max_ntrial"])
                                   and (min_err >= stopping_conditions["min_err"]) )
-            
-            ## if keep_going: refine the mesh, occassionally generate plots
-            ## and update tracked values
-            ## else: generate plots and update tracked values
-            if keep_going:
-                if comm_rank == 0:
-                    if (float(l_mesh.get_ndof()) / float(prev_ndof) >= 1.25):
-                        generate_plots(uh, err_ind, trial_dir_path)
-
-                        file_name: str = "tracked_vals.json"
-                        file_path = os.path.join(ref_strat_dir_path, file_name)
-                        with open(file_path, "w") as file:
-                            json.dump(tracked_vals, file)
-                    l_mesh: Mesh = err_ind.ref_by_ind()
-                l_mesh: Mesh = mpi_comm.bcast(l_mesh, root = 0)
-
-                ## Update values for stopping conditions
-                trial += 1
-                if comm_rank == 0:
-                    min_err: float = min(min_err, err_ind.error)
-                min_err: float = mpi_comm.bcast(min_err, root = 0)
-            else:
-                if comm_rank == 0:
-                    generate_plots(uh, err_ind, trial_dir_path)
-
-                    file_name: str = "tracked_vals.json"
-                    file_path = os.path.join(ref_strat_dir_path, file_name)
-                    with open(file_path, "w") as file:
-                        json.dump(tracked_vals, file)
+                
 
 if __name__ == "__main__":
     main()

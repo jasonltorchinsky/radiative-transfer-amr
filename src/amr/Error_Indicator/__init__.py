@@ -14,3 +14,4 @@ if src_dir not in sys.path:
 # Relative Imports
 from . import (error, error_indicator_column)
 from .class_Error_Indicator import Error_Indicator
+from .from_file import from_file
