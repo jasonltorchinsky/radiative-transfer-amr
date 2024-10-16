@@ -25,22 +25,22 @@ printf " ~~ Initiating radiative transfer numerical solve... ~~ \n\n"
 eval 'mpirun --use-hwthread-cpus -n '"${N_PROCS}"' python experiment.py --o '"${OUT_DIR}"
 printf " ~~ Completed radiative transfer numerical solve! ~~ \n\n"
 
-for STRAT_DIR in ${OUT_DIR}/*/ ;
-do
-    for TRIAL_DIR in ${STRAT_DIR}*/ ;
-    do
-        printf "  ~ Initiating error indicator obtainment... ~  \n\n"
-        eval 'mpirun --use-hwthread-cpus -n '"${N_PROCS}"' python get_err_ind_trial.py --o '"${TRIAL_DIR}"''
-        printf "  ~ Error indicators obtained! ~  \n\n"
+#printf "  ~ Initiating error histories obtainment... ~  \n\n"
+#eval 'mpirun --use-hwthread-cpus -n 1 python get_error_history.py --o '"${OUT_DIR}"''
+#printf "  ~ Error histories obtained! ~  \n\n"
 
-        printf " ~~ Initiating trial visualizations... ~~ \n\n"
-        eval 'mpirun --use-hwthread-cpus -n 1 python visualize_trial.py --o '"${TRIAL_DIR}"
-        printf " ~~ Completed trial visualizations... ~~ \n\n"
-    done
-done
+#for STRAT_DIR in ${OUT_DIR}/*/ ;
+#do
+#    for TRIAL_DIR in ${STRAT_DIR}*/ ;
+#    do
+#        #printf " ~~ Initiating trial visualizations for ${TRIAL_DIR}... ~~ \n\n"
+#        #eval 'mpirun --use-hwthread-cpus -n 1 python visualize_trial.py --o '"${TRIAL_DIR}"
+#        #printf " ~~ Completed trial visualizations for ${TRIAL_DIR}! ~~ \n\n"
+#    done
+#done
 
-printf " ~~ Initiating plotting convergence rates... ~~ \n\n"
-eval 'python plot_convergence.py --o '"${OUT_DIR}"
-printf " ~~ Completed plotting convergence rates! ~~ \n\n"
+#printf " ~~ Initiating plotting convergence rates... ~~ \n\n"
+#eval 'mpirun --use-hwthread-cpus -n 1 python plot_convergence.py --o '"${OUT_DIR}"
+#printf " ~~ Completed plotting convergence rates! ~~ \n\n"
 
 printf "~~~ ${EXPERIMENT_NAME} experiment complete! ~~~\n\n"

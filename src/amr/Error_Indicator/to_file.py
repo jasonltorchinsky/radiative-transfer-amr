@@ -23,7 +23,7 @@ def to_file(self, file_path: str = "err_ind.json", **kwargs) -> None:
     err_ind_dict["ref_form"] = self.ref_form
     err_ind_dict["ang_ref_tol"] = self.ang_ref_tol
     err_ind_dict["spt_ref_tol"] = self.spt_ref_tol
-    err_ind_dict["mesh_error"] = self.error
+    err_ind_dict["error"] = self.error
     err_ind_dict["col_max_error"] = self.col_max_error
     err_ind_dict["cell_max_error"] = self.cell_max_error
 

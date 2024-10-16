@@ -54,6 +54,8 @@ def main():
     else:
         out_dir_path: str = args.o
 
+    breakpoint()
+
     ## Read input - hardcoded file names
     input_file = open("input.json")
     input_dict: dict = json.load(input_file)
@@ -117,40 +119,44 @@ def main():
                                     write_projection = False, 
                                     write_mesh = False)
 
-                ## Calculate the analytic error indicator
-                err_ind_anl: Error_Indicator = Error_Indicator(uh, **ref_strat)
-                err_ind_anl.error_analytic(u)
+            ## Only calculate the analytic and high-resolution error every
+            ## once in a while
+            if (l_mesh.getndof() / prev_ndof >= 1.25):
+                if comm_rank == consts.COMM_ROOT:
+                    ## Calculate the analytic error indicator
+                    err_ind_anl: Error_Indicator = Error_Indicator(uh, **ref_strat)
+                    err_ind_anl.error_analytic(u)
 
-                ## Save the analytic error indicator to file
-                err_ind_anl_file_name: str = "err_ind_anl.json"
-                err_ind_anl_file_path: str = os.path.join(trial_dir_path, 
-                                                          err_ind_anl_file_name)
-                err_ind_anl.to_file(err_ind_anl_file_path, 
-                                    write_projection = False, 
-                                    write_mesh = False)
+                    ## Save the analytic error indicator to file
+                    err_ind_anl_file_name: str = "err_ind_anl.json"
+                    err_ind_anl_file_path: str = os.path.join(trial_dir_path, 
+                                                              err_ind_anl_file_name)
+                    err_ind_anl.to_file(err_ind_anl_file_path, 
+                                        write_projection = False, 
+                                        write_mesh = False)
 
-            ## Calculate the high-resolution error indicator
-            err_ind_hr: Error_Indicator = Error_Indicator(uh, **ref_strat)
-            [uh_hr, _, _] = err_ind_hr.error_high_resolution(problem, **hr_err_params)
-
-            if comm_rank == consts.COMM_ROOT:
-                ## Save the high-resolution solution to file
-                proj_file_name: str = "uh_hr.npy"
-                proj_file_path: str = os.path.join(trial_dir_path, proj_file_name)
-
-                mesh_file_name: str = "mesh_hr.json"
-                mesh_file_path: str = os.path.join(trial_dir_path, mesh_file_name)
-
-                uh_hr.to_file(proj_file_path, wrte_mesh = True,
-                              mesh_file_path = mesh_file_path)
-                
-                ## Save the high-resolution error indicator to file
-                err_ind_hr_file_name: str = "err_ind_hr.json"
-                err_ind_hr_file_path: str = os.path.join(trial_dir_path, 
-                                                          err_ind_hr_file_name)
-                err_ind_hr.to_file(err_ind_hr_file_path, 
-                                   write_projection = False, 
-                                   write_mesh = False)
+                ## Calculate the high-resolution error indicator
+                err_ind_hr: Error_Indicator = Error_Indicator(uh, **ref_strat)
+                [uh_hr, _, _] = err_ind_hr.error_high_resolution(problem, **hr_err_params)
+    
+                if comm_rank == consts.COMM_ROOT:
+                    ## Save the high-resolution solution to file
+                    proj_file_name: str = "uh_hr.npy"
+                    proj_file_path: str = os.path.join(trial_dir_path, proj_file_name)
+    
+                    mesh_file_name: str = "mesh_hr.json"
+                    mesh_file_path: str = os.path.join(trial_dir_path, mesh_file_name)
+    
+                    uh_hr.to_file(proj_file_path, wrte_mesh = True,
+                                  mesh_file_path = mesh_file_path)
+                    
+                    ## Save the high-resolution error indicator to file
+                    err_ind_hr_file_name: str = "err_ind_hr.json"
+                    err_ind_hr_file_path: str = os.path.join(trial_dir_path, 
+                                                              err_ind_hr_file_name)
+                    err_ind_hr.to_file(err_ind_hr_file_path, 
+                                       write_projection = False, 
+                                       write_mesh = False)
 
             ## We refine the mesh here because if it gets too big, then we'll
             ## want to stop. However, this doesn *not* update the mesh in the

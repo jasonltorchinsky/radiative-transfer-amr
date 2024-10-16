@@ -31,7 +31,7 @@ def from_file(mesh_file_path: str = "mesh.json",
                                                ref_form = err_ind_dict["ref_form"],
                                                ref_tol = [err_ind_dict["ang_ref_tol"], err_ind_dict["spt_ref_tol"]])
 
-    err_ind.error: float = err_ind_dict["mesh_error"]
+    err_ind.error: float = err_ind_dict["error"]
     err_ind.col_max_error: float = err_ind_dict["col_max_error"]
     err_ind.cell_max_error: float = err_ind_dict["cell_max_error"]
 
