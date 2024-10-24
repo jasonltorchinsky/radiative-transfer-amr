@@ -65,7 +65,10 @@ def plot_xth(proj: Projection, file_path: str = None, **kwargs) -> list:
             vmin: float = min(np.min(cell_intg_y), vmin)
             vmax: float = max(np.max(cell_intg_y), vmax)
                     
-    # Two colors scales: diff shows a difference, pos shows positive values
+    ## Get colormap
+    cmap = plt.get_cmap(kwargs["cmap"])
+
+    ## Two colors scales: diff shows a difference, pos shows positive values
     scale: str = kwargs["scale"]
     if scale == "diff":
         v_bnd: float = max(np.abs(vmin), np.abs(vmax))
@@ -73,11 +76,9 @@ def plot_xth(proj: Projection, file_path: str = None, **kwargs) -> list:
         vmax: float = v_bnd
     elif scale == "pos":
         vmin: float = 0.
+        cmap.set_under("blue")
     elif scale == "normal":
         pass
-                    
-    ## Get colormap
-    cmap = plt.get_cmap(kwargs["cmap"])
 
     rects: list = []
     for col_key, col in col_items:
@@ -121,7 +122,7 @@ def plot_xth(proj: Projection, file_path: str = None, **kwargs) -> list:
         rect_coll: PatchCollection = PatchCollection(rects, match_original = True)
         ax.add_collection(rect_coll)
 
-    fig.colorbar(pc, ax = ax)
+    fig.colorbar(pc, ax = ax, extend = "min")
     
     ## Set theta-dimension ticks
     nth_ticks: int = 9

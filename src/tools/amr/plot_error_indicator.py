@@ -1,7 +1,6 @@
 # Standard Library Imports
 
 # Third-Party Library Imports
-import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle, Wedge
 from matplotlib.collections import PatchCollection
@@ -9,7 +8,6 @@ from matplotlib.collections import PatchCollection
 # Local Library Imports
 import consts
 from amr.error_indicator import Error_Indicator
-from dg.quadrature import quad_xyth
 
 # Relative Imports
 
@@ -17,7 +15,8 @@ def plot_error_indicator(err_ind: Error_Indicator, file_path: str = None,
                          **kwargs):
     default_kwargs: dict = {"lims" : [[],[]],
                             "name" : "",
-                            "cmap" : "Reds"}
+                            "cmap" : "Reds",
+                            "kind" : "all"}
     kwargs: dict = {**default_kwargs, **kwargs}
 
     fig, ax = plt.subplots()
@@ -37,7 +36,8 @@ def plot_error_indicator(err_ind: Error_Indicator, file_path: str = None,
 
 
     ## Set axis labels and title
-    title: str = "Total Error: {:4.4E}".format(err_ind.error)
+    title: str = ( "Total Error: {:4.4E}\n".format(err_ind.error) +
+                   "Error to Resolve: {:4.4E}".format(err_ind.error_to_resolve) )
     ax.set_xlabel("x")
     ax.set_ylabel("y")
     ax.set_title(title)
@@ -51,7 +51,7 @@ def plot_error_indicator(err_ind: Error_Indicator, file_path: str = None,
 
     wedges: list = []
     wedge_colors: list = []
-    rects: list  = []
+    rects: list = []
     rect_colors: list = []
     col_items: list = sorted(err_ind.proj.cols.items())
     for col_key, col in col_items:
@@ -63,8 +63,13 @@ def plot_error_indicator(err_ind: Error_Indicator, file_path: str = None,
         
         col_err: float = err_ind.cols[col_key].error
 
+        if kwargs["kind"] in ["spt", "all"]:
+            facecolor: str = cmap(col_err)
+        else:
+            faceolor: str = "none"
+
         rect: Rectangle = Rectangle((x0, y0), dx, dy,
-                                    facecolor = cmap(col_err),
+                                    facecolor = facecolor,
                                     edgecolor = "black")
         rects += [rect]
 
@@ -80,8 +85,13 @@ def plot_error_indicator(err_ind: Error_Indicator, file_path: str = None,
 
             cell_err: float = err_ind.cols[col_key].cells[cell_key].error
             
+            if kwargs["kind"] in ["ang", "all"]:
+                facecolor: str = cmap(cell_err)
+            else:
+                faceolor: str = "none"
+
             wedge: Wedge = Wedge((cx, cy), min(dx, dy)/2, deg0, deg1,
-                                 facecolor = cmap(cell_err),
+                                 facecolor = facecolor,
                                  edgecolor = "black")
             wedges += [wedge]
 

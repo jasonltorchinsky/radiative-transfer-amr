@@ -9,7 +9,7 @@ from matplotlib.collections import PatchCollection
 # Local Library Imports
 import consts
 from dg.projection import Projection
-import dg.quadrature as qd
+from dg.quadrature import quad_xyth
 
 # Relative Imports
 
@@ -47,7 +47,7 @@ def plot_xyth(proj: Projection, file_path: str = None, **kwargs) -> list:
         [nx, ny] = col.ndofs[:]
         [x0, y0, x1, y1] = col.pos[:]
         [dx, dy] = [x1 - x0, y1 - y0]
-        [_, wx, _, wy, _, _] = qd.quad_xyth(nnodes_x = nx, nnodes_y = ny)
+        [_, wx, _, wy, _, _] = quad_xyth(nnodes_x = nx, nnodes_y = ny)
         wx: np.ndarray = wx.reshape([nx, 1, 1])
         wy: np.ndarray = wy.reshape([1, ny, 1])
         
@@ -58,7 +58,7 @@ def plot_xyth(proj: Projection, file_path: str = None, **kwargs) -> list:
             [nth]      = cell.ndofs[:]
             [th0, th1] = cell.pos[:]
             [dth]      = [th1 - th0]
-            [_, _, _, _, _, wth] = qd.quad_xyth(nnodes_th = nth)
+            [_, _, _, _, _, wth] = quad_xyth(nnodes_th = nth)
             wth: np.ndarray = wth.reshape([1, 1, nth])
             
             cell_vals: np.ndarray = proj.cols[col_key].cells[cell_key].vals[:,:,:]
@@ -70,7 +70,10 @@ def plot_xyth(proj: Projection, file_path: str = None, **kwargs) -> list:
 
             cell_means[(col_key, cell_key)] = cell_mean
 
-    # Two colors scales: diff shows a difference, pos shows positive values
+    ## Get colormap
+    cmap = plt.get_cmap(kwargs["cmap"])
+
+    ## Two colors scales: diff shows a difference, pos shows positive values
     scale: str = kwargs["scale"]
     if scale == "diff":
         v_bnd: float = max(np.abs(vmin), np.abs(vmax))
@@ -78,11 +81,9 @@ def plot_xyth(proj: Projection, file_path: str = None, **kwargs) -> list:
         vmax: float = v_bnd
     elif scale == "pos":
         vmin: float = 0.
+        cmap.set_under("blue")
     elif scale == "normal":
         pass
-    
-    ## Get colormap
-    cmap = plt.get_cmap(kwargs["cmap"])
 
     wedges: list = []
     wedge_colors: list = []
@@ -125,7 +126,7 @@ def plot_xyth(proj: Projection, file_path: str = None, **kwargs) -> list:
     wedge_coll.set_clim([vmin, vmax])
     ax.add_collection(wedge_coll)
     
-    fig.colorbar(wedge_coll, ax = ax)
+    fig.colorbar(wedge_coll, ax = ax, extend = "min")
     
     if file_path:
         fig.set_size_inches(6.5, 6.5 * (Ly / Lx))

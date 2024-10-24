@@ -11,7 +11,7 @@ import dg.quadrature as qd
 from ..error_indicator_column import Error_Indicator_Column
 from ..error_indicator_column.error_indicator_cell import Error_Indicator_Cell
 
-def error_cell_jump(self) -> None:
+def error_angular_jump(self) -> None:
     # Angular jump error
     
     # Store maximum errors to calculate hp-steering only where needed
@@ -102,6 +102,7 @@ def error_cell_jump(self) -> None:
     self.col_max_error: float = col_max_err
     self.cell_max_error: float = cell_max_err
     self.error: float = np.sqrt(mesh_err)
+    self.error_to_resolve: float = 0.
         
     ## Calculate if cols/cells need to be refined, and calculate hp-steering
     ang_ref_thrsh: float = self.ang_ref_tol * self.cell_max_error
@@ -112,6 +113,7 @@ def error_cell_jump(self) -> None:
         if self.ref_kind in ["spt", "all"]:
             if self.cols[col_key].error >= spt_ref_thrsh: # Does this one need to be refined?
                 self.cols[col_key].do_ref = True
+                self.error_to_resolve += self.cols[col_key].error
                 if self.ref_form == "hp": # Does the form of refinement need to be chosen?
                     self.cols[col_key].ref_form = self.col_hp_steer(col_key)
                 else:
@@ -126,6 +128,7 @@ def error_cell_jump(self) -> None:
                 
                 if self.cols[col_key].cells[cell_key].error >= ang_ref_thrsh: # Does this one need to be refined?
                     self.cols[col_key].cells[cell_key].do_ref = True
+                    self.error_to_resolve += self.cols[col_key].cells[cell_key].error
                     if self.ref_form == "hp": # Does the form of refinement need to be chosen?
                         self.cols[col_key].cells[cell_key].ref_form = \
                             self.cell_hp_steer(col_key, cell_key)

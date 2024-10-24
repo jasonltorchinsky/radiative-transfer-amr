@@ -13,7 +13,7 @@ if src_dir not in sys.path:
 
 # Relative Imports
 from .error_analytic import error_analytic
-from .error_cell_jump import error_cell_jump
-from .error_column_jump import error_column_jump
+from .error_angular_jump import error_angular_jump
+from .error_spatial_jump import error_spatial_jump
 from .error_high_resolution import error_high_resolution
 from .error_random import error_random

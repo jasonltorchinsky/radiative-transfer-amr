@@ -8,9 +8,8 @@ import json
 # Relative Imports
 
 ## Read input files - hardcoded file names
-input_file = open("input.json")
-input_dict: dict = json.load(input_file)
-input_file.close()
+with open("input.json", "r") as input_file:
+    input_dict: dict = json.load(input_file)
 
 refinement_strategies: dict = {
     "h-uni-ang"  : input_dict["h-uni-ang"],

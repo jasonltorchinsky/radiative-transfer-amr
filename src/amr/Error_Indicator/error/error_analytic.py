@@ -155,6 +155,7 @@ def error_analytic(self, anl_sol: Callable[[np.ndarray, np.ndarray, np.ndarray],
     self.col_max_error: float = col_max_err
     self.cell_max_error: float = cell_max_err
     self.error: float = np.sqrt(mesh_err / intg_u2)
+    self.error_to_resolve: float = 0.
 
     ## Calculate if cols/cells need to be refined, and calculate hp-steering
     ang_ref_thrsh: float = self.ang_ref_tol * self.cell_max_error
@@ -165,6 +166,7 @@ def error_analytic(self, anl_sol: Callable[[np.ndarray, np.ndarray, np.ndarray],
         if self.ref_kind in ["spt", "all"]:
             if self.cols[col_key].error >= spt_ref_thrsh: # Does this one need to be refined?
                 self.cols[col_key].do_ref = True
+                self.error_to_resolve += self.cols[col_key].error
                 if self.ref_form == "hp": # Does the form of refinement need to be chosen?
                     self.cols[col_key].ref_form = self.col_hp_steer(col_key)
                 else:
@@ -179,6 +181,7 @@ def error_analytic(self, anl_sol: Callable[[np.ndarray, np.ndarray, np.ndarray],
                 
                 if self.cols[col_key].cells[cell_key].error >= ang_ref_thrsh: # Does this one need to be refined?
                     self.cols[col_key].cells[cell_key].do_ref = True
+                    self.error_to_resolve += self.cols[col_key].cells[cell_key].error
                     if self.ref_form == "hp": # Does the form of refinement need to be chosen?
                         self.cols[col_key].cells[cell_key].ref_form = \
                             self.cell_hp_steer(col_key, cell_key)

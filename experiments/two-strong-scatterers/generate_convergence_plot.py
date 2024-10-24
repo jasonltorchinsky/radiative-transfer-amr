@@ -15,8 +15,6 @@ import matplotlib.pyplot as plt
 
 # Local Library Imports
 import consts
-from dg.mesh import Mesh
-from dg.mesh import from_file as mesh_from_file
 
 # Relative Imports
 from refinement_strategies import refinement_strategies
@@ -64,10 +62,9 @@ def main():
     markers: list = [".", "v", "s", "*", "^", "D", "P", "X"]
     style_idx: int = 0
 
-    ref_strat_labels: dict = {"h-uni-ang" : r"$h$-Unif. Ang",
-                              "p-uni-ang" : r"$p$-Unif. Ang",
-                              "h-amr-ang" : r"$h$-Adap. Ang",
-                              "hp-amr-ang" : r"$hp$-Adap. Ang"}
+    ref_strat_labels: dict = {"hp-amr-spt-p-uni-ang" : r"$hp$-Adap. Spt., $p$-Unif. Ang.",
+                              "hp-amr-ang-p-uni-spt" : r"$hp$-Adap. Ang., $p$-Unif. Spt.",
+                              "hp-amr-ang-hp-amr-spt" : r"$hp$-Adap. Ang., $hp$-Adap. Spt."}
     
     for ref_strat_name, err_dict in tracked_values.items():
         ndofs: np.ndarray  = np.array(list(err_dict.keys()), dtype = consts.INT)
@@ -84,11 +81,10 @@ def main():
     ax.legend()
     
     ax.set_yscale("log", base = 10)
-    ax.set_ylim([1.e-6, 2.])
+    ax.set_ylim([1.e-3, 0.3])
     
     ax.set_xlabel("Total Degrees of Freedom")
-    ax.set_ylabel(r"$Error := \sqrt{\frac{\int_{\mathcal{S}} \int_{\Omega} \left( u - u_{hp} \right)^2\,d\vec{x}\,d\vec{s}}{\int_{\mathcal{S}} \int_{\Omega} \left( u \right)^2\,d\vec{x}\,d\vec{s}}}$")
-    #ax.set_ylabel(r"$Error := \sqrt{\frac{\int_{\mathcal{S}} \int_{\Omega} \left( u_{hr} - u_{hp} \right)^2\,d\vec{x}\,d\vec{s}}{\int_{\mathcal{S}} \int_{\Omega} \left( u_{hr} \right)^2\,d\vec{x}\,d\vec{s}}}$")
+    ax.set_ylabel(r"$Error := \sqrt{\frac{\int_{\mathcal{S}} \int_{\Omega} \left( u_{hr} - u_{hp} \right)^2\,d\vec{x}\,d\vec{s}}{\int_{\mathcal{S}} \int_{\Omega} \left( u_{hr} \right)^2\,d\vec{x}\,d\vec{s}}}$")
         
     title: str = ( "Convergence Rate" )
     ax.set_title(title)

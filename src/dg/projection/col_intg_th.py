@@ -12,7 +12,7 @@ from ..quadrature import quad_xyth
 
 def col_intg_th(self, col_key: int) -> np.ndarray:
     proj_col: Projection_Column = self.cols[col_key]
-    assert(proj_col.is_leaf)
+    assert(proj_col.is_lf)
 
     [ndof_x, ndof_y] = proj_col.ndofs[:]
     col_intg_th: np.ndarray = np.zeros([ndof_x, ndof_y])

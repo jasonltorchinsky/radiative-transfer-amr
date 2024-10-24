@@ -14,3 +14,4 @@ if src_dir not in sys.path:
 
 # Relative Imports
 from .plot_mesh import plot_mesh
+from .plot_nhbrs import plot_nhbrs

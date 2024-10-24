@@ -15,8 +15,6 @@ import matplotlib.pyplot as plt
 
 # Local Library Imports
 import consts
-from dg.mesh import Mesh
-from dg.mesh import from_file as mesh_from_file
 
 # Relative Imports
 from refinement_strategies import refinement_strategies
@@ -50,36 +48,8 @@ def main():
         tracked_values_file_path: str = os.path.join(ref_strat_dir,
                                                      tracked_values_file_name)
 
-        if os.path.isfile(tracked_values_file_path):
-            with open(tracked_values_file_path) as tracked_values_file:
-                ref_strat_err_dict: dict = json.load(tracked_values_file)
-        else:
-            prev_ndof: int = 1
-
-            dir_walks = os.walk(ref_strat_dir)
-            next(dir_walks) # Skip the first one
-            for dir_walk in dir_walks:
-                trial_dir: str = dir_walk[0]
-                ## Read the mesh from file to get ndof
-                mesh_file_name: str = "mesh.json"
-                mesh_file_path: str = os.path.join(trial_dir, mesh_file_name)
-
-                mesh: Mesh = mesh_from_file(mesh_file_path)
-                ndof: int = mesh.get_ndof()
-
-                if (float(ndof) / float(prev_ndof) >= 1.25):
-                    err_ind_file_name: str = "err_ind_anl.json"
-                    err_ind_file_path: str = os.path.join(trial_dir, err_ind_file_name)
-
-                    err_ind_file = open(err_ind_file_path)
-                    error: float = json.load(err_ind_file)["mesh_error"]
-
-                    ref_strat_err_dict[ndof] = error
-
-                    prev_ndof: int = ndof
-
-            with open(tracked_values_file_path, "w") as tracked_values_file:
-                json.dump(ref_strat_err_dict, tracked_values_file)
+        with open(tracked_values_file_path) as tracked_values_file:
+            ref_strat_err_dict: dict = json.load(tracked_values_file)
         
         tracked_values[ref_strat_name] = ref_strat_err_dict
 
@@ -91,13 +61,18 @@ def main():
                     "#882255"]
     markers: list = [".", "v", "s", "*", "^", "D", "P", "X"]
     style_idx: int = 0
+
+    ref_strat_labels: dict = {"h-uni-ang" : r"$h$-Unif. Ang.",
+                              "p-uni-ang" : r"$p$-Unif. Ang.",
+                              "h-amr-ang" : r"$h$-Adap. Ang.",
+                              "hp-amr-ang" : r"$hp$-Adap. Ang."}
     
     for ref_strat_name, err_dict in tracked_values.items():
         ndofs: np.ndarray  = np.array(list(err_dict.keys()), dtype = consts.INT)
-        errors: np.ndarray = np.array(list(err_dict.values()), dtype = consts.INT)
+        errors: np.ndarray = np.array(list(err_dict.values()))
 
         ax.plot(ndofs, errors,
-                label = ref_strat_name,
+                label = ref_strat_labels[ref_strat_name],
                 color = colors[style_idx%len(colors)],
                 marker = markers[style_idx%len(markers)],
                 linestyle = "--")
@@ -107,10 +82,10 @@ def main():
     ax.legend()
     
     ax.set_yscale("log", base = 10)
+    ax.set_ylim([1.e-6, 2.])
     
     ax.set_xlabel("Total Degrees of Freedom")
     ax.set_ylabel(r"$Error := \sqrt{\frac{\int_{\mathcal{S}} \int_{\Omega} \left( u - u_{hp} \right)^2\,d\vec{x}\,d\vec{s}}{\int_{\mathcal{S}} \int_{\Omega} \left( u \right)^2\,d\vec{x}\,d\vec{s}}}$")
-    #ax.set_ylabel(r"$Error := \sqrt{\frac{\int_{\mathcal{S}} \int_{\Omega} \left( u_{hr} - u_{hp} \right)^2\,d\vec{x}\,d\vec{s}}{\int_{\mathcal{S}} \int_{\Omega} \left( u_{hr} \right)^2\,d\vec{x}\,d\vec{s}}}$")
         
     title: str = ( "Convergence Rate" )
     ax.set_title(title)

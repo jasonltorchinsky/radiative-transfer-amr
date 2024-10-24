@@ -12,7 +12,7 @@ from .column.cell import Cell
 from .column.cell import calc_key as calc_cell_key
 
 def nhbr_cells_spt(self, col_key: int, cell_key: int, axis: int = 0,
-                  nhbr_loc: str = "+") -> list:
+                   nhbr_loc: str = "+") -> list:
     col: Column = self.cols[col_key]
     [flag, nhbr_col_1, nhbr_col_2] = self.nhbr_col(self, col, axis, nhbr_loc)
 

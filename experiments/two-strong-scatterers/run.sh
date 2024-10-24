@@ -1,6 +1,6 @@
 #!/bin/bash
 
-EXPERIMENT_NAME="One Weak Scatterer"
+EXPERIMENT_NAME="Two Strong Scatterers"
 
 while getopts n: flag
 do
@@ -15,7 +15,7 @@ mkdir -p ${OUT_DIR}
 printf "~~~ Executing ${EXPERIMENT_NAME} experiment with ${N_PROCS} processes... ~~~\n\n"
 
 printf " ~~ Initiating problem visualization generation... ~~ \n\n"
-eval 'mpirun --use-hwthread-cpus -n 1 python generate_problem_visualizations.py --o "${OUT_DIR}"'
+eval 'mpirun -n 1 python generate_problem_visualizations.py --o "${OUT_DIR}"'
 printf " ~~ Completed problem visualization generation! ~~ \n\n"
 
 printf " ~~ Initiating radiative transfer numerical solve... ~~ \n\n"
@@ -23,8 +23,16 @@ eval 'mpirun --use-hwthread-cpus -n '"${N_PROCS}"' python experiment.py --o '"${
 printf " ~~ Completed radiative transfer numerical solve! ~~ \n\n"
 
 printf " ~~ Initiating error histories generation... ~~ \n\n"
-eval 'mpirun --use-hwthread-cpus -n '"${N_PROCS}"' python generate_error_history.py --o '"${OUT_DIR}"
+eval 'mpirun --use-hwthread-cpus -n '"${N_PROCS}"' python generate_error_history.py --o '"${OUT_DIR}"''
 printf " ~~ Error histories generated! ~~ \n\n"
+
+printf " ~~ Initiating linear solve visualizations... ~~ \n\n"
+eval 'mpirun --use-hwthread-cpus -n 1 python generate_linear_solve_visualizations.py --o '"${OUT_DIR}"''
+printf " ~~ Completed linear solve visualization! ~~ \n\n"
+
+printf " ~~ Initiating angular-spatial steering plots generation... ~~ \n\n"
+eval 'mpirun --use-hwthread-cpus -n 1 python generate_ang_spt_steering_plot.py --o '"${OUT_DIR}"''
+printf " ~~ Completed angular-spatial steering plots generation! ~~ \n\n"
 
 printf " ~~ Initiating experiment visualization generation... ~~ \n\n"
 eval 'mpirun --use-hwthread-cpus -n 1 python generate_experiment_visualizations.py --o '"${OUT_DIR}"

@@ -2,11 +2,12 @@
 
 # Third-Party Library Imports
 import numpy as np
-import matplotlib.collections as collections
-import matplotlib.pyplot  as plt
-import matplotlib.patches as patches
+import matplotlib.pyplot as plt
+from matplotlib.collections import PatchCollection
+from matplotlib.patches import Patch, Rectangle, Wedge
 
 # Local Library Imports
+import consts
 from dg.mesh import Mesh
 
 # Relative Imports
@@ -14,7 +15,7 @@ from dg.mesh import Mesh
 def plot_mesh(mesh: Mesh, file_path : str = None, **kwargs) -> list:
     default_kwargs: dict = {"lims" : [[],[]],
                             "show_p" : True, # Show ndof of each element
-                            "blocking" : False # Defualt to non-blocking behavior for plotting
+                            "blocking" : False # Default to non-blocking behavior for plotting
                             }
 
     kwargs: dict = {**default_kwargs, **kwargs}
@@ -56,59 +57,59 @@ def plot_mesh(mesh: Mesh, file_path : str = None, **kwargs) -> list:
 
     col_items = sorted(mesh.cols.items())
     for _, col in col_items:
-        if col.is_lf:
-            # Determine the color of the spatial element, and add ndof to the list
-            [ndof_x, _] = col.ndofs[:]
+        assert(col.is_lf)
+            
+        # Determine the color of the spatial element, and add ndof to the list
+        [ndof_x, _] = col.ndofs[:]
+        if kwargs["show_p"]:
+            color: str = colors[ndof_x%ncolors]
+            if ndof_x not in unique_ndofs:
+                unique_ndofs += [ndof_x]
+                label: str = str(ndof_x)
+                labels += [ndof_x]
+                legend_elements += [Patch(facecolor = color,
+                                            edgecolor = "black",
+                                            label     = label)]
+        else:
+            color: str = "None"
+        
+        # Create the patch for the spatial element
+        [x0, y0, x1, y1] = col.pos[:]
+        [dx, dy] = [x1 - x0, y1 - y0]
+        [cx, cy] = [(x0 + x1) / 2., (y0 + y1) / 2.]
+        
+        rect: Rectangle = Rectangle((x0, y0), dx, dy,
+                                                    fill = True,
+                                                    facecolor = color,
+                                                    edgecolor = "black")
+        rects += [rect]
+        cell_items = sorted(col.cells.items())
+        for _, cell in cell_items:
+            assert(cell.is_lf)
+                
+            # Determine the color of the angular element, and add ndof to the list
+            [ndof_th] = cell.ndofs[:]
             if kwargs["show_p"]:
-                color: str = colors[ndof_x%ncolors]
-                if ndof_x not in unique_ndofs:
-                    unique_ndofs += [ndof_x]
-                    label: str = str(ndof_x)
-                    labels += [ndof_x]
-                    legend_elements += [patches.Patch(facecolor = color,
-                                                edgecolor = "black",
-                                                label     = label)]
+                color: str = colors[ndof_th%ncolors]
+                if ndof_th not in unique_ndofs:
+                    unique_ndofs += [ndof_th]
+                    label: str = str(ndof_th)
+                    labels += [ndof_th]
+                    legend_elements += [Patch(facecolor = color,
+                                        edgecolor = "black",
+                                        label     = label)]
             else:
                 color: str = "None"
-            
-            # Create the patch for the spatial element
-            [x0, y0, x1, y1] = col.pos[:]
-            [dx, dy] = [x1 - x0, y1 - y0]
-            [cx, cy] = [(x0 + x1) / 2., (y0 + y1) / 2.]
-            
-            rect: patches.Rectangle = patches.Rectangle((x0, y0), dx, dy,
-                                                        fill = True,
-                                                        facecolor = color,
-                                                        edgecolor = "black")
-            rects += [rect]
-
-            cell_items = sorted(col.cells.items())
-            for _, cell in cell_items:
-                if cell.is_lf:
-                    # Determine the color of the spatial element, and add ndof to the list
-                    [ndof_th] = cell.ndofs[:]
-                    if kwargs["show_p"]:
-                        color: str = colors[ndof_th%ncolors]
-                        if ndof_th not in unique_ndofs:
-                            unique_ndofs += [ndof_th]
-                            label: str = str(ndof_th)
-                            labels += [ndof_th]
-                            legend_elements += [patches.Patch(facecolor = color,
-                                                edgecolor = "black",
-                                                label     = label)]
-                    else:
-                        color: str = "None"
-                
-                    [th0, th1] = cell.pos[:]
-                    [deg0, deg1] = [th0 * 180. / np.pi, th1 * 180. / np.pi]
-
-                    wed: patches.Wedge = patches.Wedge((cx, cy), min(dx, dy)/2, deg0, deg1,
-                                                       fill = True,
-                                                       facecolor = color,
-                                                       edgecolor = "black")
-                    wedges += [wed]
+        
+            [th0, th1] = cell.pos[:]
+            [deg0, deg1] = [th0 * 180. / consts.PI, th1 * 180. / consts.PI]
+            wed: Wedge = Wedge((cx, cy), min(dx, dy)/2, deg0, deg1,
+                                               fill = True,
+                                               facecolor = color,
+                                               edgecolor = "black")
+            wedges += [wed]
                     
-    elem_coll: collections.PatchCollection = collections.PatchCollection(rects + wedges, match_original = True)
+    elem_coll: PatchCollection = PatchCollection(rects + wedges, match_original = True)
     ax.add_collection(elem_coll)
     
     if kwargs["show_p"]:

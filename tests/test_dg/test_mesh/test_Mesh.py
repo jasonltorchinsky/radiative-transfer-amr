@@ -5,7 +5,7 @@ import os
 
 # Local Library Imports
 from dg.mesh import Mesh, from_file
-from tools.dg.mesh import plot_mesh
+from tools.dg.mesh import plot_mesh, plot_nhbrs
 
 def test_Mesh(tmp_path):
     # Create a mesh
@@ -57,7 +57,6 @@ def test_Mesh(tmp_path):
     ref_forms: list = ["h", "hp", "hp"]
 
     for idx in range(0, len(cell_keys)):
-        #breakpoint()
         nrefs += 1
         mesh.ref_cell(col_key = col_key, cell_key = cell_keys[idx], 
                      form = ref_forms[idx])
@@ -65,3 +64,20 @@ def test_Mesh(tmp_path):
         file_name: str = "mesh_{}.png".format(nrefs)
         file_path: str = os.path.join(tmp_path, file_name)
         plot_mesh(mesh, file_path = file_path, show_p = True)
+
+    ## Plot the neighbors for each spatial element
+    col_items: list = sorted(mesh.cols.items())
+    for col_key, col in col_items:
+        assert(col.is_lf)
+
+        file_name: str = "nhbrs_{}_NONE.png".format(col_key)
+        file_path: str = os.path.join(tmp_path, file_name)
+        plot_nhbrs(mesh, col_key, None, file_path = file_path)
+
+        cell_items: list = sorted(col.cells.items())
+        for cell_key, cell in cell_items:
+            assert(cell.is_lf)
+
+            file_name: str = "nhbrs_{}_{}.png".format(col_key, cell_key)
+            file_path: str = os.path.join(tmp_path, file_name)
+            plot_nhbrs(mesh, col_key, cell_key, file_path = file_path)

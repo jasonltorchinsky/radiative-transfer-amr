@@ -24,7 +24,7 @@ def col_hp_steer(self, col_key: int) -> str:
     wy: np.ndarray  =  wy.reshape([1, ny])
     
     # uh_hat is the numerical solution integrated in angle
-    uh_hat: np.ndarray = self.col_intg_th(col_key)
+    uh_hat: np.ndarray = self.proj.col_intg_th(col_key)
     
     wx_wy_uh_hat: np.ndarray = wx * wy * uh_hat
     

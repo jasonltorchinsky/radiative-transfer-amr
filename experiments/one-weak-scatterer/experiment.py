@@ -55,11 +55,11 @@ def main():
         out_dir_path: str = args.o
 
     ## Read input - hardcoded file names
-    input_file = open("input.json")
-    input_dict: dict = json.load(input_file)
-    input_file.close()
+    with open("input.json", "r") as input_file:
+        input_dict: dict = json.load(input_file)
 
     stopping_conditions: dict = input_dict["stopping_conditions"]
+    solver_params: dict = input_dict["solver_params"]
     hr_err_params: dict = input_dict["hr_err_params"]
     
     ## If a stopping condition is 0 or less, it should be ignored
@@ -91,8 +91,23 @@ def main():
                                                    str(trial))
                 os.makedirs(trial_dir_path, exist_ok = True)
 
-            [uh, _, _] = problem.solve(l_mesh)
+                trial_log_file_name: str = "out_{}.log".format(trial)
+                trial_log_file_path: str = os.path.join(trial_dir_path,
+                                                        trial_log_file_name)
+                
+                with open(trial_log_file_path, "w") as log_file:
+                    msg: str = "BEGIN LOG\n"
+                    log_file.write(msg)
+
+            [uh, info, mat_info] = problem.solve(l_mesh, **solver_params)
             PETSc.garbage_cleanup(petsc_comm)
+            
+            if comm_rank == consts.COMM_ROOT:
+                with open(trial_log_file_path, "a") as log_file:
+                    msg: str = "lr, ({}, {}) : {}\n".format(int(l_mesh.get_ndof()),
+                                                            int(mat_info["nz_used"]),
+                                                            info)
+                    log_file.write(msg)
 
             if comm_rank == consts.COMM_ROOT:
                 ## Save the numeric solution to file
@@ -102,42 +117,53 @@ def main():
                 mesh_file_name: str = "mesh.json"
                 mesh_file_path: str = os.path.join(trial_dir_path, mesh_file_name)
 
-                uh.to_file(proj_file_path, wrte_mesh = True,
+                uh.to_file(proj_file_path, write_mesh = True,
                            mesh_file_path = mesh_file_path)
                 
-                ## Calculate the cell jump error indicator
-                err_ind_jmp: Error_Indicator = Error_Indicator(uh, **ref_strat)
-                err_ind_jmp.error_cell_jump()
+                ## Calculate the angular jump error indicator
+                err_ind_ang_jmp: Error_Indicator = Error_Indicator(uh, **ref_strat)
+                err_ind_ang_jmp.error_angular_jump()
 
-                ## Save the cell jump error indicator to file
-                err_ind_jmp_file_name: str = "err_ind_jmp.json"
-                err_ind_jmp_file_path: str = os.path.join(trial_dir_path, 
-                                                          err_ind_jmp_file_name)
-                err_ind_jmp.to_file(err_ind_jmp_file_path, 
-                                    write_projection = False, 
-                                    write_mesh = False)
+                ## Save the angular jump error indicator to file
+                err_ind_ang_jmp_file_name: str = "err_ind_ang_jmp.json"
+                err_ind_ang_jmp_file_path: str = os.path.join(trial_dir_path, 
+                                                              err_ind_ang_jmp_file_name)
+                err_ind_ang_jmp.to_file(err_ind_ang_jmp_file_path, 
+                                        write_projection = False, 
+                                        write_mesh = False)
 
-            ## Only calculate the high-resolution error every once in a while
-            if (l_mesh.getndof() / prev_ndof >= 1.25):
+            ## Only calculate the analytic and high-resolution error every
+            ## once in a while
+            if (l_mesh.get_ndof() / prev_ndof >= 1.25):
                 ## Calculate the high-resolution error indicator
                 err_ind_hr: Error_Indicator = Error_Indicator(uh, **ref_strat)
-                [uh_hr, _, _] = err_ind_hr.error_high_resolution(problem, **hr_err_params)
+                [uh_hr, info, mat_info] = err_ind_hr.error_high_resolution(problem, 
+                                                                 **solver_params,
+                                                                 **hr_err_params)
+                PETSc.garbage_cleanup(petsc_comm)
 
+                if comm_rank == consts.COMM_ROOT:
+                    with open(trial_log_file_path, "a") as log_file:
+                        msg: str = "hr, ({}, {}) : {}\n".format(int(uh_hr.mesh.get_ndof()),
+                                                                int(mat_info["nz_used"]),
+                                                                info)
+                        log_file.write(msg)
+    
                 if comm_rank == consts.COMM_ROOT:
                     ## Save the high-resolution solution to file
                     proj_file_name: str = "uh_hr.npy"
                     proj_file_path: str = os.path.join(trial_dir_path, proj_file_name)
-
+    
                     mesh_file_name: str = "mesh_hr.json"
                     mesh_file_path: str = os.path.join(trial_dir_path, mesh_file_name)
-
-                    uh_hr.to_file(proj_file_path, wrte_mesh = True,
+    
+                    uh_hr.to_file(proj_file_path, write_mesh = True,
                                   mesh_file_path = mesh_file_path)
-
+                    
                     ## Save the high-resolution error indicator to file
                     err_ind_hr_file_name: str = "err_ind_hr.json"
                     err_ind_hr_file_path: str = os.path.join(trial_dir_path, 
-                                                              err_ind_hr_file_name)
+                                                             err_ind_hr_file_name)
                     err_ind_hr.to_file(err_ind_hr_file_path, 
                                        write_projection = False, 
                                        write_mesh = False)
@@ -148,19 +174,24 @@ def main():
             ## want to stop. However, this doesn *not* update the mesh in the
             ## uh and err_ind objects
             if comm_rank == consts.COMM_ROOT:
-                l_mesh: Mesh = err_ind_hr.ref_by_ind()
+                l_mesh: Mesh = err_ind_ang_jmp.ref_by_ind()
             l_mesh: Mesh = mpi_comm.bcast(l_mesh, root = consts.COMM_ROOT)
 
             ## Update values for stopping conditions - these reflect what 
             ## the next trial *will* be
             trial += 1
             if comm_rank == consts.COMM_ROOT:
-                min_err: float = min(min_err, err_ind_anl.error)
+                min_err: float = min(min_err, err_ind_hr.error)
             min_err: float = mpi_comm.bcast(min_err, root = consts.COMM_ROOT)
             
             keep_going: bool = ( (l_mesh.get_ndof() <= stopping_conditions["max_ndof"])
                                   and (trial <= stopping_conditions["max_ntrial"])
                                   and (min_err >= stopping_conditions["min_err"]) )
+            
+            if comm_rank == consts.COMM_ROOT:
+                with open(trial_log_file_path, "a") as log_file:
+                    msg: str = "END LOG"
+                    log_file.write(msg)
                 
 
 if __name__ == "__main__":

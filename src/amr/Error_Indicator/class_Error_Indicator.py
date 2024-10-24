@@ -20,7 +20,7 @@ class Error_Indicator():
     from .cell_hp_steer import cell_hp_steer
     from .col_hp_steer import col_hp_steer
 
-    from .error import (error_analytic, error_cell_jump, error_column_jump,
+    from .error import (error_analytic, error_angular_jump, error_spatial_jump,
                         error_high_resolution, error_random)
     from .ref_by_ind import ref_by_ind
 

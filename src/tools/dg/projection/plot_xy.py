@@ -9,7 +9,7 @@ from matplotlib.collections import PatchCollection
 # Local Library Imports
 import consts
 from dg.projection import Projection, push_forward
-import dg.quadrature as qd
+from dg.quadrature import quad_xyth
 
 # Relative Imports
 
@@ -55,7 +55,7 @@ def plot_xy(proj: Projection, file_path: str = None, **kwargs) -> list:
             [nth]    = cell.ndofs[:]
             [th_0, th_1] = cell.pos[:]
             dth: float   = th_1 - th_0
-            [_, _, _, _, _, wth] = qd.quad_xyth(nnodes_th = nth)
+            [_, _, _, _, _, wth] = quad_xyth(nnodes_th = nth)
             wth: np.ndarray = wth.reshape([1, 1, nth])
 
             cell_vals: np.ndarray = proj.cols[col_key].cells[cell_key].vals[:,:,:]
@@ -65,8 +65,11 @@ def plot_xy(proj: Projection, file_path: str = None, **kwargs) -> list:
         col_intg_ths[col_key] = col_intg_th
         vmin: float = min(np.min(col_intg_th), vmin)
         vmax: float = max(np.max(col_intg_th), vmax)
-            
-    # Two colors scales: diff shows a difference, pos shows positive values
+    
+    ## Get colormap
+    cmap = plt.get_cmap(kwargs["cmap"])
+
+    ## Two colors scales: diff shows a difference, pos shows positive values
     scale: str = kwargs["scale"]
     if scale == "diff":
         v_bnd: float = max(np.abs(vmin), np.abs(vmax))
@@ -74,11 +77,9 @@ def plot_xy(proj: Projection, file_path: str = None, **kwargs) -> list:
         vmax: float = v_bnd
     elif scale == "pos":
         vmin: float = 0.
+        cmap.set_under("blue")
     elif scale == "normal":
         pass
-
-    ## Get colormap
-    cmap = plt.get_cmap(kwargs["cmap"])
 
     rects: list = []
     for col_key, col in col_items:
@@ -87,8 +88,8 @@ def plot_xy(proj: Projection, file_path: str = None, **kwargs) -> list:
         [x0, y0, x1, y1] = col.pos[:]
         [nx, ny] = col.ndofs[:]
         
-        [xxb, _, yyb, _, _, _] = qd.quad_xyth(nnodes_x = nx,
-                                              nnodes_y = ny)
+        [xxb, _, yyb, _, _, _] = quad_xyth(nnodes_x = nx,
+                                           nnodes_y = ny)
         
         xxf: np.ndarray = push_forward(x0, x1, xxb)
         yyf: np.ndarray = push_forward(y0, y1, yyb)
@@ -111,7 +112,7 @@ def plot_xy(proj: Projection, file_path: str = None, **kwargs) -> list:
         rect_coll: PatchCollection = PatchCollection(rects, match_original = True)
         ax.add_collection(rect_coll)
 
-    fig.colorbar(pc, ax = ax)
+    fig.colorbar(pc, ax = ax, extend = "min")
     
     if file_path:
         fig.set_size_inches(6.5, 6.5 * (Ly / Lx))
