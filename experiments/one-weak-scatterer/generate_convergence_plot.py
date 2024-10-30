@@ -82,7 +82,7 @@ def main():
     ax.legend()
     
     ax.set_yscale("log", base = 10)
-    ax.set_ylim([1.e-4, 2.])
+    ax.set_ylim([6.e-5, 2.])
     
     ax.set_xlabel("Total Degrees of Freedom")
     ax.set_ylabel(r"$Error := \sqrt{\frac{\int_{\mathcal{S}} \int_{\Omega} \left( u_{hr} - u_{hp} \right)^2\,d\vec{x}\,d\vec{s}}{\int_{\mathcal{S}} \int_{\Omega} \left( u_{hr} \right)^2\,d\vec{x}\,d\vec{s}}}$")

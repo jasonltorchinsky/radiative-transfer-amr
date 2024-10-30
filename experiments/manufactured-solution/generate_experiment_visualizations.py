@@ -23,7 +23,7 @@ from dg.projection import Projection
 from dg.projection import from_file as projection_from_file
 from tools.dg.mesh import plot_mesh
 from tools.dg.projection import plot_th, plot_xy, plot_xth, plot_yth, plot_xyth
-from tools.amr import plot_refinement_thresholds
+from tools.amr import plot_error_indicator, plot_refinement_thresholds
 
 # Relative Imports
 from refinement_strategies import refinement_strategies
@@ -67,9 +67,13 @@ def main():
 
         prev_ndof: int = 1
 
+        subdir_paths: list = [subdir_path 
+                              for subdir_path in os.listdir(ref_strat_dir_path)
+                              if os.path.isdir(os.path.join(ref_strat_dir_path, subdir_path))]
         trial_dir_paths: list = [os.path.join(ref_strat_dir_path, subdir_path) 
-                                 for subdir_path in np.sort(np.array(os.listdir(ref_strat_dir_path)[:-1], dtype = consts.INT)).astype(str)
+                                 for subdir_path in np.sort(np.array(subdir_paths, dtype = consts.INT)).astype(str)
                                  if os.path.isdir(os.path.join(ref_strat_dir_path, subdir_path))]
+        
         for trial_dir_path in trial_dir_paths:
             ## Read the projection from file and visualize it
             mesh_file_name: str = "mesh.json"
@@ -132,9 +136,9 @@ def main():
                     err_ind_anl_plot_file_path: str = os.path.join(trial_dir_path,
                                                                    err_ind_anl_plot_file_name)
                     if not os.path.isfile(err_ind_anl_plot_file_path):
-                        plot_refinement_thresholds(err_ind_anl,
-                                                   err_ind_anl_plot_file_path,
-                                                   kind = "ang")
+                        plot_error_indicator(err_ind_anl,
+                                             err_ind_anl_plot_file_path,
+                                             kind = "ang")
 
                 # High-resolution error indicator
                 err_ind_hr_file_name: str = "err_ind_hr.json"
@@ -149,9 +153,9 @@ def main():
                     err_ind_hr_plot_file_path: str = os.path.join(trial_dir_path,
                                                                   err_ind_hr_plot_file_name)
                     if not os.path.isfile(err_ind_hr_plot_file_path):
-                        plot_refinement_thresholds(err_ind_hr,
-                                                   err_ind_hr_plot_file_path,
-                                                   kind = "ang")
+                        plot_error_indicator(err_ind_hr,
+                                             err_ind_hr_plot_file_path,
+                                             kind = "ang")
 
                 # Angular-jump error indicator
                 err_ind_ang_jmp_file_name: str = "err_ind_ang_jmp.json"

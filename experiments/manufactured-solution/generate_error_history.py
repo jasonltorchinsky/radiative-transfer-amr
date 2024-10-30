@@ -74,10 +74,11 @@ def main():
 
             subdir_paths: list = [subdir_path 
                                   for subdir_path in os.listdir(ref_strat_dir_path)
-                                  if os.path.isdir(subdir_path)]
+                                  if os.path.isdir(os.path.join(ref_strat_dir_path, subdir_path))]
             trial_dir_paths: list = [os.path.join(ref_strat_dir_path, subdir_path) 
                                      for subdir_path in np.sort(np.array(subdir_paths, dtype = consts.INT)).astype(str)
                                      if os.path.isdir(os.path.join(ref_strat_dir_path, subdir_path))]
+            
             for trial_dir_path in trial_dir_paths:
                 ## Read the solution from file
                 mesh_file_name: str = "mesh.json"

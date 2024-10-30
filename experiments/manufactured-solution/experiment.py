@@ -58,9 +58,11 @@ def main():
     with open("input.json", "r") as input_file:
         input_dict: dict = json.load(input_file)
 
+    ndof_output_ratio: float = input_dict["ndof_output_ratio"]
     stopping_conditions: dict = input_dict["stopping_conditions"]
     solver_params: dict = input_dict["solver_params"]
     hr_err_params: dict = input_dict["hr_err_params"]
+
     
     ## If a stopping condition is 0 or less, it should be ignored
     for key, val in stopping_conditions.items():
@@ -72,6 +74,12 @@ def main():
         if comm_rank == consts.COMM_ROOT:
             ref_strat_dir_path: str = os.path.join(out_dir_path, ref_strat_name)
             os.makedirs(ref_strat_dir_path, exist_ok = True)
+
+            ## Set up the log for this refinement strategy
+            ref_strat_log: dict = {}
+            ref_strat_log_file_name: str = "ref_strat_log.json"
+            ref_strat_log_file_path: str = os.path.join(ref_strat_dir_path,
+                                                        ref_strat_log_file_name)
 
         l_mesh: Mesh = copy.deepcopy(mesh)
 
@@ -91,10 +99,29 @@ def main():
                                                    str(trial))
                 os.makedirs(trial_dir_path, exist_ok = True)
 
-            [uh, _, _] = problem.solve(l_mesh, **solver_params)
+                ref_strat_log[trial] = {}
+
+            [uh, convergence_info, matrix_info] = problem.solve(l_mesh, **solver_params)
             PETSc.garbage_cleanup(petsc_comm)
 
             if comm_rank == consts.COMM_ROOT:
+                ## Save the linear solve information to the refinement strategy log
+                ref_strat_log[trial]["lr_converged_reason"] = convergence_info["converged_reason"]
+                ref_strat_log[trial]["lr_res_best"] = convergence_info["res_best"]
+
+                ## Save the linear solve and matrix information to file
+                convergence_info_file_name: str = "convergence_info.json"
+                convergence_info_file_path: str = os.path.join(trial_dir_path,
+                                                               convergence_info_file_name)
+                with open(convergence_info_file_path, "w") as convergence_info_file:
+                    json.dump(convergence_info, convergence_info_file)
+
+                matrix_info_file_name: str = "matrix_info.json"
+                matrix_info_file_path: str = os.path.join(trial_dir_path,
+                                                          matrix_info_file_name)
+                with open(matrix_info_file_path, "w") as matrix_info_file:
+                    json.dump(matrix_info, matrix_info_file)
+                
                 ## Save the numeric solution to file
                 proj_file_name: str = "uh.npy"
                 proj_file_path: str = os.path.join(trial_dir_path, proj_file_name)
@@ -119,7 +146,7 @@ def main():
 
             ## Only calculate the analytic and high-resolution error every
             ## once in a while
-            if (l_mesh.get_ndof() / prev_ndof >= 1.25):
+            if (l_mesh.get_ndof() / prev_ndof >= ndof_output_ratio):
                 if comm_rank == consts.COMM_ROOT:
                     ## Calculate the analytic error indicator
                     err_ind_anl: Error_Indicator = Error_Indicator(uh, **ref_strat)
@@ -135,11 +162,29 @@ def main():
 
                 ## Calculate the high-resolution error indicator
                 err_ind_hr: Error_Indicator = Error_Indicator(uh, **ref_strat)
-                [uh_hr, _, _] = err_ind_hr.error_high_resolution(problem,
-                                                                 **solver_params,
-                                                                 **hr_err_params)
+                [uh_hr, convergence_info_hr, matrix_info_hr] = \
+                    err_ind_hr.error_high_resolution(problem,
+                                                     **solver_params,
+                                                     **hr_err_params)
     
                 if comm_rank == consts.COMM_ROOT:
+                    ## Save the linear solve information to the refinement strategy log
+                    ref_strat_log[trial]["hr_converged_reason"] = convergence_info_hr["converged_reason"]
+                    ref_strat_log[trial]["hr_res_best"] = convergence_info_hr["res_best"]
+                    
+                    ## Save the linear solve and matrix information to file
+                    convergence_info_hr_file_name: str = "convergence_info_hr.json"
+                    convergence_info_hr_file_path: str = os.path.join(trial_dir_path,
+                                                                      convergence_info_hr_file_name)
+                    with open(convergence_info_hr_file_path, "w") as convergence_info_hr_file:
+                        json.dump(convergence_info_hr, convergence_info_hr_file)
+
+                    matrix_info_hr_file_name: str = "matrix_info_hr.json"
+                    matrix_info_hr_file_path: str = os.path.join(trial_dir_path,
+                                                              matrix_info_hr_file_name)
+                    with open(matrix_info_hr_file_path, "w") as matrix_info_hr_file:
+                        json.dump(matrix_info_hr, matrix_info_hr_file)
+
                     ## Save the high-resolution solution to file
                     proj_file_name: str = "uh_hr.npy"
                     proj_file_path: str = os.path.join(trial_dir_path, proj_file_name)
@@ -178,6 +223,9 @@ def main():
                                   and (trial <= stopping_conditions["max_ntrial"])
                                   and (min_err >= stopping_conditions["min_err"]) )
                 
+        if comm_rank == consts.COMM_ROOT:
+            with open(ref_strat_log_file_path, "w") as ref_strat_log_file:
+                json.dump(ref_strat_log, ref_strat_log_file)
 
 if __name__ == "__main__":
     main()

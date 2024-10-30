@@ -66,7 +66,7 @@ def plot_error_indicator(err_ind: Error_Indicator, file_path: str = None,
         if kwargs["kind"] in ["spt", "all"]:
             facecolor: str = cmap(col_err)
         else:
-            faceolor: str = "none"
+            facecolor: str = "none"
 
         rect: Rectangle = Rectangle((x0, y0), dx, dy,
                                     facecolor = facecolor,

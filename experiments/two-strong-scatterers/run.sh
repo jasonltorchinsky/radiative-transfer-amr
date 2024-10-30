@@ -23,15 +23,15 @@ eval 'mpirun --use-hwthread-cpus -n '"${N_PROCS}"' python experiment.py --o '"${
 printf " ~~ Completed radiative transfer numerical solve! ~~ \n\n"
 
 printf " ~~ Initiating error histories generation... ~~ \n\n"
-eval 'mpirun --use-hwthread-cpus -n '"${N_PROCS}"' python generate_error_history.py --o '"${OUT_DIR}"''
+eval 'mpirun --use-hwthread-cpus -n '"${N_PROCS}"' python generate_error_history.py --o '"${OUT_DIR}"
 printf " ~~ Error histories generated! ~~ \n\n"
 
 printf " ~~ Initiating linear solve visualizations... ~~ \n\n"
-eval 'mpirun --use-hwthread-cpus -n 1 python generate_linear_solve_visualizations.py --o '"${OUT_DIR}"''
+eval 'mpirun --use-hwthread-cpus -n 1 python generate_linear_solve_visualizations.py --o '"${OUT_DIR}"
 printf " ~~ Completed linear solve visualization! ~~ \n\n"
 
 printf " ~~ Initiating angular-spatial steering plots generation... ~~ \n\n"
-eval 'mpirun --use-hwthread-cpus -n 1 python generate_ang_spt_steering_plot.py --o '"${OUT_DIR}"''
+eval 'mpirun --use-hwthread-cpus -n 1 python generate_ang_spt_steering_plot.py --o '"${OUT_DIR}"
 printf " ~~ Completed angular-spatial steering plots generation! ~~ \n\n"
 
 printf " ~~ Initiating experiment visualization generation... ~~ \n\n"

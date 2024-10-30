@@ -106,9 +106,10 @@ def main():
                             
                     else:
                         err_ind: Error_Indicator = Error_Indicator(uh, **ref_strat)
-                        [uh_hr, _, _] = err_ind.error_high_resolution(problem, 
-                                                                      **solver_params,
-                                                                      **hr_err_params)
+                        [uh_hr, convergence_info_hr, matrix_info_hr] = \
+                            err_ind.error_high_resolution(problem, 
+                                                          **solver_params,
+                                                          **hr_err_params)
 
                         error: float = None
                         if comm_rank == consts.COMM_ROOT:
@@ -133,6 +134,19 @@ def main():
                             err_ind.to_file(err_ind_file_path, 
                                             write_projection = False, 
                                             write_mesh = False)
+                            
+                            ## Save the linear solve information to file
+                            convergence_info_hr_file_name: str = "convergence_info_hr.json"
+                            convergence_info_hr_file_path: str = os.path.join(trial_dir_path,
+                                                                              convergence_info_hr_file_name)
+                            with open(convergence_info_hr_file_path, "w") as convergence_info_hr_file:
+                                json.dump(convergence_info_hr, convergence_info_hr_file)
+
+                            matrix_info_hr_file_name: str = "matrix_info_hr.json"
+                            matrix_info_hr_file_path: str = os.path.join(trial_dir_path,
+                                                                         matrix_info_hr_file_name)
+                            with open(matrix_info_hr_file_path, "w") as matrix_info_hr_file:
+                                json.dump(matrix_info_hr, matrix_info_hr_file)
 
                     ref_strat_err_dict[ndof] = error
 

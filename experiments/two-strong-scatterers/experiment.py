@@ -61,6 +61,7 @@ def main():
         input_dict: dict = json.load(input_file)
 
     seed: int = input_dict["seed"]
+    ndof_output_ratio: float = input_dict["ndof_output_ratio"]
     stopping_conditions: dict = input_dict["stopping_conditions"]
     solver_params: dict = input_dict["solver_params"]
     hr_err_params: dict = input_dict["hr_err_params"]
@@ -168,13 +169,14 @@ def main():
                 
             ## Only calculate the analytic and high-resolution error every
             ## once in a while
-            if (l_mesh.get_ndof() / prev_ndof >= 1.25):
+            if (l_mesh.get_ndof() / prev_ndof >= ndof_output_ratio):
                 ## Calculate the high-resolution error indicator
                 ## ref_strat here is dummy argument, since we're not refining at all
                 err_ind_hr: Error_Indicator = Error_Indicator(uh, **ref_strat["ang"])
-                [uh_hr, convergence_info_hr, matrix_info_hr] = err_ind_hr.error_high_resolution(problem, 
-                                                                 **solver_params,
-                                                                 **hr_err_params)
+                [uh_hr, convergence_info_hr, matrix_info_hr] = \
+                    err_ind_hr.error_high_resolution(problem, 
+                                                     **solver_params,
+                                                     **hr_err_params)
                 PETSc.garbage_cleanup(petsc_comm)
     
                 if comm_rank == consts.COMM_ROOT:

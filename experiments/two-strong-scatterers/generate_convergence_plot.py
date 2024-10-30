@@ -48,7 +48,7 @@ def main():
         tracked_values_file_path: str = os.path.join(ref_strat_dir,
                                                      tracked_values_file_name)
 
-        with open(tracked_values_file_path) as tracked_values_file:
+        with open(tracked_values_file_path, "r") as tracked_values_file:
             ref_strat_err_dict: dict = json.load(tracked_values_file)
         
         tracked_values[ref_strat_name] = ref_strat_err_dict

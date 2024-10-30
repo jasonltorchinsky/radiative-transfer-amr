@@ -80,6 +80,7 @@ def main():
             trial_dir_paths: list = [os.path.join(ref_strat_dir_path, subdir_path) 
                                      for subdir_path in np.sort(np.array(subdir_paths, dtype = consts.INT)).astype(str)
                                      if os.path.isdir(os.path.join(ref_strat_dir_path, subdir_path))]
+            
             for trial_dir_path in trial_dir_paths:
                 ## Read the solution from file
                 mesh_file_name: str = "mesh.json"
@@ -106,9 +107,10 @@ def main():
                     else:
                         ## Not refining by this error, so ref_strat is dummy argument
                         err_ind: Error_Indicator = Error_Indicator(uh, **ref_strat["ang"])
-                        [uh_hr, convergence_info_hr, matrix_info_hr] = err_ind.error_high_resolution(problem, 
-                                                                      **solver_params,
-                                                                      **hr_err_params)
+                        [uh_hr, convergence_info_hr, matrix_info_hr] = \
+                            err_ind.error_high_resolution(problem, 
+                                                          **solver_params,
+                                                          **hr_err_params)
                         error: float = None
                         if comm_rank == consts.COMM_ROOT:
                             error: float = err_ind.error

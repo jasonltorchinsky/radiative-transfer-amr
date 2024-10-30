@@ -23,7 +23,7 @@ from dg.projection import Projection
 from dg.projection import from_file as projection_from_file
 from tools.dg.mesh import plot_mesh
 from tools.dg.projection import plot_th, plot_xy, plot_xth, plot_yth, plot_xyth
-from tools.amr import plot_refinement_thresholds
+from tools.amr import plot_error_indicator, plot_refinement_thresholds
 
 # Relative Imports
 from refinement_strategies import refinement_strategies
@@ -136,9 +136,9 @@ def main():
                     err_ind_hr_plot_file_path: str = os.path.join(trial_dir_path,
                                                                   err_ind_hr_plot_file_name)
                     if not os.path.isfile(err_ind_hr_plot_file_path):
-                        plot_refinement_thresholds(err_ind_hr,
-                                                   err_ind_hr_plot_file_path,
-                                                   kind = "ang")
+                        plot_error_indicator(err_ind_hr,
+                                             err_ind_hr_plot_file_path,
+                                             kind = "ang")
 
                 # Angular-jump error indicator
                 err_ind_ang_jmp_file_name: str = "err_ind_ang_jmp.json"
