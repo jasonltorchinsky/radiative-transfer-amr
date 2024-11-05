@@ -6,7 +6,7 @@ This subdicertory contains numerical experiments for testing the algorithm, as w
 Subdirectory Structure
 --------------------------------------------------------------------------------
 
-The subirectory structure from the experiments directory is
+The subdirectory structure for the `experiments` subdirectory is
 
 ```
 experiments

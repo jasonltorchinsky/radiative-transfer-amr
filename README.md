@@ -19,12 +19,12 @@ There are several Bash scripts (files with extension `.sh`) included in this rep
 Subdirectory Structure
 --------------------------------------------------------------------------------
 
-The subirectory structure from the root directory is
+The subdirectory structure for the root directory is
 
 ```
 root
 |
-|--- experiments : numerical experiements and tests that require MPI
-|--- src : source code for the implementation of the angular-spatial hp-adaptive algorithm for (steady-state, monochromatic) radiative transfer in two spatial dimensions and one angular dimension 
-|--- tests : unit tests that utilize the pytest testing framework
+|--- experiments : Numerical experiments (as reported in the associated publication) and tests that require MPI.
+|--- src : Source code for the implementation of the angular-spatial hp-adaptive algorithm for (steady-state, monochromatic) radiative transfer in two spatial dimensions and one angular dimension.
+|--- tests : Unit tests that utilize the pytest testing framework.
 ```
