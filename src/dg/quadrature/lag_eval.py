@@ -1,9 +1,9 @@
 import numpy as np
 
 def lag_eval(nodes, i, x):
-    '''
+    """
     Evaluate the ith Lagrange polynomial for a given set of nodes.
-    '''
+    """
     
     tol = 1.e-14
     # Only evaluate non-zero for pull-back coordinates

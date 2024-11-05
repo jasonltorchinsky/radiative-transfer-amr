@@ -3,10 +3,10 @@ import numpy as np
 from .lag_eval import lag_eval
 
 def lag_ddx(nodes):
-    '''
+    """
     Returns differentiation matrix for a function f evaluated at the nodes.
     E.g., sum_j dmat_{ij} * f(pt(j)) appriximates d_x f(pt(i)) 
-    '''
+    """
 
     nnodes = np.shape(nodes)[0]
     dmat   = np.zeros([nnodes, nnodes])
@@ -18,10 +18,10 @@ def lag_ddx(nodes):
     return dmat
 
 def lag_ddx_eval_approx(nodes, j, x):
-    '''
+    """
     Calculates the *approximate value* of the derivative of the jth Lagrange
     polynomial for a given set of nodes.
-    '''
+    """
 
     nnodes = np.shape(nodes)[0]
     
@@ -42,10 +42,10 @@ def lag_ddx_eval_approx(nodes, j, x):
     return res
 
 def lag_ddx_eval(nodes, j, x):
-    '''
+    """
     Calculates the exact value of the derivative of the jth Lagrange polynomial
     for a given set of  nodes.
-    '''
+    """
 
     nnodes = np.shape(nodes)[0]
 

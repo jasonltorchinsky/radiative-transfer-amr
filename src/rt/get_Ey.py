@@ -23,17 +23,17 @@ def get_Ey(mesh, col_key_0, col_key_1):
     # Check the comments for get-f2f_matrix for which matrix is which.
     # We get the basis functions from _1 and the nodes from _0.
     if lv_0 == lv_1:
-        pos_str = 's'
+        pos_str = "s"
     elif lv_0 - lv_1 == -1:
         if mid_1 < mid_0:
-            pos_str = 'l'
+            pos_str = "l"
         else: # mid_0 < mid_1
-            pos_str = 'u'
+            pos_str = "u"
     elif lv_0 - lv_1 == 1:
         if mid_1 < mid_0:
-            pos_str = 'u'
+            pos_str = "u"
         else: # mid_0 < mid_1
-            pos_str = 'l'
+            pos_str = "l"
         
     nhbr_rel = (lv_0 - lv_1, pos_str)
     
@@ -45,7 +45,7 @@ def get_Ey(mesh, col_key_0, col_key_1):
     [_, _, yyb_1, wy_1, _, _] = quad_xyth(nnodes_y = ndof_y_1)
     E_y = np.zeros([ndof_y_1, ndof_y_0])
     
-    # If _1 is more refined, then its basis functions aren't suqqorted on half
+    # If _1 is more refined, then its basis functions aren"t suqqorted on half
     # the interval, and we must integrate on that interval instead
     if lv_0 - lv_1 == -1:
         coeff = 1. / 2.
@@ -141,17 +141,17 @@ def get_Ey_old(mesh, col_key_0, col_key_1):
     # Check the comments for get-f2f_matrix for which matrix is which.
     # We get the basis functions from _1 and the nodes from _0.
     if lv_0 == lv_1:
-        pos_str = 's'
+        pos_str = "s"
     elif lv_0 - lv_1 == -1:
         if mid_1 < mid_0:
-            pos_str = 'l'
+            pos_str = "l"
         else: # mid_0 < mid_1
-            pos_str = 'u'
+            pos_str = "u"
     elif lv_0 - lv_1 == 1:
         if mid_1 < mid_0:
-            pos_str = 'u'
+            pos_str = "u"
         else: # mid_0 < mid_1
-            pos_str = 'l'
+            pos_str = "l"
         
     nhbr_rel = (lv_0 - lv_1, pos_str)
     
@@ -159,16 +159,16 @@ def get_Ey_old(mesh, col_key_0, col_key_1):
     if key in Ey_matrices.keys():
         return Ey_matrices[key]
 
-    # Handles if K, K' are of different refinement levels
+    # Handles if K, K" are of different refinement levels
     if nhbr_rel[0] == -1:
         coeff = 0.5
-        if nhbr_rel[1] == 'l':
+        if nhbr_rel[1] == "l":
             def f(y):
                 return 2. * y + 1.
             
             def f_inv(y):
                 return 0.5 * (y - 1.)
-        else: # if nhbr_rel[1] == 'u'
+        else: # if nhbr_rel[1] == "u"
             def f(y):
                 return 2. * y - 1.
             

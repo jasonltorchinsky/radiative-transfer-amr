@@ -20,17 +20,17 @@ uni_nodes = {}
 uni_weights = {}
 
 def quad_xyth(nnodes_x = 1, nnodes_y = 1, nnodes_th = 1):
-    '''
+    """
     Returns quadrature points, weights for spatial (x-, y-)
     and angular (th-) directions.
 
     We use Gauss-Lobatto for x-, y-.
     We use Legendre-Gauss for th-.
-    '''
+    """
 
     # Caution: No catches for non-positive orders?
     if nnodes_x < 1:
-        print_msg('ERROR: ATTEMPTED TO CALCULATE QUADRATURE WEIGHTS WITH NNODES_X < 1.')
+        print_msg("ERROR: ATTEMPTED TO CALCULATE QUADRATURE WEIGHTS WITH NNODES_X < 1.")
         quit()
     elif nnodes_x in lgl_nodes.keys():
         [nodes_x, weights_x] = [lgl_nodes[nnodes_x], lgl_weights[nnodes_x]]
@@ -48,7 +48,7 @@ def quad_xyth(nnodes_x = 1, nnodes_y = 1, nnodes_th = 1):
         lgl_weights[nnodes_x] = weights_x
 
     if nnodes_y < 1:
-        print_msg('ERROR: ATTEMPTED TO CALCULATE QUADRATURE WEIGHTS WITH NNODES_Y < 1.')
+        print_msg("ERROR: ATTEMPTED TO CALCULATE QUADRATURE WEIGHTS WITH NNODES_Y < 1.")
         quit()
     elif nnodes_y in lgl_nodes.keys():
         [nodes_y, weights_y] = [lgl_nodes[nnodes_y], lgl_weights[nnodes_y]]
@@ -66,7 +66,7 @@ def quad_xyth(nnodes_x = 1, nnodes_y = 1, nnodes_th = 1):
         lgl_weights[nnodes_y] = weights_y
 
     if nnodes_th < 1:
-        print_msg('ERROR: ATTEMPTED TO CALCULATE QUADRATURE WEIGHTS WITH NNODES_TH < 1.')
+        print_msg("ERROR: ATTEMPTED TO CALCULATE QUADRATURE WEIGHTS WITH NNODES_TH < 1.")
         quit()
     elif nnodes_th in lg_nodes.keys():
         [nodes_th, weights_th] = [lg_nodes[nnodes_th], lg_weights[nnodes_th]]

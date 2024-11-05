@@ -1,7 +1,7 @@
 import numpy as np
 
 def lg_quad(nnodes, intv = [-1, 1]):
-    '''
+    """
     Computes the nodes and weights needed for integration via Legendre-Gauss
     quadrature. Computes the nodes and weights on the interval intv = [a, b]
     with truncation order n.
@@ -12,7 +12,7 @@ def lg_quad(nnodes, intv = [-1, 1]):
 
     Reference: C. Canuto, M. Y. Hussaini, A. Quarteroni, T. A. Tang,
     "Spectral Methods in Fluid Dynamics," Section 2.3. Springer-Verlag 1987
-    '''
+    """
 
     # Initial guess, we do the calculations on the interval [-1, 1] and
     # map it back to intv
