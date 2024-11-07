@@ -106,57 +106,6 @@ def solve(self, mesh: Mesh, **kwargs) -> list:
     iteration_number: int = ksp.getIterationNumber()
     res_f: float = ksp.getResidualNorm()
     res_best: float = np.min(convergence_history)
-
-    #best_lhs_vec: petsc4py.PETSc.Vec = copy.deepcopy(lhs_vec)
-    
-    # If the first solve fails, try try again
-    #ksp_list: list = ["qmrcgs", "lgmres", "fbcgsr", "dgmres", "cgs", "pgmres", "gmres",
-    #                  "gcr","fgmres"]
-    #ksp_idx: int = 0
-    #converged_reason: int = mpi_comm.bcast(converged_reason, root = consts.COMM_ROOT)
-    # If the system is fairly small and the interative solves failed, try a direct solve
-    #if ((converged_reason < 0) or (converged_reason == 4)) and (ndof < 1.2e5):
-    #    ksp.destroy()
-    #    msg: str = (
-    #        "Iterative solve {} - {} failed.\n".format(pc_type, ksp_type) +
-    #        12 * " " + "Converged Reason: {}\n".format(converged_reason) +
-    #        12 * " " + "Iteration count:  {}\n".format(iteration_number) +
-    #        12 * " " + "Final residual:   {:.4E}\n".format(res_f) +
-    #        12 * " " + "Best residual:    {:.4E}\n".format(res_best) +
-    #        12 * " " + "Attempting direct LU solve\n".format(pc_type, ksp_list[ksp_idx])
-    #    )
-    #    utils.print_msg(msg)
-    #    
-    #    ksp: PETSc.KSP = PETSc.KSP()
-    #    ksp.create(comm = petsc_comm)
-    #    ksp_type: str = "none"
-    #    ksp.setType("dgmres")
-    #    ksp.setOperators(sys_mat_intr)
-    #    ksp.setTolerances(rtol   = rtol,   atol   = atol,
-    #                      divtol = divtol, max_it = max_it)
-    #    ksp.setComputeSingularValues(True)
-    #    ksp.setGMRESRestart(GMRESRestart)
-    #    
-    #    pc: PETSc.PC = ksp.getPC()
-    #    pc_type: str = "lu"
-    #    pc.setType(pc_type)
-    #    
-    #    ksp.setInitialGuessNonzero(False)
-    #    
-    #    ksp.setConvergenceHistory()
-    #    ksp.solve(rhs_vec, lhs_vec)
-    #    PETSc.garbage_cleanup()
-    #
-    #    ## Get the convergence information
-    #    converged_reason: int = ksp.getConvergedReason()
-    #    convergence_history: np.ndarray = ksp.getConvergenceHistory()
-    #    iteration_number: int = ksp.getIterationNumber()
-    #    res_f: float = ksp.getResidualNorm()
-    #    res_best: float = np.min(convergence_history)
-    #    
-    #    mpi_comm.barrier()
-    #elif (converged_reason < 0) or (converged_reason == 4): # Problem too big to solve directly, just go with the best solution
-    #    lhs_vec = copy.deepcopy(best_lhs_vec)
         
     [emax, emin] = ksp.computeExtremeSingularValues()
     matrix_info["extreme_singular_values"] = [emax, emin]

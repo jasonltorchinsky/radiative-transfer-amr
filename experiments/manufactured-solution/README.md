@@ -5,6 +5,8 @@ This subdirectory contains the code and scripts used to generate the 'Manufactur
 
 J. L. Torchinsky, S. Du, and S. N. Stechmann, Angular-Spatial *hp*-Adaptivity for Radiative Transfer with Discontinuous Galerkin Spectral Element Methods, [In Review], (2024).
 
+Note: There are difficulties with performing this numerical experiment for the full range of the number of degrees of freedom reported in the results. These difficulties arise from memory requirements for the largest mesh used to calculate the high-resolution error. By disabling this calculation, or using a different machine, this difficulty may be overcome.
+
 Running the Numerical Experiment
 --------------------------------------------------------------------------------
 
