@@ -5,6 +5,10 @@ This subdirectory contains the code and scripts used to generate the 'Two Strong
 
 J. L. Torchinsky, S. Du, and S. N. Stechmann, Angular-Spatial *hp*-Adaptivity for Radiative Transfer with Discontinuous Galerkin Spectral Element Methods, [In Review], (2024).
 
+Note: There are difficulties with the stability of the numerical solve for the `hp-amr-ang-p-uni-spt` refinement strategy. This by be alleviated by changing the settings for the iterative solver, whether that be:
+- the Krylov method or preconditioner used (as specified in `input.json`), or;
+- the `max_it` or `GMRESRestart` parameters specified in `src/rt/solve.py`.
+
 Running the Numerical Experiment
 --------------------------------------------------------------------------------
 
