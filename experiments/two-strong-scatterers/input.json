@@ -1,0 +1,61 @@
+{
+    "seed" : 0,
+    "ndof_output_ratio" : 1.25,
+    "solver_params" : {
+        "ksp_type" : "fgmres",
+        "pc_type" : "kaczmarz"
+    },
+    "stopping_conditions" : {
+        "max_ndof" : 300000,
+        "max_ntrial" : 0,
+        "min_err" : 1.0e-3
+    },
+    "mesh_params" : {
+        "Ls" : [3.0, 2.0],
+        "pbcs"   : [false, false],
+        "has_th" : true,
+        "ndofs"  : [3, 3, 4],
+        "nref_ang" : 3,
+        "nref_spt" : 2
+    },
+    "hr_err_params" : {
+        "ang_ref_offset" : 2,
+        "spt_ref_offset" : 2
+    },
+    "hp-amr-spt-p-uni-ang": {
+        "ang": {
+            "ref_kind" : "ang",
+            "ref_form" : "p",
+            "ref_tol"  : [0.0, 0.0]
+        },
+        "spt": {
+            "ref_kind" : "spt",
+            "ref_form" : "hp",
+            "ref_tol"  : [0.0, 0.8]
+        }
+    },
+    "hp-amr-ang-p-uni-spt": {
+        "ang": {
+            "ref_kind" : "ang",
+            "ref_form" : "hp",
+            "ref_tol"  : [0.8, 0.0]
+        },
+        "spt": {
+            "ref_kind" : "spt",
+            "ref_form" : "p",
+            "ref_tol"  : [0.0, 0.0]
+        }
+    },
+    "hp-amr-ang-hp-amr-spt": {
+        "ang": {
+            "ref_kind" : "ang",
+            "ref_form" : "hp",
+            "ref_tol"  : [0.8, 0.0]
+        },
+        "spt": {
+            "ref_kind" : "spt",
+            "ref_form" : "hp",
+            "ref_tol"  : [0.0, 0.8]
+        }
+    }
+}

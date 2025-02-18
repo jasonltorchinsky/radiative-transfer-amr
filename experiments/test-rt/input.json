@@ -1,0 +1,12 @@
+{
+    "mesh_params" : {
+        "Ls" : [3.0, 2.0],
+        "pbcs"   : [false, false],
+        "has_th" : true,
+        "ndofs"  : [3, 3, 3],
+        "nref_ang" : 4,
+        "nref_spt" : 3,
+        "ang_res_offset" : 2,
+        "spt_res_offset" : 0
+        }
+}
