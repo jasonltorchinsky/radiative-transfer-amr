@@ -1,0 +1,44 @@
+{
+    "ndof_output_ratio" : 1.25,
+    "solver_params" : {
+        "ksp_type" : "gmres",
+        "pc_type" : "bjacobi"
+    },
+    "stopping_conditions" : {
+        "max_ndof" : 500000,
+        "max_ntrial" : 0,
+        "min_err" : 2.5e-6
+    },
+    "mesh_params" : {
+        "Ls" : [3.0, 2.0],
+        "pbcs"   : [false, false],
+        "has_th" : true,
+        "ndofs"  : [5, 5, 3],
+        "nref_ang" : 3,
+        "nref_spt" : 3
+    },
+    "hr_err_params" : {
+        "ang_ref_offset" : 3,
+        "spt_ref_offset" : 0
+    },
+    "h-uni-ang": {
+        "ref_kind" : "ang",
+        "ref_form" : "h",
+        "ref_tol"  : [0.0, 0.0]
+    },
+    "p-uni-ang": {
+        "ref_kind" : "ang",
+        "ref_form" : "p",
+        "ref_tol"  : [0.0, 0.0]
+    },
+    "h-amr-ang": {
+        "ref_kind" : "ang",
+        "ref_form" : "h",
+        "ref_tol"  : [0.8, 0.0]
+    },
+    "hp-amr-ang": {
+        "ref_kind" : "ang",
+        "ref_form" : "hp",
+        "ref_tol"  : [0.8, 0.0]
+    }
+}
