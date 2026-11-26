@@ -3,45 +3,101 @@
 
 This subdirectory contains the code and scripts used to test source code in the `src/rt` subdirectory. We have included it in the `experiments` subdirectory as it requires MPI.
 
-The user may think of this test as a simplified version of the numerical experiments for in `manufactured-solution`, `one-weak-scatterer`, and `two-strong-scatterers` subdirectories. As such, we refer to this test in the code as an 'experiment'.
+The user may think of this test as a simplified version of the numerical experiments in the `manufactured-solution`, `one-weak-scatterer`, and `two-strong-scatterers` subdirectories. As such, we refer to this test in the code as an 'experiment'.
+
+The test assembles each DG matrix of `rt.Problem` on a fixed mesh, plots its sparsity pattern, solves the problem once, and plots the solution. It does not refine the mesh and does not compare the solution with the exact solution: it checks only that assembly and the distributed solve run to completion, and leaves the figures for visual inspection. The unit tests that run under `pytest` are in `tests/` at the repository root.
+
+How It Fits Into the Whole
+--------------------------------------------------------------------------------
+
+`experiment.py` uses `rt.Problem` (`mass_matrix`, `scattering_matrix`, `interior_convection_matrix`, `boundary_convection_matrix`, `solve`), `dg.mesh.Mesh` and the plotting functions `tools.dg.mesh.plot_mesh`, `tools.dg.projection.plot_th`/`plot_xth`/`plot_yth`/`plot_xy`/`plot_xyth` and `tools.rt.plot_matrix`. See `../README.md` for the conventions shared by all experiments.
+
+The Problem
+--------------------------------------------------------------------------------
+
+`problem.py` is the Manufactured Solution problem of `../manufactured-solution/problem.py` (Eqs. 20a-22) with the same functions and values: $L_x = 3$, $L_y = 2$, exact solution $u = X(x) Y(y) \Theta(\theta)$ with $X(x) = e^{-((x - L_x/3)/L_x)^2}$, $Y(y) = e^{-4 (L_y - y)/L_y}$, $\Theta(\theta) = e^{-((96 / (2\pi)) (\theta - 7\pi/5))^2}$; $\kappa(x, y) = 10\, e^{-((x - L_x/2)/L_x)^2} e^{-y/L_y}$; $\sigma = 0.1\,\kappa$; Rayleigh $\Phi(\theta, \theta') = \frac{1}{3\pi}(1 + \cos^2(\theta - \theta'))$; $f$ from substituting $u$ into Eq. 3; boundary data $u$.
+
+As in `manufactured-solution`, the code's $\kappa$ is 10 times the $\kappa$ of Eq. 20a of the publication (see `../manufactured-solution/README.md`).
+
+The mesh (`mesh.py`, `input.json`) has `ndofs = [3, 3, 3]` nodes per element, refined `nref_ang = 4` times in angle and `nref_spt = 3` times in space: an $8 \times 8$ grid of columns with 16 angular cells each, $64 \cdot 9 \cdot 16 \cdot 3 = 27648$ degrees of freedom. The solve uses the defaults of `rt.Problem.solve` (`gmres`, `bjacobi`, `rtol = atol = 1e-15`, `max_it = 5000`, `gmres_restart = 50`).
+
+Files
+--------------------------------------------------------------------------------
+
+### `input.json`
+
+- `mesh_params` : Parameters for the mesh.
+    - `Ls` : Length of the spatial domain in the $x$- and $y$-directions.
+    - `pbcs` : Whether the domain is periodic in $x$ and $y$ (`[false, false]`).
+    - `has_th` : Whether the mesh has an angular dimension (`true`).
+    - `ndofs` : Number of nodes per element in the $x$-, $y$-, and $\theta$-directions.
+    - `nref_ang` : Number of uniform angular *h*-refinements of the initial single cell ($2^{n}$ cells per column).
+    - `nref_spt` : Number of uniform spatial *h*-refinements of the initial single column ($2^{n} \times 2^{n}$ columns).
+    - `ang_res_offset`, `spt_res_offset` : Not read by any script in this directory.
+
+### `mesh.py`
+
+Identical to `../manufactured-solution/mesh.py`. Reads `input.json` at import and defines `mesh` (`dg.mesh.Mesh`): `Mesh(Ls, pbcs, has_th, ndofs)` refined `nref_ang` times with `ref_mesh(kind = "ang", form = "h")`, then `nref_spt` times with `ref_mesh(kind = "spt", form = "h")`. Also defines `input_dict` and `mesh_params` (`dict`).
+
+### `problem.py`
+
+The same definitions as `../manufactured-solution/problem.py` (only comments differ): `Lx`, `Ly`, `sth`, `X`, `dXdx`, `Y`, `dYdy`, `XY`, `Theta`, `u`, `kappa_x`, `kappa_y`, `kappa`, `sigma`, `Phi`, `f`, `bcs`, `dirac`, `bcs_dirac`, `u_intg_th`, `u_intg_xy` and `problem` (`rt.Problem(kappa, sigma, Phi, f, bcs_dirac)`), with the same arguments (`x`, `y`, `th`, `phi`, `th0`, `th1`, `x0`, `x1`, `y0`, `y1`) and return values. See that README for each function. As there, `u_intg_xy` exchanges the roles of $X$ and $Y$ (the integrand passed to `scipy.integrate.dblquad` is called as `func(y, x)`); no script calls it.
+
+### `experiment.py`
+
+`main()` runs on all ranks (`mpirun -n N python experiment.py --o out`). The output directory is `--o` (default `figs`, so that without `--o` the figures go to `figs/figs/`); `run.sh` passes `out`.
+
+1. Root creates `OUT_DIR/figs/`, writes the mesh to `OUT_DIR/mesh.json` (`Mesh.to_file`) and plots it to `figs/mesh.png`.
+2. For each of `problem.mass_matrix(mesh)` (the extinction term $\int \kappa\, u\, v$), `problem.scattering_matrix(mesh)`, `problem.interior_convection_matrix(mesh)`, `problem.boundary_convection_matrix(mesh)` and the system matrix `mass - scattering + (boundary_convection - interior_convection)`: all ranks assemble the distributed `PETSc.Mat` (collective). Root then extracts three dense blocks and plots each with `plot_matrix`:
+    - `figs/<name>_global.png` : the rows and columns owned by rank 0 (`mat[r0:r1, r0:r1]`, `(r0, r1) = mat.getOwnershipRange()`);
+    - `figs/<name>_column.png` : the leading block of size `nx * ny * (sum of nth over the cells)` of the column with the smallest key;
+    - `figs/<name>_cell.png` : the leading block of size `nx * ny * nth` of that column's cell with the smallest key,
+
+   with `<name>` one of `mass`, `scattering`, `interior_convection`, `boundary_convection`, `system`. These blocks are the first column and cell because the global DOF order is by column key, then cell key. The system matrix plotted here includes the inflow-boundary DOFs, which `Problem.solve` removes before the Krylov solve.
+3. All ranks call `problem.solve(mesh)` with the default solver settings. Root writes the solution to `OUT_DIR/uh.npy` (raw `float64`, without the mesh; the mesh is the one in `OUT_DIR/mesh.json`) and plots it to `figs/uh_th.png`, `figs/uh_xth.png`, `figs/uh_yth.png`, `figs/uh_xy.png` and `figs/uh_xyth.png` (colour map `hot`, scale `normal`).
+
+`main()` is run through `utils.run_or_abort`, so an exception on any rank aborts the job with a non-zero exit status.
+
+### `run.sh`
+
+Runs `mpirun -n N python experiment.py --o out`, with `N` = `-n` (default 1). `EXPERIMENT_NAME` is only used in `printf` statements. The script stops at the first failed step. (Before pull request #32 it also called `plot_kappa_sigma_phi.py` and `plot_u.py`, which are not in the repository, and the directory contained an unused `params.py`; both were removed.)
+
+Output Directory
+--------------------------------------------------------------------------------
+
+```
+out
+|--- mesh.json, uh.npy
+|--- figs
+     |--- mesh.png
+     |--- mass_global.png, mass_column.png, mass_cell.png
+     |--- scattering_*.png, interior_convection_*.png, boundary_convection_*.png, system_*.png
+     |--- uh_th.png, uh_xth.png, uh_yth.png, uh_xy.png, uh_xyth.png
+```
+
+To read the solution back: `dg.projection.from_file("out/mesh.json", "out/uh.npy")`.
 
 Running the Test
 --------------------------------------------------------------------------------
 
-To run the 'test-rt' test, perform the following steps:
-
-1. Ensure that you have created and have activated the included `conda` environment by running the following commands in the root directory:
+1. Create and activate the included `conda` environment by running the following commands in the root directory:
 
 ```
 conda env create -f environment.yml
 conda activate radiative-transfer-amr
 ```
 
-2. Ensure that the run script `run.sh` is executable:
+2. From this directory, execute the run script using a specified number ($N$) of MPI tasks:
 
 ```
-chmod +x run.sh
+bash run.sh -n N
 ```
 
-3. Execute the run script using a specified number ($N$) of MPI tasks:
+(or `chmod +x run.sh` once and then `./run.sh -n N`). The scripts read `input.json` and import `mesh.py` and `problem.py` from the current directory, so they must be run from here. On a cluster, run the script inside an allocation of at least $N$ tasks; scheduler options and the MPI launcher are site-specific.
 
-```
-./run.sh -n N
-```
+To modify the test, edit `input.json` (mesh) or `problem.py` (coefficients, solution, boundary data).
 
-Modifying the Test
+Results with the current code
 --------------------------------------------------------------------------------
 
-There are three primary files utilized in initializing and executing the test that may be modified:
-- `input.json` : Contains parameters for initializing the test.
-    - `mesh_params` : Parameters for the initial mesh.
-        - `Ls` : Length of the spatial domain in the $x$- and $y$- directions.
-        - `pbcs` : Directions in which there are periodic boundary conditions (unverified).
-        - `has_th` : Specifies that the mesh has an angular dimension.
-        - `ndofs` : Specifies the number of degrees of freedom in the $x$-, $y$-, and $\theta$-directions.
-        - `nref_ang` : Specifies the number of times the *h*-refine the initial mesh in the angular dimension.
-        - `nref_spt` : Specifies the number of times the *h*-refine the initial mesh in the spatial dimensions.
-- `problem.py` : Defines functions used the the extinction coefficient, scattering coefficent, etc.
-- `run.sh` : Run script to execute the experiment.
-    - `EXPERIMENT_NAME` : Only used in `printf` statements of the run script.
-    - `OUT_DIR` : (Relative) Path for outputting files from the experiment.
+<!-- RESULTS: figures from a rerun of the current code will be added here -->
