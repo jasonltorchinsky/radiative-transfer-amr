@@ -273,9 +273,5 @@ def error_high_resolution(self, problem: Problem, uh_hr: Projection = None,
                     else: # Needn't be refined
                         self.cols[col_key].cells[cell_key].do_ref = False
 
-        self = mpi_comm.bcast(self, root = consts.COMM_ROOT)
-    else:
-        self = mpi_comm.bcast(self, root = consts.COMM_ROOT)
-
     mpi_comm.barrier()
     return [uh_hr, info, mat_info]
