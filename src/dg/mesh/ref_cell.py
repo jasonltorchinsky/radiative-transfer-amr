@@ -1,5 +1,4 @@
 # Standard Library Imports
-import sys
 
 # Third-Party Library Imports
 
@@ -20,8 +19,7 @@ def ref_cell(self, col_key: int, cell_key: int, form: str = "h") -> None:
     if form not in ["h", "p", "hp"]:
         msg: str = ( "ERROR IN REFINING CELL, " +
                      "UNSUPPORTED REFINEMENT FORM - {}").format(form)
-        print(msg)
-        sys.exit(0)
+        raise ValueError(msg)
 
 def ref_cell_p(self, col_key: int, cell_key: int) -> None:
     col: Column = self.cols[col_key]
@@ -138,8 +136,7 @@ def ref_cell_h(self, col_key: int, cell_key: int) -> None:
             else:
                 msg: str = ("ERROR IN MAKING CHILD CELLS, " +
                             "2-NEIGHBOR ASSUMPTION VIOLATED")
-                print(msg)
-                sys.exit(0)
+                raise RuntimeError(msg)
         
     for ii in range(0, 2):
         chld_idx: int      = chldn_idxs[ii]

@@ -17,6 +17,7 @@ from petsc4py import PETSc
 
 # Local Library Imports
 import consts
+from utils import run_or_abort
 from dg.mesh.column import Column
 from dg.mesh.column.cell import Cell
 from tools.dg.mesh import plot_mesh
@@ -312,4 +313,4 @@ def main():
         plot_xyth(uh, file_path = file_path, cmap = "hot", scale = "normal")
         
 if __name__ == "__main__":
-    main()
+    run_or_abort(main)
