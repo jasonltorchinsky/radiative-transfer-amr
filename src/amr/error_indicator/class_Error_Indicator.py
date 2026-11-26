@@ -22,6 +22,7 @@ class Error_Indicator():
 
     from .error import (error_analytic, error_angular_jump, error_spatial_jump,
                         error_high_resolution, error_random)
+    from .mean_error_to_resolve import mean_error_to_resolve
     from .ref_by_ind import ref_by_ind
 
     from .to_file import to_file

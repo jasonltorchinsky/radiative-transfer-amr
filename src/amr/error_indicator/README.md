@@ -12,6 +12,7 @@ The source files contained in the `error_indicator` subdirectory are:
 - `class_Error_Indicator` : The class implementing the error indicator.
 - `col_hp_steer` : Given an spatial *hp*-element (`column`, or `col`) marked for spatial refinement in an `Error_Indicator`, calculate the *hp*-steering criterion (i.e., whether to mark it for spatial *h*- or *p*-refinement).
 - `from_file` : Read an `Error_Indicator` from a file.
+- `mean_error_to_resolve` : The average error indicator over the elements marked for refinement in an `Error_Indicator`, used by the spatial-angular steering criterion.
 - `ref_by_ind` : Refine a mesh according to an Error_Indicator.
 - `to_file` : Write an `Error_Indicator` to file.
 
