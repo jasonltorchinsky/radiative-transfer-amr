@@ -141,6 +141,18 @@ On a cluster, run `run.sh` inside an allocation with at least $N$ tasks (for exa
 
 Reruns: `experiment.py` always recomputes and overwrites the trial directories. The `generate_*.py` scripts skip any figure that already exists, and `generate_error_history.py` skips a strategy whose `tracked_vals.json` already exists. Delete those files to regenerate them.
 
+README Figures
+--------------------------------------------------------------------------------
+
+The 'Results with the current code' section of each experiment's README shows figures from a rerun of the current code. They are stored in `<experiment>/figures/`, which `.gitignore` exempts from its `*.png` rule. The figures were copied from the run's `out/` directory at a reduced size with `readme_figures.py`. The README of each experiment states the commit, command and number of MPI ranks of the run. The full-size figures are not in the repository; running `run.sh` regenerates them.
+
+### `readme_figures.py`
+
+`python experiments/readme_figures.py WIDTH SRC_PNG DST_PNG [SRC_PNG DST_PNG ...]` (from the repository root, one rank). It needs only Pillow, which is in `environment.yml`.
+
+- `shrink(src, dst, width)` : opens `src`, converts it to RGB, resizes it to `width` pixels wide with Lanczos resampling if it is wider (keeping the aspect ratio), quantizes it to a 256-colour palette (median cut), creates the directory of `dst` if needed and saves it with PNG optimization. Returns `None`.
+- `main()` : reads `WIDTH` and the source/destination pairs from `sys.argv`, exits with the usage text if no pairs are given or an argument is unpaired, and calls `shrink` for each pair, printing the size of each written file.
+
 Subdirectory Structure
 --------------------------------------------------------------------------------
 
@@ -153,4 +165,5 @@ experiments
 |--- one-weak-scatterer : Test Case 'One Weak Scatterer' (Section SI-7): one optically-thin scatterer, four angular refinement strategies.
 |--- test-rt : A single solve of the Manufactured Solution problem on a fixed mesh, plotting the system matrices and the solution; requires MPI.
 |--- two-strong-scatterers : Test Case 'Two Strong Scatterers' (Section 4.2): two optically-thick scatterers, three combined spatial-angular refinement strategies.
+|--- readme_figures.py : Copies figures into an experiment's figures/ directory at a reduced size, for the README files.
 ```
