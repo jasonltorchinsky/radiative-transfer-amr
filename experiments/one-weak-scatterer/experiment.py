@@ -207,7 +207,7 @@ def main():
             min_err: float = mpi_comm.bcast(min_err, root = consts.COMM_ROOT)
             
             keep_going: bool = ( (l_mesh.get_ndof() <= stopping_conditions["max_ndof"])
-                                  and (trial <= stopping_conditions["max_ntrial"])
+                                  and (trial < stopping_conditions["max_ntrial"])
                                   and (min_err >= stopping_conditions["min_err"]) )
             
         if comm_rank == consts.COMM_ROOT:

@@ -97,20 +97,25 @@ def main():
                     err_ind_file_name: str = "err_ind_anl.json"
                     err_ind_file_path: str = os.path.join(trial_dir_path, err_ind_file_name)
 
-                    ## If we already have the analytic error, then just read it from file
-                    if os.path.isfile(err_ind_file_path):
-                        with open(err_ind_file_path, "r") as err_ind_file:
-                            error: float = json.load(err_ind_file)["error"]
-                            
-                    else:
-                        err_ind: Error_Indicator = Error_Indicator(uh, **ref_strat)
-                        err_ind.error_analytic(u)
-                        error: float = err_ind.error
+                    ## The analytic error is not computed in parallel, so only
+                    ## the root process reads or writes it
+                    error: float = None
+                    if comm_rank == consts.COMM_ROOT:
+                        ## If we already have the analytic error, then just read it from file
+                        if os.path.isfile(err_ind_file_path):
+                            with open(err_ind_file_path, "r") as err_ind_file:
+                                error: float = json.load(err_ind_file)["error"]
+                                
+                        else:
+                            err_ind: Error_Indicator = Error_Indicator(uh, **ref_strat)
+                            err_ind.error_analytic(u)
+                            error: float = err_ind.error
 
-                        ## Save the analytic error indicator to file
-                        err_ind.to_file(err_ind_file_path, 
-                                        write_projection = False, 
-                                        write_mesh = False)
+                            ## Save the analytic error indicator to file
+                            err_ind.to_file(err_ind_file_path, 
+                                            write_projection = False, 
+                                            write_mesh = False)
+                    error: float = mpi_comm.bcast(error, root = consts.COMM_ROOT)
 
                     ref_strat_err_dict[ndof] = error
 
