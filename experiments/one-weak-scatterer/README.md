@@ -38,6 +38,9 @@ There are three primary files utilized in initializing and executing the numeric
     - `solver_params` : Parameters for the `PETSc` linear solver used to solve the radiative transfer equation.
         - `ksp_type` : The Krylov method name for `PETSc` KSP object.
         - `pc_type` : The preconditioner name for the `PETSc` PC object.
+        - `rtol`, `atol`, `divtol`, `max_it` (optional) : Tolerances and maximum number of iterations for the `PETSc` KSP object (defaults: `1e-15`, `1e-15`, `sqrt` of the largest float, `5000`).
+        - `gmres_restart` (optional) : The restart length for (F)GMRES (default: `50`).
+        - `PETSc` command-line options (e.g., `-ksp_rtol`, `-ksp_max_it`, `-ksp_monitor`) override these settings. A solve that does not converge (negative `converged_reason`) raises a warning.
     - `stopping_conditions` : Conditions for which each refinement strategy investigated in the experiment will conclude.
         - `max_ndof` : Stop if attempting a trial with a mesh with at least this many degrees of freedom.
         - `max_ntrial` : Stop if attempting a trial beyond this many.

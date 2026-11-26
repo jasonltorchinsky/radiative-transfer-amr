@@ -59,9 +59,12 @@ def error_high_resolution(self, problem: Problem, uh_hr: Projection = None,
             mesh_hr: Mesh = None
             mesh_hr: Mesh = mpi_comm.bcast(mesh_hr, root = consts.COMM_ROOT)
 
-        [uh_hr, info, mat_info] = problem.solve(mesh_hr,
-                                                ksp_type = kwargs["ksp_type"],
-                                                pc_type = kwargs["pc_type"])
+        # Forward the linear solver settings, e.g., from solver_params in input.json
+        solver_keys: list = ["ksp_type", "pc_type", "rtol", "atol", "divtol",
+                             "max_it", "gmres_restart"]
+        solver_kwargs: dict = {key : kwargs[key] for key in solver_keys
+                               if key in kwargs}
+        [uh_hr, info, mat_info] = problem.solve(mesh_hr, **solver_kwargs)
         PETSc.garbage_cleanup(petsc_comm)
     else:
         info = None
