@@ -136,6 +136,7 @@ dmypy.json
 *.nc
 run/*
 *.png
+!experiments/*/figures/*.png
 *.pdf
 *.csv
 *.npy
