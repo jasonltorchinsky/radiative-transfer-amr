@@ -39,6 +39,9 @@ def get_problem_and_mesh() -> list:
 
     mesh: Mesh = Mesh(Ls = [1., 1.], pbcs = [False, False],
                       ndofs = [3, 3, 3], has_th = True)
+    ## Angular cells must lie within one quadrant (see #12)
+    for _ in range(0, 2):
+        mesh.ref_mesh(kind = "ang", form = "h")
 
     return [problem, mesh]
 
