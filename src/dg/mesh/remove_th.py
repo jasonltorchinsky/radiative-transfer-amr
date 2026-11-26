@@ -33,7 +33,7 @@ def remove_th(mesh: Mesh) -> Mesh:
                               lv        = 0,
                               is_lf     = True,
                               ndofs     = [1],
-                              quad      = None,
+                              quadrant  = None,
                               nhbr_keys = [None, None])
 
             col_copy: Column = Column(pos       = pos,
