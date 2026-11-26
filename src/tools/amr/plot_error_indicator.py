@@ -88,7 +88,7 @@ def plot_error_indicator(err_ind: Error_Indicator, file_path: str = None,
             if kwargs["kind"] in ["ang", "all"]:
                 facecolor: str = cmap(cell_err)
             else:
-                faceolor: str = "none"
+                facecolor: str = "none"
 
             wedge: Wedge = Wedge((cx, cy), min(dx, dy)/2, deg0, deg1,
                                  facecolor = facecolor,
