@@ -100,4 +100,20 @@ To modify the test, edit `input.json` (mesh) or `problem.py` (coefficients, solu
 Results with the current code
 --------------------------------------------------------------------------------
 
-<!-- RESULTS: figures from a rerun of the current code will be added here -->
+The figures below come from a run of the code at commit `f74d84c` (upstream `main` with pull requests #22-#33 merged) with the `input.json` of this directory, executed as `bash run.sh -n 4` (4 MPI ranks; wall time 76 s; Python 3.12, NumPy 1.26.4, SciPy 1.13.1, petsc4py 3.22.0, mpi4py 4.0.0, Open MPI 5.0.5). They were reduced to 800 pixels wide with `python experiments/readme_figures.py 800 out/figs/<name>.png figures/<name>.png`. Running `run.sh` writes the full-size versions of these and the other figures to `out/figs/`.
+
+The mesh: an $8 \times 8$ grid of columns, each with 16 angular cells and $3 \times 3 \times 3$ nodes per element (27648 degrees of freedom).
+
+![Mesh](figures/mesh.png)
+
+The angular integral of the numerical solution, $\int_0^{2\pi} u_h \, d\theta$ (`uh_xy.png`), and, in each column, the spatial integral of $u_h$ over the column as a function of $\theta$, drawn as a polar curve (`uh_th.png`; all columns share one radial scale whose centre is the smallest value, see `src/tools/dg/projection/README.md`). The solution is the Manufactured Solution of `../manufactured-solution`: it is largest at the top boundary $y = L_y$ and concentrated around the direction $\theta = 7\pi/5$.
+
+![Angular integral of the solution](figures/uh_xy.png)
+
+![Spatial integral of the solution in each column](figures/uh_th.png)
+
+Sparsity of the system matrix (mass + boundary convection - interior convection - scattering) restricted to the rows and columns owned by rank 0 (`system_global.png`, 16 of the 64 columns), and its block for the column with the smallest key (`system_column.png`). Each dense diagonal block couples the 432 degrees of freedom of one column through scattering; the off-diagonal bands are the upwind couplings to neighbouring columns.
+
+![System matrix on rank 0](figures/system_global.png)
+
+![System matrix of one column](figures/system_column.png)
