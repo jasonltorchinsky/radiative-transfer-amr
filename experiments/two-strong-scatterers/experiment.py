@@ -221,9 +221,10 @@ def main():
             ## want to stop. However, this doesn *not* update the mesh in the
             ## uh and err_ind objects
             if comm_rank == consts.COMM_ROOT:
-                ## Angular-spatial steering criterion
-                ang_EA2R: float = err_ind_ang.error_to_resolve
-                spt_EA2R: float = err_ind_spt.error_to_resolve
+                ## Angular-spatial steering criterion (Eq. 16), using the
+                ## average error indicator over the marked elements
+                ang_EA2R: float = err_ind_ang.mean_error_to_resolve()
+                spt_EA2R: float = err_ind_spt.mean_error_to_resolve()
                 ang_spt_thrsh: float = spt_EA2R / (spt_EA2R + ang_EA2R)
 
                 steer: float = rng.random()
