@@ -32,6 +32,15 @@ def solve(self, mesh: Mesh, **kwargs) -> list:
         petsc4py.init(comm = mpi_comm)
     petsc_comm: PETSc.Comm = PETSc.COMM_WORLD
     comm_rank: int = petsc_comm.getRank()
+
+    ## Reject meshes the discretization does not support
+    if comm_rank == consts.COMM_ROOT:
+        mesh_err: str = check_mesh(mesh)
+    else:
+        mesh_err: str = None
+    mesh_err: str = mpi_comm.bcast(mesh_err, root = consts.COMM_ROOT)
+    if mesh_err is not None:
+        raise ValueError(mesh_err)
     
     if comm_rank == consts.COMM_ROOT:
         ndof: int = mesh.get_ndof()
@@ -147,3 +156,31 @@ def solve(self, mesh: Mesh, **kwargs) -> list:
                               "max_it" : max_it}
         
     return [uh_proj, convergence_info, matrix_info]
+
+def check_mesh(mesh: Mesh) -> str:
+    """
+    Returns an error message if the mesh is outside the assumptions of the
+    discretization, and None otherwise.
+
+    - The upwind fluxes and the inflow boundary condition use the quadrant of
+      each angular cell, so every leaf cell must lie within one quadrant
+      (refine the mesh in angle at least twice).
+    - The inflow boundary condition is imposed at the end nodes of the
+      Legendre-Gauss-Lobatto nodes, so each spatial direction needs at least
+      2 nodes.
+    """
+
+    for col in mesh.cols.values():
+        if not col.is_lf:
+            continue
+        if min(col.ndofs) < 2:
+            return ( "Column {} has ndofs = {}; ".format(col.key, col.ndofs) +
+                     "spatial elements need at least 2 LGL nodes per direction." )
+        if mesh.has_th:
+            for cell in col.cells.values():
+                if cell.is_lf and (cell.quadrant is None):
+                    return ( "Cell {} of column {} spans more than one ".format(cell.key, col.key) +
+                             "angular quadrant; angular cells must lie within one " +
+                             "quadrant (refine the mesh in angle at least twice)." )
+
+    return None
