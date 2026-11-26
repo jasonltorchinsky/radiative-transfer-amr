@@ -1,5 +1,4 @@
 # Standard Library Imports
-import sys
 
 # Third-Party Library Imports
 
@@ -23,5 +22,4 @@ def ref_col(self, col_key: int, kind: str = "all", form: str = "h") -> None:
     if kind not in ["ang", "spt", "all"]:
         msg: str = ( "ERROR IN REFINING COLUMN, " +
                      "UNSUPPORTED REFINEMENT KIND - {}").format(kind)
-        print(msg)
-        sys.exit(0)
+        raise ValueError(msg)
