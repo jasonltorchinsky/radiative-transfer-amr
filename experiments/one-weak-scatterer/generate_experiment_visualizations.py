@@ -163,7 +163,7 @@ def main():
 
                 uh_hr_file_name: str = "uh_hr.npy"
                 uh_hr_file_path: str = os.path.join(trial_dir_path, uh_hr_file_name)
-                if (os.path.isfile(mesh_hr_file_path) and os.path.isfile(mesh_hr_file_path)):
+                if (os.path.isfile(mesh_hr_file_path) and os.path.isfile(uh_hr_file_path)):
                     uh_hr: Projection = projection_from_file(mesh_hr_file_path, uh_hr_file_path)
 
                     # Mesh
