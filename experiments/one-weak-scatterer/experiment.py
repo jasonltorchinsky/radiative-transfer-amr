@@ -17,6 +17,7 @@ from petsc4py import PETSc
 
 # Local Library Imports
 import consts
+from utils import run_or_abort
 from dg.mesh import Mesh
 from amr.error_indicator import Error_Indicator
 
@@ -216,4 +217,4 @@ def main():
                 
 
 if __name__ == "__main__":
-    main()
+    run_or_abort(main)

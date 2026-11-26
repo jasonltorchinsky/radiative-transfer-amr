@@ -1,6 +1,5 @@
 # Standard Library Imports
 import copy
-import sys
 
 # Third-Party Library Imports
 
@@ -20,8 +19,7 @@ def ref_col_spt(self, col_key: int, form: str = "h") -> None:
     if form not in ["h", "p", "hp"]:
         msg: str = ( "ERROR IN REFINING COLUMN, " +
                     "UNSUPPORTED REFINEMENT FORM - {}").format(form)
-        print(msg)
-        sys.exit(0)
+        raise ValueError(msg)
             
 def ref_col_spt_p(self, col_key: int) -> None:
     col: Column = self.cols[col_key]
