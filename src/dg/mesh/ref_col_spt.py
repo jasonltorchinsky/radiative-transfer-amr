@@ -37,9 +37,31 @@ def ref_col_spt_p(self, col_key: int) -> None:
                 nhbr: Column = self.cols[nhbr_key]
                 assert(nhbr.is_lf)
 
-                if ((abs(col.ndofs[0] - nhbr.ndofs[0]) > 1) and
-                    (abs(col.ndofs[0] - nhbr.ndofs[0]) > 1)):
+                if ((abs(col.ndofs[0] - nhbr.ndofs[0]) > 1) or
+                    (abs(col.ndofs[1] - nhbr.ndofs[1]) > 1)):
                     ref_col_spt_p(self, nhbr_key)
+
+    # Even-degree criterion (Sec. 3.2): all columns neighboring through a face
+    # of a column must have the same number of degrees of freedom. The columns
+    # behind the face of a neighbor that the column lies behind must therefore
+    # be refined to match the column.
+    for col_face in range(0, 4):
+        unique_nhbr_keys: list = list(set(col.nhbr_keys[col_face]))
+        for nhbr_key in unique_nhbr_keys:
+            if nhbr_key is not None:
+                nhbr: Column = self.cols[nhbr_key]
+                assert(nhbr.is_lf)
+
+                nhbr_face: int = (col_face + 2) % 4
+                unique_face_keys: list = list(set(nhbr.nhbr_keys[nhbr_face]))
+                for face_key in unique_face_keys:
+                    if face_key is not None:
+                        face_col: Column = self.cols[face_key]
+                        assert(face_col.is_lf)
+
+                        while ((face_col.ndofs[0] < col.ndofs[0]) or
+                               (face_col.ndofs[1] < col.ndofs[1])):
+                            ref_col_spt_p(self, face_key)
 
 def ref_col_spt_h(self, col_key: int) -> None:
     col: Column = self.cols[col_key]
