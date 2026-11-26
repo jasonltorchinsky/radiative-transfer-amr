@@ -176,4 +176,44 @@ To modify the experiment, edit `input.json` (mesh, solver, stopping conditions, 
 Results with the current code
 --------------------------------------------------------------------------------
 
-<!-- RESULTS: figures from a rerun of the current code will be added here -->
+The figures below come from a run of the code at commit `f74d84c` (upstream `main` with pull requests #22-#33 merged) with the `input.json` of this directory, executed as `bash run.sh -n 24` (24 MPI ranks on one node; wall time 5.9 h; Python 3.12, NumPy 1.26.4, SciPy 1.13.1, Matplotlib 3.9.2, petsc4py 3.22.0, mpi4py 4.0.0, Open MPI 5.0.5). They were reduced to 800 pixels wide with `python experiments/readme_figures.py 800 <out/...png> figures/<name>.png`. Running `run.sh` writes the full-size versions of these and all other figures to `out/`.
+
+The problem, cf. Fig. SI-18: the extinction coefficient $\kappa/(2\pi)$ (`out/kappa.png`) and the Henyey-Greenstein phase function with $g = 0.7$ as a function of $\theta - \theta'$ (`out/Phi.png`).
+
+![Extinction coefficient](figures/kappa.png)
+
+![Scattering phase function](figures/Phi.png)
+
+The final mesh of *hp*-Adap. Ang. (`out/hp-amr-ang/188/mesh.png`, 299970 degrees of freedom), cf. Fig. SI-24(a). Each wedge is an angular cell, coloured by its number of angular nodes; the small, high-degree cells lie around the beam direction $7\pi/4$.
+
+![Final mesh, hp-Adap. Ang.](figures/mesh_hp-amr-ang.png)
+
+The final numerical solution of *hp*-Adap. Ang., cf. Fig. SI-25: the angular integral $\int_0^{2\pi} u_{hp} \, d\theta$ (`out/hp-amr-ang/188/uh_xy.png`) and the integral over $x$ as a function of $(y, \theta)$ (`out/hp-amr-ang/188/uh_yth.png`). The scatterer casts a shadow towards the lower right.
+
+![Angular integral of the final solution](figures/uh_xy_hp-amr-ang.png)
+
+![Integral over x of the final solution](figures/uh_yth_hp-amr-ang.png)
+
+The high-resolution error against the total number of degrees of freedom (`out/convergence.png`), cf. the left panel of Fig. SI-26:
+
+![Convergence](figures/convergence.png)
+
+| Strategy | Trials | Final degrees of freedom | Final high-resolution error | Before the fixes |
+| --- | --- | --- | --- | --- |
+| *h*-Unif. Ang. | 3 | 294912 | 1.52e-1 | 1.52e-1 |
+| *p*-Unif. Ang. | 13 | 294912 | 2.83e-2 | 2.83e-2 |
+| *h*-Adap. Ang. | 83 | 277272 | 4.05e-4 | 4.03e-4 (280188, 91 trials) |
+| *hp*-Adap. Ang. | 189 | 299970 | 2.35e-4 | 6.35e-5 (299907, 299 trials) |
+
+All four strategies stopped at `max_ndof` $= 300000$; none reached `min_err` $= 10^{-4}$. All linear solves converged.
+
+**Comparison with the publication.** Section SI-7.2 and Fig. SI-26 report that *hp*-Adap. Ang. performs best for mid- to large meshes and is about ten times more accurate than *h*-Adap. Ang. at about 250000 degrees of freedom. This run does not reproduce that. The two adaptive strategies have similar errors up to about 220000 degrees of freedom (0.026 at 212000 for *h*-Adap. Ang., 0.025 at 220000 for *hp*-Adap. Ang.). Near 275000 *h*-Adap. Ang. is ahead (4.4e-4 at 270000 against 9.8e-4 at 276000), and *hp*-Adap. Ang. is ahead only at its last point (2.35e-4 at 299970). The ordering of the other strategies (*h*-Unif. Ang. worst, then *p*-Unif. Ang.) agrees with the publication.
+
+**Comparison with the code before the fixes.** "Before the fixes" is a run of the same scripts at upstream `main` (commit `8b7cc7f`, with only the module-name fix of pull request #22 applied) on the same machine type and number of ranks (wall time 8.3 h). That run does reproduce the publication's ranking: its *hp*-Adap. Ang. error is 0.014 at 192000 and 4.4e-4 at 243000 degrees of freedom. The uniform strategies give the same errors to three digits, and *h*-Adap. Ang. differs by less than 20 % at every point. So the change concerns *hp*-Adap. Ang. only. Four of the merged fixes can affect this strategy:
+
+- the *hp*-steering formulas (#23, issues #7-#9), which decide between *h*- and *p*-refinement of a marked cell;
+- the angular upwind flux (#24, issue #10);
+- the high-resolution reference mesh (#30, issue #16), which now raises every element's degree by exactly `ang_ref_offset`;
+- the Krylov settings (#28, issue #14). Two linear solves of the earlier *hp*-Adap. Ang. run (trials 177 and 293) ended with a negative converged reason, which that code did not report.
+
+The fixed strategy also needs fewer trials (189 against 299) to reach the same mesh size, so it takes larger refinement steps. Which of these changes causes the difference has not been isolated; a rerun of this strategy with each fix applied on its own would settle it.

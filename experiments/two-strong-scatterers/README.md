@@ -201,4 +201,49 @@ To modify the experiment, edit `input.json` (mesh, solver, stopping conditions, 
 Results with the current code
 --------------------------------------------------------------------------------
 
-<!-- RESULTS: figures from a rerun of the current code will be added here -->
+The figures below come from a run of the code at commit `f74d84c` (upstream `main` with pull requests #22-#33 merged) with the `input.json` of this directory, executed as `bash run.sh -n 24` (24 MPI ranks on one node; wall time 2.5 h; Python 3.12, NumPy 1.26.4, SciPy 1.13.1, Matplotlib 3.9.2, petsc4py 3.22.0, mpi4py 4.0.0, Open MPI 5.0.5). They were reduced to 800 pixels wide with `python experiments/readme_figures.py 800 <out/...png> figures/<name>.png`. Running `run.sh` writes the full-size versions of these and all other figures to `out/`. `input.json` has `seed = 0`, so the steering step drew a new seed; the seeds used were 16956616, 16956617 and 16956618 for the three strategies, in the order of the table below (see `seed` above to repeat them).
+
+The problem, cf. Fig. 7: the extinction coefficient $\kappa/(2\pi)$ (`out/kappa.png`) and the Henyey-Greenstein phase function with $g = 0.8$ as a function of $\theta - \theta'$ (`out/Phi.png`).
+
+![Extinction coefficient](figures/kappa.png)
+
+![Scattering phase function](figures/Phi.png)
+
+A high-resolution numerical solution, cf. Fig. 8: the angular integral $\int_0^{2\pi} u_{hr} \, d\theta$ and the integral over $x$ as a function of $(y, \theta)$ (`out/hp-amr-ang-hp-amr-spt/23/uh_hr_xy.png` and `uh_hr_yth.png`). $u_{hr}$ is the reference solution of the last trial of *hp*-Adap. Ang., *hp*-Adap. Spt., with 503949 degrees of freedom. The colour maps show values below 0 in blue. There are regions inside the two optically thick discs and in directions with almost no radiation, where the high-order solution undershoots: 5.7 % of the nodal values of this $u_{hr}$ are negative, with minimum $-0.022$. The final $u_{hr}$ of the run before the fixes (below), on a larger mesh, has 2.3 % negative values with minimum $-0.003$.
+
+![Angular integral of the high-resolution solution](figures/uh_hr_xy.png)
+
+![Integral over x of the high-resolution solution](figures/uh_hr_yth.png)
+
+The final mesh of *hp*-Adap. Ang., *hp*-Adap. Spt. (`out/hp-amr-ang-hp-amr-spt/23/mesh.png`, 208393 degrees of freedom), cf. Fig. 9(a). Rectangles are spatial elements, coloured by their number of nodes in $x$; wedges are angular cells, coloured by their number of angular nodes. The small spatial elements lie around the two discs, and the angular meshes differ between spatial elements.
+
+![Final mesh, hp-Adap. Ang., hp-Adap. Spt.](figures/mesh_hp-amr-ang-hp-amr-spt.png)
+
+The kind of refinement chosen by the steering step (Eq. 16) at each trial of the same strategy (`out/hp-amr-ang-hp-amr-spt/ang_spt_steering.png`): 12 angular and 12 spatial refinements.
+
+![Spatial-angular steering](figures/ang_spt_steering_hp-amr-ang-hp-amr-spt.png)
+
+The high-resolution error against the total number of degrees of freedom (`out/convergence.png`), cf. the left panel of Fig. 10:
+
+![Convergence](figures/convergence.png)
+
+| Strategy | Trials | Final degrees of freedom | Final high-resolution error | Before the fixes |
+| --- | --- | --- | --- | --- |
+| *hp*-Adap. Spt., *p*-Unif. Ang. | 13 | 258272 | 7.24e-3 | 7.49e-3 (288432, 26 trials) |
+| *hp*-Adap. Ang., *p*-Unif. Spt. | 31 | 291150 | 4.87e-3 | 2.35e-2 (286399, 27 trials) |
+| *hp*-Adap. Ang., *hp*-Adap. Spt. | 24 | 208393 | 7.81e-3 | 3.64e-3 (269608, 54 trials) |
+
+All strategies stopped at `max_ndof` $= 300000$; none reached `min_err` $= 10^{-3}$.
+
+**Linear solver.** As the note at the top of this README warns, the solves of *hp*-Adap. Ang., *p*-Unif. Spt. do not converge on larger meshes. From trial 9 onwards, 22 of its low- and high-resolution solves stopped at `max_it` $= 5000$ iterations with relative residuals up to $2.6 \times 10^{-2}$. Each such solve raised the `RuntimeWarning` added in pull request #28; the converged reasons are in `ref_strat_log.json`. Every plotted point of that strategy from 55616 degrees of freedom onwards involves such a solve, so these errors include an unknown solver error. This includes the rise from 0.020 to 0.039 between 98000 and 176000 degrees of freedom and the final value. The other two strategies each had one high-resolution solve that did not converge (trial 10 of *hp*-Adap. Spt., *p*-Unif. Ang. and trial 16 of *hp*-Adap. Ang., *hp*-Adap. Spt.). The run before the fixes had 40 such solves in this experiment (12, 24 and 4, in the order of the table), and none of them raised a warning.
+
+**Comparison with the publication.** Section 4.2.2 and Fig. 10 report that *hp*-Adap. Spt., *p*-Unif. Ang. is the least efficient strategy and *hp*-Adap. Ang., *hp*-Adap. Spt. the best, especially beyond about 75000 degrees of freedom. In this run *hp*-Adap. Ang., *hp*-Adap. Spt. is more accurate than *hp*-Adap. Spt., *p*-Unif. Ang. at comparable mesh sizes (for example 0.012 at 155000 against 0.016 at 177000). *hp*-Adap. Ang., *p*-Unif. Spt. has the smallest error between 30000 and about 100000 degrees of freedom. However, only its points up to 42581 degrees of freedom come from converged solves (see above). The publication's final *hp*-Adap. Ang., *hp*-Adap. Spt. mesh has 248160 degrees of freedom and a high-resolution counterpart of over one million; here they are 208393 and 503949.
+
+**Comparison with the code before the fixes.** "Before the fixes" is a run of the same scripts at upstream `main` (commit `8b7cc7f`, with only the module-name fix of pull request #22 applied) on the same machine type and number of ranks (wall time 4.0 h). The steering step is random and both runs drew their seeds from the clock, so the sequence of spatial and angular refinements differs between the runs; differences in individual error histories are expected even without code changes. Several fixes change the computation in this experiment:
+
+- the steering step now uses averaged rather than summed indicators (#23, issues #7-#9), which changes how often each kind of refinement is chosen;
+- the spatial and angular *hp*-steering formulas (#23);
+- the angular upwind flux (#24, issue #10);
+- the high-resolution reference (#30, issue #16).
+
+The fixed *hp*-Adap. Ang., *hp*-Adap. Spt. run needed 24 trials instead of 54 to reach about 200000 degrees of freedom. Its final error, 7.8e-3 at 208393, compares with 7.1e-3 at 182000 and 4.8e-3 at 227000 before the fixes.

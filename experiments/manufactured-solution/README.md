@@ -213,4 +213,37 @@ To modify the experiment, edit `input.json` (mesh, solver, stopping conditions, 
 Results with the current code
 --------------------------------------------------------------------------------
 
-<!-- RESULTS: figures from a rerun of the current code will be added here -->
+The figures below come from a run of the code at commit `f74d84c` (upstream `main` with pull requests #22-#33 merged) with the `input.json` of this directory, executed as `bash run.sh -n 32` (32 MPI ranks on one node; wall time 3.7 h; Python 3.12, NumPy 1.26.4, SciPy 1.13.1, Matplotlib 3.9.2, petsc4py 3.22.0, mpi4py 4.0.0, Open MPI 5.0.5). They were reduced to 800 pixels wide with `python experiments/readme_figures.py 800 <out/...png> figures/<name>.png`. Running `run.sh` writes the full-size versions of these and all other figures to `out/`.
+
+The problem, cf. Fig. 4 of the publication: the extinction coefficient $\kappa/(2\pi)$ (`out/kappa.png`; the colour scale shows the factor 10 discussed above) and the Rayleigh phase function as a function of $\theta - \theta'$ (`out/Phi.png`).
+
+![Extinction coefficient](figures/kappa.png)
+
+![Scattering phase function](figures/Phi.png)
+
+The exact solution, cf. Fig. 5: its angular integral $\int_0^{2\pi} u \, d\theta$ (`out/u_xy.png`) and its integral over $x$ as a function of $(y, \theta)$ (`out/u_yth.png`). As in Fig. 5(b), the white vertical lines are the angular cell edges, where the plotting nodes (Gauss nodes) have no value.
+
+![Angular integral of the exact solution](figures/u_xy.png)
+
+![Integral over x of the exact solution](figures/u_yth.png)
+
+The final meshes of the two adaptive strategies (`out/hp-amr-ang/98/mesh.png`, `out/h-amr-ang/63/mesh.png`), cf. Figs. SI-8 and SI-6. Each wedge is an angular cell, coloured by its number of angular nodes. Both strategies place their small cells around $\theta = 7\pi/5$; *hp*-Adap. Ang. also raises the degree of many cells there.
+
+![Final mesh, hp-Adap. Ang.](figures/mesh_hp-amr-ang.png)
+
+![Final mesh, h-Adap. Ang.](figures/mesh_h-amr-ang.png)
+
+The analytic error against the total number of degrees of freedom (`out/convergence.png`), cf. the left panel of Fig. 6:
+
+![Convergence](figures/convergence.png)
+
+| Strategy | Trials | Final degrees of freedom | Final analytic error | Before the fixes |
+| --- | --- | --- | --- | --- |
+| *h*-Unif. Ang. | 4 | 307200 | 3.94e-2 | 3.95e-2 |
+| *p*-Unif. Ang. | 37 | 499200 | 1.65e-5 | 1.76e-5 |
+| *h*-Adap. Ang. | 64 | 479850 | 3.26e-6 | 3.13e-6 (492750) |
+| *hp*-Adap. Ang. | 99 | 213125 | 2.47e-6 | 2.48e-6 (213450) |
+
+**Comparison with the publication.** The ranking of Section 4.1.2 is reproduced: *hp*-Adap. Ang. is the most accurate strategy at every mesh size and reaches $3.9 \times 10^{-6}$ with 168975 degrees of freedom, and *h*-Adap. Ang. needs about 480000 degrees of freedom for a similar error. The *hp*-Adap. Ang. run stopped when the error fell below `min_err` $= 2.5 \times 10^{-6}$; the uniform strategies stopped at `max_ndof`. The plot against the number of non-zero matrix entries (right panel of Fig. 6) is not produced by any script.
+
+**Comparison with the code before the fixes.** "Before the fixes" is a run of the same scripts at upstream `main` (commit `8b7cc7f`, with only the module-name fix of pull request #22 applied) on the same machine type and number of ranks (wall time 5.4 h). The error of the initial mesh, shared by all strategies, is 0.793 now and 1.16 before; the two changes that affect it are the analytic-error quadrature (#31, issue #17) and the angular upwind flux (#24, issue #10). The final errors agree to within 7 %. The second *p*-Unif. Ang. point no longer drops far below its neighbours (0.75 now; 0.53 before, between 1.16 and 1.07). All linear solves converged in both runs.
