@@ -1,5 +1,4 @@
 # Standard Library Imports
-import sys
 
 # Third-Party Library Imports
 
@@ -20,8 +19,7 @@ def ref_cell(self, col_key: int, cell_key: int, form: str = "h") -> None:
     if form not in ["h", "p", "hp"]:
         msg: str = ( "ERROR IN REFINING CELL, " +
                      "UNSUPPORTED REFINEMENT FORM - {}").format(form)
-        print(msg)
-        sys.exit(0)
+        raise ValueError(msg)
 
 def ref_cell_p(self, col_key: int, cell_key: int) -> None:
     col: Column = self.cols[col_key]
@@ -56,6 +54,47 @@ def ref_cell_p(self, col_key: int, cell_key: int) -> None:
         nhbr_cell: Cell = col.nhbr_cell(cell.key, nhbr_loc)
         if abs(cell.ndofs[0] - nhbr_cell.ndofs[0]) > 1:
             ref_cell_p(self, col_key, nhbr_cell.key)
+
+    # Even-degree criterion (Sec. 3.2): all cells neighboring through a spatial
+    # face of a cell must have the same number of degrees of freedom. The cells
+    # behind the face of a neighboring cell that the cell lies behind must
+    # therefore be refined to match the cell.
+    for col_face in range(0, 4):
+        unique_nhbr_col_keys: list = list(set(col.nhbr_keys[col_face]))
+        for nhbr_col_key in unique_nhbr_col_keys:
+            if nhbr_col_key is not None:
+                nhbr_col: Column = self.cols[nhbr_col_key]
+                assert(nhbr_col.is_lf)
+
+                nhbr_cell_keys: list = self.nhbr_cells_in_nhbr_col(col_key,
+                                                                   cell_key,
+                                                                   nhbr_col_key)
+
+                unique_nhbr_cell_keys: list = list(set(nhbr_cell_keys))
+                for nhbr_cell_key in unique_nhbr_cell_keys:
+                    if nhbr_cell_key is not None:
+                        nhbr_face: int = (col_face + 2) % 4
+                        unique_face_col_keys: list = \
+                            list(set(nhbr_col.nhbr_keys[nhbr_face]))
+                        for face_col_key in unique_face_col_keys:
+                            if face_col_key is not None:
+                                face_col: Column = self.cols[face_col_key]
+                                assert(face_col.is_lf)
+
+                                face_cell_keys: list = \
+                                    self.nhbr_cells_in_nhbr_col(nhbr_col_key,
+                                                                nhbr_cell_key,
+                                                                face_col_key)
+
+                                unique_face_cell_keys: list = list(set(face_cell_keys))
+                                for face_cell_key in unique_face_cell_keys:
+                                    if face_cell_key is not None:
+                                        face_cell: Cell = face_col.cells[face_cell_key]
+                                        assert(face_cell.is_lf)
+
+                                        while face_cell.ndofs[0] < cell.ndofs[0]:
+                                            ref_cell_p(self, face_col_key,
+                                                       face_cell_key)
 
 def ref_cell_h(self, col_key: int, cell_key: int) -> None:
     col: Column = self.cols[col_key]
@@ -138,8 +177,7 @@ def ref_cell_h(self, col_key: int, cell_key: int) -> None:
             else:
                 msg: str = ("ERROR IN MAKING CHILD CELLS, " +
                             "2-NEIGHBOR ASSUMPTION VIOLATED")
-                print(msg)
-                sys.exit(0)
+                raise RuntimeError(msg)
         
     for ii in range(0, 2):
         chld_idx: int      = chldn_idxs[ii]

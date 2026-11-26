@@ -155,42 +155,22 @@ def get_intr_mask_mpi(mesh, **kwargs):
             )
         utils.print_msg(msg)
 
-    # Split the problem into parts dependent on size of communicator
-    mesh     = MPI_comm.bcast(mesh, root = consts.COMM_ROOT)
-    n_global = mesh.get_ndof()
-    
     # Split the problem into parts dependent on size of COMM_WORLD.
-    col_keys_global = list(sorted(mesh.cols.keys()))
+    mesh = MPI_comm.bcast(mesh, root = consts.COMM_ROOT)
+    [ncols, col_idxs] = get_col_idxs(mesh)
+    col_keys_global = list(sorted(col_idxs.keys()))
     col_keys_local  = np.array_split(col_keys_global, comm_size)[comm_rank].astype(consts.INT)
     
-    # Get the start indices for each column matrix
-    col_st_idxs = {col_keys_global[0] : 0}
-    col_ndofs   = {}
-    
-    dof_count = 0
-    for cc in range(1, len(col_keys_global)):
-        col_key      = col_keys_global[cc]
-        prev_col_key = col_keys_global[cc - 1]
-        prev_col     = mesh.cols[prev_col_key]
-        if prev_col.is_lf:
-            prev_col_ndof    = 0
-            [ndof_x, ndof_y] = prev_col.ndofs[:]
-            
-            cell_items = sorted(prev_col.cells.items())
-            for cell_key, cell in cell_items:
-                if cell.is_lf:
-                    [ndof_th]    = cell.ndofs[:]
-                    dof_count   += ndof_x * ndof_y * ndof_th
-            col_st_idxs[col_key] = dof_count
-    col_ndofs[col_keys_global[-1]] = n_global - dof_count
-    
-    [ncells, cell_idxs] = get_cell_idxs(mesh, col_key)
-    cell_masks = [None] * ncells # Column mask is a 1-D vector
-    idx = 0
+    # Construct the column masks of the local columns
+    col_masks_local = {}
     for col_key in col_keys_local:
         col = mesh.cols[col_key]
         if col.is_lf:
+            col_idx          = col_idxs[col_key]
             [ndof_x, ndof_y] = col.ndofs[:]
+            
+            [ncells, cell_idxs] = get_cell_idxs(mesh, col_key)
+            cell_masks = [None] * ncells # Column mask is a 1-D vector
             
             cell_items = sorted(col.cells.items())
             for cell_key, cell in cell_items:
@@ -243,13 +223,15 @@ def get_intr_mask_mpi(mesh, **kwargs):
                                 
                     cell_masks[cell_idx] = cell_mask
                     
-                col_masks[col_idx] = np.concatenate(cell_masks, axis = None)
-                
-        global_mask = np.concatenate(col_masks, axis = None)
-    else:
-        global_mask = None
-    
-    global_mask = MPI_comm.bcast(global_mask, root = consts.COMM_ROOT)
+            col_masks_local[col_idx] = np.concatenate(cell_masks, axis = None)
+            
+    # Gather the column masks from all ranks, assemble the global mask on each
+    col_masks = [None] * ncols # Global mask is a 1-D vector
+    for col_masks_rank in MPI_comm.allgather(col_masks_local):
+        for col_idx, col_mask in col_masks_rank.items():
+            col_masks[col_idx] = col_mask
+            
+    global_mask = np.concatenate(col_masks, axis = None)
     
     if kwargs["verbose"]:
         tf = perf_counter()

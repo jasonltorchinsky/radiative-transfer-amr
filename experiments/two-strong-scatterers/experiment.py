@@ -19,6 +19,7 @@ from petsc4py import PETSc
 
 # Local Library Imports
 import consts
+from utils import run_or_abort
 from dg.mesh import Mesh
 from amr.error_indicator import Error_Indicator
 
@@ -221,9 +222,10 @@ def main():
             ## want to stop. However, this doesn *not* update the mesh in the
             ## uh and err_ind objects
             if comm_rank == consts.COMM_ROOT:
-                ## Angular-spatial steering criterion
-                ang_EA2R: float = err_ind_ang.error_to_resolve
-                spt_EA2R: float = err_ind_spt.error_to_resolve
+                ## Angular-spatial steering criterion (Eq. 16), using the
+                ## average error indicator over the marked elements
+                ang_EA2R: float = err_ind_ang.mean_error_to_resolve()
+                spt_EA2R: float = err_ind_spt.mean_error_to_resolve()
                 ang_spt_thrsh: float = spt_EA2R / (spt_EA2R + ang_EA2R)
 
                 steer: float = rng.random()
@@ -245,7 +247,7 @@ def main():
             min_err: float = mpi_comm.bcast(min_err, root = consts.COMM_ROOT)
             
             keep_going: bool = ( (l_mesh.get_ndof() <= stopping_conditions["max_ndof"])
-                                  and (trial <= stopping_conditions["max_ntrial"])
+                                  and (trial < stopping_conditions["max_ntrial"])
                                   and (min_err >= stopping_conditions["min_err"]) )
             
         if comm_rank == consts.COMM_ROOT:
@@ -254,4 +256,4 @@ def main():
                 
 
 if __name__ == "__main__":
-    main()
+    run_or_abort(main)

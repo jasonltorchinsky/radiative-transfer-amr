@@ -48,20 +48,29 @@ def error_high_resolution(self, problem: Problem, uh_hr: Projection = None,
         spt_ref_offset: int = kwargs["spt_ref_offset"]
 
         if comm_rank == consts.COMM_ROOT:
-            # Get high-resolution mesh
+            # Get high-resolution mesh by raising the degree of every element
+            # by the same offset. Mesh.ref_mesh(form = "p") is not used here:
+            # its |Delta n| <= 1 cascade would p-refine some elements more than
+            # once per sweep. A uniform offset already keeps |Delta n| <= 1.
             mesh_hr: Mesh = copy.deepcopy(self.proj.mesh)
-            for _ in range(0, ang_ref_offset):
-                mesh_hr.ref_mesh(kind = "ang", form = "p")
-            for _ in range(0, spt_ref_offset):
-                mesh_hr.ref_mesh(kind = "spt", form = "p")
+            for col_hr in mesh_hr.cols.values():
+                if col_hr.is_lf:
+                    col_hr.ndofs[0] += spt_ref_offset
+                    col_hr.ndofs[1] += spt_ref_offset
+                    for cell_hr in col_hr.cells.values():
+                        if cell_hr.is_lf:
+                            cell_hr.ndofs[0] += ang_ref_offset
             mesh_hr: Mesh = mpi_comm.bcast(mesh_hr, root = consts.COMM_ROOT)
         else:
             mesh_hr: Mesh = None
             mesh_hr: Mesh = mpi_comm.bcast(mesh_hr, root = consts.COMM_ROOT)
 
-        [uh_hr, info, mat_info] = problem.solve(mesh_hr,
-                                                ksp_type = kwargs["ksp_type"],
-                                                pc_type = kwargs["pc_type"])
+        # Forward the linear solver settings, e.g., from solver_params in input.json
+        solver_keys: list = ["ksp_type", "pc_type", "rtol", "atol", "divtol",
+                             "max_it", "gmres_restart"]
+        solver_kwargs: dict = {key : kwargs[key] for key in solver_keys
+                               if key in kwargs}
+        [uh_hr, info, mat_info] = problem.solve(mesh_hr, **solver_kwargs)
         PETSc.garbage_cleanup(petsc_comm)
     else:
         info = None
@@ -263,10 +272,6 @@ def error_high_resolution(self, problem: Problem, uh_hr: Projection = None,
                             self.cols[col_key].cells[cell_key].ref_form = self.ref_form
                     else: # Needn't be refined
                         self.cols[col_key].cells[cell_key].do_ref = False
-
-        self = mpi_comm.bcast(self, root = consts.COMM_ROOT)
-    else:
-        self = mpi_comm.bcast(self, root = consts.COMM_ROOT)
 
     mpi_comm.barrier()
     return [uh_hr, info, mat_info]

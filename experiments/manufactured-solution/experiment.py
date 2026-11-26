@@ -17,6 +17,7 @@ from petsc4py import PETSc
 
 # Local Library Imports
 import consts
+from utils import run_or_abort
 from dg.mesh import Mesh
 from amr.error_indicator import Error_Indicator
 
@@ -220,7 +221,7 @@ def main():
             min_err: float = mpi_comm.bcast(min_err, root = consts.COMM_ROOT)
             
             keep_going: bool = ( (l_mesh.get_ndof() <= stopping_conditions["max_ndof"])
-                                  and (trial <= stopping_conditions["max_ntrial"])
+                                  and (trial < stopping_conditions["max_ntrial"])
                                   and (min_err >= stopping_conditions["min_err"]) )
                 
         if comm_rank == consts.COMM_ROOT:
@@ -228,4 +229,4 @@ def main():
                 json.dump(ref_strat_log, ref_strat_log_file)
 
 if __name__ == "__main__":
-    main()
+    run_or_abort(main)

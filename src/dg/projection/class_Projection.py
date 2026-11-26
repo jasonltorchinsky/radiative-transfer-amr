@@ -90,9 +90,9 @@ class Projection():
         
     
     def __str__(self):
-        msg: str = ( "Ls     :  {}\n".format(self.Ls) +
-                     "pbcs   :  {}\n".format(self.pbcs) +
-                     "has_th :  {}\n".format(self.has_th) +
+        msg: str = ( "Ls     :  {}\n".format(self.mesh.Ls) +
+                     "pbcs   :  {}\n".format(self.mesh.pbcs) +
+                     "has_th :  {}\n".format(self.mesh.has_th) +
                      "cols   :  {}\n".format(sorted(self.cols.keys())))
         
         return msg

@@ -124,7 +124,10 @@ def calc_col_vec(mesh: Mesh, col_key: int, bcs_dirac: list) -> np.ndarray:
             
     col_vec: np.ndarray = np.zeros([col_ndof])
     
-    idx: int = 0
+    # A coordinate of 0.0 is a valid Dirac location, so test against None
+    has_dirac: bool = any(dirac_k is not None for dirac_k in dirac)
+    
+    cell_st_idx: int = 0
     cell_items: list = sorted(col.cells.items())
     for _, cell in cell_items:
         assert(cell.is_lf)
@@ -133,13 +136,17 @@ def calc_col_vec(mesh: Mesh, col_key: int, bcs_dirac: list) -> np.ndarray:
         [th0, th1] = cell.pos[:]
         [nth]      = cell.ndofs[:]
         
+        # Each cell writes to its own slots, even if it receives no data
+        idx: int = cell_st_idx
+        cell_st_idx += nx * ny * nth
+        
         [_, _, _, _, thb, _] = quad_xyth(nnodes_th = nth)
         
         thf: np.ndarray = push_forward(th0, th1, thb)
         
         # If the BCs are a dirac-delta function, we handle
         # them differently
-        if any(dirac):
+        if has_dirac:
             in_cell: list = [True, True, True]
             if dirac[0] is not None:
                 xs_f: float  = dirac[0]
@@ -162,7 +169,8 @@ def calc_col_vec(mesh: Mesh, col_key: int, bcs_dirac: list) -> np.ndarray:
                 else:
                     ths_b: np.ndarray = pull_back(th0, th1, ths_f)
                     
-            if any(in_cell):
+            # The source lives only in cells containing every given coordinate
+            if all(in_cell):
                 for ii in range(0, nx):
                     if ((dirac[0] is not None)
                         and in_cell[0]):

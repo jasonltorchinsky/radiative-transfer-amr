@@ -127,7 +127,7 @@ def main():
                             mesh_hr_file_path: str = os.path.join(trial_dir_path,
                                                                   mesh_hr_file_name)
 
-                            if not (os.path.isfile(mesh_hr_file_path) and os.path.isfile(uh_file_path)):
+                            if not (os.path.isfile(mesh_hr_file_path) and os.path.isfile(uh_hr_file_path)):
                                 uh_hr.to_file(uh_hr_file_path, write_mesh = True,
                                               mesh_file_path = mesh_hr_file_path)
                     

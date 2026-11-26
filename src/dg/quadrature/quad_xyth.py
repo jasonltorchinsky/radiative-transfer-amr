@@ -3,8 +3,6 @@ from .lgr_quad import lgr_quad
 from .lgl_quad import lgl_quad
 from .uni_quad import uni_quad
 
-from utils import print_msg
-
 import numpy as np
 
 lgl_nodes = {}
@@ -30,8 +28,7 @@ def quad_xyth(nnodes_x = 1, nnodes_y = 1, nnodes_th = 1):
 
     # Caution: No catches for non-positive orders?
     if nnodes_x < 1:
-        print_msg("ERROR: ATTEMPTED TO CALCULATE QUADRATURE WEIGHTS WITH NNODES_X < 1.")
-        quit()
+        raise ValueError("ERROR: ATTEMPTED TO CALCULATE QUADRATURE WEIGHTS WITH NNODES_X < 1.")
     elif nnodes_x in lgl_nodes.keys():
         [nodes_x, weights_x] = [lgl_nodes[nnodes_x], lgl_weights[nnodes_x]]
     elif nnodes_x == 1:
@@ -48,8 +45,7 @@ def quad_xyth(nnodes_x = 1, nnodes_y = 1, nnodes_th = 1):
         lgl_weights[nnodes_x] = weights_x
 
     if nnodes_y < 1:
-        print_msg("ERROR: ATTEMPTED TO CALCULATE QUADRATURE WEIGHTS WITH NNODES_Y < 1.")
-        quit()
+        raise ValueError("ERROR: ATTEMPTED TO CALCULATE QUADRATURE WEIGHTS WITH NNODES_Y < 1.")
     elif nnodes_y in lgl_nodes.keys():
         [nodes_y, weights_y] = [lgl_nodes[nnodes_y], lgl_weights[nnodes_y]]
     elif nnodes_y == 1:
@@ -66,8 +62,7 @@ def quad_xyth(nnodes_x = 1, nnodes_y = 1, nnodes_th = 1):
         lgl_weights[nnodes_y] = weights_y
 
     if nnodes_th < 1:
-        print_msg("ERROR: ATTEMPTED TO CALCULATE QUADRATURE WEIGHTS WITH NNODES_TH < 1.")
-        quit()
+        raise ValueError("ERROR: ATTEMPTED TO CALCULATE QUADRATURE WEIGHTS WITH NNODES_TH < 1.")
     elif nnodes_th in lg_nodes.keys():
         [nodes_th, weights_th] = [lg_nodes[nnodes_th], lg_weights[nnodes_th]]
     elif nnodes_th == 1:

@@ -33,7 +33,9 @@ def cell_hp_steer(self, col_key: int, cell_key: int) -> str:
     L_nthr: np.ndarray = eval_legendre(nth - 1, thb)
     a_nth: np.ndarray = (2. * nth - 1.) / 2. \
         * (wth * uh_hat) @ L_nthr.transpose()
-    ath_nth_sq: float = (a_nth[0, 0])**2 * (2. / (2. * nth - 1.))
+    # Eq. (18b) uses the squared top coefficient |gamma_f|^2 itself,
+    # not the squared L^2-norm of the top mode
+    ath_nth_sq: float = (a_nth[0, 0])**2
     
     lp: float = np.log((2. * nth - 1.) / (2 * ath_nth_sq)) \
         / (2. * np.log(nth - 1))

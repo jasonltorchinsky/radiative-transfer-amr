@@ -14,7 +14,7 @@ from .column.cell import calc_key as calc_cell_key
 def nhbr_cells_spt(self, col_key: int, cell_key: int, axis: int = 0,
                    nhbr_loc: str = "+") -> list:
     col: Column = self.cols[col_key]
-    [flag, nhbr_col_1, nhbr_col_2] = self.nhbr_col(self, col, axis, nhbr_loc)
+    [flag, nhbr_col_1, nhbr_col_2] = self.nhbr_cols(col_key, axis, nhbr_loc)
 
     nhbr_cells: list = [[nhbr_col_1, [None, None]], [nhbr_col_2, [None, None]]]
     
