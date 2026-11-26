@@ -1,4 +1,5 @@
 # Standard Library Imports
+import warnings
 from typing import Callable
 
 # Third-Party Library Imports
@@ -14,32 +15,19 @@ from dg.projection import push_forward
 from ..error_indicator_column import Error_Indicator_Column
 from ..error_indicator_column.error_indicator_cell import Error_Indicator_Cell
 
-intg_u2: float = None
 phi_projs: dict = {}
 psi_projs: dict = {}
 xsi_projs: dict = {}
 
-def error_analytic(self, anl_sol: Callable[[np.ndarray, np.ndarray, np.ndarray],
-                                            np.ndarray]) -> None:
-    # L2 error by cell and column (Sqrt[Sum[cell_err**2]] / Sqrt[Intg[u**2]])
-    # Project u_hp to higher-resolution mesh b/c we need to integrat (u - u_hp)**2
-    
-    # Integrate square of analytic solution to weight the relative error
-    global intg_u2
-    if intg_u2 is None:
-        [Lx, Ly] = self.proj.mesh.Ls[:]
-        [intg_u2, _] = nquad(lambda x, y, th: (anl_sol(x, y, th))**2,
-                             [[0, Lx], [0, Ly], [0, 2. * consts.PI]])
-        
-    # Store maximum errors to calculate hp-steering only where needed
-    col_max_err: float  = -consts.INF
-    cell_max_err: float = -consts.INF
-    
-    # Store the info needed for error_indicator
-    cols: dict = {}
+def quad_error(self, anl_sol: Callable[[np.ndarray, np.ndarray, np.ndarray],
+                                       np.ndarray],
+               hr_mult: int) -> list:
+    # Integrate (u - u_hp)**2 on each cell with hr_mult * (n + 3) nodes per
+    # direction. Returns {col_key : [col_err, {cell_key : cell_err}]} and the
+    # mesh error, all without the sqrt and the normalization.
+    col_errs: dict = {}
     mesh_err: float = 0.
 
-    # Calculate the errors
     col_items: list = sorted(self.proj.mesh.cols.items())
     for col_key, col in col_items:
         assert(col.is_lf)
@@ -48,7 +36,7 @@ def error_analytic(self, anl_sol: Callable[[np.ndarray, np.ndarray, np.ndarray],
         [x0, y0, xf, yf] = col.pos[:]
         [dx, dy] = [xf - x0, yf - y0]
         [nx, ny] = col.ndofs[:]
-        [nx_hr, ny_hr] = [nx + 3, ny + 3]
+        [nx_hr, ny_hr] = [hr_mult * (nx + 3), hr_mult * (ny + 3)]
 
         ## Store spatial projection matrices for later reuse
         global phi_projs
@@ -88,7 +76,7 @@ def error_analytic(self, anl_sol: Callable[[np.ndarray, np.ndarray, np.ndarray],
         
         # Store the info needed for error_indicator_columns
         col_err: float = 0.
-        cells: dict = {}
+        cell_errs: dict = {}
 
         # Loop through cells to calculate error
         cell_items: list = sorted(col.cells.items())
@@ -100,7 +88,7 @@ def error_analytic(self, anl_sol: Callable[[np.ndarray, np.ndarray, np.ndarray],
             dth: float = th1 - th0
             [nth]  = cell.ndofs[:]
             
-            nth_hr: int = nth + 3
+            nth_hr: int = hr_mult * (nth + 3)
             
             # Store angular projection matrices for later reuse
             global xsi_projs
@@ -124,20 +112,10 @@ def error_analytic(self, anl_sol: Callable[[np.ndarray, np.ndarray, np.ndarray],
             # Calculate error
             u_cell: np.ndarray = anl_sol(xxf, yyf, thf)
             uh_cell: np.ndarray = self.proj.cols[col_key].cells[cell_key].vals[:,:,:]
-            uh_cell_hr = np.zeros([nx_hr, ny_hr, nth_hr])
-            for pp in range(0, nx_hr):
-                for qq in range(0, ny_hr):
-                    for rr in range(0, nth_hr):
-                        for ii in range(0, nx):
-                            phi_ip: float = phi_proj[ii, pp]
-                            for jj in range(0, ny):
-                                psi_jq: float = psi_proj[jj, qq]
-                                for aa in range(0, nth):
-                                    xsi_ar: float = xsi_proj[aa, rr]
-                                    
-                                    uh_ija: float = uh_cell[ii, jj, aa]
-                                    
-                                    uh_cell_hr[pp, qq, rr] += uh_ija * phi_ip * psi_jq * xsi_ar
+            # uh_cell_hr[p, q, r] = Sum[uh_cell[i, j, a] * phi[i, p] * psi[j, q] * xsi[a, r]]
+            uh_cell_hr: np.ndarray = np.einsum("ija,ip,jq,ar->pqr", uh_cell,
+                                               phi_proj, psi_proj, xsi_proj,
+                                               optimize = True)
             
             cell_err: float = \
                 (dx * dy * dth / 8.) * np.sum(wx * wy * wth * (u_cell - uh_cell_hr)**2)
@@ -145,6 +123,60 @@ def error_analytic(self, anl_sol: Callable[[np.ndarray, np.ndarray, np.ndarray],
             col_err += cell_err
             mesh_err += cell_err
             
+            cell_errs[cell_key] = cell_err
+                
+        col_errs[col_key] = [col_err, cell_errs]
+    
+    return [col_errs, mesh_err]
+
+def error_analytic(self, anl_sol: Callable[[np.ndarray, np.ndarray, np.ndarray],
+                                            np.ndarray],
+                   quad_rtol: float = 1.e-2, max_quad_dbls: int = 4) -> None:
+    # L2 error by cell and column (Sqrt[Sum[cell_err**2]] / Sqrt[Intg[u**2]])
+    # Project u_hp to higher-resolution mesh b/c we need to integrat (u - u_hp)**2
+    #
+    # The quadrature rule starts at n + 3 nodes per direction and is doubled
+    # until the relative L2 error changes by at most quad_rtol, since n + 3
+    # nodes under-resolve narrow analytic solutions on coarse elements.
+    
+    # Integrate square of analytic solution to weight the relative error.
+    # Computed on every call so that each analytic solution and domain gets its
+    # own value.
+    [Lx, Ly] = self.proj.mesh.Ls[:]
+    [intg_u2, _] = nquad(lambda x, y, th: (anl_sol(x, y, th))**2,
+                         [[0, Lx], [0, Ly], [0, 2. * consts.PI]])
+        
+    # Store maximum errors to calculate hp-steering only where needed
+    col_max_err: float  = -consts.INF
+    cell_max_err: float = -consts.INF
+    
+    # Store the info needed for error_indicator
+    cols: dict = {}
+
+    # Calculate the errors, doubling the quadrature until they converge
+    col_items: list = sorted(self.proj.mesh.cols.items())
+    hr_mult: int = 1
+    [col_errs, mesh_err] = quad_error(self, anl_sol, hr_mult)
+    is_converged: bool = False
+    for _ in range(0, max_quad_dbls):
+        hr_mult *= 2
+        prev_err: float = np.sqrt(mesh_err / intg_u2)
+        [col_errs, mesh_err] = quad_error(self, anl_sol, hr_mult)
+        err: float = np.sqrt(mesh_err / intg_u2)
+        if np.abs(err - prev_err) <= quad_rtol * err + 1.e-12:
+            is_converged = True
+            break
+    if not is_converged:
+        msg: str = ( "error_analytic: relative L2 error did not converge to " +
+                     "within {:.1e} after {} quadrature doublings.".format(quad_rtol,
+                                                                          max_quad_dbls) )
+        warnings.warn(msg)
+
+    for col_key, col in col_items:
+        [col_err, cell_errs] = col_errs[col_key]
+
+        cells: dict = {}
+        for cell_key, cell_err in sorted(cell_errs.items()):
             cells[cell_key] = Error_Indicator_Cell(np.sqrt(cell_err / intg_u2)) # sqrt at the end to avoid sqrt then square
             cell_max_err: float = max(cell_max_err, np.sqrt(cell_err / intg_u2))
                 
